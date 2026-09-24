@@ -55,6 +55,7 @@ tests/NekoClicker.Core.Tests/    126 个测试 + 自研迷你测试运行器
 docs/ARCHITECTURE.md             架构与设计决策
 docs/CONTENT_AUTHORING.md        如何写内容（数值节奏、校验规则、常见坑）
 docs/NINE_LIVES_DESIGN.md        《九命猫娘》设计映射：1 个共享核心 + 10 个内容包（规划中，未实现）
+docs/PACK_01_CAT_CAFE.md         #1《猫娘咖啡馆》完整内容规格（可落代码，也是其余九个包的模板）
 tools/build.ps1                  一键构建 + 测试
 tools/play.ps1                   构建并运行终端 Demo（参数转发给程序）
 tools/dnet.ps1                   在受限环境里运行 dotnet CLI 的包装脚本
