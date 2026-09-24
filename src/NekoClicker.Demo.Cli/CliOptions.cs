@@ -31,7 +31,10 @@ internal sealed class CliOptions
     /// <summary>随机种子；0 表示按时间随机。</summary>
     public ulong Seed { get; private set; }
 
-    /// <summary>存档文件路径；<c>null</c> 表示不落盘。</summary>
+    /// <summary>要玩的内容包（默认 <c>neko</c>）。</summary>
+    public ContentPackage Package { get; private set; } = ContentPackages.Default;
+
+    /// <summary>存档文件路径；<c>null</c> 表示不落盘。未指定时按内容包分开（saves/&lt;包 id&gt;.json）。</summary>
     public string? SavePath { get; private set; } = Path.Combine("saves", "neko.json");
 
     /// <summary>渲染宽度。</summary>
@@ -52,6 +55,7 @@ internal sealed class CliOptions
         var options = new CliOptions();
         bool frameRequested = false;
         bool simulateRequested = false;
+        bool saveExplicit = false;
 
         for (int i = 0; i < args.Length; i++)
         {
@@ -80,8 +84,22 @@ internal sealed class CliOptions
                     else options.Error = "--seed 需要一个非负整数。";
                     break;
 
+                case "--package" or "-p":
+                    if (i + 1 >= args.Length)
+                    {
+                        options.Error = $"--package 需要一个内容包 id（可用：{ContentPackages.IdList}）。";
+                    }
+                    else
+                    {
+                        ContentPackage? package = ContentPackages.Find(args[i + 1]);
+                        if (package is null) options.Error = $"未知内容包：{args[i + 1]}（可用：{ContentPackages.IdList}）。";
+                        else options.Package = package;
+                        i++;
+                    }
+                    break;
+
                 case "--save":
-                    if (i + 1 < args.Length) { options.SavePath = args[i + 1]; i++; }
+                    if (i + 1 < args.Length) { options.SavePath = args[i + 1]; saveExplicit = true; i++; }
                     else options.Error = "--save 需要一个文件路径。";
                     break;
 
@@ -121,6 +139,11 @@ internal sealed class CliOptions
             if (options.Error is not null) break;
         }
 
+        // 未显式指定 --save 时，存档按内容包分开：saves/neko.json、saves/cafe.json……
+        // 两个游戏共用一份存档会互相读到对方的建筑 id，所以这不是口味问题，是正确性问题。
+        if (!saveExplicit && options.SavePath is not null)
+            options.SavePath = Path.Combine("saves", $"{options.Package.Id}.json");
+
         // 模式优先级：帮助 > 单帧渲染 > 无头模拟 > 交互。
         // 这样 `--simulate 600 --auto --frame`（用模拟预热后截图）无论参数顺序如何都成立。
         if (options.Mode != RunMode.Help)
@@ -134,40 +157,47 @@ internal sealed class CliOptions
     }
 
     /// <summary>打印帮助。</summary>
-    public static string HelpText => """
-        猫咖物语 · Neko Clicker —— 增量游戏框架示例
+    public static string HelpText => $"""
+        Neko Clicker —— 增量游戏框架示例（可换内容包）
 
         用法:
           neko-clicker [选项]
 
         选项:
+          --package <id>      选择内容包：{ContentPackages.IdList}（默认 neko）
           --simulate <秒>     无头模拟指定时长后打印报告（默认 3600 秒）
           --auto              模拟时启用自动购买策略（否则纯挂机）
           --seed <整数>       固定随机种子（同一存档的随机序列可复现）
-          --save <路径>       存档文件（默认 saves/neko.json）
+          --save <路径>       存档文件（默认按内容包分开：saves/<包 id>.json）
           --no-save           本次运行不读写存档
           --frame [宽x高]     渲染一帧界面到标准输出后退出（默认 100x30）
           --size <宽x高>      指定界面尺寸
           --no-color          关闭 ANSI 颜色
           -h, --help          显示本帮助
 
+        内容包:
+          neko   猫咖物语（框架回归基线，第一只猫）
+          cafe   猫娘咖啡馆（内容包 #1，第二资源「幸福感」）
+
         游戏内按键:
-          空格 / C    撸猫（手动点击）
+          空格 / C    手动点击（撸猫 / 做咖啡）
           Tab         切换面板焦点（建筑 → 升级 → 成就）
           ↑ / ↓       移动选择
           1-9, 0      直接选中当前面板的第 1~10 项
           Enter       执行（买建筑 / 买升级）
           X           切换批量档位（×1 → ×10 → ×100 → 买满）
           V           在"买"与"卖"之间切换
-          G           抓住金猫
-          A           转生（需要二次确认，按 Y 确认）
+          G           抓住随机事件（金猫 / 客人）
+          A           转生 / 店休（需要二次确认，按 Y 确认）
           F5          手动存档
           H           帮助
           Q / Esc     存档并退出
 
         示例:
-          neko-clicker                          # 开始玩
-          neko-clicker --simulate 21600 --auto  # 自动玩 6 小时并打印报告
+          neko-clicker                                    # 开始玩（猫咖物语）
+          neko-clicker --package cafe                     # 开始玩（猫娘咖啡馆）
+          neko-clicker --simulate 21600 --auto            # 自动玩 6 小时并打印报告
+          neko-clicker --package cafe --simulate 21600 --auto
           neko-clicker --frame 120x34 --no-color > frame.txt
         """;
 

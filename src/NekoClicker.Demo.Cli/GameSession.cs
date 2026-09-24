@@ -3,7 +3,6 @@ using NekoClicker.Core.Events;
 using NekoClicker.Core.Numbers;
 using NekoClicker.Core.Persistence;
 using NekoClicker.Core.Views;
-using NekoClicker.Content.Neko;
 
 namespace NekoClicker.Demo.Cli;
 
@@ -41,11 +40,14 @@ internal sealed class GameSession : IDisposable
     private AchievementView[] _achievementCache = [];
 
     /// <summary>创建会话。</summary>
+    /// <param name="package">要玩的内容包（决定构建哪份 <c>GameContent</c>）。</param>
     /// <param name="savePath">存档路径；<c>null</c> 表示不落盘。</param>
     /// <param name="seed">随机种子。</param>
-    public GameSession(string? savePath, ulong seed)
+    public GameSession(ContentPackage package, string? savePath, ulong seed)
     {
-        Engine = new GameEngine(NekoContent.Build(), new GameEngineOptions
+        Package = package;
+
+        Engine = new GameEngine(package.Build(), new GameEngineOptions
         {
             Clock = SystemClock.Instance,
             Seed = seed,
@@ -65,15 +67,18 @@ internal sealed class GameSession : IDisposable
         {
             Log($"已读取存档：{savePath}", "📂");
             if (Saves.LastOfflineProgress is { CookiesGained: > 0 } offline)
-                Log($"离线 {NumFormat.Duration(offline.CreditedSeconds)}，猫猫替你赚了 {NumFormat.FormatLong(offline.CookiesGained)} 条小鱼干。", "🌙");
+                Log($"离线 {NumFormat.Duration(offline.CreditedSeconds)}，店里替你赚了 {NumFormat.FormatLong(offline.CookiesGained)} 条{Engine.Content.CurrencyName}。", "🌙");
         }
         else
         {
-            Log("欢迎来到猫咖物语！先按空格撸猫，攒够 15 条小鱼干就能买下第一只蜷缩的猫。", "🐱");
+            Log(package.Welcome, "🐱");
         }
 
         RefreshCache();
     }
+
+    /// <summary>当前内容包。</summary>
+    public ContentPackage Package { get; }
 
     /// <summary>引擎。</summary>
     public GameEngine Engine { get; }
@@ -93,7 +98,7 @@ internal sealed class GameSession : IDisposable
     /// <summary>当前选中行。</summary>
     public int Selected { get; private set; }
 
-    /// <summary>待确认的转生。</summary>
+    /// <summary>待确认的转生 / 店休。</summary>
     public bool AwaitingAscendConfirm { get; private set; }
 
     /// <summary>是否显示帮助浮层。</summary>
@@ -157,7 +162,7 @@ internal sealed class GameSession : IDisposable
         Selected = index;
     }
 
-    /// <summary>撸猫。</summary>
+    /// <summary>手动点击（撸猫 / 做咖啡）。</summary>
     public void Click()
     {
         ClickResult result = Engine.Click();
@@ -170,7 +175,11 @@ internal sealed class GameSession : IDisposable
     {
         if (Engine.State.GoldenCookies.Count == 0)
         {
-            Log("现在没有金猫。它们每 5~15 分钟出现一次，出现时顶部会有提示。", "🌟");
+            double min = Engine.Content.Balance.GoldenCookieMinDelay;
+            double max = Engine.Content.Balance.GoldenCookieMaxDelay;
+            Log(
+                $"现在没有{Package.GoldenCookieName}。它们每 {NumFormat.Duration(min)}~{NumFormat.Duration(max)} 出现一次，出现时顶部会有提示。",
+                "🌟");
             return;
         }
 
@@ -270,7 +279,7 @@ internal sealed class GameSession : IDisposable
         if (!preview.CanAscend)
         {
             Log(
-                $"还不能转生：历史累计 {NumFormat.FormatLong(Engine.State.CookiesEarnedAllTime)} / " +
+                $"还不能{Package.PrestigeActionName}：历史累计 {NumFormat.FormatLong(Engine.State.CookiesEarnedAllTime)} / " +
                 $"{NumFormat.FormatLong(preview.CookiesForNextLevel)}。",
                 "⚠");
             return;
@@ -278,7 +287,7 @@ internal sealed class GameSession : IDisposable
 
         AwaitingAscendConfirm = true;
         Log(
-            $"确认转生？将清空本轮进度，换取 {NumFormat.FormatLong(preview.ChipsOnAscend)} 猫薄荷。按 Y 确认，其他键取消。",
+            $"确认{Package.PrestigeActionName}？将清空本轮进度，换取 {NumFormat.FormatLong(preview.ChipsOnAscend)} {Engine.Content.PrestigeCurrencyName}。按 Y 确认，其他键取消。",
             "🌿");
     }
 

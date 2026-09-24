@@ -1,5 +1,9 @@
 # 内容包 #1：《猫娘咖啡馆》完整规格
 
+> **状态（2026-09-24）：已落代码。** 实现在 `src/NekoClicker.Content.Cafe/`，
+> 可执行 `.\tools\play.ps1 --package cafe` 试玩；验收记录见 [ROADMAP.md](ROADMAP.md) §7 阶段 0。
+> 唯一与本文的差异：§10 的 50 条叙事按 R10 暂走描述字段，等阶段 2 的 S-B 到位再补。
+
 > **这份文档有双重身份**：
 > 1. 它是**内容包 #1 的可落代码规格**——按表填就能做出能玩的游戏，不需要任何引擎能力。
 > 2. 它是**其余九个包的写作模板**——第 14 节列出"换一个包要改哪几行"。
@@ -235,22 +239,28 @@ internal sealed class HappinessModule : IGameModule
 - `Scaling(ScalingSource.CustomCounter, perUnit, Id: "happiness")` 已存在 → 幸福感可以驱动修饰符。
 - 模块随 `GameContent.Modules` 注册，引擎自动挂载（见 `Modules_ReceiveConfigureAttachAndTick` 测试）。
 
-### 9.3 ⚠ 唯一需要动引擎的一处（3 行，可选）
+### 9.3 ✅ 引擎侧前置：`NumericMetric.Counter`（已落地）
 
-`UnlockCondition` 目前**没有**"自定义计数器 ≥ N"的数值条件——`ScalingSource` 有
-`CustomCounter`，但 `NumericMetric` 没有对应项。后果：
+`UnlockCondition` 曾经**没有**"自定义计数器 ≥ N"的数值条件——`ScalingSource` 有
+`CustomCounter`，但 `NumericMetric` 没有对应项。这个缺口已由 C1（ROADMAP §6.1）补上：
+`NumericMetric.Counter` + `UnlockCondition.Counter(key, n)` 已实现并有测试覆盖。
 
-| 方案 | 代价 |
-|---|---|
-| **A. 加 `NumericMetric.Counter`**（`NumericCondition.Read` 里加一行 + 工厂方法） | 3 行代码；幸福感解锁**有进度条**、能被构建期校验 |
-| **B. 用 `UnlockCondition.Custom("幸福感 ≥ 500", m => m.GetCounter("happiness") >= 500)`** | 零改动；但**没有进度条**（`TryGetProgress` 返回 false），且构建期无法校验 |
+| 方案 | 代价 | 状态 |
+|---|---|---|
+| **A. 加 `NumericMetric.Counter`**（`NumericCondition.Read` 一行 + 工厂方法） | 3 行代码；幸福感解锁**有进度条**、能被构建期校验 | ✅ **已采用** |
+| **B. 用 `UnlockCondition.Custom(...)`** | 零改动；但**没有进度条**（`TryGetProgress` 返回 false），且构建期无法校验 | ❌ 未采用 |
 
-**建议 A**。幸福感是这个包的核心体验，"还差多少"必须看得见；3 行的改动量换来一个完整的
-进度条体系，非常划算。这也是本包唯一超出"零引擎改动"的地方。
+幸福感是这个包的核心体验，"还差多少"必须看得见；3 行的改动换来一个完整的进度条体系，
+非常划算。**这也是本包唯一超出"零引擎改动"的地方，且它是一次通用能力投资**——
+阶段 1 的 `peak_cps` 完成条件与其余包的士气 / 信仰 / 被阅读度都会复用它。
 
 ---
 
-## 10. 叙事条目表（50 条 / 3 条线）
+## 10. 叙事条目表（50 条 / 3 条线）⏸ 待 S-B 落地
+
+> **当前状态**：本阶段按 ROADMAP R10 走既有文本通道——画面感写进了建筑 / 升级 / 成就 /
+> 增益 / 事件的 `Description` 字段（见 `src/NekoClicker.Content.Cafe/`）。
+> 下面 50 条独立条目需要叙事系统 S-B（`LoreEntry` / 图鉴 / 释放通道），随阶段 2 一起补。
 
 ### 10.1 分配
 
@@ -314,11 +324,10 @@ internal sealed class HappinessModule : IGameModule
 | 离屏收益 / 存档 / 事件 / 通知 | ✅ | 直接用 |
 | 第二资源"幸福感" | ✅ `Counters` + `IGameModule` | **零核心改动** |
 | 幸福感驱动修饰符 | ✅ `ScalingSource.CustomCounter` | 直接用 |
-| 幸福感作为解锁条件 | ⚠️ 缺 `NumericMetric.Counter` | **3 行**（方案 A）；不加以则退化为 `Custom`（无进度条） |
+| 幸福感作为解锁条件 | ✅ `NumericMetric.Counter`（C1 已落地） | 直接用，**有进度条** |
 | 结局 | ✅ 用成就 + 叙事实现 | 直接用 |
 
-**合计：48 条升级 + 45 条成就 + 10 座建筑 + 5 条增益 + 8 条事件 + 50 条叙事 + 1 个模块
-+ 可选 3 行引擎代码。**
+**合计：48 条升级 + 45 条成就 + 10 座建筑 + 5 条增益 + 8 条事件 + 50 条叙事（待 S-B）+ 1 个模块。**
 
 ---
 
@@ -335,21 +344,25 @@ internal sealed class HappinessModule : IGameModule
 | `DanglingReferences_AreRejected` | 解锁条件不得引用不存在的 id |
 | `SimulationTests.SixHourGreedyRun_IsStableAndProgresses` | 6 小时模拟必须"有事发生"且无 NaN/∞ |
 
-### 建议新增的测试
+### 新增测试（✅ 已实现于 `CafeContentTests`，2026-09-24）
 
-| 测试 | 断言 |
-|---|---|
-| `Cafe_HappinessModuleAccumulates` | `Simulate(600)` 后 `Counters["happiness"] > 0` |
-| `Cafe_HappinessSurvivesAscension` | 转生后幸福感不清零（这是"常客的记忆"的机制保证） |
-| `Cafe_PermanentUpgradesNeedPrestigeCurrency` | 5 条常客记忆的 `Currency` 全为 `PrestigeChips` |
-| `Cafe_EventWeightsArePositiveFeedbackDominant` | 正反馈权重 / 总权重 ≥ 0.85 |
-| `Cafe_NarrativeRevealConditionsAreReachable` | 每条叙事的 `Reveal` 不含 `ConstantCondition(false)` |
+| 计划测试 | 实际用例 | 断言 |
+|---|---|---|
+| `Cafe_HappinessModuleAccumulates` | `Cafe_HappinessModuleAccumulates` | `Simulate(600)` 后 `Counters["happiness"] ≥ 500` |
+| `Cafe_HappinessSurvivesAscension` | `Cafe_HappinessSurvivesAscension` | 店休后幸福感保留、建筑清空 |
+| `Cafe_PermanentUpgradesNeedPrestigeCurrency` | `CafeContent_MemoryUpgradesArePermanentAndChipPriced` | 5 条常客记忆的 `Currency` 全为 `PrestigeChips` |
+| `Cafe_EventWeightsArePositiveFeedbackDominant` | `CafeContent_EventWeightsArePositiveFeedbackDominant` | 正反馈权重 / 总权重 ≥ 0.85 |
+| `Cafe_NarrativeRevealConditionsAreReachable` | ⏸ 待 S-B（叙事系统落地后补） | 每条叙事的 `Reveal` 不含 `ConstantCondition(false)` |
+
+另外补了规模基线、id 一致性、曲线区间、解锁递增、平衡参数、增益引用、
+离线补算（`Cafe_HappinessModuleAccruesOffline`）、幸福感进度条（`Cafe_HappinessGatesUpgradesWithProgressBar`）
+与 6 小时长跑（`SimulationTests.CafeSixHourGreedyRun_IsStableAndProgresses`）。
 
 ### 手动验收
 
 ```powershell
 .\tools\build.ps1                       # 构建 + 全部测试
-.\tools\play.ps1 --package cafe         # 交互试玩（需先在 Demo 里加包选择参数）
+.\tools\play.ps1 --package cafe         # 交互试玩
 .\tools\play.ps1 --package cafe --simulate 21600 --auto   # 6 小时曲线报告
 ```
 

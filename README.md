@@ -1,10 +1,12 @@
 # NekoClicker — 增量游戏框架（C# / .NET 8）
 
 参考 **Cookie Clicker** 的机制设计的一套**增量（放置 / 点击）游戏框架**，纯 C# 实现，
-**零第三方依赖**，附带一个完整的示例内容包「猫咖物语」和一个可玩的终端 Demo。
+**零第三方依赖**，附带两个内容包（示例包「猫咖物语」+ 内容包 #1《猫娘咖啡馆》）和一个可玩的终端 Demo。
 
 框架的核心目标是**把"引擎"和"内容"彻底分开**：引擎负责时间推进、数值管线、存档与事件；
 内容只描述"这个世界有什么"。换掉内容包就能做出完全不同的游戏，引擎代码一行都不用改。
+内容包 #1 就是这句话的实物证据：10 建筑 / 48 升级 / 45 成就 / 5 增益 / 8 随机事件 /
+第二资源模块，核心引擎改动 **0 行**。
 
 ```
 ┌──────────────────────────────┐
@@ -14,9 +16,10 @@
 ┌───────────────▼──────────────┐
 │      NekoClicker.Core        │  引擎：时间、数值、存档、事件（无 UI、无 IO 硬编码）
 └───────────────┬──────────────┘
-                │  GameContent（不可变的内容定义）
+                │  GameContent（不可变的内容定义；一个包 = 一个 csproj）
 ┌───────────────▼──────────────┐
-│  NekoClicker.Content.Neko    │  内容包：建筑 / 升级 / 成就 / 增益 / 金猫结果表
+│  NekoClicker.Content.Neko    │  示例包：猫咖物语的建筑 / 升级 / 成就 / 增益 / 金猫结果表
+│  NekoClicker.Content.Cafe    │  内容包 #1：猫娘咖啡馆 + 幸福感模块（IGameModule）
 └──────────────────────────────┘
 ```
 
@@ -29,17 +32,21 @@
 > 在普通开发机上也可以直接 `dotnet build` / `dotnet run`。
 
 ```powershell
-# 构建 + 跑测试（143 个用例，零依赖迷你运行器）
+# 构建 + 跑测试（161 个用例，零依赖迷你运行器）
 .\tools\build.ps1
 
 # 只构建全部项目
 .\tools\dnet.ps1 build NekoClicker.sln
 
-# 开始玩（终端全屏界面）
+# 开始玩（终端全屏界面；默认「猫咖物语」）
 .\tools\play.ps1
+
+# 换内容包：玩内容包 #1《猫娘咖啡馆》（第二资源「幸福感」）
+.\tools\play.ps1 --package cafe
 
 # 无头模拟：让机器人替你玩 6 小时并打印数值报告
 .\tools\play.ps1 --simulate 21600 --auto
+.\tools\play.ps1 --package cafe --simulate 21600 --auto
 
 # 渲染一帧界面（用于验证布局 / 截图，可重定向到文件）
 .\tools\play.ps1 --simulate 1800 --auto --frame 118x32 --no-color
@@ -49,17 +56,19 @@
 
 ```
 src/NekoClicker.Core/            框架核心：内容定义、模拟引擎、存档、事件、UI 视图
-src/NekoClicker.Content.Neko/    示例内容包「猫咖物语」（纯数据，无逻辑）
-src/NekoClicker.Demo.Cli/        终端 UI 适配层（ANSI 全屏 + 键盘 + 无头模式）
-tests/NekoClicker.Core.Tests/    143 个测试 + 自研迷你测试运行器
+src/NekoClicker.Content.Neko/    示例内容包「猫咖物语」（纯数据，无逻辑；框架回归基线）
+src/NekoClicker.Content.Cafe/    内容包 #1《猫娘咖啡馆》（含幸福感模块，核心零改动）
+src/NekoClicker.Demo.Cli/        终端 UI 适配层（ANSI 全屏 + 键盘 + 无头模式 + --package）
+tests/NekoClicker.Core.Tests/    161 个测试 + 自研迷你测试运行器（含架构不变量测试）
 docs/ARCHITECTURE.md             架构与设计决策
 docs/CONTENT_AUTHORING.md        如何写内容（数值节奏、校验规则、常见坑）
 docs/ROADMAP.md                  实施规划与决策记录：11 项已定决策、4 条架构不变量、5 个阶段
-docs/NINE_LIVES_DESIGN.md        《九命猫娘》设计映射：1 个共享核心 + 10 个内容包（规划中，未实现）
-docs/PACK_01_CAT_CAFE.md         #1《猫娘咖啡馆》完整内容规格（可落代码，也是其余九个包的模板）
+docs/NINE_LIVES_DESIGN.md        《九命猫娘》设计映射：1 个共享核心 + 10 个内容包（1 个已落地）
+docs/PACK_01_CAT_CAFE.md         #1《猫娘咖啡馆》完整内容规格（已落代码，也是其余九个包的模板）
 tools/build.ps1                  一键构建 + 测试
 tools/play.ps1                   构建并运行终端 Demo（参数转发给程序）
 tools/dnet.ps1                   在受限环境里运行 dotnet CLI 的包装脚本
+tools/seed-packages.ps1          把全局 NuGet 缓存里的 net8.0 targeting pack 播种进仓库（离线构建）
 ```
 
 ---
@@ -170,7 +179,7 @@ Console.WriteLine(engine.Save());           // JSON 存档
 
 ## 环境说明（为什么有 `tools/dnet.ps1`）
 
-本仓库的构建脚本不是多余的包装，它解决两个真实约束：
+本仓库的构建脚本不是多余的包装，它解决三个真实约束：
 
 1. **`dotnet` CLI 首次运行会往 `%USERPROFILE%\.dotnet` 写 sentinel 文件**，并把 NuGet 包缓存
    放进 `%USERPROFILE%\.nuget\packages`。在只写工作区的沙箱里这两个路径不可写，
@@ -178,6 +187,14 @@ Console.WriteLine(engine.Save());           // JSON 存档
 2. **MSBuild 的多进程节点复用依赖命名管道**，受限沙箱不允许命名管道：一旦项目之间有
    `ProjectReference`，构建会**静默失败**（输出 `Build FAILED` 却显示 `0 Error`）。
    脚本给会调用 MSBuild 的动词强制加 `-m:1`（单节点、全进程内执行）。
+3. **目标框架是 net8.0，但开发机可能只装了更新的 SDK**（例如 .NET 10）。这类 SDK 不自带
+   net8.0 的 targeting pack，restore 会去 nuget.org 下载；叠加第 1 条的缓存重定向，
+   没有网络时构建会以 `NU1301` 失败。`tools/seed-packages.ps1` 会把全局 NuGet 缓存里
+   已有的 8.0.x targeting pack 复制进仓库内的 `.packages`（找不到就跳过），`dnet.ps1`
+   在执行 build/restore 前自动调用它。
+
+> 若第 3 条仍然失败（全局缓存里也没有这些包），先用一次联网的 `dotnet restore` 把它们拉下来，
+> 再运行 `.\tools\seed-packages.ps1`；也可以用 `-Version` 指定本机 SDK 需要的补丁版本。
 
 在其他环境下（普通开发机、CI）可以直接用 `dotnet build` / `dotnet run`，不需要这个脚本。
 
@@ -185,7 +202,10 @@ Console.WriteLine(engine.Save());           // JSON 存档
 
 ## 状态
 
-- 核心引擎、示例内容包、终端 Demo、143 个测试全部通过。
-- 示例内容包的数值曲线经过 6 小时无头模拟验证（见 `--simulate --auto`）。
-- **未包含**：图形前端、本地化资源系统、账号/云存档、排行榜、反作弊。
-  这些都被设计为引擎外部的宿主职责。
+- 核心引擎、两个内容包（猫咖物语 / 猫娘咖啡馆）、终端 Demo、**161 个测试**全部通过。
+- **ROADMAP 阶段 0 已交付**：内容包 #1《猫娘咖啡馆》（10 建筑 / 48 升级 / 45 成就 /
+  5 增益 / 8 随机事件 / 幸福感模块）+ Demo `--package` 切换 + 架构不变量测试，
+  全部走既有框架能力（核心引擎零改动）。
+- 两个内容包的数值曲线都经过 6 小时无头模拟验证（见 `--simulate --auto`）。
+- **未包含**：图形前端、本地化资源系统、账号/云存档、排行榜、反作弊，以及 ROADMAP 阶段 1~5
+  的 `Era` / 叙事 / 选择 / 虚无化四项引擎能力。这些都被设计为引擎外部的宿主职责或后续阶段。

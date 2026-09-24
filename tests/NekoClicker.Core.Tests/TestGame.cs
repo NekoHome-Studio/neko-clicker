@@ -1,5 +1,6 @@
 using NekoClicker.Core;
 using NekoClicker.Core.Content;
+using NekoClicker.Content.Cafe;
 using NekoClicker.Content.Neko;
 
 namespace NekoClicker.Core.Tests;
@@ -8,15 +9,32 @@ namespace NekoClicker.Core.Tests;
 public static class TestGame
 {
     private static readonly Lazy<GameContent> NekoContentCache = new(NekoClicker.Content.Neko.NekoContent.Build);
+    private static readonly Lazy<GameContent> CafeContentCache = new(NekoClicker.Content.Cafe.CafeContent.Build);
 
     /// <summary>示例内容包（不可变，可安全共享）。</summary>
     public static GameContent NekoContent => NekoContentCache.Value;
+
+    /// <summary>内容包 #1《猫娘咖啡馆》（含幸福感模块；不可变，可安全共享）。</summary>
+    public static GameContent CafeContent => CafeContentCache.Value;
 
     /// <summary>创建使用示例内容包的引擎，时间由 <see cref="ManualClock"/> 控制。</summary>
     public static GameEngine CreateNeko(out ManualClock clock, ulong seed = 12345, bool grantOffline = true)
     {
         clock = new ManualClock();
         return new GameEngine(NekoContent, new GameEngineOptions
+        {
+            Clock = clock,
+            Seed = seed,
+            GrantOfflineProgress = grantOffline,
+            MaxNotifications = 32,
+        });
+    }
+
+    /// <summary>创建使用《猫娘咖啡馆》内容包的引擎，时间由 <see cref="ManualClock"/> 控制。</summary>
+    public static GameEngine CreateCafe(out ManualClock clock, ulong seed = 12345, bool grantOffline = true)
+    {
+        clock = new ManualClock();
+        return new GameEngine(CafeContent, new GameEngineOptions
         {
             Clock = clock,
             Seed = seed,
