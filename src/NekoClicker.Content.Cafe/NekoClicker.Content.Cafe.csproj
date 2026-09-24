@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>NekoClicker.Content.Cafe</RootNamespace>
+    <AssemblyName>NekoClicker.Content.Cafe</AssemblyName>
+    <!--
+      内容包 #1：猫娘咖啡馆（治愈系）。
+      唯一一个使用第二资源「幸福感」的示范包——用 IGameModule 实现，核心引擎零改动。
+    -->
+    <Description>内容包 #1：猫娘咖啡馆的全部数值与文案（含幸福感模块）。</Description>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\NekoClicker.Core\NekoClicker.Core.csproj" />
+  </ItemGroup>
+
+</Project>

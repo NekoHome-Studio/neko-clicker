@@ -350,6 +350,11 @@ internal sealed class HappinessModule : IGameModule
 
 注册方式：`new GameContentBuilder("...").Add(new HappinessModule())`。
 
+> **这不是伪代码**：内容包 #1 的真实实现就在 `src/NekoClicker.Content.Cafe/HappinessModule.cs`，
+> 它把幸福感写进 `Counters["happiness"]`，由
+> `UnlockCondition.Counter("happiness", n)` 与 `Scaling(ScalingSource.CustomCounter, ...)` 消费。
+> 想照着做一个"士气""信仰""被阅读度"，复制它改两个常量即可。
+
 **要点**：
 
 | 事项 | 说明 |

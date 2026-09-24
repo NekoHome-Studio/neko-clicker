@@ -56,14 +56,14 @@ internal static class TerminalUi
         var lines = new List<string>(layout.Height)
         {
             Border(layout, '╭', '╮', $" {snap.Title} · 增量游戏框架示例 "),
-            Column(layout, HeaderLeft(snap), HeaderRight(snap)),
+            Column(layout, HeaderLeft(snap), HeaderRight(session, snap)),
             Column(layout, StatusLeft(session, snap), StatusRight(snap)),
             Border(layout, '├', '┤', null),
         };
 
         if (session.ShowHelp)
         {
-            RenderHelp(lines, layout, bodyHeight);
+            RenderHelp(lines, layout, bodyHeight, session);
         }
         else
         {
@@ -97,7 +97,7 @@ internal static class TerminalUi
         lines.Add(Border(layout, '├', '┤', null));
         lines.Add(FullRow(layout, LogLine(session, 1)));
         lines.Add(FullRow(layout, LogLine(session, 0)));
-        lines.Add(FullRow(layout, Footer()));
+        lines.Add(FullRow(layout, Footer(session)));
         lines.Add(Border(layout, '╰', '╯', null));
 
         // 兜底：终端尺寸变化或极端小窗口时保证行数精确匹配，避免界面"爬屏"。
@@ -119,13 +119,13 @@ internal static class TerminalUi
         .Add("   点击 ", Ansi.S(Style.Gray))
         .Add(snap.ClickPowerText, Ansi.S(Style.Bold + Style.Green));
 
-    private static UiLine HeaderRight(GameSnapshot snap) => UiLine.New()
+    private static UiLine HeaderRight(GameSession session, GameSnapshot snap) => UiLine.New()
         .Add(" ")
         .Add($"{snap.PrestigeCurrencyIcon} ", Ansi.S(Style.Green))
         .Add(NumFormat.FormatPlain(snap.PrestigeChips), Ansi.S(Style.Bold + Style.Green))
         .Add($" {snap.PrestigeCurrencyName}", Ansi.S(Style.Gray))
         .Add($" Lv{snap.PrestigeLevel}", Ansi.S(Style.Bold + Style.Magenta))
-        .Add($"  转生 {ProgressBar(snap.Prestige.Progress, 8)} ", Ansi.S(Style.Gray))
+        .Add($"  {session.Package.PrestigeActionName} {ProgressBar(snap.Prestige.Progress, 8)} ", Ansi.S(Style.Gray))
         .Add(NumFormat.Percent(snap.Prestige.Progress, 0), Ansi.S(Style.Gray))
         .Add($"  成就 {snap.AchievementCount}/{snap.AchievementTotal}", Ansi.S(Style.Gray))
         .Add($"  建筑 {NumFormat.FormatPlain(snap.TotalBuildings)}", Ansi.S(Style.Gray));
@@ -136,10 +136,10 @@ internal static class TerminalUi
 
         if (session.AwaitingAscendConfirm)
         {
-            return line.Add("⚠ 确认转生？", Ansi.S(Style.Bold + Style.Red))
+            return line.Add($"⚠ 确认{session.Package.PrestigeActionName}？", Ansi.S(Style.Bold + Style.Red))
                 .Add(" 将清空本轮进度（建筑、普通升级、增益），换取 ", Ansi.S(Style.Yellow))
                 .Add(NumFormat.FormatLong(snap.Prestige.ChipsOnAscend), Ansi.S(Style.Bold + Style.Green))
-                .Add(" 猫薄荷。按 ", Ansi.S(Style.Gray))
+                .Add($" {snap.PrestigeCurrencyName}。按 ", Ansi.S(Style.Gray))
                 .Add("Y", Ansi.S(Style.Bold + Style.BrightGreen))
                 .Add(" 确认，其他键取消。", Ansi.S(Style.Gray));
         }
@@ -147,14 +147,14 @@ internal static class TerminalUi
         if (snap.GoldenCookies.Count > 0)
         {
             GoldenCookieView cookie = snap.GoldenCookies[0];
-            return line.Add("🌟 金猫出现！", Ansi.S(Style.Bold + Style.BrightYellow))
+            return line.Add($"🌟 {session.Package.GoldenCookieName}出现！", Ansi.S(Style.Bold + Style.BrightYellow))
                 .Add($" 剩 {NumFormat.Duration(cookie.RemainingSeconds)}", Ansi.S(Style.BrightYellow))
                 .Add($"  位置 ({(int)(cookie.X * 100)}%, {(int)(cookie.Y * 100)}%)  按 ", Ansi.S(Style.Gray))
                 .Add("G", Ansi.S(Style.Bold + Style.BrightGreen))
                 .Add(" 抓住", Ansi.S(Style.Gray));
         }
 
-        return line.Add("🌟 下一只金猫 ", Ansi.S(Style.Gray))
+        return line.Add($"🌟 下一只{session.Package.GoldenCookieName} ", Ansi.S(Style.Gray))
             .Add(NumFormat.Duration(Math.Max(0, snap.GoldenCookieCountdown)), Ansi.S(Style.Gray))
             .Add($"   已抓 {NumFormat.FormatPlain(snap.GoldenCookiesClicked)} 只", Ansi.S(Style.Gray))
             .Add($"   游玩 {NumFormat.Duration(snap.PlayTimeSeconds)}", Ansi.S(Style.Gray));
@@ -346,17 +346,18 @@ internal static class TerminalUi
         return line.Add(entry.Message, offsetFromEnd == 0 ? style : Ansi.S(Style.Gray));
     }
 
-    private static UiLine Footer()
+    private static UiLine Footer(GameSession session)
     {
+        GameSnapshot snap = session.Snapshot;
         (string Key, string Text)[] hints =
         [
-            ("空格", "撸猫"),
+            ("空格", snap.ClickActionName),
             ("Tab", "切面板"),
             ("Enter", "执行"),
             ("X", "批量"),
             ("V", "买卖"),
-            ("G", "金猫"),
-            ("A", "转生"),
+            ("G", session.Package.GoldenCookieName),
+            ("A", session.Package.PrestigeActionName),
             ("F5", "存档"),
             ("H", "帮助"),
             ("Q", "退出"),
@@ -372,28 +373,29 @@ internal static class TerminalUi
         return line;
     }
 
-    private static void RenderHelp(List<string> lines, Layout layout, int bodyHeight)
+    private static void RenderHelp(List<string> lines, Layout layout, int bodyHeight, GameSession session)
     {
+        GameSnapshot snap = session.Snapshot;
+        double sellRefund = session.Engine.Balance.DefaultSellRefundRate;
+        double clickRatio = session.Engine.Balance.ClickCpsRatio;
+        double cookieLifetime = session.Engine.Balance.GoldenCookieLifetime;
+
         string[] help =
         [
             "  按键",
-            "    空格 / C    撸猫（手动点击，收益 = 1 + 当前每秒产量的 1%）",
+            $"    空格 / C    {snap.ClickActionName}（手动点击，收益 = 1 + 当前每秒产量的 {NumFormat.Percent(clickRatio, 1)}）",
             "    Tab         切换面板焦点：建筑 → 升级 → 成就",
             "    ↑ / ↓       移动选择    1-9 / 0 直接跳到第 1~10 项",
             "    Enter       购买选中的建筑或升级",
             "    X           切换批量档位：×1 → ×10 → ×100 → 买满",
-            "    V           在「买」与「卖」之间切换（卖出返还 50%）",
-            "    G           抓住金猫（只停留 13 秒，出现时顶部会提示）",
-            "    A           转生：清空本轮进度，按历史累计赚取换取猫薄荷",
+            $"    V           在「买」与「卖」之间切换（卖出返还 {NumFormat.Percent(sellRefund, 0)}）",
+            $"    G           抓住{session.Package.GoldenCookieName}（只停留 {NumFormat.Duration(cookieLifetime)}，出现时顶部会提示）",
+            $"    A           {session.Package.PrestigeHint}",
             "    F5          手动存档（默认每 60 秒自动存档一次）",
             "    H           关闭本帮助        Q / Esc  存档并退出",
             string.Empty,
             "  玩法要点",
-            "    · 每解锁一层新建筑，它都会迅速成为主力，然后被下一层取代。",
-            "    · 每座建筑的强化升级需要持有到 1 / 5 / 25 个才会出现。",
-            "    · 成就不直接给数值，但「小猫」系列升级会按成就数量给全局加成。",
-            "    · 金猫的狂热（×7，77 秒）与疯狂撸猫（点击 ×777，13 秒）是爆发来源。",
-            "    · 赚到 1 兆小鱼干可以换 1 点猫薄荷，天堂升级在转生后会保留。",
+            .. session.Package.HelpTips,
         ];
 
         int titleRows = 1;

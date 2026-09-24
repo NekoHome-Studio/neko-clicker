@@ -23,7 +23,7 @@
 | G3 | 转生分层（`Era`）能承载至少三种完全不同的叙事 | #2 九命 / #7 神明 / #10 公司 三个包的层定义共用同一套代码 |
 | G4 | 玩家从第 1 层到最后一层**全程可达**，不存在卡死 | 机器人测试：脚本化自动游玩必须走到末层并触发终局 |
 | G5 | 剧情随解锁释放，不一次讲完 | 图鉴覆盖率测试 + 前 10 分钟只释放 ≤3 条 |
-| G6 | 每次改动后 126 个既有测试全绿 | `.\tools\build.ps1` 退出码 0 |
+| G6 | 每次改动后既有测试全绿（当前 161 个） | `.\tools\build.ps1` 退出码 0 |
 
 ### 非目标（明确不做，避免范围蔓延）
 
@@ -44,7 +44,7 @@
 
 | 事实 | 验证方式 | 对规划的意义 |
 |---|---|---|
-| 核心 0 个第三方依赖，126 个测试全绿 | `.\tools\build.ps1` | 后续改动有回归网 |
+| 核心 0 个第三方依赖，测试全绿（规划时 126 个；阶段 0 交付后 161 个） | `.\tools\build.ps1` | 后续改动有回归网 |
 | `ScalingSource.PurchasedUpgrades` / `CustomCounter` 存在 | grep `Modifier.cs:49,61` | 第二资源可驱动修饰符，无需新机制 |
 | `IGameMetrics.GetCounter` / `GameState.AddCounter` 存在 | grep `IGameMetrics.cs:75`、`GameState.cs:112` | 第二资源可读写 |
 | `GameContent.Modules` 会被引擎自动挂载 | 测试 `Modules_ReceiveConfigureAttachAndTick` | 第二资源可用 `IGameModule` 实现，零核心改动 |
@@ -350,7 +350,7 @@ public sealed record ChoiceDefinition
 > 每阶段的共同验收：`.\tools\build.ps1` 全绿 + `.\tools\play.ps1 --simulate 21600 --auto`
 > 曲线活着（无 NaN/∞、有事发生）。下表只列**该阶段特有的**验收项。
 
-### 阶段 0 —— #1 猫娘咖啡馆（零引擎改动）
+### 阶段 0 —— #1 猫娘咖啡馆（零引擎改动）✅ 已交付
 
 | 项 | 内容 |
 |---|---|
@@ -358,6 +358,18 @@ public sealed record ChoiceDefinition
 | 叙事 | 走既有文本通道（R10）：建筑/成就/增益/事件的描述字段 |
 | 特有验收 | ① 幸福感模块的 4 条测试（累加、跨转生保留、`Permanent` 计价、事件权重）<br>② `--package cafe` 可玩，`--package neko` 仍可玩（回归） |
 | 证伪点 | 如果这个包需要动核心，说明 G1 的主张是错的 → 停下来重新评估 |
+
+**交付记录**（2026-09-24）：
+
+| 验收项 | 结果 |
+|---|---|
+| 规模 | 10 建筑 / 48 升级 / 45 成就 / 5 增益 / 8 随机事件 / 1 幸福感模块 |
+| 核心改动 | **0 行**（`NumericMetric.Counter` 属 C1，已在阶段 0 之前落地） |
+| 架构测试（K1） | `ArchitectureTests`：核心不引用内容项目、核心程序集不含内容 id、内容包互不引用 |
+| 专项测试 | `CafeContentTests` 14 条 + `SimulationTests.CafeSixHourGreedyRun`（PACK_01 §13 全部覆盖） |
+| 回归 | `.\tools\build.ps1` 全绿：**161 个用例**（阶段 0 前 143 个） |
+| 试玩 | `.\tools\play.ps1 --package cafe --simulate 21600 --auto` 曲线活着：10 座建筑全解锁、33/45 成就、52 位客人、幸福感 18 万 |
+| 未覆盖 | §10 的 50 条叙事条目——按 R10 暂走描述字段，等阶段 2 的 S-B 到位再补 |
 
 ### 阶段 1 —— S-A（Era）+ #2 九命轮回
 
@@ -431,7 +443,8 @@ public sealed record ChoiceDefinition
 
 **诚实边界**：
 
-- 本规划**不含任何已实现的代码**。当前仓库里九个内容包都还只是文档。
+- 阶段 0（#1 猫娘咖啡馆 + 架构测试 + `--package`）已落地；其余九个内容包仍只是文档。
+  阶段 1~5 的四项引擎能力（S-A `Era` / S-B `Lore` / S-C `Choice` / S-D `Decay`）**一行都还没写**。
 - 阶段 4 的 S-D 接口**有意留白**，因为它的正确形式依赖 #9 包的实际节奏，现在设计等于猜。
 - 阶段 5 的四个"换皮"包能批量做，前提是阶段 1~2 的抽象确实成立——
   这个前提要到阶段 1 结束才能验证。**在阶段 1 结束前，不要承诺阶段 5。**

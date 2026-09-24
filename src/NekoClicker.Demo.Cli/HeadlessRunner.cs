@@ -19,10 +19,10 @@ internal static class HeadlessRunner
     /// <summary>运行模拟并打印报告。</summary>
     public static int RunSimulation(CliOptions options)
     {
-        using var session = new GameSession(options.SavePath, options.Seed);
+        using var session = new GameSession(options.Package, options.SavePath, options.Seed);
         GameEngine engine = session.Engine;
 
-        Console.WriteLine($"内容包：{engine.Content.Title}");
+        Console.WriteLine($"内容包：{engine.Content.Title}（--package {options.Package.Id}）");
         Console.WriteLine(
             $"目标时长：{NumFormat.Duration(options.SimulateSeconds)}" +
             $"｜策略：{(options.AutoPlay ? "自动购买" : "纯挂机（不购买）")}" +
@@ -30,7 +30,7 @@ internal static class HeadlessRunner
         Console.WriteLine();
 
         var stopwatch = Stopwatch.StartNew();
-        Advance(engine, options.SimulateSeconds, options.AutoPlay, options.SimulateSeconds);
+        Advance(engine, options.SimulateSeconds, options.AutoPlay, options.SimulateSeconds, options.Package);
         stopwatch.Stop();
 
         // 上面直接操作引擎，这里必须刷新一次，否则报告读到的还是开局快照。
@@ -42,10 +42,10 @@ internal static class HeadlessRunner
     /// <summary>渲染一帧界面并打印（用于验证布局，可重定向到文件）。</summary>
     public static int RunFrame(CliOptions options)
     {
-        using var session = new GameSession(options.SavePath, options.Seed);
+        using var session = new GameSession(options.Package, options.SavePath, options.Seed);
 
         if (options.AutoPlay && options.SimulateSeconds > 0)
-            Advance(session.Engine, options.SimulateSeconds, autoPlay: true, options.SimulateSeconds);
+            Advance(session.Engine, options.SimulateSeconds, autoPlay: true, options.SimulateSeconds, options.Package);
 
         session.Refresh();
         List<string> lines = TerminalUi.Render(session, options.Width, options.Height);
@@ -55,10 +55,16 @@ internal static class HeadlessRunner
 
     /// <summary>
     /// 推进模拟。<paramref name="autoPlay"/> 为真时用贪心策略替玩家操作。<para>
-    /// 切片为 5 秒：金猫只活 13 秒，切片太大就会一次次错过它。
+    /// 切片为 5 秒：随机事件最短只活 13 秒，切片太大就会一次次错过它。
     /// </para>
     /// </summary>
-    private static void Advance(GameEngine engine, double seconds, bool autoPlay, double totalSeconds, double slice = 5)
+    private static void Advance(
+        GameEngine engine,
+        double seconds,
+        bool autoPlay,
+        double totalSeconds,
+        ContentPackage package,
+        double slice = 5)
     {
         double remaining = Math.Max(0, seconds);
         double sincePurchase = 0;
@@ -95,7 +101,7 @@ internal static class HeadlessRunner
                     $"   产量 {NumFormat.FormatLong(engine.CookiesPerSecond),12}/s" +
                     $"   建筑 {NumFormat.FormatPlain(engine.State.TotalBuildings()),6}" +
                     $"   成就 {engine.State.Achievements.Count,3}" +
-                    $"   金猫 {NumFormat.FormatPlain(engine.State.GoldenCookiesClicked),4}");
+                    $"   {package.GoldenCookieName} {NumFormat.FormatPlain(engine.State.GoldenCookiesClicked),4}");
             }
         }
 
@@ -152,27 +158,36 @@ internal static class HeadlessRunner
                 $" 占 {NumFormat.Percent(building.CpsShare, 1),6}");
         }
 
-        Section("升级 / 成就 / 金猫");
+        Section($"升级 / 成就 / {session.Package.GoldenCookieName}");
         Field("已购升级", $"{state.UpgradeCounts.Count} 种");
         Field("成就", $"{state.Achievements.Count}/{snap.AchievementTotal}");
-        Field("金猫", $"点中 {NumFormat.FormatPlain(state.GoldenCookiesClicked)} 只，场上还剩 {state.GoldenCookies.Count} 只");
+        Field(
+            session.Package.GoldenCookieName,
+            $"点中 {NumFormat.FormatPlain(state.GoldenCookiesClicked)} 只，场上还剩 {state.GoldenCookies.Count} 只");
         Field("生效增益", state.Buffs.Count == 0
             ? "无"
             : string.Join("、", state.Buffs.Select(b => $"{b.Id} {NumFormat.Duration(b.RemainingSeconds)}")));
 
-        Section("转生");
+        Section(session.Package.PrestigeActionName);
         Field("当前等级", snap.PrestigeLevel.ToString());
-        Field("猫薄荷", NumFormat.FormatPlain(state.PrestigeChips));
-        Field("若现在转生", $"{snap.Prestige.NextLevel} 级（+{NumFormat.FormatPlain(snap.Prestige.ChipsOnAscend)} 猫薄荷）");
+        Field(engine.Content.PrestigeCurrencyName, NumFormat.FormatPlain(state.PrestigeChips));
+        Field($"若现在{session.Package.PrestigeActionName}", $"{snap.Prestige.NextLevel} 级（+{NumFormat.FormatPlain(snap.Prestige.ChipsOnAscend)} {engine.Content.PrestigeCurrencyName}）");
         Field("下一级所需", NumFormat.FormatLong(snap.Prestige.CookiesForNextLevel));
-        Field("转生次数", state.Ascensions.ToString());
+        Field($"{session.Package.PrestigeActionName}次数", state.Ascensions.ToString());
 
         Section("最近消息");
         foreach (GameNotification notification in session.LogLines.TakeLast(8))
             Console.WriteLine($"  {notification.Icon} {notification.Message}");
 
+        if (engine.Content.Modules.Count > 0)
+        {
+            Section("模块");
+            foreach (string counterKey in state.Counters.Keys.OrderBy(k => k, StringComparer.Ordinal))
+                Field(counterKey, NumFormat.FormatPlain(state.Counters[counterKey]));
+        }
+
         Console.WriteLine();
-        Console.WriteLine("提示：catnip 系升级需要成就数量，小猫系升级按成就给全局加成——多解锁成就永远划算。");
+        Console.WriteLine(session.Package.ReportTip);
     }
 
     private static void Section(string title)

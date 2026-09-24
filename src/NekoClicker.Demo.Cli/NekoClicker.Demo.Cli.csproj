@@ -9,8 +9,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- 两个内容包都引用：用命令行 package 参数选择要玩的游戏。 -->
     <ProjectReference Include="..\NekoClicker.Core\NekoClicker.Core.csproj" />
     <ProjectReference Include="..\NekoClicker.Content.Neko\NekoClicker.Content.Neko.csproj" />
+    <ProjectReference Include="..\NekoClicker.Content.Cafe\NekoClicker.Content.Cafe.csproj" />
   </ItemGroup>
 
 </Project>

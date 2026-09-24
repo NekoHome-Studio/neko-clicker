@@ -1,4 +1,4 @@
-﻿# dnet.ps1 — 在工作区内运行 dotnet CLI 的包装脚本。
+# dnet.ps1 — 在工作区内运行 dotnet CLI 的包装脚本。
 #
 # 为什么需要它（两个环境适配，都是"不这么做就跑不起来"的硬约束）：
 #
@@ -34,6 +34,14 @@ New-Item -ItemType Directory -Force -Path $env:DOTNET_CLI_HOME, $env:NUGET_PACKA
 $msbuildVerbs = @('build', 'restore', 'msbuild', 'test', 'publish', 'pack', 'clean')
 $verb = if ($args.Count -gt 0) { [string]$args[0] } else { '' }
 $rest = if ($args.Count -gt 1) { $args[1..($args.Count - 1)] } else { @() }
+
+# 受限沙箱把 NuGet 缓存重定向到了仓库内的 .packages；如果本机 SDK 比 net8.0 新、
+# 又不自带 net8.0 的 targeting pack，restore 在无网络时会以 NU1301 失败。
+# 先把全局缓存里已有的包播种进来（找不到就跳过，不影响联网环境）。
+if ($msbuildVerbs -contains $verb) {
+    $seed = Join-Path $PSScriptRoot 'seed-packages.ps1'
+    if (Test-Path $seed) { & $seed }
+}
 
 if ($msbuildVerbs -contains $verb) {
     & dotnet $verb '-m:1' @rest

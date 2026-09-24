@@ -1,3 +1,4 @@
+using NekoClicker.Content.Cafe;
 using NekoClicker.Core.Content;
 using NekoClicker.Core.Views;
 
@@ -26,6 +27,28 @@ public static class SimulationTests
         Check.AtLeast(engine.State.TotalBuildings(), 20);
         Check.AtLeast(engine.State.GoldenCookiesClicked, 1, "6 小时内至少应点中一只金猫。");
         Check.AtLeast(engine.State.BuildingCount("cat_bed"), 1, "应已解锁并购买「猫窝」。");
+    }
+
+    /// <summary>同一个机器人跑内容包 #1：验证咖啡馆的曲线也是活的，且幸福感模块全程工作。</summary>
+    [Test]
+    public static void CafeSixHourGreedyRun_IsStableAndProgresses()
+    {
+        GameEngine engine = TestGame.CreateCafe(out _, seed: 4242);
+
+        RunGreedy(engine, rounds: 200); // 200 × 108 秒 ≈ 6 小时
+
+        Check.Finite(engine.State.Cookies);
+        Check.Finite(engine.CookiesPerSecond);
+        Check.Finite(engine.State.CookiesEarnedThisRun);
+        Check.Greater(engine.State.CookiesEarnedThisRun, 1e6, "6 小时后应已有可观产出。");
+        Check.AtLeast(engine.State.Achievements.Count, 5);
+        Check.AtLeast(engine.State.TotalBuildings(), 20);
+        Check.AtLeast(engine.State.GoldenCookiesClicked, 1, "6 小时内至少应点中一位客人。");
+        Check.AtLeast(engine.State.BuildingCount("cat_tree"), 1, "应已解锁并购买「猫爬架」。");
+        Check.AtLeast(
+            engine.State.GetCounter(CafeContent.HappinessCounterKey),
+            1,
+            "幸福感模块应随 6 小时模拟持续增长。");
     }
 
     [Test]
