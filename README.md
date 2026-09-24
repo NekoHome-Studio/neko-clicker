@@ -54,6 +54,7 @@ src/NekoClicker.Demo.Cli/        终端 UI 适配层（ANSI 全屏 + 键盘 + �
 tests/NekoClicker.Core.Tests/    126 个测试 + 自研迷你测试运行器
 docs/ARCHITECTURE.md             架构与设计决策
 docs/CONTENT_AUTHORING.md        如何写内容（数值节奏、校验规则、常见坑）
+docs/ROADMAP.md                  实施规划与决策记录：11 项已定决策、4 条架构不变量、5 个阶段
 docs/NINE_LIVES_DESIGN.md        《九命猫娘》设计映射：1 个共享核心 + 10 个内容包（规划中，未实现）
 docs/PACK_01_CAT_CAFE.md         #1《猫娘咖啡馆》完整内容规格（可落代码，也是其余九个包的模板）
 tools/build.ps1                  一键构建 + 测试

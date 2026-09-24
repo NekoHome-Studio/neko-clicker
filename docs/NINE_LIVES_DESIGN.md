@@ -3,6 +3,9 @@
 > 本文把世界观设定翻译成**引擎可承载的设计**。当前阶段只做设计，不改代码。
 >
 > 关联文档：[ARCHITECTURE.md](ARCHITECTURE.md)（引擎结构）、[CONTENT_AUTHORING.md](CONTENT_AUTHORING.md)（内容写法）
+>
+> **要动手时的入口是 [ROADMAP.md](ROADMAP.md)**：那里有全部已定决策、架构不变量、
+> 能力依赖图、接口契约与阶段验收。本文只负责"设定 → 设计"的翻译。
 
 ---
 
