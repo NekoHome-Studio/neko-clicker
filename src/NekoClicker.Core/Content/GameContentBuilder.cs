@@ -195,7 +195,7 @@ public sealed class GameContentBuilder
             if (u.Persistence == UpgradePersistence.Permanent && u.Currency == UpgradeCurrency.Cookies)
                 errors.Add($"升级 「{u.Id}」 是 Permanent 但用普通货币计价；永久升级通常应以转生货币购买（如非本意请改为 Run）。");
             ValidateCondition(u.Unlock, $"升级 「{u.Id}」", buildingById, upgradeById, achievementById, errors);
-            ValidateModifiers(u.Modifiers, $"升级 「{u.Id}」", buffById, errors);
+            ValidateModifiers(u.Modifiers, $"升级 「{u.Id}」", buildingById, buffById, errors);
         }
 
         foreach (AchievementDefinition a in _achievements)
@@ -203,14 +203,14 @@ public sealed class GameContentBuilder
             if (a.Unlock is ConstantCondition { Value: false })
                 errors.Add($"成就 「{a.Id}」 的条件恒为假，永远无法解锁。");
             ValidateCondition(a.Unlock, $"成就 「{a.Id}」", buildingById, upgradeById, achievementById, errors);
-            ValidateModifiers(a.Modifiers, $"成就 「{a.Id}」", buffById, errors);
+            ValidateModifiers(a.Modifiers, $"成就 「{a.Id}」", buildingById, buffById, errors);
         }
 
         foreach (BuffDefinition b in _buffs)
         {
             if (b.Duration <= 0) errors.Add($"增益 「{b.Id}」 的 Duration 必须为正。");
             if (b.MaxStacks < 1) errors.Add($"增益 「{b.Id}」 的 MaxStacks 至少为 1。");
-            ValidateModifiers(b.Modifiers, $"增益 「{b.Id}」", buffById, errors);
+            ValidateModifiers(b.Modifiers, $"增益 「{b.Id}」", buildingById, buffById, errors);
         }
 
         if (_goldenCookieOutcomes.Count > 0 && !Balance.GoldenCookiesEnabled)
@@ -226,6 +226,10 @@ public sealed class GameContentBuilder
             if (o.BuffId is not null && o.BuffSeconds <= 0)
                 errors.Add($"金猫结果 「{o.Id}」 声明了增益但没有设置 BuffSeconds。");
         }
+
+        // 最后做一次全局可达性分析：前两步只能发现"引用不存在"，
+        // 发现不了"互相引用导致谁也解不开"。
+        ValidateReachability(buildingById, upgradeById, achievementById, errors);
 
         if (errors.Count > 0) throw new GameContentValidationException(errors);
 
@@ -288,6 +292,14 @@ public sealed class GameContentBuilder
                 if (string.IsNullOrEmpty(n.Id)) errors.Add($"{owner} 的 BuildingCount 条件缺少建筑 id。");
                 else if (!buildings.ContainsKey(n.Id)) errors.Add($"{owner} 的解锁条件引用了不存在的建筑 「{n.Id}」。");
             }
+            else if (n.Metric == NumericMetric.Counter && string.IsNullOrEmpty(n.Id))
+            {
+                errors.Add($"{owner} 的 Counter 条件缺少计数器键。");
+            }
+            else if (n.Metric == NumericMetric.TaggedUpgrades && string.IsNullOrEmpty(n.Id))
+            {
+                errors.Add($"{owner} 的 TaggedUpgrades 条件缺少标签 id。");
+            }
         }
 
         foreach (OwnedCondition o in condition.OwnedLeaves())
@@ -300,21 +312,152 @@ public sealed class GameContentBuilder
     private static void ValidateModifiers(
         IReadOnlyList<Modifier> modifiers,
         string owner,
+        Dictionary<string, BuildingDefinition> buildings,
         Dictionary<string, BuffDefinition> buffs,
         List<string> errors)
     {
         foreach (Modifier m in modifiers)
         {
-            if (m.Target.Kind is ModifierTargetKind.BuildingCps or ModifierTargetKind.BuildingPrice)
+            ModifierTarget target = m.Target;
+
+            // 数值必须有限：NaN 会沿着乘法链一路传播，把整个产量算成 NaN，
+            // 而这种错误在运行期极难定位，必须在构建期拦住。
+            if (!double.IsFinite(m.Value))
+                errors.Add($"{owner} 的修饰符数值不是有限数（{target.Kind} = {m.Value}）。");
+
+            if (m.Scaling is { } scaling)
             {
-                if (string.IsNullOrEmpty(m.Target.Id)) errors.Add($"{owner} 的修饰符缺少建筑 id（{m.Target.Kind}）。");
+                if (!double.IsFinite(scaling.PerUnit))
+                    errors.Add($"{owner} 的成长增量不是有限数（{target.Kind}，PerUnit = {scaling.PerUnit}）。");
+                if (double.IsNaN(scaling.Cap) || scaling.Cap <= 0)
+                    errors.Add($"{owner} 的成长上限必须是正数或 +∞（{target.Kind}，Cap = {scaling.Cap}）。");
             }
+
+            switch (target.Kind)
+            {
+                // 需要具体 id 的目标：id 必须非空且指向真实存在的内容
+                case ModifierTargetKind.BuildingCps:
+                case ModifierTargetKind.BuildingPrice:
+                    if (string.IsNullOrEmpty(target.Id))
+                        errors.Add($"{owner} 的修饰符缺少建筑 id（{target.Kind}）。");
+                    else if (!buildings.ContainsKey(target.Id))
+                        errors.Add($"{owner} 的修饰符引用了不存在的建筑 「{target.Id}」。");
+                    break;
+
+                case ModifierTargetKind.BuffDuration:
+                    if (target.Id is not null && !buffs.ContainsKey(target.Id))
+                        errors.Add($"{owner} 的修饰符引用了不存在的增益 「{target.Id}」。");
+                    break;
+
+                // 不接受 id 的目标：带了 id 基本都是手误（例如把建筑 id 写到了全局目标上）
+                default:
+                    if (target.Id is not null)
+                        errors.Add($"{owner} 的目标 {target.Kind} 不接受 id，但传入了 「{target.Id}」。");
+                    break;
+            }
+
             if (m.Operation == ModifierOperation.Multiplicative && m.Value < 0)
-                errors.Add($"{owner} 的乘法修饰符数值为负（{m.Target.Kind} = {m.Value}）。");
-            if (m.Scaling is { Source: ScalingSource.TaggedUpgradeCount, Id: null or "" })
-                errors.Add($"{owner} 的 TaggedUpgradeCount 成长缺少标签 id。");
-            if (m.Scaling is { Source: ScalingSource.CustomCounter, Id: null or "" })
-                errors.Add($"{owner} 的 CustomCounter 成长缺少计数器键。");
+                errors.Add($"{owner} 的乘法修饰符数值为负（{target.Kind} = {m.Value}）。");
+
+            if (m.Scaling is not { } growing) continue;
+
+            if (growing.Id is null or "")
+            {
+                switch (growing.Source)
+                {
+                    case ScalingSource.BuildingCount:
+                        errors.Add($"{owner} 的 BuildingCount 成长缺少建筑 id（否则求值恒为 0）。");
+                        break;
+                    case ScalingSource.TaggedUpgradeCount:
+                        errors.Add($"{owner} 的 TaggedUpgradeCount 成长缺少标签 id。");
+                        break;
+                    case ScalingSource.CustomCounter:
+                        errors.Add($"{owner} 的 CustomCounter 成长缺少计数器键。");
+                        break;
+                }
+            }
+            else if (growing.Source == ScalingSource.BuildingCount && !buildings.ContainsKey(growing.Id))
+            {
+                errors.Add($"{owner} 的 BuildingCount 成长引用了不存在的建筑 「{growing.Id}」。");
+            }
         }
+    }
+
+    /// <summary>
+    /// 解锁可达性校验：确认每个建筑 / 升级 / 成就都存在一条从开局状态出发的解锁路径。<para>
+    /// 能抓到两类致命内容错误——<b>环路依赖</b>（建筑 B 的解锁要升级 u，而 u 的解锁要 B）
+    /// 和 <b>孤儿依赖</b>（依赖了一条同样解不开的链）。这两类错误在运行期的表现都是
+    /// "玩家永远卡住"，而在构建期只需要一个不动点迭代就能发现。
+    /// </para>
+    /// </summary>
+    private static void ValidateReachability(
+        Dictionary<string, BuildingDefinition> buildings,
+        Dictionary<string, UpgradeDefinition> upgrades,
+        Dictionary<string, AchievementDefinition> achievements,
+        List<string> errors)
+    {
+        var conditionByNode = new Dictionary<string, UnlockCondition>(StringComparer.Ordinal);
+        foreach (BuildingDefinition b in buildings.Values) conditionByNode[NodeKey("建筑", b.Id)] = b.Unlock;
+        foreach (UpgradeDefinition u in upgrades.Values) conditionByNode[NodeKey("升级", u.Id)] = u.Unlock;
+        foreach (AchievementDefinition a in achievements.Values) conditionByNode[NodeKey("成就", a.Id)] = a.Unlock;
+
+        // 不动点：从"只依赖进度型指标"的节点出发反复放宽，直到不再有新节点可达。
+        var reachable = new HashSet<string>(StringComparer.Ordinal);
+        bool changed = true;
+        while (changed)
+        {
+            changed = false;
+            foreach ((string node, UnlockCondition condition) in conditionByNode)
+            {
+                if (reachable.Contains(node)) continue;
+                if (!IsSatisfiable(condition, reachable)) continue;
+                reachable.Add(node);
+                changed = true;
+            }
+        }
+
+        foreach ((string node, UnlockCondition condition) in conditionByNode)
+        {
+            if (reachable.Contains(node)) continue;
+
+            List<string> blocking = [.. ReferencedNodes(condition).Where(r => !reachable.Contains(r)).Distinct(StringComparer.Ordinal)];
+            string reason = blocking.Count == 0
+                ? "它的条件恒不成立"
+                : $"它依赖 {string.Join("、", blocking)}，而这些内容同样解不开";
+
+            errors.Add($"{node} 永远无法解锁：{reason}。");
+        }
+    }
+
+    /// <summary>构造带类别前缀的节点键（不同类别的 id 可能重名，必须隔离）。</summary>
+    private static string NodeKey(string kind, string id) => $"{kind}「{id}」";
+
+    /// <summary>在"已可达集合"的假设下，判断条件是否可能成立。</summary>
+    private static bool IsSatisfiable(UnlockCondition condition, HashSet<string> reachable) => condition switch
+    {
+        ConstantCondition constant => constant.Value,
+        AllCondition all => all.Conditions.All(c => IsSatisfiable(c, reachable)),
+        AnyCondition any => any.Conditions.Any(c => IsSatisfiable(c, reachable)),
+        // "未拥有某物"默认就是成立的，因此取反条件不构成解锁障碍。
+        NotCondition => true,
+        OwnedCondition owned => reachable.Contains(NodeKey(
+            owned.Kind == OwnedKind.Upgrade ? "升级" : "成就", owned.Id)),
+        // 只有"指定建筑的数量"会被别的内容卡住；其余指标都会随游戏进程自然增长。
+        NumericCondition numeric when numeric.Metric == NumericMetric.BuildingCount
+            => reachable.Contains(NodeKey("建筑", numeric.Id ?? string.Empty)),
+        NumericCondition => true,
+        // 自定义谓词无法静态分析：保守判定为可达，宁可漏报也不误报。
+        _ => true,
+    };
+
+    /// <summary>收集条件里引用的全部内容节点（仅用于生成人类可读的报错原因）。</summary>
+    private static IEnumerable<string> ReferencedNodes(UnlockCondition condition)
+    {
+        foreach (NumericCondition n in condition.NumericLeaves())
+            if (n.Metric == NumericMetric.BuildingCount && !string.IsNullOrEmpty(n.Id))
+                yield return NodeKey("建筑", n.Id);
+
+        foreach (OwnedCondition o in condition.OwnedLeaves())
+            yield return NodeKey(o.Kind == OwnedKind.Upgrade ? "升级" : "成就", o.Id);
     }
 }

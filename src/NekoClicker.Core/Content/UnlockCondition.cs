@@ -41,6 +41,12 @@ public enum NumericMetric
     /// <summary>已购升级种类数。</summary>
     PurchasedUpgrades,
 
+    /// <summary>自定义计数器（<see cref="NumericCondition.Id"/> = 计数器键）。</summary>
+    Counter,
+
+    /// <summary>带指定标签的升级已购总次数（<see cref="NumericCondition.Id"/> = 标签）。</summary>
+    TaggedUpgrades,
+
     /// <summary>累计游玩秒数。</summary>
     PlayTimeSeconds,
 }
@@ -153,6 +159,18 @@ public abstract record UnlockCondition
 
     /// <summary>已购升级数 ≥ count。</summary>
     public static UnlockCondition UpgradesAtLeast(double count) => new NumericCondition(NumericMetric.PurchasedUpgrades, count);
+
+    /// <summary>自定义计数器 ≥ target（用于第二资源，如"幸福感 ≥ 500"）。</summary>
+    /// <param name="counterKey">计数器键。</param>
+    /// <param name="target">阈值。</param>
+    public static UnlockCondition Counter(string counterKey, double target)
+        => new NumericCondition(NumericMetric.Counter, target, counterKey);
+
+    /// <summary>带指定标签的升级已购次数 ≥ count。</summary>
+    /// <param name="tag">升级标签。</param>
+    /// <param name="count">阈值。</param>
+    public static UnlockCondition TaggedUpgradesAtLeast(string tag, double count)
+        => new NumericCondition(NumericMetric.TaggedUpgrades, count, tag);
 
     /// <summary>游玩时长 ≥ seconds 秒。</summary>
     public static UnlockCondition PlayTimeAtLeast(double seconds) => new NumericCondition(NumericMetric.PlayTimeSeconds, seconds);
@@ -300,6 +318,8 @@ public sealed record NumericCondition(NumericMetric Metric, double Target, strin
         NumericMetric.AchievementCount => metrics.AchievementCount,
         NumericMetric.GoldenCookiesClicked => metrics.GoldenCookiesClicked,
         NumericMetric.PurchasedUpgrades => metrics.PurchasedUpgradeCount,
+        NumericMetric.Counter => metrics.GetCounter(Id ?? string.Empty),
+        NumericMetric.TaggedUpgrades => metrics.TaggedUpgradeCount(Id ?? string.Empty),
         NumericMetric.PlayTimeSeconds => metrics.PlayTimeSeconds,
         _ => 0,
     };
@@ -339,6 +359,8 @@ public sealed record NumericCondition(NumericMetric Metric, double Target, strin
             NumericMetric.AchievementCount => $"解锁 {amount} 个成就",
             NumericMetric.GoldenCookiesClicked => $"点击 {amount} 次金猫",
             NumericMetric.PurchasedUpgrades => $"购买 {amount} 个升级",
+            NumericMetric.Counter => $"「{Id}」达到 {amount}",
+            NumericMetric.TaggedUpgrades => $"购买 {amount} 个「{Id}」类升级",
             NumericMetric.PlayTimeSeconds => $"游玩时长达到 {NumFormat.Duration(Target)}",
             _ => $"达成 {amount}",
         };

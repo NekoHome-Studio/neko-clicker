@@ -33,6 +33,20 @@ public interface IGameModule
     {
     }
 
+    /// <summary>
+    /// 离线收益结算完成后调用。<para>
+    /// 用途：模块自己维护的派生状态（例如计数器类的"幸福感""士气""被阅读度"）在离线期间
+    /// 不会经过 <see cref="OnTick"/>，不处理就会凭空落后一大截。实现应当按
+    /// <paramref name="progress"/> 的时长补算。<b>只有引擎实际发放了离线收益时才会调用</b>
+    /// （即 <see cref="GameEngine.ApplyOfflineProgress"/> 返回非 null）。
+    /// </para>
+    /// </summary>
+    /// <param name="engine">宿主引擎。</param>
+    /// <param name="progress">离线结算明细。</param>
+    void OnOffline(GameEngine engine, OfflineProgress progress)
+    {
+    }
+
     /// <summary>转生时调用，用于重置模块自身的运行时状态。</summary>
     /// <param name="engine">宿主引擎。</param>
     void OnAscend(GameEngine engine)

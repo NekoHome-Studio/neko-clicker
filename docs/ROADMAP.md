@@ -38,13 +38,17 @@
 
 以下每一条都在当前代码里确认过（含验证方式），后续规划建立在这些事实之上：
 
+> **状态说明**：本表写于规划阶段。标注「**已补齐**」的行是随后一轮"完善框架"
+> 落地掉的改动（内容校验补漏 + 可达性分析 + 条件指标对称性 + 模块离线钩子），
+> 详见 §6.1 与 git 历史。
+
 | 事实 | 验证方式 | 对规划的意义 |
 |---|---|---|
 | 核心 0 个第三方依赖，126 个测试全绿 | `.\tools\build.ps1` | 后续改动有回归网 |
 | `ScalingSource.PurchasedUpgrades` / `CustomCounter` 存在 | grep `Modifier.cs:49,61` | 第二资源可驱动修饰符，无需新机制 |
 | `IGameMetrics.GetCounter` / `GameState.AddCounter` 存在 | grep `IGameMetrics.cs:75`、`GameState.cs:112` | 第二资源可读写 |
 | `GameContent.Modules` 会被引擎自动挂载 | 测试 `Modules_ReceiveConfigureAttachAndTick` | 第二资源可用 `IGameModule` 实现，零核心改动 |
-| `NumericMetric` **没有** `Counter` 成员（止于 `PlayTimeSeconds`） | 读 `UnlockCondition.cs:7-46` | "计数器 ≥ N"的解锁条件**缺一个指标**，需补 3 行 |
+| `NumericMetric` 原有 13 个指标，缺 `Counter` 与 `TaggedUpgrades` | 读 `UnlockCondition.cs` 的枚举 | **已补齐**（§6.1）；"计数器 ≥ N"的解锁条件因此自带进度条 |
 | `AllCondition.TryGetProgress` 返回**最落后**的子条件 | 读 `UnlockCondition.cs` 的 `AllCondition` 实现 | 灰按钮能自动显示"卡在哪一项"，不需要额外设计 |
 | `Permanent` 升级必须用转生货币计价，否则构建期报错 | 读 `GameContentBuilder.cs:195-196`（在 `Build()` 的升级校验里，不在 `ValidateModifiers`） | "常客的记忆只能用信换"是硬约束，不是文案 |
 | 转生不清空 `Counters` | 读 `PrestigeSystem.ResetRun` | 第二资源天然跨转生保留 |
@@ -215,7 +219,7 @@ S-A / S-B / S-C 之间只有"弱依赖"（内容上的引用，不是代码依�
 
 ## 6. 能力接口契约（到"无歧义"级）
 
-### 6.1 C1 —— `NumericMetric.Counter`
+### 6.1 C1 —— `NumericMetric.Counter` ✅ 已实现
 
 ```csharp
 // UnlockCondition.cs

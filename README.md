@@ -29,7 +29,7 @@
 > 在普通开发机上也可以直接 `dotnet build` / `dotnet run`。
 
 ```powershell
-# 构建 + 跑测试（126 个用例，零依赖迷你运行器）
+# 构建 + 跑测试（143 个用例，零依赖迷你运行器）
 .\tools\build.ps1
 
 # 只构建全部项目
@@ -51,7 +51,7 @@
 src/NekoClicker.Core/            框架核心：内容定义、模拟引擎、存档、事件、UI 视图
 src/NekoClicker.Content.Neko/    示例内容包「猫咖物语」（纯数据，无逻辑）
 src/NekoClicker.Demo.Cli/        终端 UI 适配层（ANSI 全屏 + 键盘 + 无头模式）
-tests/NekoClicker.Core.Tests/    126 个测试 + 自研迷你测试运行器
+tests/NekoClicker.Core.Tests/    143 个测试 + 自研迷你测试运行器
 docs/ARCHITECTURE.md             架构与设计决策
 docs/CONTENT_AUTHORING.md        如何写内容（数值节奏、校验规则、常见坑）
 docs/ROADMAP.md                  实施规划与决策记录：11 项已定决策、4 条架构不变量、5 个阶段
@@ -185,7 +185,7 @@ Console.WriteLine(engine.Save());           // JSON 存档
 
 ## 状态
 
-- 核心引擎、示例内容包、终端 Demo、126 个测试全部通过。
+- 核心引擎、示例内容包、终端 Demo、143 个测试全部通过。
 - 示例内容包的数值曲线经过 6 小时无头模拟验证（见 `--simulate --auto`）。
 - **未包含**：图形前端、本地化资源系统、账号/云存档、排行榜、反作弊。
   这些都被设计为引擎外部的宿主职责。

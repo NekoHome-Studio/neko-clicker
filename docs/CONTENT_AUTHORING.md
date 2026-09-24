@@ -180,6 +180,43 @@ Unlock = UnlockCondition.Any(UnlockCondition.CpsAtLeast(1e9), UnlockCondition.To
 - `Hidden = true` 的成就在解锁前显示为 `???`。
 - 少数成就直接给修饰符（见示例包里的「万次撸猫」）也是合法的。
 
+### 4.1 全部可用的条件
+
+| 工厂方法 | 说明 |
+|---|---|
+| `CookiesAtLeast` / `EarnedThisRunAtLeast` / `EarnedAllTimeAtLeast` | 存量与累计赚取 |
+| `CpsAtLeast` / `ClicksAtLeast` / `PlayTimeAtLeast` | 产量、点击、时长 |
+| `BuildingsAtLeast(id, n)` / `TotalBuildingsAtLeast(n)` | 建筑数量 |
+| `UpgradesAtLeast(n)` / `TaggedUpgradesAtLeast(tag, n)` | 升级总数 / 按标签计数 |
+| `AchievementsAtLeast(n)` / `GoldenCookiesAtLeast(n)` | 成就、随机事件 |
+| `PrestigeLevelAtLeast(n)` / `PrestigeChipsAtLeast(n)` | 转生进度 |
+| `UpgradeOwned(id)` / `AchievementUnlocked(id)` | 持有型条件 |
+| **`Counter(key, n)`** | **自定义计数器**（第二资源，如 `Counter("happiness", 500)`） |
+| `All(...)` / `Any(...)` / `Not(...)` | 组合子 |
+| `Custom(描述, 谓词)` | 逃逸口，见 §8 |
+
+> `Counter` 与 `TaggedUpgradesAtLeast` 都会给出**进度条**（`TryGetProgress`），
+> 所以第二资源的解锁提示可以自动显示"还差多少"。
+> `Custom` 没有进度，能不用就不用。
+
+### 4.2 不可达内容会在构建期报错
+
+`Build()` 的最后一步是**全局可达性分析**：确认每个建筑 / 升级 / 成就都存在一条
+从开局状态出发的解锁路径。它会抓到两类内容错误：
+
+```csharp
+// 环：建筑 b 要升级 u，升级 u 又要建筑 b —— 谁也解不开
+new BuildingDefinition { Id = "b", Unlock = UnlockCondition.UpgradeOwned("u") }
+new UpgradeDefinition  { Id = "u", Unlock = UnlockCondition.BuildingsAtLeast("b", 1) }
+// → 构建期抛 GameContentValidationException：
+//   建筑「b」 永远无法解锁：它依赖 升级「u」，而这些内容同样解不开。
+```
+
+- 只有"指定建筑的数量"和"持有型条件"会阻塞解锁；其余指标（累计赚取、点击、时长、
+  成就数、转生等级、计数器…）都会随进程自然增长，分析时视为可达。
+- `Any(...)` 只要**有一条**可达分支就判定为可达，不会误伤。
+- `Not(...)` 与 `Custom(...)` 一律视为可达（保守处理，避免误报）。
+
 ## 5. 增益：改变"当下该做什么"
 
 ```csharp
@@ -243,12 +280,22 @@ new GoldenCookieOutcome
 
 - **`Id` 是存档键**。发布后改名 = 老存档丢内容。要改名就写 `ISaveMigration`。
 - **`Scaling` 记得设 `Cap`**，否则后期一个升级就能吃掉整条曲线。
+- **`Scaling` / 修饰符引用的 id 必须真实存在**。写错建筑 id 或增益 id 在构建期就会报错——
+  这类错误以前是静默失效（修饰符算了但没人受影响），现在拦在构建期。
 - **不要让成就的 `Unlock` 恒为假**（构建期会报错）——不可达内容是纯负担。
+- **不要写出互相依赖的解锁链**（构建期会报错，见 §4.2）。
+  确实需要"暂时不可达"的内容时，用 `UnlockCondition.Custom` 显式声明。
+- **修饰符数值必须是有限数**。`double.NaN` 会沿乘法链把整条产量算成 NaN，
+  所以构建期直接拒绝 NaN / ∞；`Scaling.Cap = double.PositiveInfinity` 是合法的（表示不设上限）。
+- **别给不接受 id 的目标传 id**（例如 `new ModifierTarget(ModifierTargetKind.GlobalCps, "cat_bed")`）——
+  构建期会报错，因为这基本都是把建筑 id 写错了地方。
 - **金猫结果里声明了 `BuffId` 就必须给 `BuffSeconds`**（构建期会报错）。
 - **转生后建筑的解锁条件会重算**，用 `EarnedThisRunAtLeast` 时会重新逐层揭示——
   这是有意的，但如果你希望某些建筑永久可见，把它改成 `Always`。
-- **`UnlockCondition.Custom` 会绕过构建期校验**（谓词无法静态分析），
+- **`UnlockCondition.Custom` 会绕过可达性分析**（谓词无法静态分析），
   只在确实需要派生逻辑时使用，并自己保证它的可达性。
+- **模块自己维护的派生状态要记得处理离线**。`Counters` 之类的状态不经过 `OnTick`
+  就不会在离线期间增长——在 `IGameModule.OnOffline` 里按离线时长补算（见 §10）。
 
 ## 9. 验收内容改动
 
@@ -265,3 +312,51 @@ new GoldenCookieOutcome
 
 第 3 步是这套框架相对"手写一个 clicker"最大的好处：因为随机是确定性的、
 引擎是无头的，**数值改动可以被量化对比**，而不是靠感觉。
+
+## 10. 扩展：模块（`IGameModule`）
+
+当你要的东西**不是数据而是行为**——第二资源、小游戏、天气、股票——就用模块。
+模块随内容包一起注册，引擎会在合适的时机回调：
+
+```csharp
+internal sealed class HappinessModule : IGameModule
+{
+    public string Name => "happiness";
+
+    // 构建期：可以往内容里补定义（本模块不需要）
+    public void Configure(GameContentBuilder builder) { }
+
+    // 引擎创建后：订阅事件
+    public void OnAttach(GameEngine engine) { }
+
+    // 每个固定步长（默认 30Hz）
+    public void OnTick(GameEngine engine, double deltaSeconds)
+    {
+        double rate = engine.State.TotalBuildings() / 50.0;
+        engine.State.AddCounter("happiness", rate * deltaSeconds);
+    }
+
+    // 离线结算后：补算离线期间没走 OnTick 的那部分
+    public void OnOffline(GameEngine engine, OfflineProgress progress)
+    {
+        double rate = engine.State.TotalBuildings() / 50.0;
+        engine.State.AddCounter("happiness", rate * progress.CreditedSeconds);
+    }
+
+    // 转生后：重置模块自己的运行时状态（Counters 是跨转生保留的，按需清理）
+    public void OnAscend(GameEngine engine) { }
+}
+```
+
+注册方式：`new GameContentBuilder("...").Add(new HappinessModule())`。
+
+**要点**：
+
+| 事项 | 说明 |
+|---|---|
+| `OnTick` 频率 | 固定步长（`GameBalance.TickRate`），不是渲染帧率 |
+| 状态存哪 | 优先 `GameState.Counters` / `Metadata`——它们会自动存档、且跨转生保留 |
+| 离线 | 必须实现 `OnOffline`，否则派生状态在离线期间凭空落后。**只有实际发放离线收益时才会调用**（`GrantOfflineProgress = false` 时不调用） |
+| 驱动修饰符 | `Scaling(ScalingSource.CustomCounter, perUnit, Id: "happiness")` |
+| 作为解锁条件 | `UnlockCondition.Counter("happiness", 500)` |
+| 与内容包的边界 | 内容包只提供数据；模块可以提供行为。**核心引擎永远不依赖具体模块** |

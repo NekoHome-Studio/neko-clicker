@@ -448,7 +448,12 @@ public sealed class GameEngine
         State.PlayTimeSeconds += credited;
         State.LastSavedAt = Clock.UtcNow;
 
-        return new OfflineProgress(seconds, credited, gained, credited < seconds);
+        var progress = new OfflineProgress(seconds, credited, gained, credited < seconds);
+
+        // 模块自己维护的派生状态（计数器之类）不经过 Step()，必须显式通知它们补算。
+        for (int i = 0; i < _modules.Count; i++) _modules[i].OnOffline(this, progress);
+
+        return progress;
     }
 
     // ---------------------------------------------------------------- 存档
