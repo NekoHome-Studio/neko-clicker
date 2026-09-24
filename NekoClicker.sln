@@ -1,0 +1,50 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{0FEE24DC-5291-4FE1-B7AB-005490FC51FD}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NekoClicker.Core", "src\NekoClicker.Core\NekoClicker.Core.csproj", "{AF52C313-0331-42F0-BBF9-978A2C2279BD}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NekoClicker.Content.Neko", "src\NekoClicker.Content.Neko\NekoClicker.Content.Neko.csproj", "{9BC4409D-B4FA-4629-A98D-5C87A16E11A1}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NekoClicker.Demo.Cli", "src\NekoClicker.Demo.Cli\NekoClicker.Demo.Cli.csproj", "{1F8603DD-84F6-4624-A0C5-7DDD64276497}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{B9FAACE6-63A4-4695-8DE0-FF68D7C28A8B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NekoClicker.Core.Tests", "tests\NekoClicker.Core.Tests\NekoClicker.Core.Tests.csproj", "{CC5DF4CC-7A9F-4BCF-ABED-A2526A318940}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{AF52C313-0331-42F0-BBF9-978A2C2279BD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AF52C313-0331-42F0-BBF9-978A2C2279BD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AF52C313-0331-42F0-BBF9-978A2C2279BD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AF52C313-0331-42F0-BBF9-978A2C2279BD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9BC4409D-B4FA-4629-A98D-5C87A16E11A1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9BC4409D-B4FA-4629-A98D-5C87A16E11A1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9BC4409D-B4FA-4629-A98D-5C87A16E11A1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9BC4409D-B4FA-4629-A98D-5C87A16E11A1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1F8603DD-84F6-4624-A0C5-7DDD64276497}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1F8603DD-84F6-4624-A0C5-7DDD64276497}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1F8603DD-84F6-4624-A0C5-7DDD64276497}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1F8603DD-84F6-4624-A0C5-7DDD64276497}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CC5DF4CC-7A9F-4BCF-ABED-A2526A318940}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CC5DF4CC-7A9F-4BCF-ABED-A2526A318940}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CC5DF4CC-7A9F-4BCF-ABED-A2526A318940}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CC5DF4CC-7A9F-4BCF-ABED-A2526A318940}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{AF52C313-0331-42F0-BBF9-978A2C2279BD} = {0FEE24DC-5291-4FE1-B7AB-005490FC51FD}
+		{9BC4409D-B4FA-4629-A98D-5C87A16E11A1} = {0FEE24DC-5291-4FE1-B7AB-005490FC51FD}
+		{1F8603DD-84F6-4624-A0C5-7DDD64276497} = {0FEE24DC-5291-4FE1-B7AB-005490FC51FD}
+		{CC5DF4CC-7A9F-4BCF-ABED-A2526A318940} = {B9FAACE6-63A4-4695-8DE0-FF68D7C28A8B}
+	EndGlobalSection
+EndGlobal

@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>NekoClicker.Demo.Cli</RootNamespace>
+    <AssemblyName>neko-clicker</AssemblyName>
+    <!-- 终端 UI 适配层：只读 GameSnapshot + 发命令，不碰任何游戏规则。 -->
+    <Description>终端可玩 Demo：ANSI 全屏界面 + 键盘交互。</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\NekoClicker.Core\NekoClicker.Core.csproj" />
+    <ProjectReference Include="..\NekoClicker.Content.Neko\NekoClicker.Content.Neko.csproj" />
+  </ItemGroup>
+
+</Project>

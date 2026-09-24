@@ -1,0 +1,22 @@
+<Project>
+
+  <!-- 全仓库共享的编译设置。所有子项目都继承这里，避免每个 csproj 重复。 -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>12.0</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <EnableDefaultNoneItems>false</EnableDefaultNoneItems>
+
+    <!-- 本框架刻意保持零 NuGet 依赖：核心只用 BCL，测试用自带的迷你运行器。 -->
+    <RestorePackages>false</RestorePackages>
+
+    <!-- 公开 API 全部有 XML 注释，但内部成员没有，关掉 CS1591 噪音。 -->
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <Deterministic>true</Deterministic>
+  </PropertyGroup>
+
+</Project>

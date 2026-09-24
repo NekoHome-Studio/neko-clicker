@@ -1,0 +1,13 @@
+# 构建产物
+bin/
+obj/
+*.user
+
+# tools/dnet.ps1 重定向出来的 dotnet CLI home 与 NuGet 包缓存
+.dotnet/
+.packages/
+
+# 运行时存档 / 日志
+*.save
+saves/
+.probe/

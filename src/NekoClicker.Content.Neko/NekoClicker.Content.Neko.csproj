@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>NekoClicker.Content.Neko</RootNamespace>
+    <AssemblyName>NekoClicker.Content.Neko</AssemblyName>
+    <!-- 示例内容包：只描述"猫咖"这个游戏有什么建筑/升级/成就，不含任何引擎逻辑。 -->
+    <Description>示例内容包：猫主题增量游戏的全部数值与文案。</Description>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\NekoClicker.Core\NekoClicker.Core.csproj" />
+  </ItemGroup>
+
+</Project>

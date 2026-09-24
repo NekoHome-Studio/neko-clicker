@@ -1,0 +1,14 @@
+# 统一换行符处理：仓库内一律用 LF，检出时按平台默认。
+* text=auto
+
+*.cs    text diff=csharp
+*.csproj text
+*.sln   text eol=crlf
+*.ps1   text
+*.md    text
+*.json  text
+
+# 评测/二进制
+*.png binary
+*.jpg binary
+*.gif binary

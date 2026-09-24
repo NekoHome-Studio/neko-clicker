@@ -1,0 +1,329 @@
+using NekoClicker.Core.Content;
+
+namespace NekoClicker.Core.Views;
+
+/// <summary>建筑在 UI 中的一行。</summary>
+public sealed record BuildingView
+{
+    /// <summary>建筑 id。</summary>
+    public required string Id { get; init; }
+
+    /// <summary>显示名。</summary>
+    public required string Name { get; init; }
+
+    /// <summary>图标。</summary>
+    public string Icon { get; init; } = string.Empty;
+
+    /// <summary>说明。</summary>
+    public string Description { get; init; } = string.Empty;
+
+    /// <summary>分组。</summary>
+    public string Category { get; init; } = string.Empty;
+
+    /// <summary>持有数量。</summary>
+    public int Owned { get; init; }
+
+    /// <summary>是否已解锁。</summary>
+    public bool IsUnlocked { get; init; }
+
+    /// <summary>未解锁时是否应该隐藏（否则显示为灰色）。</summary>
+    public bool HiddenUntilUnlocked { get; init; }
+
+    /// <summary>解锁条件描述。</summary>
+    public string UnlockHint { get; init; } = string.Empty;
+
+    /// <summary>解锁进度 [0,1]；无法量化时为 0。</summary>
+    public double UnlockProgress { get; init; }
+
+    /// <summary>当前单价。</summary>
+    public double UnitPrice { get; init; }
+
+    /// <summary>本次批量操作涉及的数量（买 N / 卖 N）。</summary>
+    public int BatchAmount { get; init; }
+
+    /// <summary>本次批量操作的总价（出售时为返还额）。</summary>
+    public double BatchPrice { get; init; }
+
+    /// <summary>是否负担得起（出售模式下表示是否有货可卖）。</summary>
+    public bool CanAfford { get; init; }
+
+    /// <summary>单个建筑当前的实际产量。</summary>
+    public double CpsEach { get; init; }
+
+    /// <summary>该建筑当前贡献的总产量。</summary>
+    public double CpsContribution { get; init; }
+
+    /// <summary>占总产量的比例 [0,1]。</summary>
+    public double CpsShare { get; init; }
+
+    /// <summary>下一个由该建筑数量触发的里程碑数量；无则为 <c>null</c>。</summary>
+    public int? NextMilestoneAt { get; init; }
+
+    /// <summary>里程碑对应的升级名。</summary>
+    public string? NextMilestoneName { get; init; }
+
+    /// <summary>出售返还比例。</summary>
+    public double SellRefundRate { get; init; }
+
+    /// <summary>UI 是否应该显示这一行。</summary>
+    public bool IsVisible => IsUnlocked || !HiddenUntilUnlocked;
+}
+
+/// <summary>升级在 UI 中的一行。</summary>
+public sealed record UpgradeView
+{
+    /// <summary>升级 id。</summary>
+    public required string Id { get; init; }
+
+    /// <summary>显示名。</summary>
+    public required string Name { get; init; }
+
+    /// <summary>图标。</summary>
+    public string Icon { get; init; } = string.Empty;
+
+    /// <summary>说明。</summary>
+    public string Description { get; init; } = string.Empty;
+
+    /// <summary>当前单价。</summary>
+    public double Price { get; init; }
+
+    /// <summary>计价货币。</summary>
+    public UpgradeCurrency Currency { get; init; }
+
+    /// <summary>已购次数。</summary>
+    public int Owned { get; init; }
+
+    /// <summary>可购次数上限。</summary>
+    public int MaxPurchases { get; init; }
+
+    /// <summary>是否已解锁。</summary>
+    public bool IsUnlocked { get; init; }
+
+    /// <summary>未解锁时是否隐藏。</summary>
+    public bool HiddenUntilUnlocked { get; init; }
+
+    /// <summary>解锁条件描述。</summary>
+    public string UnlockHint { get; init; } = string.Empty;
+
+    /// <summary>解锁进度 [0,1]。</summary>
+    public double UnlockProgress { get; init; }
+
+    /// <summary>是否买得起。</summary>
+    public bool CanAfford { get; init; }
+
+    /// <summary>效果摘要。</summary>
+    public string EffectSummary { get; init; } = string.Empty;
+
+    /// <summary>分组。</summary>
+    public string Category { get; init; } = string.Empty;
+
+    /// <summary>层级。</summary>
+    public int Tier { get; init; }
+
+    /// <summary>是否转生后保留。</summary>
+    public bool IsPermanent { get; init; }
+
+    /// <summary>是否已经买满。</summary>
+    public bool IsMaxed => Owned >= MaxPurchases;
+
+    /// <summary>当前是否值得在"可购买列表"里展示。</summary>
+    public bool IsAvailable => IsUnlocked && !IsMaxed;
+
+    /// <summary>UI 是否应该显示这一行。</summary>
+    public bool IsVisible => IsUnlocked || !HiddenUntilUnlocked;
+}
+
+/// <summary>成就在 UI 中的一行。</summary>
+public sealed record AchievementView
+{
+    /// <summary>成就 id。</summary>
+    public required string Id { get; init; }
+
+    /// <summary>显示名（未解锁且隐藏时为 ???）。</summary>
+    public required string Name { get; init; }
+
+    /// <summary>图标（未解锁且隐藏时为 🔒）。</summary>
+    public string Icon { get; init; } = string.Empty;
+
+    /// <summary>说明。</summary>
+    public string Description { get; init; } = string.Empty;
+
+    /// <summary>是否已解锁。</summary>
+    public bool Unlocked { get; init; }
+
+    /// <summary>是否为隐藏成就。</summary>
+    public bool Hidden { get; init; }
+
+    /// <summary>分组。</summary>
+    public string Category { get; init; } = string.Empty;
+
+    /// <summary>进度 [0,1]；不可量化时为 0。</summary>
+    public double Progress { get; init; }
+
+    /// <summary>进度文本，例如 <c>12 / 50</c>；不可量化时为空。</summary>
+    public string ProgressText { get; init; } = string.Empty;
+}
+
+/// <summary>增益在 UI 中的一行。</summary>
+public sealed record BuffView
+{
+    /// <summary>增益 id。</summary>
+    public required string Id { get; init; }
+
+    /// <summary>显示名。</summary>
+    public required string Name { get; init; }
+
+    /// <summary>图标。</summary>
+    public string Icon { get; init; } = string.Empty;
+
+    /// <summary>说明。</summary>
+    public string Description { get; init; } = string.Empty;
+
+    /// <summary>剩余秒数。</summary>
+    public double RemainingSeconds { get; init; }
+
+    /// <summary>总时长。</summary>
+    public double TotalSeconds { get; init; }
+
+    /// <summary>剩余比例 [0,1]。</summary>
+    public double Progress { get; init; }
+
+    /// <summary>层数。</summary>
+    public int Stacks { get; init; }
+
+    /// <summary>是否负面效果。</summary>
+    public bool IsDebuff { get; init; }
+}
+
+/// <summary>场上金猫的 UI 信息。</summary>
+public sealed record GoldenCookieView
+{
+    /// <summary>实例 id。</summary>
+    public required string InstanceId { get; init; }
+
+    /// <summary>剩余停留秒数。</summary>
+    public double RemainingSeconds { get; init; }
+
+    /// <summary>总停留秒数。</summary>
+    public double LifetimeSeconds { get; init; }
+
+    /// <summary>剩余比例 [0,1]。</summary>
+    public double Progress { get; init; }
+
+    /// <summary>归一化横坐标 [0,1]。</summary>
+    public double X { get; init; }
+
+    /// <summary>归一化纵坐标 [0,1]。</summary>
+    public double Y { get; init; }
+}
+
+/// <summary>
+/// 一帧 UI 所需的全部数据。<para>
+/// 这是引擎对前端的完整契约：前端只读它、只发命令，不接触 <see cref="GameState"/>。
+/// 由于是普通 record，前端可以直接做差异比较来决定重绘哪些行。
+/// </para>
+/// </summary>
+public sealed record GameSnapshot
+{
+    /// <summary>游戏标题。</summary>
+    public string Title { get; init; } = string.Empty;
+
+    /// <summary>主货币名。</summary>
+    public string CurrencyName { get; init; } = string.Empty;
+
+    /// <summary>主货币图标。</summary>
+    public string CurrencyIcon { get; init; } = string.Empty;
+
+    /// <summary>点击动作名。</summary>
+    public string ClickActionName { get; init; } = string.Empty;
+
+    /// <summary>转生货币名。</summary>
+    public string PrestigeCurrencyName { get; init; } = string.Empty;
+
+    /// <summary>转生货币图标。</summary>
+    public string PrestigeCurrencyIcon { get; init; } = string.Empty;
+
+    /// <summary>当前存量。</summary>
+    public double Cookies { get; init; }
+
+    /// <summary>当前每秒产量。</summary>
+    public double CookiesPerSecond { get; init; }
+
+    /// <summary>单次点击收益。</summary>
+    public double ClickPower { get; init; }
+
+    /// <summary>存量格式化文本。</summary>
+    public string CookiesText { get; init; } = string.Empty;
+
+    /// <summary>产量格式化文本。</summary>
+    public string CpsText { get; init; } = string.Empty;
+
+    /// <summary>点击收益格式化文本。</summary>
+    public string ClickPowerText { get; init; } = string.Empty;
+
+    /// <summary>本轮累计赚取。</summary>
+    public double CookiesEarnedThisRun { get; init; }
+
+    /// <summary>历史累计赚取。</summary>
+    public double CookiesEarnedAllTime { get; init; }
+
+    /// <summary>手动点击累计赚取。</summary>
+    public double HandMadeCookies { get; init; }
+
+    /// <summary>累计点击次数。</summary>
+    public double TotalClicks { get; init; }
+
+    /// <summary>累计点中金猫次数。</summary>
+    public double GoldenCookiesClicked { get; init; }
+
+    /// <summary>转生等级。</summary>
+    public int PrestigeLevel { get; init; }
+
+    /// <summary>持有转生货币。</summary>
+    public double PrestigeChips { get; init; }
+
+    /// <summary>转生次数。</summary>
+    public int Ascensions { get; init; }
+
+    /// <summary>累计游玩秒数。</summary>
+    public double PlayTimeSeconds { get; init; }
+
+    /// <summary>已解锁成就数。</summary>
+    public int AchievementCount { get; init; }
+
+    /// <summary>成就总数。</summary>
+    public int AchievementTotal { get; init; }
+
+    /// <summary>建筑总数。</summary>
+    public double TotalBuildings { get; init; }
+
+    /// <summary>已购升级种类数。</summary>
+    public int PurchasedUpgrades { get; init; }
+
+    /// <summary>距离下一次金猫出现的秒数。</summary>
+    public double GoldenCookieCountdown { get; init; }
+
+    /// <summary>当前 UI 的购买模式。</summary>
+    public PurchaseMode Mode { get; init; }
+
+    /// <summary>建筑行。</summary>
+    public IReadOnlyList<BuildingView> Buildings { get; init; } = [];
+
+    /// <summary>升级行。</summary>
+    public IReadOnlyList<UpgradeView> Upgrades { get; init; } = [];
+
+    /// <summary>成就行。</summary>
+    public IReadOnlyList<AchievementView> Achievements { get; init; } = [];
+
+    /// <summary>生效中的增益。</summary>
+    public IReadOnlyList<BuffView> Buffs { get; init; } = [];
+
+    /// <summary>场上的金猫。</summary>
+    public IReadOnlyList<GoldenCookieView> GoldenCookies { get; init; } = [];
+
+    /// <summary>最近的通知。</summary>
+    public IReadOnlyList<GameNotification> Notifications { get; init; } = [];
+
+    /// <summary>转生预览。</summary>
+    public PrestigePreview Prestige { get; init; }
+}

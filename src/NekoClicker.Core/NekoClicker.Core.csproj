@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>NekoClicker.Core</RootNamespace>
+    <AssemblyName>NekoClicker.Core</AssemblyName>
+    <!-- 框架核心：无 UI、无 IO 硬编码、无第三方依赖，可在控制台/Web/Unity 中复用。 -->
+    <Description>增量（放置/点击）游戏框架核心引擎。</Description>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+</Project>

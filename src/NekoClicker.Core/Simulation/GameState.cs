@@ -1,0 +1,185 @@
+namespace NekoClicker.Core;
+
+/// <summary>
+/// 一个存档的全部可变状态。<para>
+/// 刻意做成"纯数据 + 公开读写属性"：存档序列化、测试构造、调试注入都变得直接，
+/// 不需要反射或私有字段访问。所有业务规则都在 <see cref="GameEngine"/> 与各 System 中，
+/// 因此外部代码即使直接改了 <see cref="Cookies"/> 也只是改了数据，不会绕过事件与成就检查—— 
+/// 需要走流程时请调用引擎的购买/点击 API。
+/// </para>
+/// </summary>
+public sealed class GameState
+{
+    // ---------- 货币与统计 ----------
+
+    /// <summary>当前持有的主货币。</summary>
+    public double Cookies { get; set; }
+
+    /// <summary>本次转生周期内累计赚取量。</summary>
+    public double CookiesEarnedThisRun { get; set; }
+
+    /// <summary>含历次转生的累计赚取量（转生等级由它决定，转生不清零）。</summary>
+    public double CookiesEarnedAllTime { get; set; }
+
+    /// <summary>鼠标点击累计产生的货币。</summary>
+    public double HandMadeCookies { get; set; }
+
+    /// <summary>累计点击次数。</summary>
+    public double TotalClicks { get; set; }
+
+    /// <summary>累计点中金猫的次数。</summary>
+    public double GoldenCookiesClicked { get; set; }
+
+    // ---------- 转生 ----------
+
+    /// <summary>转生等级。</summary>
+    public int PrestigeLevel { get; set; }
+
+    /// <summary>当前持有的转生货币。</summary>
+    public double PrestigeChips { get; set; }
+
+    /// <summary>历史上花掉的转生货币。</summary>
+    public double PrestigeChipsSpent { get; set; }
+
+    /// <summary>转生次数。</summary>
+    public int Ascensions { get; set; }
+
+    // ---------- 时间 ----------
+
+    /// <summary>存档创建时刻。</summary>
+    public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
+
+    /// <summary>上次存档时刻（离线收益由它与当前时间之差算出）。</summary>
+    public DateTimeOffset LastSavedAt { get; set; } = DateTimeOffset.UtcNow;
+
+    /// <summary>累计模拟时长（秒）。</summary>
+    public double PlayTimeSeconds { get; set; }
+
+    /// <summary>累计（含离线的）模拟帧数，用于诊断。</summary>
+    public long TickCount { get; set; }
+
+    // ---------- 金猫 ----------
+
+    /// <summary>距离下一次金猫出现还剩的秒数。</summary>
+    public double GoldenCookieCountdown { get; set; }
+
+    /// <summary>是否已经历过第一次金猫（用于"新手更快见到"的加速）。</summary>
+    public bool GoldenCookieIntroduced { get; set; }
+
+    // ---------- 随机数状态（保证存档后序列可复现） ----------
+
+    /// <summary>PRNG 状态字 0。</summary>
+    public ulong RandomState0 { get; set; }
+
+    /// <summary>PRNG 状态字 1。</summary>
+    public ulong RandomState1 { get; set; }
+
+    // ---------- 内容持有 ----------
+
+    /// <summary>建筑 id → 持有数量。</summary>
+    public Dictionary<string, int> BuildingCounts { get; } = new(StringComparer.Ordinal);
+
+    /// <summary>升级 id → 已购次数。</summary>
+    public Dictionary<string, int> UpgradeCounts { get; } = new(StringComparer.Ordinal);
+
+    /// <summary>已解锁成就 id 集合。</summary>
+    public HashSet<string> Achievements { get; } = new(StringComparer.Ordinal);
+
+    /// <summary>当前生效的增益。</summary>
+    public List<ActiveBuff> Buffs { get; } = [];
+
+    /// <summary>场上尚未被点掉的金猫。</summary>
+    public List<GoldenCookieSpawn> GoldenCookies { get; } = [];
+
+    /// <summary>自定义计数器，供内容/模块使用。</summary>
+    public Dictionary<string, double> Counters { get; } = new(StringComparer.Ordinal);
+
+    /// <summary>自定义字符串元数据（存档槽名、玩家备注等）。</summary>
+    public Dictionary<string, string> Metadata { get; } = new(StringComparer.Ordinal);
+
+    // ---------- 便捷读取 ----------
+
+    /// <summary>某建筑的持有数量。</summary>
+    public int BuildingCount(string id) => BuildingCounts.TryGetValue(id, out int n) ? n : 0;
+
+    /// <summary>某升级的已购次数。</summary>
+    public int UpgradeCount(string id) => UpgradeCounts.TryGetValue(id, out int n) ? n : 0;
+
+    /// <summary>读取自定义计数器。</summary>
+    public double GetCounter(string key) => Counters.TryGetValue(key, out double v) ? v : 0;
+
+    /// <summary>累加自定义计数器。</summary>
+    public void AddCounter(string key, double delta) => Counters[key] = GetCounter(key) + delta;
+
+    /// <summary>所有建筑数量之和。</summary>
+    public double TotalBuildings()
+    {
+        double sum = 0;
+        foreach (int n in BuildingCounts.Values) sum += n;
+        return sum;
+    }
+}
+
+/// <summary>一个正在生效的增益实例。</summary>
+public sealed class ActiveBuff
+{
+    /// <summary>增益定义的 id。</summary>
+    public string Id { get; set; } = string.Empty;
+
+    /// <summary>剩余秒数。</summary>
+    public double RemainingSeconds { get; set; }
+
+    /// <summary>本次生效的总时长（用于画进度条）。</summary>
+    public double TotalSeconds { get; set; }
+
+    /// <summary>叠加层数。</summary>
+    public int Stacks { get; set; } = 1;
+
+    /// <summary>剩余时间比例 [0,1]。</summary>
+    public double Progress => TotalSeconds <= 0 ? 0 : Math.Clamp(RemainingSeconds / TotalSeconds, 0, 1);
+}
+
+/// <summary>一只场上等待点击的金猫。</summary>
+public sealed class GoldenCookieSpawn
+{
+    /// <summary>实例 id（同一只金猫在存档往返后仍是同一个 id）。</summary>
+    public string InstanceId { get; set; } = string.Empty;
+
+    /// <summary>剩余停留秒数。</summary>
+    public double RemainingSeconds { get; set; }
+
+    /// <summary>总停留秒数。</summary>
+    public double LifetimeSeconds { get; set; }
+
+    /// <summary>归一化横坐标 [0,1]，UI 自行映射到屏幕。</summary>
+    public double X { get; set; }
+
+    /// <summary>归一化纵坐标 [0,1]。</summary>
+    public double Y { get; set; }
+
+    /// <summary>强制结果 id（调试/剧本用）；为空则按权重抽取。</summary>
+    public string? ForcedOutcomeId { get; set; }
+}
+
+/// <summary>通知类型，UI 据此决定颜色/图标。</summary>
+public enum NotificationKind
+{
+    /// <summary>普通信息。</summary>
+    Info,
+
+    /// <summary>正面（购买成功、成就解锁）。</summary>
+    Success,
+
+    /// <summary>警告（买不起、条件不足）。</summary>
+    Warning,
+
+    /// <summary>稀有事件（金猫、转生）。</summary>
+    Rare,
+}
+
+/// <summary>一条给玩家看的消息（原版的 <c>Game.Notify</c>）。</summary>
+/// <param name="Message">正文。</param>
+/// <param name="Icon">图标。</param>
+/// <param name="Kind">类型。</param>
+/// <param name="Timestamp">产生时刻（模拟时钟秒数）。</param>
+public sealed record GameNotification(string Message, string Icon, NotificationKind Kind, double Timestamp);

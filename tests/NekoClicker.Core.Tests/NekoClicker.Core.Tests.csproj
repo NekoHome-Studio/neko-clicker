@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>NekoClicker.Core.Tests</RootNamespace>
+    <AssemblyName>NekoClicker.Core.Tests</AssemblyName>
+    <!--
+      刻意不使用 xunit/NUnit：本机 NuGet 不可达，且框架本身零依赖。
+      这里用一个反射驱动的迷你测试运行器（MiniTest），退出码非 0 表示有用例失败。
+    -->
+    <Description>核心引擎测试（零依赖迷你测试运行器）。</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\NekoClicker.Core\NekoClicker.Core.csproj" />
+    <ProjectReference Include="..\..\src\NekoClicker.Content.Neko\NekoClicker.Content.Neko.csproj" />
+  </ItemGroup>
+
+</Project>
