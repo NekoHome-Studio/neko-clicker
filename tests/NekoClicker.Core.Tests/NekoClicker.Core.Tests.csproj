@@ -16,6 +16,7 @@
     <ProjectReference Include="..\..\src\NekoClicker.Content.Neko\NekoClicker.Content.Neko.csproj" />
     <ProjectReference Include="..\..\src\NekoClicker.Content.Cafe\NekoClicker.Content.Cafe.csproj" />
     <ProjectReference Include="..\..\src\NekoClicker.Content.NineLives\NekoClicker.Content.NineLives.csproj" />
+    <ProjectReference Include="..\..\src\NekoClicker.Content.Lab\NekoClicker.Content.Lab.csproj" />
   </ItemGroup>
 
 </Project>

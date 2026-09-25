@@ -13,6 +13,7 @@ public static class TestGame
     private static readonly Lazy<GameContent> NekoContentCache = new(NekoClicker.Content.Neko.NekoContent.Build);
     private static readonly Lazy<GameContent> CafeContentCache = new(NekoClicker.Content.Cafe.CafeContent.Build);
     private static readonly Lazy<GameContent> NineLivesContentCache = new(NineLivesContent.Build);
+    private static readonly Lazy<GameContent> LabContentCache = new(NekoClicker.Content.Lab.LabContent.Build);
 
     /// <summary>示例内容包（不可变，可安全共享）。</summary>
     public static GameContent NekoContent => NekoContentCache.Value;
@@ -22,6 +23,22 @@ public static class TestGame
 
     /// <summary>内容包 #2《九命轮回》（九层纪元；不可变，可安全共享）。</summary>
     public static GameContent NineLives => NineLivesContentCache.Value;
+
+    /// <summary>内容包 #3《猫娘实验室》（七批次 + 伦理值 + 道德轴；不可变，可安全共享）。</summary>
+    public static GameContent Lab => LabContentCache.Value;
+
+    /// <summary>创建《猫娘实验室》的引擎。</summary>
+    public static GameEngine CreateLab(out ManualClock clock, ulong seed = 12345, bool grantOffline = true)
+    {
+        clock = new ManualClock();
+        return new GameEngine(Lab, new GameEngineOptions
+        {
+            Clock = clock,
+            Seed = seed,
+            GrantOfflineProgress = grantOffline,
+            MaxNotifications = 64,
+        });
+    }
 
     /// <summary>创建《九命轮回》的引擎。</summary>
     public static GameEngine CreateNineLives(out ManualClock clock, ulong seed = 12345, bool grantOffline = true)

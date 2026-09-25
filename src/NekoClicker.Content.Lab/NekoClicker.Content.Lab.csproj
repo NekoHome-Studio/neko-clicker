@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>NekoClicker.Content.Lab</RootNamespace>
+    <AssemblyName>NekoClicker.Content.Lab</AssemblyName>
+    <!--
+      内容包 #3：猫娘实验室（道德黑残深）。
+      第一个同时用到 Era + Lore + Choice 三项引擎能力的包——
+      它存在的意义之一就是证明这三项能力能共用一个核心，而核心不需要为它加任何分支。
+    -->
+    <Description>内容包 #3：猫娘实验室的全部数值与文案（伦理值模块 + 批次纪元 + 道德轴）。</Description>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\NekoClicker.Core\NekoClicker.Core.csproj" />
+  </ItemGroup>
+
+</Project>

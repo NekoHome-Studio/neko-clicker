@@ -1,5 +1,6 @@
 using NekoClicker.Core.Content;
 using NekoClicker.Content.Cafe;
+using NekoClicker.Content.Lab;
 using NekoClicker.Content.Neko;
 using NekoClicker.Content.NineLives;
 
@@ -92,6 +93,28 @@ internal static class ContentPackages
                 "    · 情感能量买到的「前世技能」跨命保留——那是你唯一带得走的东西。",
             ],
             ReportTip: "提示：本包的重点不是刷数值，而是一条一条走完九命——每层的完成条件都不一样。"),
+        new ContentPackage(
+            Id: "lab",
+            Name: LabContent.GameTitle,
+            Build: LabContent.Build,
+            Welcome: "欢迎来到猫娘实验室！先按空格记录，攒够 15 条数据就能买下第一台培养舱。"
+                   + "这一次，你要决定这件事该不该继续。",
+            PrestigeActionName: "开新批次",
+            PrestigeHint: "开新批次：实验推倒重来，按历史累计换取「残留记忆」；"
+                        + "批次主线未完成时按钮会置灰——七批只能一批一批走。",
+            GoldenCookieName: "实验事故",
+            HelpTips:
+            [
+                "    · 这是分层转生的包：一共七批，每一批的实验规则都不一样。",
+                "    · 「伦理值」不来自规模，只来自「有谁在看」——铺满样本农场换不来一点。",
+                "    · 每台设备的强化升级需要持有到 1 / 10 / 25 个才会出现。",
+                "    · 点击在这个包里几乎无用：干活的是仪器，不是你的手。",
+                "    · 「实验事故」里负面结果的比例比其他包高——收容失效不一定给你好处。",
+                "    · 第 2 批起会有需要你表态的时刻（「表态」面板）。表态会错过，答了会改产量。",
+                "    · 残留记忆买到的「前世技能」跨批次保留——那是你唯一带得走的东西。",
+            ],
+            ReportTip: "提示：伦理值只由「有谁在看」的建筑产出，所以克制的路线反而更强——"
+                     + "四条道德方向会在最后一批收束成四个结局。"),
     ];
 
     /// <summary>默认内容包（未显式指定 <c>--package</c> 时使用）。</summary>

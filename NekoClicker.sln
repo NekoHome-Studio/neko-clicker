@@ -19,6 +19,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NekoClicker.Core.Tests", "t
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NekoClicker.Content.NineLives", "src\NekoClicker.Content.NineLives\NekoClicker.Content.NineLives.csproj", "{5B4DEA9F-F952-45AF-941F-62AB023C3945}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NekoClicker.Content.Lab", "src\NekoClicker.Content.Lab\NekoClicker.Content.Lab.csproj", "{3BB6B47C-7B26-43B6-9489-6968E5D0012B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -52,6 +54,10 @@ Global
 		{5B4DEA9F-F952-45AF-941F-62AB023C3945}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5B4DEA9F-F952-45AF-941F-62AB023C3945}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5B4DEA9F-F952-45AF-941F-62AB023C3945}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3BB6B47C-7B26-43B6-9489-6968E5D0012B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3BB6B47C-7B26-43B6-9489-6968E5D0012B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3BB6B47C-7B26-43B6-9489-6968E5D0012B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3BB6B47C-7B26-43B6-9489-6968E5D0012B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{AF52C313-0331-42F0-BBF9-978A2C2279BD} = {0FEE24DC-5291-4FE1-B7AB-005490FC51FD}
@@ -60,5 +66,6 @@ Global
 		{1F8603DD-84F6-4624-A0C5-7DDD64276497} = {0FEE24DC-5291-4FE1-B7AB-005490FC51FD}
 		{CC5DF4CC-7A9F-4BCF-ABED-A2526A318940} = {B9FAACE6-63A4-4695-8DE0-FF68D7C28A8B}
 		{5B4DEA9F-F952-45AF-941F-62AB023C3945} = {0FEE24DC-5291-4FE1-B7AB-005490FC51FD}
+		{3BB6B47C-7B26-43B6-9489-6968E5D0012B} = {0FEE24DC-5291-4FE1-B7AB-005490FC51FD}
 	EndGlobalSection
 EndGlobal
