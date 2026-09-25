@@ -483,9 +483,45 @@ public sealed record ChoiceDefinition
 "看起来合理"的 `3e14 + Lv5` 实测是 200 小时也读不完的死内容。
 
 
-### 阶段 3 —— S-C（Choice）+ #3 实验室 / #10 公司
+### 阶段 3 —— S-C（Choice）+ 立场轴 + 两个新包
 
-| 特有验收 | ① 立场权重累加与主导立场切换<br>② 每个选项的 `Modifiers` 都真的影响产量（数值断言）<br>③ 未选择的选项不生效（一次性语义）<br>④ 存在"猫娘反对玩家最优解"的选项（内容审查项） |
+拆成 3A / 3B / 3C 三步交付。原因：S-C 是引擎能力，而两个新包各含约 50 建筑/升级/成就，
+捆在一起做的话，一旦 S-C 的抽象不成立，返工面是整个内容层。
+
+#### 3A —— S-C 内核（只做能力，不带内容）
+
+| 项 | 内容 |
+|---|---|
+| 数据模型 | `ChoiceDefinition`（`Speaker` / `Prompt` / `Trigger` / `Options`）+ `ChoiceOption`（`Label` / `OutcomeText` / `StanceId` / `Weight` / `Modifiers` / `UnlocksUpgradeId` / `LocksUpgradeId`）+ `StanceDefinition` |
+| 运行时 | `ChoiceSystem`：扫描触发 → 入待答队列 → 玩家作答 → 累加立场权重 + 记录已答 + 派事件 |
+| 状态 | `GameState.StanceWeights` / `ChoicesMade` / `PendingChoices`；**三者都跨舍命与转生保留**（与成就同级） |
+| 引擎接缝 | `ModifierResolver.Build` 新增**第 5 个来源**：主导立场的 `Modifiers` |
+| 条件树 | `OwnedKind.Choice` + `UnlockCondition.ChoiceMade(id)`；`UnlockCondition.StanceWeight(stanceId, n)` |
+| 视图 | `ChoiceView`（待答选项）/ `StanceView`（各立场权重、谁在主导）/ `GameSnapshot.PendingChoices` / `.Stances` |
+| 存档 | `SaveData.Stances` / `ChoicesMade` / `PendingChoices`。**不升版本号**（R8：新字段默认值安全） |
+| 构建期校验 | 选项 ≥2 且 id 不重复；引用的立场与升级必须存在；`Trigger` 必须可达（并纳入可达性不动点）；禁止 `Never` |
+| 特有验收 | ① 权重累加与主导立场切换<br>② **每个选项的 `Modifiers` 都真的影响产量**（数值断言，而不是"配置里写了"）<br>③ 未作答的选项不生效；重复作答是 no-op<br>④ 立场与选择跨舍命与转生保留 |
+
+**与设计文档 §5.1 的一处偏离**：设计文档把立场写成 `enum Stance { Control, Liberation, ... }`。
+**3A 改为内容自定义的 `StanceDefinition`（字符串 id），与 `EraDefinition` / `StorylineDefinition` 同构。**
+理由：A1 要求"核心程序集里没有内容 id"，而"控制/解放/共存/删除"是九命包的世界观词汇、不是引擎词汇；
+写成 enum 等于把某个包的世界观焊进核心，将来换包（实验室是"道德"、公司是"劳资"）还得改引擎。
+代价是失去编译期检查，用构建期校验补回来（引用的立场必须存在）。
+
+#### 3B —— 把 S-C 接进九命（伏笔已经铺好）
+
+`nine_17`~`nine_20` 已经把成神 / 变人 / 永为猫 / 破轮回四条路写成"她试过"，
+所以这一步不是新写剧情，而是**让第 9 命的终局真正判定**：末层完成后按
+`DominantStance` + `ChoicesMade` + 缺失的关键条目 → 输出 `EndingDefinition`。
+第 9 命 `CompletionHint` 里那句"终局判定将在后续阶段接入"，到这一步才算兑现。
+
+| 特有验收 | ① 四种结局各可达且互斥<br>② 结局不重置存档，只写 `Counters["ending_<id>"]`，允许二周目探索其它结局<br>③ **存在"什么都没选也有的结局"**——不能因为玩家回避选择就卡死 |
+|---|---|
+
+#### 3C —— #3 实验室 / #10 公司（两个新内容包）
+
+| 特有验收 | 两个包共用 3A/3B，**核心不得新增任何与立场/选择相关的分支**（A1/A2 的检验）；两个包各定义自己的立场轴（实验室＝道德、公司＝劳资），用来验证"立场不是 enum"这个决定 |
+|---|---|
 
 ### 阶段 4 —— S-D（Decay）+ #9 图书馆；继承机制 + #6 末世
 

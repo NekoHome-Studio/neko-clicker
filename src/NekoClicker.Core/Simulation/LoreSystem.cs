@@ -55,6 +55,11 @@ public static class LoreSystem
             }
         }
 
+        // 读到新条目必须让引擎重算：纪元规则可以用 ScalingSource.LoreCount 成长
+        // （第 9 命就是"每段被读到的记忆 +2%"），漏掉这一句的话加成要等到
+        // 下一次无关的购买才生效——表现为"读完剧情产量没动，买了个建筑才跳一下"。
+        if (revealed is not null) engine.MarkDirty();
+
         return revealed ?? [];
     }
 

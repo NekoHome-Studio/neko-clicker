@@ -432,6 +432,28 @@ public static class LoreTests
         Check.Contains(string.Join("\n", ex.Errors), "没有任何叙事条目");
     }
 
+    [Test]
+    public static void RevealingLore_RecomputesProduction()
+    {
+        // 第 9 命的规则以 ScalingSource.LoreCount 成长，所以"读到新条目"必须让引擎重算产量。
+        // 这条曾经是漏的：LoreSystem 放出叙事却不调用 MarkDirty，加成要等到下一次
+        // 无关的购买才生效（表现为"读完一条剧情产量没动，买了个建筑才跳一下"）。
+        GameEngine engine = TestGame.CreateNineLives(out _);
+        engine.State.Era = 9;
+        engine.MarkDirty();
+        double before = engine.Modifiers.Multiplier(ModifierTarget.GlobalCps);
+        Check.Close(1.0, before); // 还没读到任何记忆，第 9 命的规则不该有加成
+
+        engine.State.TotalClicks = 1; // 满足 nine_01 的 ClicksAtLeast(1)
+        IReadOnlyList<LoreEntry> revealed = engine.CheckLore();
+        Check.AtLeast(revealed.Count, 1, "nine_01 的条件应当被满足。");
+
+        double after = engine.Modifiers.Multiplier(ModifierTarget.GlobalCps);
+        Check.True(
+            after > before,
+            $"读到 {revealed.Count} 条新剧情后，第 9 命的规则应当立刻生效（{before} → {after}）。");
+    }
+
     // ---------------------------------------------------------------- 辅助
 
     private static LoreEntry Entry(string id, string storylineId, int order) => new()
