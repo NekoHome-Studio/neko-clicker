@@ -488,7 +488,7 @@ public sealed record ChoiceDefinition
 拆成 3A / 3B / 3C 三步交付。原因：S-C 是引擎能力，而两个新包各含约 50 建筑/升级/成就，
 捆在一起做的话，一旦 S-C 的抽象不成立，返工面是整个内容层。
 
-#### 3A —— S-C 内核（只做能力，不带内容）
+#### 3A —— S-C 内核（只做能力，不带内容）✅ 已交付
 
 | 项 | 内容 |
 |---|---|
@@ -501,6 +501,24 @@ public sealed record ChoiceDefinition
 | 存档 | `SaveData.Stances` / `ChoicesMade` / `PendingChoices`。**不升版本号**（R8：新字段默认值安全） |
 | 构建期校验 | 选项 ≥2 且 id 不重复；引用的立场与升级必须存在；`Trigger` 必须可达（并纳入可达性不动点）；禁止 `Never` |
 | 特有验收 | ① 权重累加与主导立场切换<br>② **每个选项的 `Modifiers` 都真的影响产量**（数值断言，而不是"配置里写了"）<br>③ 未作答的选项不生效；重复作答是 no-op<br>④ 立场与选择跨舍命与转生保留 |
+
+**交付记录**：`ChoiceTests` 22 条（含 9 条构建期校验）全部通过，回归 **236 个用例**。
+全部用**合成内容**测试，不带任何真内容包——断言的是机制，内容改了不会连带这些用例一起红。
+
+实现时定下的三处细节（都写进了代码注释与 ARCHITECTURE）：
+
+1. **状态存 `ChoiceAnswers`（选择 id → 选项 id）而不是一个"答过"的集合。**
+   因为选项自带的 `Modifiers` 要按"选了哪个"取值，只记"答没答"是取不出来的。
+2. **主导立场在权重相同时取先声明的那个。** 必须是确定性的，否则同一存档两次读出的
+   主导立场可能不同，产量就会莫名其妙地跳。
+3. **`ChoiceDefinition.EraId` 真的用上了**（一开始它是死数据）。它提供的是 `Trigger` 表达不了的
+   能力——"当前正处在 id 为 X 的那一层"；`NumericMetric.Era` 只有层号，认不出"哪个世界"，
+   而层号会随内容改版变化。
+
+**实现时抓到的一个缺口**：`ValidateChoices` 最初漏了对 `choice.Trigger` 调用 `ValidateCondition`，
+于是"触发条件引用了一个不存在的选择"只能靠可达性分析兜底，报出来的原因是
+"依赖…解不开"而不是"引用了不存在的东西"。是 `Validator_RejectsChoiceConditionReferencingMissingChoice`
+这条用例逼出来的——**校验器的报错信息不精确，本身就是缺陷**。
 
 **与设计文档 §5.1 的一处偏离**：设计文档把立场写成 `enum Stance { Control, Liberation, ... }`。
 **3A 改为内容自定义的 `StanceDefinition`（字符串 id），与 `EraDefinition` / `StorylineDefinition` 同构。**

@@ -79,4 +79,10 @@ public interface IGameMetrics
 
     /// <summary>已释放的叙事条目数（图书馆纪元用它当"被阅读量"）。</summary>
     int LoreCount { get; }
+
+    /// <summary>是否已作答某次选择。</summary>
+    bool HasChoice(string choiceId);
+
+    /// <summary>某立场的当前权重；不存在返回 0。</summary>
+    int StanceWeight(string stanceId);
 }

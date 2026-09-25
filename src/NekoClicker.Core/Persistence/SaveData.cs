@@ -79,6 +79,16 @@ public sealed class SaveData
     /// <summary>已释放但尚未点掉的弹窗条目 id。</summary>
     public List<string> PendingLorePopups { get; set; } = [];
 
+    // ---- 选择与立场 ----
+    /// <summary>已作答的选择：选择 id → 选中的选项 id。</summary>
+    public Dictionary<string, string> ChoiceAnswers { get; set; } = new(StringComparer.Ordinal);
+
+    /// <summary>已触发但尚未作答的选择 id。</summary>
+    public List<string> PendingChoices { get; set; } = [];
+
+    /// <summary>各立场的累计权重。</summary>
+    public Dictionary<string, int> StanceWeights { get; set; } = new(StringComparer.Ordinal);
+
     // ---- 金猫 ----
     /// <summary>下一次金猫倒计时。</summary>
     public double GoldenCookieCountdown { get; set; }

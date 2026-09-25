@@ -53,6 +53,9 @@ public enum NumericMetric
     /// <summary>已释放的叙事条目数。</summary>
     LoreCount,
 
+    /// <summary>某立场的累计权重（<see cref="NumericCondition.Id"/> = 立场 id）。</summary>
+    StanceWeight,
+
     /// <summary>累计游玩秒数。</summary>
     PlayTimeSeconds,
 }
@@ -65,6 +68,9 @@ public enum OwnedKind
 
     /// <summary>成就。</summary>
     Achievement,
+
+    /// <summary>已作答的选择。</summary>
+    Choice,
 }
 
 /// <summary>
@@ -179,6 +185,16 @@ public abstract record UnlockCondition
     /// <summary>已释放的叙事条目数 ≥ count。</summary>
     /// <param name="count">阈值。</param>
     public static UnlockCondition LoreAtLeast(double count) => new NumericCondition(NumericMetric.LoreCount, count);
+
+    /// <summary>是否已作答某次选择。升级用 <c>Not(ChoiceMade(id))</c> 即可表达"被这次选择锁掉"。</summary>
+    /// <param name="choiceId">选择 id。</param>
+    public static UnlockCondition ChoiceMade(string choiceId) => new OwnedCondition(OwnedKind.Choice, choiceId);
+
+    /// <summary>某立场的累计权重达到 <paramref name="weight"/>。</summary>
+    /// <param name="stanceId">立场 id。</param>
+    /// <param name="weight">目标权重。</param>
+    public static UnlockCondition StanceWeight(string stanceId, double weight)
+        => new NumericCondition(NumericMetric.StanceWeight, weight, stanceId);
 
     /// <summary>带指定标签的升级已购次数 ≥ count。</summary>
     /// <param name="tag">升级标签。</param>
@@ -336,6 +352,7 @@ public sealed record NumericCondition(NumericMetric Metric, double Target, strin
         NumericMetric.TaggedUpgrades => metrics.TaggedUpgradeCount(Id ?? string.Empty),
         NumericMetric.Era => metrics.Era,
         NumericMetric.LoreCount => metrics.LoreCount,
+        NumericMetric.StanceWeight => metrics.StanceWeight(Id ?? string.Empty),
         NumericMetric.PlayTimeSeconds => metrics.PlayTimeSeconds,
         _ => 0,
     };
@@ -379,6 +396,7 @@ public sealed record NumericCondition(NumericMetric Metric, double Target, strin
             NumericMetric.TaggedUpgrades => $"购买 {amount} 个「{Id}」类升级",
             NumericMetric.Era => $"进入第 {amount} 纪元",
             NumericMetric.LoreCount => $"读到 {amount} 段记忆",
+            NumericMetric.StanceWeight => $"「{Id}」立场权重达到 {amount}",
             NumericMetric.PlayTimeSeconds => $"游玩时长达到 {NumFormat.Duration(Target)}",
             _ => $"达成 {amount}",
         };
@@ -395,6 +413,7 @@ public sealed record OwnedCondition(OwnedKind Kind, string Id) : UnlockCondition
     {
         OwnedKind.Upgrade => metrics.HasUpgrade(Id),
         OwnedKind.Achievement => metrics.HasAchievement(Id),
+        OwnedKind.Choice => metrics.HasChoice(Id),
         _ => false,
     };
 
@@ -414,6 +433,11 @@ public sealed record OwnedCondition(OwnedKind Kind, string Id) : UnlockCondition
             string name = content is not null && content.UpgradeById.TryGetValue(Id, out UpgradeDefinition? u) ? u.Name : Id;
             return $"已购买「{name}」";
         }
+        if (Kind == OwnedKind.Choice)
+        {
+            string prompt = content is not null && content.ChoiceById.TryGetValue(Id, out ChoiceDefinition? c) ? c.Prompt : Id;
+            return $"已经历「{prompt}」";
+        }
         string achievement = content is not null && content.AchievementById.TryGetValue(Id, out AchievementDefinition? a) ? a.Name : Id;
         return $"已解锁成就「{achievement}」";
     }
@@ -422,6 +446,7 @@ public sealed record OwnedCondition(OwnedKind Kind, string Id) : UnlockCondition
     {
         OwnedKind.Upgrade => metrics.HasUpgrade(Id),
         OwnedKind.Achievement => metrics.HasAchievement(Id),
+        OwnedKind.Choice => metrics.HasChoice(Id),
         _ => false,
     };
 }

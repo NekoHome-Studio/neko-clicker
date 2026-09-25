@@ -231,5 +231,7 @@ public static class ModifierTests
         public double GetCounter(string key) => 0;
         public int Era => 1;
         public int LoreCount => 0;
+        public bool HasChoice(string choiceId) => false;
+        public int StanceWeight(string stanceId) => 0;
     }
 }

@@ -83,3 +83,29 @@ public sealed record LoreRevealedEvent(
     string Icon,
     string StorylineId,
     Content.LoreChannel Channel) : IGameEvent;
+
+/// <summary>
+/// 一次选择被触发（进入待答队列）。<para>
+/// 注意它<b>不要求玩家立刻作答</b>——选择不阻塞（R6），可以一直放着。
+/// </para>
+/// </summary>
+/// <param name="Id">选择 id。</param>
+/// <param name="Speaker">谁在说话。</param>
+/// <param name="Prompt">问题 / 情境。</param>
+public sealed record ChoiceTriggeredEvent(string Id, string Speaker, string Prompt) : IGameEvent;
+
+/// <summary>玩家作答了一次选择。</summary>
+/// <param name="ChoiceId">选择 id。</param>
+/// <param name="OptionId">选中的选项 id。</param>
+/// <param name="StanceId">该选项的立场 id（可能为空）。</param>
+/// <param name="OutcomeText">结果文本。</param>
+public sealed record ChoiceMadeEvent(
+    string ChoiceId,
+    string OptionId,
+    string StanceId,
+    string OutcomeText) : IGameEvent;
+
+/// <summary>主导立场发生了变化（立场轴漂移）。</summary>
+/// <param name="PreviousStanceId">之前的主导立场；首次确立时为 <c>null</c>。</param>
+/// <param name="CurrentStanceId">现在的主导立场；全部权重归零时为 <c>null</c>。</param>
+public sealed record DominantStanceChangedEvent(string? PreviousStanceId, string? CurrentStanceId) : IGameEvent;

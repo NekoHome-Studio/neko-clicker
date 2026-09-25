@@ -203,7 +203,82 @@ public static class GameViewFactory
             Era = BuildEraView(engine),
             Codex = BuildCodexView(engine),
             PendingLore = BuildPendingLore(engine),
+            PendingChoices = BuildPendingChoices(engine),
+            Stances = BuildStances(engine),
+            DominantStanceId = engine.DominantStance,
         };
+    }
+
+    /// <summary>构造待作答的选择列表。</summary>
+    private static IReadOnlyList<ChoiceView> BuildPendingChoices(GameEngine engine)
+    {
+        List<string> pending = engine.State.PendingChoices;
+        if (pending.Count == 0) return [];
+
+        GameContent content = engine.Content;
+        List<ChoiceView> views = new(pending.Count);
+
+        foreach (string id in pending)
+        {
+            if (content.FindChoice(id) is not { } choice) continue;
+
+            List<ChoiceOptionView> options = new(choice.Options.Count);
+            foreach (ChoiceOption option in choice.Options)
+            {
+                StanceDefinition? stance = option.StanceId.Length > 0 ? content.FindStance(option.StanceId) : null;
+                options.Add(new ChoiceOptionView
+                {
+                    Id = option.Id,
+                    Label = option.Label,
+                    StanceName = stance?.Name ?? string.Empty,
+                    StanceIcon = stance?.Icon ?? string.Empty,
+                    Weight = option.Weight,
+                    EffectSummary = Summarize(option.Modifiers, content),
+                });
+            }
+
+            views.Add(new ChoiceView
+            {
+                Id = choice.Id,
+                Speaker = choice.Speaker,
+                Prompt = choice.Prompt,
+                Options = options,
+            });
+        }
+
+        return views;
+    }
+
+    /// <summary>构造立场轴；内容包没有立场时返回 <c>null</c>。</summary>
+    private static IReadOnlyList<StanceView>? BuildStances(GameEngine engine)
+    {
+        GameContent content = engine.Content;
+        if (!content.HasStances) return null;
+
+        GameState state = engine.State;
+        string? dominant = engine.DominantStance;
+
+        int total = 0;
+        foreach (StanceDefinition stance in content.Stances) total += Math.Max(0, state.StanceWeight(stance.Id));
+
+        List<StanceView> views = new(content.Stances.Count);
+        foreach (StanceDefinition stance in content.Stances)
+        {
+            int weight = Math.Max(0, state.StanceWeight(stance.Id));
+            views.Add(new StanceView
+            {
+                Id = stance.Id,
+                Name = stance.Name,
+                Icon = stance.Icon,
+                Theme = stance.Theme,
+                CostText = stance.CostText,
+                Weight = weight,
+                IsDominant = string.Equals(dominant, stance.Id, StringComparison.Ordinal),
+                Share = total <= 0 ? 0 : (double)weight / total,
+            });
+        }
+
+        return views;
     }
 
     /// <summary>构造图鉴；内容包没有叙事条目时返回 <c>null</c>。</summary>

@@ -66,6 +66,36 @@ public sealed class GameState
     /// <summary>已释放但玩家还没点掉的弹窗条目 id（按释放顺序）。</summary>
     public List<string> PendingLorePopups { get; } = [];
 
+    // ---------- 选择与立场 ----------
+
+    /// <summary>
+    /// 已作答的选择：选择 id → 选中的选项 id。<para>
+    /// 存"选了哪个"而不只是"答过了"——选项自带的修饰符要按它决定生效哪一个。
+    /// 与成就同级：<b>跨舍命与转生保留</b>，它是"发生过的事"，不是本轮进度。
+    /// </para>
+    /// </summary>
+    public Dictionary<string, string> ChoiceAnswers { get; } = new(StringComparer.Ordinal);
+
+    /// <summary>已触发但玩家还没作答的选择 id（按触发顺序）。</summary>
+    public List<string> PendingChoices { get; } = [];
+
+    /// <summary>各立场的累计权重（立场 id → 权重）。主导立场 = 权重最高者。</summary>
+    public Dictionary<string, int> StanceWeights { get; } = new(StringComparer.Ordinal);
+
+    /// <summary>取某立场的当前权重。</summary>
+    /// <param name="stanceId">立场 id。</param>
+    public int StanceWeight(string stanceId)
+        => StanceWeights.TryGetValue(stanceId, out int weight) ? weight : 0;
+
+    /// <summary>是否已作答某次选择。</summary>
+    /// <param name="choiceId">选择 id。</param>
+    public bool HasChoice(string choiceId) => ChoiceAnswers.ContainsKey(choiceId);
+
+    /// <summary>某次选择选中的选项 id；未作答返回 <c>null</c>。</summary>
+    /// <param name="choiceId">选择 id。</param>
+    public string? AnswerOf(string choiceId)
+        => ChoiceAnswers.TryGetValue(choiceId, out string? optionId) ? optionId : null;
+
     // ---------- 时间 ----------
 
     /// <summary>存档创建时刻。</summary>

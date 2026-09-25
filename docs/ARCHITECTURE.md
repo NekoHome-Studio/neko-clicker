@@ -22,6 +22,7 @@ NekoClicker.Core
 │   ├── UnlockCondition.cs     可组合、可量化的解锁条件树
 │   ├── EraDefinition.cs       纪元定义 + 闸门状态（EraGate）
 │   ├── LoreEntry.cs           叙事条目 + 剧情线
+│   ├── ChoiceDefinition.cs    选择 + 选项 + 立场
 │   ├── GameBalance.cs         全局平衡参数
 │   ├── GameContent.cs         内容容器（含索引）
 │   └── GameContentBuilder.cs  构建 + 校验
@@ -35,6 +36,7 @@ NekoClicker.Core
 │   ├── PrestigeSystem.cs      转生公式、预览、重置语义
 │   ├── EraSystem.cs           纪元闸门判定、推进、跨层继承
 │   ├── LoreSystem.cs          叙事释放判定、待读队列、图鉴查询
+│   ├── ChoiceSystem.cs        选择触发、作答、立场权重与主导立场
 │   ├── GoldenCookieSystem.cs  随机事件：刷新、抽取、结算
 │   └── ActionResults.cs       动作结果类型（PurchaseResult 等）
 ├── Events/                    事件总线 + 领域事件
@@ -126,10 +128,10 @@ GameState  ←→  SaveData（DTO）  ←→  JSON / base64 分享码
 因此同一份存档、同一串操作必然得到同一结果——这是能对数值做回归测试与平衡验证的前提。
 `System.Random` 不可用：它的内部状态无法存取，且不同 .NET 版本的算法可能变化。
 
-## 纪元（`Era`）与叙事（`Lore`）
+## 纪元（`Era`）、叙事（`Lore`）与立场（`Stance`）
 
-这两套系统是为了让**同一个核心**承载十种完全不同世界观的内容包（见 NINE_LIVES_DESIGN）。
-它们的共同约束是：核心不知道任何具体层号、任何具体条目。
+这三套系统是为了让**同一个核心**承载十种完全不同世界观的内容包（见 NINE_LIVES_DESIGN）。
+它们的共同约束是：核心不知道任何具体层号、任何具体条目、任何具体立场。
 
 ### `Era` 只通过四个接缝进入引擎
 
@@ -158,6 +160,33 @@ GameState  ←→  SaveData（DTO）  ←→  JSON / base64 分享码
 
 可达性校验（`ValidateReachability`）的不动点会把叙事节点一起算进去：
 一条"需要图鉴 N 条才解锁"的升级，不会因为那些条目本身不可达而变成死内容。
+
+### `Stance` 与 `Lore` / `Era` 同构，刻意不做成 enum
+
+`ChoiceDefinition`（对话）+ `ChoiceOption`（选项）+ `StanceDefinition`（立场）。
+
+设计文档 §5.1 原本把立场写成 `enum Stance { Control, Liberation, ... }`，**这里改成了内容自定义的字符串 id**。
+理由与 `Era` / `Storyline` 完全一致：A1 要求"核心程序集里没有内容 id"，而
+"控制/解放/共存/删除"是某个包的世界观词汇；写成 enum 等于把某个包的世界观焊进核心，
+别的包要"道德""劳资"时还得改引擎。代价是失去编译期检查，用构建期校验补回（引用的立场必须存在）。
+
+立场通过**两个来源**进入修饰符管线：
+
+| 来源 | 作用 |
+|---|---|
+| 第 5 个来源 | 已作答选项自带的 `Modifiers`（永久生效，按**选了哪个**取值） |
+| 第 6 个来源 | 当前**主导立场**的 `Modifiers`（权重最高者；漂移即改产量） |
+
+**选择不阻塞**（R6）：触发只进 `PendingChoices`，玩家可以一直不答；在那之前它不产生任何效果——
+不累加立场、选项修饰符也不生效。这样"回避表态"也是一种合法玩法，而不是拿弹窗逼玩家点。
+
+**主导立场必须是确定性的**：权重相同时取先声明的那一个。否则同一个存档两次读出的主导立场
+可能不同，产量就会莫名其妙地跳。
+
+`OwnedKind.Choice` 让条件树能表达"已经历过某次选择"，于是**升级的门控不需要额外字段**：
+`Unlock = ChoiceMade("c1")` 是解锁，`Unlock = Not(ChoiceMade("c1"))` 就是"被这次选择锁掉"，
+而且还能继续组合。设计文档里的 `ChoiceOption.UnlocksUpgradeId` / `LocksUpgradeId` 因此被删掉了——
+少一套机制、少一处会写反的地方。
 
 ## 终端渲染：为什么不是"每帧整屏重写"
 

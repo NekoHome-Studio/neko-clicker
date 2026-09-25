@@ -136,6 +136,33 @@ public sealed class GameContent
     public StorylineDefinition? FindStoryline(string id)
         => StorylineById.TryGetValue(id, out StorylineDefinition? d) ? d : null;
 
+    /// <summary>
+    /// 立场列表（价值取向轴）。<para>
+    /// 为空表示这个包没有立场玩法，选择只会产生各自的修饰符，不累加任何轴。
+    /// </para>
+    /// </summary>
+    public IReadOnlyList<StanceDefinition> Stances { get; init; } = [];
+
+    /// <summary>立场索引。</summary>
+    public IReadOnlyDictionary<string, StanceDefinition> StanceById { get; init; }
+        = new Dictionary<string, StanceDefinition>(StringComparer.Ordinal);
+
+    /// <summary>选择列表（按声明顺序）。</summary>
+    public IReadOnlyList<ChoiceDefinition> Choices { get; init; } = [];
+
+    /// <summary>选择索引。</summary>
+    public IReadOnlyDictionary<string, ChoiceDefinition> ChoiceById { get; init; }
+        = new Dictionary<string, ChoiceDefinition>(StringComparer.Ordinal);
+
+    /// <summary>是否启用了立场轴。</summary>
+    public bool HasStances => Stances.Count > 0;
+
+    /// <summary>按 id 查选择。</summary>
+    public ChoiceDefinition? FindChoice(string id) => ChoiceById.TryGetValue(id, out ChoiceDefinition? d) ? d : null;
+
+    /// <summary>按 id 查立场。</summary>
+    public StanceDefinition? FindStance(string id) => StanceById.TryGetValue(id, out StanceDefinition? d) ? d : null;
+
     /// <summary>某条剧情线下的全部条目，按序号升序。</summary>
     public IReadOnlyList<LoreEntry> LoreOf(string storylineId)
         => [.. LoreEntries.Where(e => string.Equals(e.StorylineId, storylineId, StringComparison.Ordinal)).OrderBy(e => e.Order)];

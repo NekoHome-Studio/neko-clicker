@@ -376,6 +376,77 @@ public sealed record CodexView
     public IReadOnlyList<StorylineView> Storylines { get; init; } = [];
 }
 
+/// <summary>某个立场当前的权重。UI 用它画立场轴。</summary>
+public sealed record StanceView
+{
+    /// <summary>立场 id。</summary>
+    public required string Id { get; init; }
+
+    /// <summary>显示名。</summary>
+    public required string Name { get; init; }
+
+    /// <summary>图标。</summary>
+    public string Icon { get; init; } = "⚖️";
+
+    /// <summary>一句话主题。</summary>
+    public string Theme { get; init; } = string.Empty;
+
+    /// <summary>主导这一立场时的代价描述。</summary>
+    public string CostText { get; init; } = string.Empty;
+
+    /// <summary>累计权重。</summary>
+    public int Weight { get; init; }
+
+    /// <summary>是否是当前的主导立场。</summary>
+    public bool IsDominant { get; init; }
+
+    /// <summary>占总权重的比例 [0,1]；总权重为 0 时为 0。</summary>
+    public double Share { get; init; }
+}
+
+/// <summary>
+/// 一次待作答的选择。<para>
+/// 刻意把选项一次性给全（而不是逐个解锁）——玩家在同一个画面上比较后表态，
+/// 而不是被逐个选项牵着走。
+/// </para>
+/// </summary>
+public sealed record ChoiceView
+{
+    /// <summary>选择 id。</summary>
+    public required string Id { get; init; }
+
+    /// <summary>谁在说话。</summary>
+    public required string Speaker { get; init; }
+
+    /// <summary>问题 / 情境。</summary>
+    public required string Prompt { get; init; }
+
+    /// <summary>可选项。</summary>
+    public IReadOnlyList<ChoiceOptionView> Options { get; init; } = [];
+}
+
+/// <summary>选择里的一个选项。</summary>
+public sealed record ChoiceOptionView
+{
+    /// <summary>选项 id（作答时回传）。</summary>
+    public required string Id { get; init; }
+
+    /// <summary>按钮文字。</summary>
+    public required string Label { get; init; }
+
+    /// <summary>所属立场显示名；不偏向任何立场时为空。</summary>
+    public string StanceName { get; init; } = string.Empty;
+
+    /// <summary>所属立场图标。</summary>
+    public string StanceIcon { get; init; } = string.Empty;
+
+    /// <summary>选择后给该立场累加的权重。</summary>
+    public int Weight { get; init; }
+
+    /// <summary>选项效果的摘要（人类可读）。</summary>
+    public string EffectSummary { get; init; } = string.Empty;
+}
+
 /// <summary>
 /// 一帧 UI 所需的全部数据。<para>
 /// 这是引擎对前端的完整契约：前端只读它、只发命令，不接触 <see cref="GameState"/>。
@@ -494,4 +565,18 @@ public sealed record GameSnapshot
 
     /// <summary>待玩家点掉的叙事弹窗（按释放顺序）。</summary>
     public IReadOnlyList<LoreView> PendingLore { get; init; } = [];
+
+    /// <summary>待玩家作答的选择（按触发顺序）。</summary>
+    public IReadOnlyList<ChoiceView> PendingChoices { get; init; } = [];
+
+    /// <summary>
+    /// 立场轴；内容包没有立场时为 <c>null</c>（UI 应隐藏该面板）。<para>
+    /// 已作答的选择也会一并列出（<see cref="ChoiceView.Options"/> 为空、只有 id 与 prompt），
+    /// 便于 UI 展示"你曾经怎么答的"。
+    /// </para>
+    /// </summary>
+    public IReadOnlyList<StanceView>? Stances { get; init; }
+
+    /// <summary>当前主导立场 id；没有立场轴或全部权重为 0 时为 <c>null</c>。</summary>
+    public string? DominantStanceId { get; init; }
 }

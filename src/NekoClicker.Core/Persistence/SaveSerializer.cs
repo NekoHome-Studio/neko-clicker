@@ -87,6 +87,9 @@ public static class SaveSerializer
             EraEnteredPlayTimeSeconds = state.EraEnteredPlayTimeSeconds,
             LoreUnlocked = [.. state.LoreUnlocked],
             PendingLorePopups = [.. state.PendingLorePopups],
+            ChoiceAnswers = new Dictionary<string, string>(state.ChoiceAnswers, StringComparer.Ordinal),
+            PendingChoices = [.. state.PendingChoices],
+            StanceWeights = new Dictionary<string, int>(state.StanceWeights, StringComparer.Ordinal),
         };
     }
 
@@ -121,6 +124,9 @@ public static class SaveSerializer
         foreach ((int index, EraRecord record) in data.EraHistory) state.EraHistory[index] = record;
         foreach (string id in data.LoreUnlocked) state.LoreUnlocked.Add(id);
         foreach (string id in data.PendingLorePopups) state.PendingLorePopups.Add(id);
+        foreach ((string id, string optionId) in data.ChoiceAnswers) state.ChoiceAnswers[id] = optionId;
+        foreach (string id in data.PendingChoices) state.PendingChoices.Add(id);
+        foreach ((string id, int weight) in data.StanceWeights) state.StanceWeights[id] = weight;
 
         foreach ((string id, int count) in data.Buildings) state.BuildingCounts[id] = count;
         foreach ((string id, int count) in data.Upgrades) state.UpgradeCounts[id] = count;
@@ -237,6 +243,9 @@ public static class SaveSerializer
         data.EraHistory ??= [];
         data.LoreUnlocked ??= [];
         data.PendingLorePopups ??= [];
+        data.ChoiceAnswers ??= new Dictionary<string, string>(StringComparer.Ordinal);
+        data.PendingChoices ??= [];
+        data.StanceWeights ??= new Dictionary<string, int>(StringComparer.Ordinal);
 
         return data;
     }

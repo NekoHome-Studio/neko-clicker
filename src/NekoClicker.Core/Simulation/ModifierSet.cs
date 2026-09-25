@@ -122,8 +122,9 @@ public sealed class ModifierSet
 
 /// <summary>
 /// 修饰符求解器：决定"哪些修饰符当前生效"。<para>
-/// 生效来源共四类——已购升级（按购买次数重复计入）、已解锁成就、生效中的增益（按层数重复计入）、
-/// 以及永久升级（它们本身也在升级表里，因此不会重复计算）。新增来源时只改这里。
+/// 生效来源共六类——已购升级（按购买次数重复计入）、已解锁成就、生效中的增益（按层数重复计入）、
+/// 当前纪元、已作答选择的选项修饰符、以及当前主导立场的修饰符。
+/// （永久升级本身也在升级表里，因此不会重复计算。）新增来源时只改这里。
 /// </para>
 /// </summary>
 public static class ModifierResolver
@@ -172,6 +173,27 @@ public static class ModifierResolver
         if (content.EraByIndex.TryGetValue(state.Era, out EraDefinition? era))
         {
             foreach (Modifier m in era.Modifiers) set.Add(m, metrics);
+        }
+
+        // 5) 已作答的选择：选项自带的修饰符，永久生效。
+        //    按"选了哪个选项"取值，而不是"答没答过"——所以状态里存的是选项 id。
+        foreach ((string choiceId, string optionId) in state.ChoiceAnswers)
+        {
+            if (!content.ChoiceById.TryGetValue(choiceId, out ChoiceDefinition? choice)) continue;
+            foreach (ChoiceOption option in choice.Options)
+            {
+                if (!string.Equals(option.Id, optionId, StringComparison.Ordinal)) continue;
+                foreach (Modifier m in option.Modifiers) set.Add(m, metrics);
+                break;
+            }
+        }
+
+        // 6) 当前主导立场：立场轴漂移会直接改产量，这是"选择有数值代价"的落点。
+        if (content.HasStances
+            && ChoiceSystem.DominantStance(content, state) is { } dominant
+            && content.StanceById.TryGetValue(dominant, out StanceDefinition? stance))
+        {
+            foreach (Modifier m in stance.Modifiers) set.Add(m, metrics);
         }
 
         return set;

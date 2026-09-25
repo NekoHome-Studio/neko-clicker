@@ -105,4 +105,10 @@ internal sealed class GameMetrics : IGameMetrics
 
     /// <inheritdoc />
     public double GetCounter(string key) => S.GetCounter(key);
+
+    /// <inheritdoc />
+    public bool HasChoice(string choiceId) => S.HasChoice(choiceId);
+
+    /// <inheritdoc />
+    public int StanceWeight(string stanceId) => S.StanceWeight(stanceId);
 }

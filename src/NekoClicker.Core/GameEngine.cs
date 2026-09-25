@@ -228,6 +228,7 @@ public sealed class GameEngine
         _achievementTimer = 0;
         CheckAchievements();
         CheckLore();
+        CheckChoices();
     }
 
     // ---------------------------------------------------------------- 玩家动作
@@ -434,6 +435,22 @@ public sealed class GameEngine
     /// </para>
     /// </summary>
     public IReadOnlyList<LoreEntry> CheckLore() => LoreSystem.Check(this);
+
+    /// <summary>
+    /// 检查并触发所有满足条件的选择。<para>
+    /// 与成就 / 叙事同频执行。触发只进待答队列——<b>选择不阻塞</b>（R6），
+    /// 玩家可以一直不答，在那之前它不产生任何效果。
+    /// </para>
+    /// </summary>
+    public IReadOnlyList<ChoiceDefinition> CheckChoices() => ChoiceSystem.Check(this);
+
+    /// <summary>作答一次选择。返回是否确实完成了这次作答（重复作答返回 <c>false</c>）。</summary>
+    /// <param name="choiceId">选择 id。</param>
+    /// <param name="optionId">选中的选项 id。</param>
+    public bool AnswerChoice(string choiceId, string optionId) => ChoiceSystem.Answer(this, choiceId, optionId);
+
+    /// <summary>当前主导立场 id；没有立场轴或全部权重为 0 时为 <c>null</c>。</summary>
+    public string? DominantStance => ChoiceSystem.DominantStance(Content, State);
 
     /// <summary>点掉一个叙事弹窗。</summary>
     /// <param name="entryId">条目 id。</param>
