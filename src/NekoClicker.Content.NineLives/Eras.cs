@@ -109,8 +109,8 @@ internal static class Eras
             Modifiers = [Modifier.GlobalMultiplier(1.5), Modifier.BuildingMultiplier("server_farm", 3)],
             Completion = UnlockCondition.All(
                 UnlockCondition.EarnedThisRunAtLeast(3e8),
-                UnlockCondition.Counter(EraSystem.PeakCpsCounterKey, 1e9)),
-            CompletionHint = "本轮累计 300 million，且峰值产量达到 1 billion/s。",
+                UnlockCondition.Counter(EraSystem.PeakCpsCounterKey, 1e8)),
+            CompletionHint = "本轮累计 300 million，且峰值产量达到 100 million/s。",
             UnlocksBuildings = ["memory_vault"],
         },
         new()

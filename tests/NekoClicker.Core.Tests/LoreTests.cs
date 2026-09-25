@@ -47,6 +47,39 @@ public static class LoreTests
             {
                 List<int> orders = [.. content.LoreOf(storyline.Id).Select(e => e.Order)];
                 Check.Equal(orders.Count, orders.Distinct().Count(), $"「{storyline.Name}」里有重复序号。");
+
+                // 序号即阅读顺序，图鉴按它排列。有空洞说明改过条数却忘了重排。
+                List<int> sorted = [.. orders.OrderBy(o => o)];
+                for (int i = 0; i < sorted.Count; i++)
+                    Check.Equal(i + 1, sorted[i], $"「{storyline.Name}」的序号不连续（缺 {i + 1}）。");
+            }
+        }
+    }
+
+    [Test]
+    public static void RevealConditions_AreUniqueWithinEachPack()
+    {
+        // 同一个条件的条目<b>必然在同一瞬间一起解锁</b>——首版 50 条里有 23 条落在 10 个重复组里，
+        // 九命最坏一次放出 6 条。这类错误是沉默失败：测试不会红，只有玩到那一段才看得出来
+        // （G5 只管开局 10 分钟）。所以把"撞车"直接变成构建期的硬错误。
+        //
+        // 键用叶子多重集而不是 Describe()：Describe 会用 NumFormat 格式化数值，
+        // 1e10 与 1.05e10 可能格式化成同一个字符串，拿它当键会误报。
+        // 当前所有 Reveal 都由 All / 单叶子构成，叶子多重集对它们是忠实映射。
+        foreach (GameContent content in new[] { TestGame.CafeContent, TestGame.NineLives })
+        {
+            Dictionary<string, string> seen = new(StringComparer.Ordinal);
+            foreach (LoreEntry entry in content.LoreEntries)
+            {
+                string key = RevealKey(entry.Reveal);
+                if (seen.TryGetValue(key, out string? first))
+                {
+                    Check.True(
+                        false,
+                        $"{content.Title}：{entry.Id} 与 {first} 的释放条件完全相同——它们会同时解锁。"
+                        + "把数值错开（别挑圆整数）。");
+                }
+                seen[key] = entry.Id;
             }
         }
     }
@@ -411,12 +444,43 @@ public static class LoreTests
         Reveal = UnlockCondition.ClicksAtLeast(1),
     };
 
-    /// <summary>取条件里最小的那个阈值，用于"开篇是不是太久读不到"的判断。</summary>
+    /// <summary>
+    /// 取条件里最小的"量级"阈值，用于"开篇是不是太久读不到"的判断。<para>
+    /// 刻意跳过 <see cref="NumericMetric.Era"/> 与 <see cref="NumericMetric.PrestigeLevel"/>：
+    /// 它们是<b>进度序号</b>而不是量级阈值，取值都在 200 以下，混进来会把
+    /// <c>All(EraAtLeast(2), EarnedThisRunAtLeast(6.5e6))</c> 误判成"早期可读"——
+    /// 于是这条断言对任何带纪元门槛的开篇都失效（重排后九命四线全是这样，它就完全没判别力了）。
+    /// </para>
+    /// <para>没有量级叶子时返回 <see cref="Unjudgeable"/>，语义是"无法判早"，按不早期处理。</para>
+    /// </summary>
+    private const double Unjudgeable = 1e12;
+
     private static double FirstThreshold(UnlockCondition condition)
     {
         double min = double.PositiveInfinity;
         foreach (NumericCondition leaf in condition.NumericLeaves())
+        {
+            if (leaf.Metric is NumericMetric.Era or NumericMetric.PrestigeLevel) continue;
             if (leaf.Target < min) min = leaf.Target;
-        return double.IsPositiveInfinity(min) ? 0 : min;
+        }
+        return double.IsPositiveInfinity(min) ? Unjudgeable : min;
+    }
+
+    /// <summary>把一个条件的叶子多重集规范成字符串键（见 <c>RevealConditions_AreUniqueWithinEachPack</c>）。</summary>
+    private static string RevealKey(UnlockCondition condition)
+    {
+        List<string> parts = [];
+        foreach (UnlockCondition leaf in condition.Flatten())
+        {
+            parts.Add(leaf switch
+            {
+                // "R" 是往返格式，保住 double 的精度，否则 1e10 与 1.05e10 会撞成同一个键。
+                NumericCondition n => $"N:{n.Metric}:{n.Target:R}:{n.Id}",
+                OwnedCondition o => $"O:{o.Kind}:{o.Id}",
+                _ => leaf.Describe(),
+            });
+        }
+        parts.Sort(StringComparer.Ordinal);
+        return string.Join("|", parts);
     }
 }

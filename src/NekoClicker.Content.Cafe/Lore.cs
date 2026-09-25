@@ -143,12 +143,12 @@ internal static class Lore
 
         yield return Popup("door_18", 16, "整面墙都是门",
             "你拆掉一堵墙，发现墙后还是一扇门。这一扇更大，门缝里能看见星星。",
-            UnlockCondition.EarnedThisRunAtLeast(1e13));
+            UnlockCondition.EarnedThisRunAtLeast(4e12));
 
         yield return Log("door_19", 17, "她把钥匙给你",
             "一把很轻的钥匙。她说：“以后不用敲了。你本来就在这边。”",
             UnlockCondition.All(
-                UnlockCondition.EarnedThisRunAtLeast(3e13),
+                UnlockCondition.EarnedThisRunAtLeast(1.1e13),
                 UnlockCondition.AchievementsAtLeast(20)));
 
         // ---- 店休 / 转生分支。放在末尾不是偷懒：转生时机由玩家决定，
@@ -156,21 +156,21 @@ internal static class Lore
         yield return Popup("door_13", 18, "第一次店休",
             "你把灯关了。第二天回来，门还在，但她看你的眼神多了一点什么——像是确认。",
             UnlockCondition.All(
-                UnlockCondition.EarnedThisRunAtLeast(5e13),
+                UnlockCondition.EarnedThisRunAtLeast(1.5e13),
                 UnlockCondition.PrestigeLevelAtLeast(1)));
 
         yield return Log("door_17", 19, "门学会了等待",
             "你连续三天没来。第四天推门时，门自己开了——它一直在等。",
             UnlockCondition.All(
-                UnlockCondition.EarnedThisRunAtLeast(1e14),
-                UnlockCondition.PrestigeLevelAtLeast(3)));
+                UnlockCondition.EarnedThisRunAtLeast(2.2e13),
+                UnlockCondition.PrestigeLevelAtLeast(2)));
 
         yield return Popup("door_20", 20, "两界桥梁",
             "你把两张桌子搬到门的两侧，中间架了一块木板。客人从人这边走过来，"
             + "从猫那边走回去。没有人掉下去。桥就是这么造出来的。",
             UnlockCondition.All(
-                UnlockCondition.EarnedThisRunAtLeast(2e14),
-                UnlockCondition.PrestigeLevelAtLeast(5)));
+                UnlockCondition.EarnedThisRunAtLeast(3e13),
+                UnlockCondition.PrestigeLevelAtLeast(3)));
     }
 
     // ---------------------------------------------------------------- 支线：常客们的记忆
@@ -253,14 +253,14 @@ internal static class Lore
         yield return Popup("regular_11", 15, "他们开始记得彼此",
             "周三的老先生和那位母亲第一次搭上话。他们聊了很久，然后同时安静下来。",
             UnlockCondition.All(
-                UnlockCondition.EarnedThisRunAtLeast(1.5e13),
+                UnlockCondition.EarnedThisRunAtLeast(1.3e13),
                 UnlockCondition.PrestigeLevelAtLeast(2)));
 
         yield return Popup("regular_16", 16, "本子写满了",
             "常客名单写到了最后一页。你翻回第一页，发现第一个名字是你自己的。",
             UnlockCondition.All(
-                UnlockCondition.EarnedThisRunAtLeast(7e13),
-                UnlockCondition.PrestigeLevelAtLeast(4)));
+                UnlockCondition.EarnedThisRunAtLeast(2.6e13),
+                UnlockCondition.PrestigeLevelAtLeast(3)));
     }
 
     // ---------------------------------------------------------------- 支线：异世界的供货商
@@ -324,20 +324,20 @@ internal static class Lore
 
         yield return Codex("supplier_12", 12, "最后一批货",
             "他提前送了三个月的量。你说太多了，他说：“以后就送不了了。”",
-            UnlockCondition.EarnedThisRunAtLeast(1.1e13));
+            UnlockCondition.EarnedThisRunAtLeast(4.5e12));
 
         // ---- 店休分支 + 尾声。
         yield return Log("supplier_13", 13, "门口的脚印",
             "从那以后，门口每天早上都有一串湿脚印，通向门的方向，然后消失。",
             UnlockCondition.All(
-                UnlockCondition.EarnedThisRunAtLeast(4e13),
-                UnlockCondition.PrestigeLevelAtLeast(4)));
+                UnlockCondition.EarnedThisRunAtLeast(8e12),
+                UnlockCondition.PrestigeLevelAtLeast(1)));
 
         yield return Popup("supplier_14", 14, "现在是你在送",
             "今天早上，箱子上放着一张新的供货单——收件人地址写着“门的另一边，第三棵树下”。",
             UnlockCondition.All(
-                UnlockCondition.EarnedThisRunAtLeast(1.2e14),
-                UnlockCondition.PrestigeLevelAtLeast(5)));
+                UnlockCondition.EarnedThisRunAtLeast(1.8e13),
+                UnlockCondition.PrestigeLevelAtLeast(2)));
 
         // 尾声：把这家店接回共享的神话体系。刻意放在全包最后——
         // 它不是"又一条供货商的怪癖"，而是"你一直以为自己在开店"的答案。
@@ -346,8 +346,8 @@ internal static class Lore
             + "描的是一个你认得的位置：这里。图纸边角有一行极小的字，笔迹和账单一样："
             + "“我把他放在第一个，因为他最笨，最容易心软，最像我自己。”",
             UnlockCondition.All(
-                UnlockCondition.EarnedThisRunAtLeast(3e14),
-                UnlockCondition.PrestigeLevelAtLeast(5)));
+                UnlockCondition.EarnedThisRunAtLeast(2.8e13),
+                UnlockCondition.PrestigeLevelAtLeast(3)));
     }
 
     // ---------------------------------------------------------------- 辅助
