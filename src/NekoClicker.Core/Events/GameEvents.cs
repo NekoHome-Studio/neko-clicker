@@ -109,3 +109,10 @@ public sealed record ChoiceMadeEvent(
 /// <param name="PreviousStanceId">之前的主导立场；首次确立时为 <c>null</c>。</param>
 /// <param name="CurrentStanceId">现在的主导立场；全部权重归零时为 <c>null</c>。</param>
 public sealed record DominantStanceChangedEvent(string? PreviousStanceId, string? CurrentStanceId) : IGameEvent;
+
+/// <summary>达成了一个结局（终局判定）。一份存档只会触发一次。</summary>
+/// <param name="Id">结局 id。</param>
+/// <param name="Name">结局名。</param>
+/// <param name="Icon">图标。</param>
+/// <param name="Text">终局文本。</param>
+public sealed record EndingReachedEvent(string Id, string Name, string Icon, string Text) : IGameEvent;

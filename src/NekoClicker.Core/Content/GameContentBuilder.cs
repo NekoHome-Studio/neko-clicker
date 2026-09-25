@@ -19,6 +19,7 @@ public sealed class GameContentBuilder
     private readonly List<StorylineDefinition> _storylines = [];
     private readonly List<StanceDefinition> _stances = [];
     private readonly List<ChoiceDefinition> _choices = [];
+    private readonly List<EndingDefinition> _endings = [];
     private readonly List<IGameModule> _modules = [];
 
     /// <summary>创建构建器。</summary>
@@ -241,6 +242,21 @@ public sealed class GameContentBuilder
         return this;
     }
 
+    /// <summary>添加一个结局。</summary>
+    public GameContentBuilder Add(EndingDefinition ending)
+    {
+        ArgumentNullException.ThrowIfNull(ending);
+        _endings.Add(ending);
+        return this;
+    }
+
+    /// <summary>批量添加结局。</summary>
+    public GameContentBuilder AddEndings(params EndingDefinition[] endings)
+    {
+        _endings.AddRange(endings);
+        return this;
+    }
+
     /// <summary>构建并校验。</summary>
     /// <exception cref="GameContentValidationException">存在校验错误。</exception>
     public GameContent Build()
@@ -255,6 +271,7 @@ public sealed class GameContentBuilder
         var eraByIndex = new Dictionary<int, EraDefinition>();
         var stanceById = new Dictionary<string, StanceDefinition>(StringComparer.Ordinal);
         var choiceById = new Dictionary<string, ChoiceDefinition>(StringComparer.Ordinal);
+        var endingById = new Dictionary<string, EndingDefinition>(StringComparer.Ordinal);
         var errors = new List<string>();
 
         Index(_buildings, b => b.Id, buildingById, "建筑", errors);
@@ -267,6 +284,7 @@ public sealed class GameContentBuilder
         // ChoiceMade(id)，所以 ValidateCondition 需要 choiceById 才能判断引用是否存在。
         Index(_stances, s => s.Id, stanceById, "立场", errors);
         Index(_choices, c => c.Id, choiceById, "选择", errors);
+        Index(_endings, e => e.Id, endingById, "结局", errors);
 
         foreach (BuildingDefinition b in _buildings)
         {
@@ -329,10 +347,11 @@ public sealed class GameContentBuilder
         Index(_storylines, s => s.Id, storylineById, "剧情线", errors);
         ValidateLore(loreById, storylineById, buildingById, upgradeById, achievementById, choiceById, errors);
         ValidateChoices(choiceById, stanceById, eraByIndex, buildingById, upgradeById, achievementById, buffById, errors);
+        ValidateEndings(_endings, buildingById, upgradeById, achievementById, choiceById, errors);
 
         // 最后做一次全局可达性分析：前两步只能发现"引用不存在"，
         // 发现不了"互相引用导致谁也解不开"。
-        ValidateReachability(buildingById, upgradeById, achievementById, loreById, choiceById, errors);
+        ValidateReachability(buildingById, upgradeById, achievementById, loreById, choiceById, endingById, errors);
 
         if (errors.Count > 0) throw new GameContentValidationException(errors);
 
@@ -369,6 +388,8 @@ public sealed class GameContentBuilder
             StanceById = stanceById,
             Choices = _choices,
             ChoiceById = choiceById,
+            Endings = _endings,
+            EndingById = endingById,
         };
     }
 
@@ -683,6 +704,50 @@ public sealed class GameContentBuilder
         }
     }
 
+    /// <summary>
+    /// 校验结局。<para>
+    /// 其中"至少有一个结局不依赖玩家表态"这条是把 ROADMAP 阶段 3B 的验收 ③
+    /// （存在"什么都没选也有的结局"）写成了构建期规则——否则一个回避所有选择的玩家
+    /// 会卡在"主线走完了但没有任何结局成立"的状态里。
+    /// </para>
+    /// </summary>
+    private static void ValidateEndings(
+        List<EndingDefinition> endings,
+        Dictionary<string, BuildingDefinition> buildings,
+        Dictionary<string, UpgradeDefinition> upgrades,
+        Dictionary<string, AchievementDefinition> achievements,
+        Dictionary<string, ChoiceDefinition> choices,
+        List<string> errors)
+    {
+        if (endings.Count == 0) return;
+
+        bool anyUnconditional = false;
+
+        foreach (EndingDefinition ending in endings)
+        {
+            string owner = $"结局 「{ending.Id}」";
+
+            if (string.IsNullOrWhiteSpace(ending.Name)) errors.Add($"{owner} 缺少显示名。");
+            if (string.IsNullOrWhiteSpace(ending.Text)) errors.Add($"{owner} 缺少终局文本。");
+
+            if (ending.Condition is ConstantCondition { Value: false })
+                errors.Add($"{owner} 的条件恒为假，永远达不成。");
+
+            if (ending.AchievementId is { Length: > 0 } achievementId && !achievements.ContainsKey(achievementId))
+                errors.Add($"{owner} 引用了不存在的成就 「{achievementId}」。");
+
+            ValidateCondition(ending.Condition, owner, buildings, upgrades, achievements, choices, errors);
+
+            // 条件里既没有选择节点、也没有立场权重 → 不依赖玩家表过什么态。
+            bool dependsOnStance = ending.Condition.OwnedLeaves().Any(o => o.Kind == OwnedKind.Choice)
+                                   || ending.Condition.NumericLeaves().Any(n => n.Metric == NumericMetric.StanceWeight);
+            if (!dependsOnStance) anyUnconditional = true;
+        }
+
+        if (!anyUnconditional)
+            errors.Add("所有结局都依赖玩家的选择或立场——回避表态的玩家会走完主线却没有结局。至少留一个兜底结局。");
+    }
+
     private static void ValidateModifiers(
         IReadOnlyList<Modifier> modifiers,
         string owner,
@@ -770,6 +835,7 @@ public sealed class GameContentBuilder
         Dictionary<string, AchievementDefinition> achievements,
         Dictionary<string, LoreEntry> loreEntries,
         Dictionary<string, ChoiceDefinition> choices,
+        Dictionary<string, EndingDefinition> endings,
         List<string> errors)
     {
         var conditionByNode = new Dictionary<string, UnlockCondition>(StringComparer.Ordinal);
@@ -780,6 +846,8 @@ public sealed class GameContentBuilder
         foreach (LoreEntry l in loreEntries.Values) conditionByNode[NodeKey("叙事", l.Id)] = l.Reveal;
         // 选择同理：条件永远不成立的选择，等于一段永远不会发生的对话。
         foreach (ChoiceDefinition c in choices.Values) conditionByNode[NodeKey("选择", c.Id)] = c.Trigger;
+        // 结局也一样：达不到的结局就是没写完的结局。
+        foreach (EndingDefinition e in endings.Values) conditionByNode[NodeKey("结局", e.Id)] = e.Condition;
 
         // 不动点：从"只依赖进度型指标"的节点出发反复放宽，直到不再有新节点可达。
         var reachable = new HashSet<string>(StringComparer.Ordinal);

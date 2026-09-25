@@ -229,6 +229,7 @@ public sealed class GameEngine
         CheckAchievements();
         CheckLore();
         CheckChoices();
+        CheckEnding();
     }
 
     // ---------------------------------------------------------------- 玩家动作
@@ -451,6 +452,17 @@ public sealed class GameEngine
 
     /// <summary>当前主导立场 id；没有立场轴或全部权重为 0 时为 <c>null</c>。</summary>
     public string? DominantStance => ChoiceSystem.DominantStance(Content, State);
+
+    /// <summary>
+    /// 检查终局判定。达成第一个满足条件的结局就记下，之后不再判（一份存档一个结局）。<para>
+    /// 与其它检查同频执行。判定完全由条件树驱动，引擎不认识"哪一层是最后一层"——
+    /// 想表达"走完主线"就在内容里写 <c>EraAtLeast(9)</c>。
+    /// </para>
+    /// </summary>
+    public EndingDefinition? CheckEnding() => EndingSystem.Check(this);
+
+    /// <summary>当前存档已达成的结局；未达成时为 <c>null</c>。</summary>
+    public EndingDefinition? ReachedEnding => EndingSystem.Reached(Content, State);
 
     /// <summary>点掉一个叙事弹窗。</summary>
     /// <param name="entryId">条目 id。</param>

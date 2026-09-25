@@ -23,6 +23,7 @@ NekoClicker.Core
 │   ├── EraDefinition.cs       纪元定义 + 闸门状态（EraGate）
 │   ├── LoreEntry.cs           叙事条目 + 剧情线
 │   ├── ChoiceDefinition.cs    选择 + 选项 + 立场
+│   ├── EndingDefinition.cs    结局（终局判定）
 │   ├── GameBalance.cs         全局平衡参数
 │   ├── GameContent.cs         内容容器（含索引）
 │   └── GameContentBuilder.cs  构建 + 校验
@@ -37,6 +38,7 @@ NekoClicker.Core
 │   ├── EraSystem.cs           纪元闸门判定、推进、跨层继承
 │   ├── LoreSystem.cs          叙事释放判定、待读队列、图鉴查询
 │   ├── ChoiceSystem.cs        选择触发、作答、立场权重与主导立场
+│   ├── EndingSystem.cs        终局判定：按 Priority 挑出唯一结局
 │   ├── GoldenCookieSystem.cs  随机事件：刷新、抽取、结算
 │   └── ActionResults.cs       动作结果类型（PurchaseResult 等）
 ├── Events/                    事件总线 + 领域事件
@@ -187,6 +189,23 @@ GameState  ←→  SaveData（DTO）  ←→  JSON / base64 分享码
 `Unlock = ChoiceMade("c1")` 是解锁，`Unlock = Not(ChoiceMade("c1"))` 就是"被这次选择锁掉"，
 而且还能继续组合。设计文档里的 `ChoiceOption.UnlocksUpgradeId` / `LocksUpgradeId` 因此被删掉了——
 少一套机制、少一处会写反的地方。
+
+### 终局判定：还是条件树，没有"最后一层"这个概念
+
+`EndingDefinition.Condition` 成立即达成。<b>引擎不认识"哪一层是最后一层"</b>：
+想表达"走完主线"就在内容里写 `EraAtLeast(9)`，想表达"某个立场占了上风"就写
+`StanceWeight("god", 3)`，想表达"某个关键真相没读到"就写 `Not(LoreAtLeast(n))`。
+这是 A2 的延续——**规则由数据表达，不由代码分支表达**。
+
+| 性质 | 怎么保证 |
+|---|---|
+| **互斥** | 按 `Priority` 升序取第一个满足条件的；记下之后判定永久停止（`EndingsReached.Count > 0` 直接返回） |
+| **不会重复触发** | 同上。立场权重与图鉴条数都是单调不减的，达成后会一直成立，必须靠"判一次就停"来收口 |
+| **回避表态也有结局** | 构建期强制"至少有一个结局的条件里不含 `OwnedKind.Choice` 与 `NumericMetric.StanceWeight`"——否则走完主线却没有任何结局成立，玩家卡在真空中 |
+| **不重置存档** | 只写 `Counters["ending_<id>"] = 1` 与 `EndingsReached`，其余一律不动 |
+
+> 一份存档只有一个结局。立场权重跨转生保留（选择是"发生过的事"），
+> 所以**探索其它结局要开新存档**——这是刻意的取舍，不是遗漏。
 
 ## 终端渲染：为什么不是"每帧整屏重写"
 

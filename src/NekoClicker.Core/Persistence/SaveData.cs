@@ -89,6 +89,9 @@ public sealed class SaveData
     /// <summary>各立场的累计权重。</summary>
     public Dictionary<string, int> StanceWeights { get; set; } = new(StringComparer.Ordinal);
 
+    /// <summary>已达成的结局 id。</summary>
+    public List<string> EndingsReached { get; set; } = [];
+
     // ---- 金猫 ----
     /// <summary>下一次金猫倒计时。</summary>
     public double GoldenCookieCountdown { get; set; }

@@ -96,6 +96,14 @@ public sealed class GameState
     public string? AnswerOf(string choiceId)
         => ChoiceAnswers.TryGetValue(choiceId, out string? optionId) ? optionId : null;
 
+    /// <summary>
+    /// 已达成的结局 id。<para>
+    /// 是集合而不是单值，是为了将来"一份存档走多个周目"留位置；当前判定逻辑
+    /// 只会写入一个（见 <see cref="EndingSystem"/>）。
+    /// </para>
+    /// </summary>
+    public HashSet<string> EndingsReached { get; } = new(StringComparer.Ordinal);
+
     // ---------- 时间 ----------
 
     /// <summary>存档创建时刻。</summary>
@@ -161,7 +169,13 @@ public sealed class GameState
     public double GetCounter(string key) => Counters.TryGetValue(key, out double v) ? v : 0;
 
     /// <summary>累加自定义计数器。</summary>
+    /// <summary>累加一个自定义计数器。</summary>
     public void AddCounter(string key, double delta) => Counters[key] = GetCounter(key) + delta;
+
+    /// <summary>直接写入一个自定义计数器（用于"标记某件事发生过"这种幂等的记录）。</summary>
+    /// <param name="key">计数器键。</param>
+    /// <param name="value">要写入的值。</param>
+    public void SetCounter(string key, double value) => Counters[key] = value;
 
     /// <summary>所有建筑数量之和。</summary>
     public double TotalBuildings()

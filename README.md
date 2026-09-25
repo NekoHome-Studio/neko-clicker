@@ -32,7 +32,7 @@
 > 在普通开发机上也可以直接 `dotnet build` / `dotnet run`。
 
 ```powershell
-# 构建 + 跑测试（236 个用例，零依赖迷你运行器）
+# 构建 + 跑测试（249 个用例，零依赖迷你运行器）
 .\tools\build.ps1
 
 # 只构建全部项目
@@ -69,7 +69,7 @@ src/NekoClicker.Content.Neko/    示例内容包「猫咖物语」（纯数据�
 src/NekoClicker.Content.Cafe/    内容包 #1《猫娘咖啡馆》（含幸福感模块，核心零改动）
 src/NekoClicker.Content.NineLives/ 内容包 #2《九命轮回》（九层纪元，第一个用分层转生的包）
 src/NekoClicker.Demo.Cli/        终端 UI 适配层（ANSI 全屏 + 键盘 + 无头模式 + --package）
-tests/NekoClicker.Core.Tests/    236 个测试 + 自研迷你测试运行器（含架构不变量与全程可达测试）
+tests/NekoClicker.Core.Tests/    249 个测试 + 自研迷你测试运行器（含架构不变量与全程可达测试）
 docs/ARCHITECTURE.md             架构与设计决策
 docs/CONTENT_AUTHORING.md        如何写内容（数值节奏、校验规则、常见坑）
 docs/ROADMAP.md                  实施规划与决策记录：11 项已定决策、4 条架构不变量、5 个阶段
@@ -101,6 +101,7 @@ tools/seed-packages.ps1          把全局 NuGet 缓存里的 net8.0 targeting p
 | 分层转生（`Era`） | 纪元串成一条链，**「舍一命」只有一个按钮**，上一层未完成时按钮为灰并显示最落后的子条件 | `EraDefinition` + `EraGate` |
 | 图鉴 / 叙事释放 | 条目挂在**叙事线**上，达成条件即解锁；未解锁显示 `???` + 条件进度 | `LoreEntry` + `StorylineDefinition` |
 | 选择分支 / 立场轴 | 条件达成即触发对话，作答后才生效；各立场累加权重，**主导立场**的修饰符计入产量 | `ChoiceDefinition` + `StanceDefinition` |
+| 终局判定 | 主线走完后按条件树挑出**一个**结局（Priority 定序、互斥），构建期强制留兜底结局 | `EndingDefinition` |
 | 离线收益 | 按**不含增益**的产量补发，有上限 | `GameBalance.OfflineCapSeconds` |
 | 存档 | JSON + base64 分享码 + **版本迁移** | `ISaveMigration` |
 | 通知 / 事件 | 类型安全的 `GameEventBus`，十几类领域事件 | 无需配置 |
@@ -218,7 +219,7 @@ Console.WriteLine(engine.Save());           // JSON 存档
 
 ## 状态
 
-- 核心引擎、三个内容包（猫咖物语 / 猫娘咖啡馆 / 九命轮回）、终端 Demo、**236 个测试**全部通过。
+- 核心引擎、三个内容包（猫咖物语 / 猫娘咖啡馆 / 九命轮回）、终端 Demo、**249 个测试**全部通过。
 - **分层转生（`Era`）已落地**：九层纪元、逐级推进的舍命按钮、每层换规则的平衡覆盖、
   跨层继承、构建期的完成条件单调性校验。九命全程可达由机器人测试守住。
 - **图鉴 / 叙事释放（S-B）已落地**：叙事线 + 条目、条件达成即解锁、图鉴面板（`???` 遮蔽

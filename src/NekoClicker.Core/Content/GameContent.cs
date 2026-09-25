@@ -163,6 +163,16 @@ public sealed class GameContent
     /// <summary>按 id 查立场。</summary>
     public StanceDefinition? FindStance(string id) => StanceById.TryGetValue(id, out StanceDefinition? d) ? d : null;
 
+    /// <summary>结局列表（按声明顺序；判定时按 <see cref="EndingDefinition.Priority"/> 排）。</summary>
+    public IReadOnlyList<EndingDefinition> Endings { get; init; } = [];
+
+    /// <summary>结局索引。</summary>
+    public IReadOnlyDictionary<string, EndingDefinition> EndingById { get; init; }
+        = new Dictionary<string, EndingDefinition>(StringComparer.Ordinal);
+
+    /// <summary>按 id 查结局。</summary>
+    public EndingDefinition? FindEnding(string id) => EndingById.TryGetValue(id, out EndingDefinition? d) ? d : null;
+
     /// <summary>某条剧情线下的全部条目，按序号升序。</summary>
     public IReadOnlyList<LoreEntry> LoreOf(string storylineId)
         => [.. LoreEntries.Where(e => string.Equals(e.StorylineId, storylineId, StringComparison.Ordinal)).OrderBy(e => e.Order)];

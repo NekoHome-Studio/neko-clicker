@@ -447,6 +447,25 @@ public sealed record ChoiceOptionView
     public string EffectSummary { get; init; } = string.Empty;
 }
 
+/// <summary>已达成的结局（终局判定）。</summary>
+public sealed record EndingView
+{
+    /// <summary>结局 id。</summary>
+    public required string Id { get; init; }
+
+    /// <summary>结局名。</summary>
+    public required string Name { get; init; }
+
+    /// <summary>图标。</summary>
+    public string Icon { get; init; } = "🌌";
+
+    /// <summary>终局文本。</summary>
+    public string Text { get; init; } = string.Empty;
+
+    /// <summary>该结局解锁的成就 id（若有）。</summary>
+    public string? AchievementId { get; init; }
+}
+
 /// <summary>
 /// 一帧 UI 所需的全部数据。<para>
 /// 这是引擎对前端的完整契约：前端只读它、只发命令，不接触 <see cref="GameState"/>。
@@ -579,4 +598,7 @@ public sealed record GameSnapshot
 
     /// <summary>当前主导立场 id；没有立场轴或全部权重为 0 时为 <c>null</c>。</summary>
     public string? DominantStanceId { get; init; }
+
+    /// <summary>已达成的结局；未达成或内容包没有结局时为 <c>null</c>。</summary>
+    public EndingView? Ending { get; init; }
 }

@@ -206,6 +206,22 @@ public static class GameViewFactory
             PendingChoices = BuildPendingChoices(engine),
             Stances = BuildStances(engine),
             DominantStanceId = engine.DominantStance,
+            Ending = BuildEndingView(engine),
+        };
+    }
+
+    /// <summary>构造已达成结局的视图；未达成或没有结局时返回 <c>null</c>。</summary>
+    private static EndingView? BuildEndingView(GameEngine engine)
+    {
+        if (engine.ReachedEnding is not { } ending) return null;
+
+        return new EndingView
+        {
+            Id = ending.Id,
+            Name = ending.Name,
+            Icon = ending.Icon,
+            Text = ending.Text,
+            AchievementId = ending.AchievementId,
         };
     }
 
