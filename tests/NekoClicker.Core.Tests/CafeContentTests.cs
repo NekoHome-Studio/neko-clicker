@@ -234,6 +234,7 @@ public static class CafeContentTests
             .FirstOrDefault(c => c.Metric == NumericMetric.Counter && c.Id == CafeContent.HappinessCounterKey);
 
         Check.NotNull(happinessGate, "「常客名单」应包含幸福感解锁条件。");
+        if (happinessGate is null) return; // Check 不会让编译器知道非空，这一句是给它看的
 
         GameEngine engine = TestGame.CreateCafe(out _);
         Check.False(happinessGate.IsMet(engine.Metrics, content));

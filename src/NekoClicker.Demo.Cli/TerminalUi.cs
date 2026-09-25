@@ -51,6 +51,8 @@ internal static class TerminalUi
         {
             PanelFocus.Achievements => session.Achievements.Count,
             PanelFocus.Codex => session.Codex.Count,
+            // 漏掉这一行就会用"升级数量"去索引选择行：升级比选择多时直接越界崩溃。
+            PanelFocus.Choices => session.ChoiceRows.Count,
             _ => session.Upgrades.Count,
         };
         int leftSelected = session.Focus == PanelFocus.Buildings ? session.Selected : -1;

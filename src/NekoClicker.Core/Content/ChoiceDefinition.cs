@@ -27,7 +27,7 @@ public sealed record StanceDefinition
 
     /// <summary>
     /// 这一立场主导时生效的全局修饰符。<para>
-    /// 这是立场进入引擎的接缝：<see cref="Simulation.ModifierResolver"/> 的第 5 个来源。
+    /// 这是立场进入引擎的接缝：<see cref="NekoClicker.Core.ModifierResolver"/> 的第 6 个来源。
     /// </para>
     /// </summary>
     public IReadOnlyList<Modifier> Modifiers { get; init; } = [];
