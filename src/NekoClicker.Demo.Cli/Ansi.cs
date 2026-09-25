@@ -59,6 +59,24 @@ internal static class Ansi
     /// <summary>清除光标之后的内容。</summary>
     public static string ClearToEnd() => ColorEnabled ? "\u001b[J" : string.Empty;
 
+    /// <summary>把光标移到指定行的第 1 列（行号从 1 起）。增量刷新靠它定位。</summary>
+    public static string MoveTo(int row) => ColorEnabled ? $"\u001b[{row};1H" : string.Empty;
+
+    /// <summary>擦除光标到行尾（<c>EL</c>）。整行覆盖后补一发，帧变短时不留脏字符。</summary>
+    public static string ClearLine() => ColorEnabled ? "\u001b[K" : string.Empty;
+
+    /// <summary>
+    /// 开始"同步输出"（DEC 私有模式 2026）。<para>
+    /// 这才是终端上真正意义上的双缓冲：夹在 <see cref="SyncStart"/> 与 <see cref="SyncEnd"/>
+    /// 之间的写入被终端攒成一批，等这一帧写完了才整体上屏。没有它，终端完全可能
+    /// 在一帧只写到一半时就开始绘制，于是看到撕裂/闪烁。不支持的终端会忽略这两个序列。
+    /// </para>
+    /// </summary>
+    public static string SyncStart() => ColorEnabled ? "\u001b[?2026h" : string.Empty;
+
+    /// <summary>结束同步输出，让终端把攒下的这一帧整体呈现。</summary>
+    public static string SyncEnd() => ColorEnabled ? "\u001b[?2026l" : string.Empty;
+
     /// <summary>按终端显示宽度计算字符串占用的列数。</summary>
     public static int DisplayWidth(string? text)
     {
