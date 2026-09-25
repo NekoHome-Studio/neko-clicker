@@ -189,12 +189,15 @@ Console.WriteLine(engine.Save());           // JSON 存档
    脚本给会调用 MSBuild 的动词强制加 `-m:1`（单节点、全进程内执行）。
 3. **目标框架是 net8.0，但开发机可能只装了更新的 SDK**（例如 .NET 10）。这类 SDK 不自带
    net8.0 的 targeting pack，restore 会去 nuget.org 下载；叠加第 1 条的缓存重定向，
-   没有网络时构建会以 `NU1301` 失败。`tools/seed-packages.ps1` 会把全局 NuGet 缓存里
-   已有的 8.0.x targeting pack 复制进仓库内的 `.packages`（找不到就跳过），`dnet.ps1`
+   没有网络时构建会以 `NU1301` 失败。`tools/seed-packages.ps1` 从**当前 SDK 自己的声明**
+   （`Microsoft.NETCoreSdk.BundledVersions.props` 里 net8.0 的 `KnownFrameworkReference`）
+   解析出真正需要的包与精确版本，然后分三种情况处理：SDK 的 `packs` 目录已自带该版本 →
+   **静默什么都不做**；否则从全局 NuGet 缓存播种它；两边都没有才报警。`dnet.ps1`
    在执行 build/restore 前自动调用它。
 
-> 若第 3 条仍然失败（全局缓存里也没有这些包），先用一次联网的 `dotnet restore` 把它们拉下来，
-> 再运行 `.\tools\seed-packages.ps1`；也可以用 `-Version` 指定本机 SDK 需要的补丁版本。
+> 判定依据可以用 `.\tools\seed-packages.ps1 -Explain` 打印出来。
+> 若确实缺包，先用一次联网的 `dotnet restore` 把它们拉下来再运行该脚本；
+> 也可以用 `-Version` 强制指定版本（跳过 SDK 声明解析）。
 
 在其他环境下（普通开发机、CI）可以直接用 `dotnet build` / `dotnet run`，不需要这个脚本。
 
