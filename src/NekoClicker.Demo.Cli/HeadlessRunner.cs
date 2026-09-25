@@ -214,6 +214,30 @@ internal static class HeadlessRunner
             Field("本层规则", eraView.ModifierSummary.Length > 0 ? eraView.ModifierSummary : "无额外倍率");
         }
 
+        // 立场与结局：报告里必须有，否则"内容可达性"没法在无头模式下验收
+        // （Demo 面板要人按键才看得到，而无头报告可以进 CI 比对）。
+        if (snap.Stances is { Count: > 0 } stances)
+        {
+            Section("立场");
+            foreach (StanceView stance in stances)
+            {
+                string marker = stance.IsDominant ? "▸" : " ";
+                Field(
+                    $"{marker}{stance.Icon} {stance.Name}",
+                    $"{stance.Weight} 点（{NumFormat.Percent(stance.Share, 0)}）{(stance.IsDominant ? "　← 主导" : string.Empty)}");
+            }
+
+            Field("待表态", $"{state.PendingChoices.Count} 项");
+            Field("已表态", $"{state.ChoiceAnswers.Count} 项");
+        }
+
+        if (snap.Ending is { } ending)
+        {
+            Section("结局");
+            Field("结局", $"{ending.Icon} {ending.Name}");
+            Field("正文", ending.Text);
+        }
+
         Section(session.Package.PrestigeActionName);
         Field("当前等级", snap.PrestigeLevel.ToString());
         Field(engine.Content.PrestigeCurrencyName, NumFormat.FormatPlain(state.PrestigeChips));

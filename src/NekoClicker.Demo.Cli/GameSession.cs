@@ -20,7 +20,15 @@ internal enum PanelFocus
 
     /// <summary>图鉴（叙事条目）面板；内容包没有叙事时该面板为空。</summary>
     Codex,
+
+    /// <summary>表态（待答选择与立场）面板；内容包没有选择时该面板为空。</summary>
+    Choices,
 }
+
+/// <summary>表态面板的一行：某次待答选择的一个选项。</summary>
+/// <param name="Choice">所属选择。</param>
+/// <param name="Option">该选项。</param>
+internal readonly record struct ChoiceRow(ChoiceView Choice, ChoiceOptionView Option);
 
 /// <summary>
 /// 会话：把引擎、存档和"界面状态"绑在一起。<para>
@@ -37,11 +45,15 @@ internal sealed class GameSession : IDisposable
 
     private readonly List<GameNotification> _log = [];
     private readonly IDisposable _notificationSubscription;
+    private readonly IDisposable _choiceSubscription;
+    private readonly IDisposable _stanceSubscription;
+    private readonly IDisposable _endingSubscription;
     private GameSnapshot _snapshot = null!;
     private BuildingView[] _buildingCache = [];
     private UpgradeView[] _upgradeCache = [];
     private AchievementView[] _achievementCache = [];
     private LoreView[] _codexCache = [];
+    private ChoiceRow[] _choiceCache = [];
 
     /// <summary>创建会话。</summary>
     /// <param name="package">要玩的内容包（决定构建哪份 <c>GameContent</c>）。</param>
@@ -60,6 +72,11 @@ internal sealed class GameSession : IDisposable
         });
 
         _notificationSubscription = Engine.Events.Subscribe<NotificationEvent>(OnNotification);
+
+        // 这三件事都很稀有、而且玩家错过就没了，所以直接进日志，不靠面板自己去发现。
+        _choiceSubscription = Engine.Events.Subscribe<ChoiceTriggeredEvent>(OnChoiceTriggered);
+        _stanceSubscription = Engine.Events.Subscribe<DominantStanceChangedEvent>(OnDominantStanceChanged);
+        _endingSubscription = Engine.Events.Subscribe<EndingReachedEvent>(OnEndingReached);
 
         if (savePath is not null)
         {
@@ -141,6 +158,7 @@ internal sealed class GameSession : IDisposable
             PanelFocus.Buildings => PanelFocus.Upgrades,
             PanelFocus.Upgrades => PanelFocus.Achievements,
             PanelFocus.Achievements => PanelFocus.Codex,
+            PanelFocus.Codex => PanelFocus.Choices,
             _ => PanelFocus.Buildings,
         };
         Selected = 0;
@@ -248,6 +266,9 @@ internal sealed class GameSession : IDisposable
             case PanelFocus.Codex:
                 ActivateLore(Selected);
                 break;
+            case PanelFocus.Choices:
+                AnswerChoice(Selected);
+                break;
             default:
                 break;
         }
@@ -272,6 +293,31 @@ internal sealed class GameSession : IDisposable
 
         if (entry.Unlocked) Log($"「{entry.Title}」{entry.Body}", entry.Icon);
         else Log($"还没读到这一段。条件：{entry.RevealHint}", "🔒");
+    }
+
+    /// <summary>
+    /// 作答表态面板里的一行。<para>
+    /// 作答是<b>一次性</b>的：同一个选择答过之后就不再出现在面板里，
+    /// 所以面板里每一行都是"还没答过的选项"。
+    /// </para>
+    /// </summary>
+    /// <param name="index">行下标。</param>
+    public void AnswerChoice(int index)
+    {
+        if (index < 0 || index >= _choiceCache.Length) return;
+
+        ChoiceRow row = _choiceCache[index];
+        if (!Engine.AnswerChoice(row.Choice.Id, row.Option.Id))
+        {
+            Log("这次表态已经不成立了。", "⚠");
+            RefreshCache();
+            return;
+        }
+
+        // 结果文本刻意不放进视图：作答前不该剧透后果。答完再从引擎取回来。
+        string outcome = ChoiceSystem.AnswerOf(Engine.Content, Engine.State, row.Choice.Id)?.OutcomeText ?? string.Empty;
+        Log($"{row.Option.Label}{outcome}", "🗣");
+        RefreshCache();
     }
 
     /// <summary>执行指定序号的建筑（供数字快捷键使用）。</summary>
@@ -377,12 +423,19 @@ internal sealed class GameSession : IDisposable
     /// <summary>图鉴条目（按剧情线与序号排好）。</summary>
     public IReadOnlyList<LoreView> Codex => _codexCache;
 
+    /// <summary>待表态的选项行（按选择触发顺序，每次选择的选项相邻）。</summary>
+    public IReadOnlyList<ChoiceRow> ChoiceRows => _choiceCache;
+
+    /// <summary>是否启用了立场轴。</summary>
+    public bool HasStances => _snapshot.Stances is { Count: > 0 };
+
     /// <summary>当前焦点面板的行数。</summary>
     public int RowCount => Focus switch
     {
         PanelFocus.Buildings => _buildingCache.Length,
         PanelFocus.Upgrades => _upgradeCache.Length,
         PanelFocus.Codex => _codexCache.Length,
+        PanelFocus.Choices => _choiceCache.Length,
         _ => _achievementCache.Length,
     };
 
@@ -397,6 +450,9 @@ internal sealed class GameSession : IDisposable
     public void Dispose()
     {
         _notificationSubscription.Dispose();
+        _choiceSubscription.Dispose();
+        _stanceSubscription.Dispose();
+        _endingSubscription.Dispose();
         Saves?.Dispose();
     }
 
@@ -405,6 +461,19 @@ internal sealed class GameSession : IDisposable
         _log.Add(evt.Notification);
         while (_log.Count > MaxLogLines) _log.RemoveAt(0);
     }
+
+    private void OnChoiceTriggered(ChoiceTriggeredEvent evt)
+        => Log($"{evt.Speaker}问你：「{evt.Prompt}」 —— 按 Tab 切到「表态」作答。", "🗣");
+
+    private void OnDominantStanceChanged(DominantStanceChangedEvent evt)
+    {
+        if (evt.CurrentStanceId is not { } id) return;
+        if (Engine.Content.FindStance(id) is not { } stance) return;
+        Log($"{stance.Name}开始主导。{stance.CostText}", stance.Icon);
+    }
+
+    private void OnEndingReached(EndingReachedEvent evt)
+        => Log($"结局「{evt.Name}」：{evt.Text}", evt.Icon);
 
     private void RefreshCache()
     {
@@ -416,6 +485,13 @@ internal sealed class GameSession : IDisposable
         _codexCache = _snapshot.Codex is { } codex
             ? [.. codex.Storylines.SelectMany(s => s.Entries)]
             : [];
+
+        // 行 = 待答选择的选项，按选择分组相邻排列（面板里一次表态的两个选项挨在一起）。
+        _choiceCache =
+        [
+            .. _snapshot.PendingChoices.SelectMany(
+                choice => choice.Options.Select(option => new ChoiceRow(choice, option))),
+        ];
 
         int count = RowCount;
         if (Selected >= count) Selected = Math.Max(0, count - 1);

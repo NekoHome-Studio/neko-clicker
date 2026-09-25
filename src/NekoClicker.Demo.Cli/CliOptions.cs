@@ -142,7 +142,7 @@ internal sealed class CliOptions
                     }
                     else
                     {
-                        options.Error = "--panel 需要 buildings / upgrades / achievements / codex 之一。";
+                        options.Error = "--panel 需要 buildings / upgrades / achievements / codex / choices 之一。";
                     }
                     break;
 
@@ -187,7 +187,7 @@ internal sealed class CliOptions
           --no-save           本次运行不读写存档
           --frame [宽x高]     渲染一帧界面到标准输出后退出（默认 100x30）
           --size <宽x高>      指定界面尺寸
-          --panel <名称>      指定右侧面板初始焦点：buildings | upgrades | achievements | codex
+          --panel <名称>      指定右侧面板初始焦点：buildings | upgrades | achievements | codex | choices
           --no-color          关闭 ANSI 颜色
           -h, --help          显示本帮助
 
@@ -198,7 +198,7 @@ internal sealed class CliOptions
 
         游戏内按键:
           空格 / C    手动点击（撸猫 / 做咖啡）
-          Tab         切换面板焦点（建筑 → 升级 → 成就 → 图鉴）
+          Tab         切换面板焦点（建筑 → 升级 → 成就 → 图鉴 → 表态）
           ↑ / ↓       移动选择
           1-9, 0      直接选中当前面板的第 1~10 项
           Enter       执行（买建筑 / 买升级）
@@ -227,6 +227,7 @@ internal sealed class CliOptions
             case "upgrades": panel = PanelFocus.Upgrades; return true;
             case "achievements": panel = PanelFocus.Achievements; return true;
             case "codex": panel = PanelFocus.Codex; return true;
+            case "choices": panel = PanelFocus.Choices; return true;
             default: panel = PanelFocus.Buildings; return false;
         }
     }

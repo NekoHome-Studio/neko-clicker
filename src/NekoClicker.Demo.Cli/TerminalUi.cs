@@ -96,6 +96,9 @@ internal static class TerminalUi
                         case PanelFocus.Codex:
                             CodexRow(rightLine, session, session.Codex[rightIndex], rightIndex, layout.Right);
                             break;
+                        case PanelFocus.Choices:
+                            ChoiceOptionRow(rightLine, session, session.ChoiceRows[rightIndex], rightIndex, layout.Right);
+                            break;
                         default:
                             UpgradeRow(rightLine, session, session.Upgrades[rightIndex], rightIndex, layout.Right);
                             break;
@@ -144,6 +147,9 @@ internal static class TerminalUi
         .Add($"  成就 {snap.AchievementCount}/{snap.AchievementTotal}", Ansi.S(Style.Gray))
         .Add($"  建筑 {NumFormat.FormatPlain(snap.TotalBuildings)}", Ansi.S(Style.Gray));
 
+    // 立场轴刻意不放进顶栏：顶栏那一半本来就快占满了，塞进去会把"建筑"之类的尾部挤掉。
+    // 完整立场轴在「表态」面板里展示，主导立场变化时也会进日志。
+
     private static UiLine StatusLeft(GameSession session, GameSnapshot snap)
     {
         var line = UiLine.New().Add(" ");
@@ -166,6 +172,17 @@ internal static class TerminalUi
                 .Add($"  位置 ({(int)(cookie.X * 100)}%, {(int)(cookie.Y * 100)}%)  按 ", Ansi.S(Style.Gray))
                 .Add("G", Ansi.S(Style.Bold + Style.BrightGreen))
                 .Add(" 抓住", Ansi.S(Style.Gray));
+        }
+
+        if (snap.PendingChoices.Count > 0)
+        {
+            // 表态排在剧情前面：剧情放出来就一直读得到，而表态是**会错过的**
+            // （EraId 是硬门，舍命走人就再也遇不到），所以它的提示优先级更高。
+            // 注意长度：状态栏左半只有约 50 列，"（会错过）"这种补充说明留给面板标题。
+            return line.Add($"🗣 {snap.PendingChoices.Count} 项待答", Ansi.S(Style.Bold + Style.BrightMagenta))
+                .Add("　Tab 切「表态」，", Ansi.S(Style.Gray))
+                .Add("Enter", Ansi.S(Style.Bold + Style.BrightGreen))
+                .Add(" 作答", Ansi.S(Style.Gray));
         }
 
         if (snap.PendingLore.Count > 0)
@@ -223,8 +240,20 @@ internal static class TerminalUi
         {
             PanelFocus.Achievements => BuildAchievementTitle(snap, start, count, total),
             PanelFocus.Codex => BuildCodexTitle(snap, start, count, total),
+            PanelFocus.Choices => BuildChoiceTitle(session, start, count, total),
             _ => BuildUpgradeTitle(session.Upgrades.Count, start, count, total),
         };
+
+    private static string BuildChoiceTitle(GameSession session, int start, int count, int total)
+    {
+        if (!session.HasStances && session.ChoiceRows.Count == 0) return " 表态  （本内容包没有表态机制）";
+
+        int pending = session.Snapshot.PendingChoices.Count;
+        if (pending == 0) return $" 表态  （没有待答）{Scroll(start, count, total)}";
+
+        // "舍命后不再"不是吓唬：选择挂了 EraId，是硬门，过了那一层就永远遇不到。
+        return $" 表态  {pending} 项待答 ⚠舍命后不再{Scroll(start, count, total)}";
+    }
 
     private static string BuildCodexTitle(GameSnapshot snap, int start, int count, int total)
         => snap.Codex is { } codex
@@ -262,8 +291,7 @@ internal static class TerminalUi
     }
 
     private static void UpgradeRow(UiLine line, GameSession session, UpgradeView view, int index, int width)
-    {
-        bool selected = session.Focus == PanelFocus.Upgrades && index == session.Selected;
+    {        bool selected = session.Focus == PanelFocus.Upgrades && index == session.Selected;
 
         string currency = view.Currency == UpgradeCurrency.PrestigeChips
             ? session.Snapshot.PrestigeCurrencyIcon
@@ -282,6 +310,24 @@ internal static class TerminalUi
             : view.CanAfford ? Ansi.S(Style.BrightCyan) : Ansi.S(Style.Gray);
 
         line.Add(row, style);
+    }
+
+    /// <summary>表态面板的一行 = 某次待答选择的一个选项。</summary>
+    private static void ChoiceOptionRow(UiLine line, GameSession session, ChoiceRow row, int index, int width)
+    {
+        bool selected = session.Focus == PanelFocus.Choices && index == session.Selected;
+        ChoiceOptionView option = row.Option;
+
+        string stance = option.StanceName.Length > 0
+            ? $"{option.StanceIcon}{option.StanceName}+{option.Weight}"
+            : "中立";
+
+        // 结构：空格 ▸ 1 标签(可变) 立场(约 6~12) 尾空格
+        int labelWidth = Math.Max(6, width - 8 - Ansi.DisplayWidth(stance));
+        string text = $" {(selected ? '▸' : ' ')}{Slot(index)} " +
+                      $"{Ansi.PadRight(Ansi.Truncate(option.Label, labelWidth), labelWidth)} {stance}";
+
+        line.Add(text, selected ? Ansi.S(Style.Inverse) : Ansi.S(Style.BrightYellow));
     }
 
     private static void AchievementRow(UiLine line, GameSession session, AchievementView view, int index, int width)
@@ -394,10 +440,65 @@ internal static class TerminalUi
                 return line;
             }
 
+            case PanelFocus.Choices when session.ChoiceRows.Count > 0:
+            {
+                ChoiceRow row = session.ChoiceRows[Math.Clamp(session.Selected, 0, session.ChoiceRows.Count - 1)];
+
+                line.Add($"🗣 {row.Choice.Speaker}：{row.Choice.Prompt}", Ansi.S(Style.Bold))
+                    .Add("　选：", Ansi.S(Style.Gray));
+
+                for (int i = 0; i < row.Choice.Options.Count; i++)
+                {
+                    ChoiceOptionView option = row.Choice.Options[i];
+                    if (i > 0) line.Add("｜", Ansi.S(Style.Gray));
+
+                    line.Add(option.Label, Ansi.S(Style.BrightYellow));
+                    if (option.StanceName.Length > 0)
+                    {
+                        line.Add($" +{option.StanceName}{option.Weight}", Ansi.S(Style.Magenta));
+                    }
+                    if (option.EffectSummary.Length > 0)
+                    {
+                        line.Add($" {option.EffectSummary}", Ansi.S(Style.Cyan));
+                    }
+                }
+
+                return line;
+            }
+
+            case PanelFocus.Choices:
+                // 没有待答时，这一行改用来展示立场轴与结局——那是这个面板的另一半用处。
+                return line.Add(StanceAxis(snap), Ansi.S(Style.Gray));
+
             default:
                 _ = snap;
-                return line.Add("按 Tab 切换面板，↑↓ 选择，Enter 执行。", Ansi.S(Style.Gray));
+                return line.Add(StanceAxis(snap), Ansi.S(Style.Gray));
         }
+    }
+
+    /// <summary>立场轴一行文本；没有立场轴时给出通用操作提示。</summary>
+    private static string StanceAxis(GameSnapshot snap)
+    {
+        if (snap.Stances is not { } stances) return "按 Tab 切换面板，↑↓ 选择，Enter 执行。";
+
+        var text = new System.Text.StringBuilder("⚖️ 立场　");
+        foreach (StanceView stance in stances)
+        {
+            text.Append(stance.Icon).Append(stance.Name).Append(' ').Append(stance.Weight);
+            if (stance.IsDominant) text.Append("▸");
+            text.Append("　");
+        }
+
+        if (snap.Ending is { } ending)
+        {
+            text.Append("｜ ").Append(ending.Icon).Append(" 结局「").Append(ending.Name).Append("」：").Append(ending.Text);
+        }
+        else
+        {
+            text.Append("｜ 主导立场决定产量加成；每次都选同一条才会成为主导。");
+        }
+
+        return text.ToString();
     }
 
     /// <summary>取倒数第 <paramref name="offsetFromEnd"/> 条日志（0 = 最新）。</summary>
@@ -429,7 +530,7 @@ internal static class TerminalUi
         [
             ("空格", snap.ClickActionName),
             ("Tab", "切面板"),
-            ("Enter", "执行"),
+            ("Enter", session.Focus == PanelFocus.Choices ? "作答" : "执行"),
             ("X", "批量"),
             ("V", "买卖"),
             ("G", session.Package.GoldenCookieName),

@@ -57,8 +57,11 @@
 # 渲染一帧界面（用于验证布局 / 截图，可重定向到文件）
 .\tools\play.ps1 --simulate 1800 --auto --frame 118x32 --no-color
 
-# 渲染时直接停在某个面板（buildings | upgrades | achievements | codex）
+# 渲染时直接停在某个面板（buildings | upgrades | achievements | codex | choices）
 .\tools\play.ps1 --package cafe --simulate 5400 --auto --frame 118x32 --panel codex --no-color
+
+# 九命轮回的「表态」面板：待答选择 + 立场轴 + 结局（第 5 命就攒了 3 项待答）
+.\tools\play.ps1 --package ninelines --simulate 21600 --auto --frame 118x24 --panel choices --no-color
 ```
 
 ### 目录结构
