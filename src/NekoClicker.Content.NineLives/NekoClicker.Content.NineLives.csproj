@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>NekoClicker.Content.NineLives</RootNamespace>
+    <AssemblyName>NekoClicker.Content.NineLives</AssemblyName>
+    <!-- 内容包 #2《九命轮回》：第一个使用分层转生（Era）的内容包。 -->
+    <Description>内容包 #2：九命轮回——九层纪元、逐级推进的舍命按钮。</Description>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\NekoClicker.Core\NekoClicker.Core.csproj" />
+  </ItemGroup>
+
+</Project>

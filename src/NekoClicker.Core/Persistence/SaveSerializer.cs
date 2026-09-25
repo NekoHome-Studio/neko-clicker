@@ -81,6 +81,10 @@ public static class SaveSerializer
             }).ToList(),
             Counters = new Dictionary<string, double>(state.Counters, StringComparer.Ordinal),
             Metadata = new Dictionary<string, string>(state.Metadata, StringComparer.Ordinal),
+            Era = state.Era,
+            EraCompleted = [.. state.EraCompleted],
+            EraHistory = new Dictionary<int, EraRecord>(state.EraHistory),
+            EraEnteredPlayTimeSeconds = state.EraEnteredPlayTimeSeconds,
         };
     }
 
@@ -107,7 +111,12 @@ public static class SaveSerializer
             GoldenCookieIntroduced = data.GoldenCookieIntroduced,
             RandomState0 = data.RandomState0,
             RandomState1 = data.RandomState1,
+            Era = data.Era < 1 ? 1 : data.Era,
+            EraEnteredPlayTimeSeconds = data.EraEnteredPlayTimeSeconds,
         };
+
+        foreach (int index in data.EraCompleted) state.EraCompleted.Add(index);
+        foreach ((int index, EraRecord record) in data.EraHistory) state.EraHistory[index] = record;
 
         foreach ((string id, int count) in data.Buildings) state.BuildingCounts[id] = count;
         foreach ((string id, int count) in data.Upgrades) state.UpgradeCounts[id] = count;
@@ -220,6 +229,8 @@ public static class SaveSerializer
         data.GoldenCookies ??= [];
         data.Counters ??= new Dictionary<string, double>(StringComparer.Ordinal);
         data.Metadata ??= new Dictionary<string, string>(StringComparer.Ordinal);
+        data.EraCompleted ??= [];
+        data.EraHistory ??= [];
 
         return data;
     }

@@ -73,4 +73,7 @@ public interface IGameMetrics
 
     /// <summary>读取自定义统计计数器；不存在返回 0。</summary>
     double GetCounter(string key);
+
+    /// <summary>当前纪元（转生层号）；没有分层的包恒为 1。</summary>
+    int Era { get; }
 }

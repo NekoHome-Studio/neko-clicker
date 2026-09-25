@@ -200,6 +200,51 @@ public static class GameViewFactory
             GoldenCookies = goldenCookies,
             Notifications = [.. engine.Notifications],
             Prestige = PrestigeSystem.Preview(engine),
+            Era = BuildEraView(engine),
+        };
+    }
+
+    /// <summary>构造舍命面板；内容包没有分层转生时返回 <c>null</c>。</summary>
+    private static EraView? BuildEraView(GameEngine engine)
+    {
+        GameContent content = engine.Content;
+        if (!content.HasEras) return null;
+
+        GameState state = engine.State;
+        EraGate gate = EraSystem.CanAdvance(engine);
+        content.EraByIndex.TryGetValue(state.Era, out EraDefinition? current);
+
+        List<EraSummary> all = new(content.Eras.Count);
+        foreach (EraDefinition era in content.Eras)
+        {
+            all.Add(new EraSummary(
+                era.Index,
+                era.Name,
+                era.Icon,
+                era.Theme,
+                state.EraCompleted.Contains(era.Index),
+                era.Index == state.Era));
+        }
+
+        return new EraView
+        {
+            Index = state.Era,
+            Total = content.Eras.Count,
+            Id = current?.Id ?? string.Empty,
+            Name = current?.Name ?? $"第 {state.Era} 层",
+            Theme = current?.Theme ?? string.Empty,
+            Icon = current?.Icon ?? "🌙",
+            EntryText = current?.EntryText ?? string.Empty,
+            CanAdvance = gate.CanAdvance,
+            BlockedReason = gate.BlockedReason,
+            Progress = gate.Progress,
+            ProgressText = EraSystem.DescribeProgress(engine),
+            NextIndex = gate.NextIndex,
+            NextName = gate.NextIndex is { } next ? content.FindEra(next)?.Name : null,
+            ChipsOnAdvance = EraSystem.ChipsOnAdvance(engine),
+            ModifierSummary = current is null ? string.Empty : Summarize(current.Modifiers, content),
+            IsFinalEra = gate.NextIndex is null,
+            All = all,
         };
     }
 

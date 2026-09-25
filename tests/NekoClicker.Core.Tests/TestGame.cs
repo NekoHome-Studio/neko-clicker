@@ -2,6 +2,8 @@ using NekoClicker.Core;
 using NekoClicker.Core.Content;
 using NekoClicker.Content.Cafe;
 using NekoClicker.Content.Neko;
+using NekoClicker.Content.NineLives;
+using NekoClicker.Core.Views;
 
 namespace NekoClicker.Core.Tests;
 
@@ -10,12 +12,67 @@ public static class TestGame
 {
     private static readonly Lazy<GameContent> NekoContentCache = new(NekoClicker.Content.Neko.NekoContent.Build);
     private static readonly Lazy<GameContent> CafeContentCache = new(NekoClicker.Content.Cafe.CafeContent.Build);
+    private static readonly Lazy<GameContent> NineLivesContentCache = new(NineLivesContent.Build);
 
     /// <summary>示例内容包（不可变，可安全共享）。</summary>
     public static GameContent NekoContent => NekoContentCache.Value;
 
     /// <summary>内容包 #1《猫娘咖啡馆》（含幸福感模块；不可变，可安全共享）。</summary>
     public static GameContent CafeContent => CafeContentCache.Value;
+
+    /// <summary>内容包 #2《九命轮回》（九层纪元；不可变，可安全共享）。</summary>
+    public static GameContent NineLives => NineLivesContentCache.Value;
+
+    /// <summary>创建《九命轮回》的引擎。</summary>
+    public static GameEngine CreateNineLives(out ManualClock clock, ulong seed = 12345, bool grantOffline = true)
+    {
+        clock = new ManualClock();
+        return new GameEngine(NineLives, new GameEngineOptions
+        {
+            Clock = clock,
+            Seed = seed,
+            GrantOfflineProgress = grantOffline,
+            MaxNotifications = 64,
+        });
+    }
+
+    /// <summary>
+    /// 创建《九命轮回》的引擎，并把第 1 层的完成条件直接置为达成，
+    /// 以便测试"舍命之后发生了什么"而不用真的玩十万小鱼干。
+    /// </summary>
+    public static GameEngine CreateNineLivesFunded(out ManualClock clock, double era1Earnings = 2e5, ulong seed = 12345)
+    {
+        GameEngine engine = CreateNineLives(out clock, seed);
+        engine.State.Cookies = 1e9;
+        engine.State.CookiesEarnedThisRun = era1Earnings;
+        engine.MarkDirty();
+        return engine;
+    }
+
+    /// <summary>
+    /// 贪心策略：先买得起的升级（贵的优先），再买最贵的买得起的建筑。<para>
+    /// 模拟一个正常玩家：不追求最优，只求推进。长跑测试与"全程可达"机器人共用它。
+    /// </para>
+    /// </summary>
+    public static void BuyGreedily(GameEngine engine)
+    {
+        GameSnapshot snapshot = engine.Snapshot(PurchaseMode.BuyMax);
+
+        for (int i = snapshot.Upgrades.Count - 1; i >= 0; i--)
+        {
+            UpgradeView upgrade = snapshot.Upgrades[i];
+            if (!upgrade.IsAvailable || !upgrade.CanAfford) continue;
+            if (upgrade.Currency != UpgradeCurrency.Cookies) continue;
+            engine.BuyUpgrade(upgrade.Id);
+        }
+
+        for (int i = snapshot.Buildings.Count - 1; i >= 0; i--)
+        {
+            BuildingView building = snapshot.Buildings[i];
+            if (!building.IsUnlocked) continue;
+            if (engine.BuyBuilding(building.Id, 0).Success) break;
+        }
+    }
 
     /// <summary>创建使用示例内容包的引擎，时间由 <see cref="ManualClock"/> 控制。</summary>
     public static GameEngine CreateNeko(out ManualClock clock, ulong seed = 12345, bool grantOffline = true)

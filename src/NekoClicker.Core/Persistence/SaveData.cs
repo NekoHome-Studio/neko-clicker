@@ -59,6 +59,19 @@ public sealed class SaveData
     /// <summary>累计逻辑帧数。</summary>
     public long TickCount { get; set; }
 
+    // ---- 纪元（转生分层） ----
+    /// <summary>当前纪元层号；没有分层的包恒为 1。</summary>
+    public int Era { get; set; } = 1;
+
+    /// <summary>已完成（已舍命离开）的层号。</summary>
+    public List<int> EraCompleted { get; set; } = [];
+
+    /// <summary>各层的完成记录。</summary>
+    public Dictionary<int, EraRecord> EraHistory { get; set; } = [];
+
+    /// <summary>进入当前层时的累计游玩秒数。</summary>
+    public double EraEnteredPlayTimeSeconds { get; set; }
+
     // ---- 金猫 ----
     /// <summary>下一次金猫倒计时。</summary>
     public double GoldenCookieCountdown { get; set; }

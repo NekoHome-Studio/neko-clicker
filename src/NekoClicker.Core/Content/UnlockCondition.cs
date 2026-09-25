@@ -47,6 +47,9 @@ public enum NumericMetric
     /// <summary>带指定标签的升级已购总次数（<see cref="NumericCondition.Id"/> = 标签）。</summary>
     TaggedUpgrades,
 
+    /// <summary>当前纪元（转生层号）。</summary>
+    Era,
+
     /// <summary>累计游玩秒数。</summary>
     PlayTimeSeconds,
 }
@@ -165,6 +168,10 @@ public abstract record UnlockCondition
     /// <param name="target">阈值。</param>
     public static UnlockCondition Counter(string counterKey, double target)
         => new NumericCondition(NumericMetric.Counter, target, counterKey);
+
+    /// <summary>进入第 era 纪元（含）之后。用于让内容按层揭示。</summary>
+    /// <param name="era">层号。</param>
+    public static UnlockCondition EraAtLeast(double era) => new NumericCondition(NumericMetric.Era, era);
 
     /// <summary>带指定标签的升级已购次数 ≥ count。</summary>
     /// <param name="tag">升级标签。</param>
@@ -320,6 +327,7 @@ public sealed record NumericCondition(NumericMetric Metric, double Target, strin
         NumericMetric.PurchasedUpgrades => metrics.PurchasedUpgradeCount,
         NumericMetric.Counter => metrics.GetCounter(Id ?? string.Empty),
         NumericMetric.TaggedUpgrades => metrics.TaggedUpgradeCount(Id ?? string.Empty),
+        NumericMetric.Era => metrics.Era,
         NumericMetric.PlayTimeSeconds => metrics.PlayTimeSeconds,
         _ => 0,
     };
@@ -361,6 +369,7 @@ public sealed record NumericCondition(NumericMetric Metric, double Target, strin
             NumericMetric.PurchasedUpgrades => $"购买 {amount} 个升级",
             NumericMetric.Counter => $"「{Id}」达到 {amount}",
             NumericMetric.TaggedUpgrades => $"购买 {amount} 个「{Id}」类升级",
+            NumericMetric.Era => $"进入第 {amount} 纪元",
             NumericMetric.PlayTimeSeconds => $"游玩时长达到 {NumFormat.Duration(Target)}",
             _ => $"达成 {amount}",
         };

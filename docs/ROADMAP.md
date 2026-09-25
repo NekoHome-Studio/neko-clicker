@@ -371,13 +371,31 @@ public sealed record ChoiceDefinition
 | 试玩 | `.\tools\play.ps1 --package cafe --simulate 21600 --auto` 曲线活着：10 座建筑全解锁、33/45 成就、52 位客人、幸福感 18 万 |
 | 未覆盖 | §10 的 50 条叙事条目——按 R10 暂走描述字段，等阶段 2 的 S-B 到位再补 |
 
-### 阶段 1 —— S-A（Era）+ #2 九命轮回
+### 阶段 1 —— S-A（Era）+ #2 九命轮回 ✅ 已交付
 
 | 项 | 内容 |
 |---|---|
-| 交付 | S-A 全部接口 + 9 层定义 + 12 座建筑 + 48 条升级 |
-| 特有验收 | ① **单调性校验测试**：`Completion` 只含白名单指标<br>② **灰按钮测试**：未完成时 `CanAdvance=false` 且 `BlockedReason` 非空、内容正确<br>③ **A2 架构测试**：核心内无 `Era` 特判<br>④ **G4 全程可达**：机器人测试从第 1 层走到第 9 层并触发终局 |
-| 风险最高 | 这一阶段最容易把引擎搞脏。A2 是护栏 |
+| 交付 | S-A 全部接口 + 9 层纪元 + 12 座建筑 + 48 条升级 + 63 个成就 + 10 种随机事件 + 信仰模块 |
+| 核心改动 | `EraDefinition` / `EraGate` / `EraSystem`；`NumericMetric.Era`；`GameContent.Eras` + `BalanceFor`；`ModifierResolver` 第 4 个来源；`ResetRun` 继承参数；`GameState`/`SaveData`/`EraView`；构建期单调性校验 |
+| 特有验收 | ① **单调性校验**：`Completion` 只含白名单指标，用 `CurrentCookies`/`Cps`/`BuildingCount` 会被构建期拒绝 ✅<br>② **灰按钮**：未完成时 `CanAdvance=false`、原因非空、进度取最落后子条件 ✅<br>③ **A2 架构测试**：核心程序集里不出现 `era ==` 之类的层号比较 ✅<br>④ **G4 全程可达**：机器人从第 1 命走到第 9 命 ✅ |
+| 回归 | `.\tools\build.ps1` 全绿：**188 个用例**（阶段 0 后 161 个），全套 8.8 秒 |
+| 实测 | `--package ninelines --simulate 172800 --auto`：48 游戏小时内走完九命，最终 214 万亿、1485 建筑、60/63 成就 |
+
+**这一阶段真正抓到的三个问题**（都不是"写完就过"）：
+
+1. **`Advance` 漏判 `CanAdvance`**：`EraSystem.Advance` 原本只检查 `NextIndex` 是否存在，
+   而 `CanAdvance` 为假时 `NextIndex` 仍然是下一层的编号——于是**未完成本层也能舍命**，
+   整个 gating 形同虚设。是 `Advance_FailsWhileGateIsClosed_AndChangesNothing` 抓到的。
+2. **阈值阶梯远比"每层从零重建"快**：初版每层门槛 ×1000（1e5 → 1e8 → 1e11 …），
+   G4 机器人实测每层耗时约 ×3 增长（0.8h → 2.2h → 5.3h → 14.8h → 43.4h），
+   第 4 层之后就走不动了。压平到 ×1.5~2 并给缺少全局加成的层补上纪元加成后，
+   九命总耗时降到 ~33 游戏小时。**这正是 G4 存在的意义**——它证明的不是"能跑"，
+   而是"内容在真实曲线下真的走得完"。
+3. **`InheritBuildings` 的语义要写死**：它是"**进入**这一层时允许带进来什么"（写在目标层上），
+   不是"离开上一层时带走什么"。两种读法都说得通，不写清楚将来必然被写反。
+
+**已知的内容调参项**（不影响机制，留给后续）：第 5 命的 `peak_cps` 门槛造成约 19 小时的
+节奏凸起，与相邻各层的 2~4 小时不成比例。
 
 ### 阶段 2 —— S-B（Lore）+ #1 的 50 条条目 + #2 的叙事
 

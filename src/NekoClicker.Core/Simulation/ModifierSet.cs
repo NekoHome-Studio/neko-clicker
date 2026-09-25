@@ -168,6 +168,12 @@ public static class ModifierResolver
             }
         }
 
+        // 4) 当前纪元：本层常驻的规则倍率（"这一层世界是怎么运转的"）。
+        if (content.EraByIndex.TryGetValue(state.Era, out EraDefinition? era))
+        {
+            foreach (Modifier m in era.Modifiers) set.Add(m, metrics);
+        }
+
         return set;
     }
 }

@@ -1,6 +1,7 @@
 using NekoClicker.Core.Content;
 using NekoClicker.Content.Cafe;
 using NekoClicker.Content.Neko;
+using NekoClicker.Content.NineLives;
 
 namespace NekoClicker.Demo.Cli;
 
@@ -71,6 +72,26 @@ internal static class ContentPackages
                 "    · 赚到 1 兆小鱼干可以店休一次，换来「常客的信」；常客的记忆跨店休保留。",
             ],
             ReportTip: "提示：幸福感只涨不花，它由整间店的规模驱动，并会解锁「常客名单」等关键升级。"),
+        new ContentPackage(
+            Id: "ninelines",
+            Name: NineLivesContent.GameTitle,
+            Build: NineLivesContent.Build,
+            Welcome: "欢迎来到九命轮回！先按空格摸头，攒够 15 条小鱼干就能买下第一个纸箱。"
+                   + "这一次，你可以走到第九命。",
+            PrestigeActionName: "舍命",
+            PrestigeHint: "舍命：完成本层主线后，舍去这一命进入下一纪元，按历史累计换取情感能量。"
+                        + "本层未完成时按钮会置灰——九条命只能一条一条走。",
+            GoldenCookieName: "情感残响",
+            HelpTips:
+            [
+                "    · 这是分层转生的包：一共九命，每一条命的规则都不一样。",
+                "    · 「舍命」按钮必须先完成本层主线才会亮；条件与进度会显示在按钮上。",
+                "    · 每座建筑的强化升级需要持有到 1 / 10 / 25 个才会出现。",
+                "    · 成就数是「呼噜线」的燃料：多解锁一个成就，全局产量就高一截。",
+                "    · 「情感残响」带来的呼噜狂暴（×7）与摸头停不下来（点击 ×777）是爆发来源。",
+                "    · 情感能量买到的「前世技能」跨命保留——那是你唯一带得走的东西。",
+            ],
+            ReportTip: "提示：本包的重点不是刷数值，而是一条一条走完九命——每层的完成条件都不一样。"),
     ];
 
     /// <summary>默认内容包（未显式指定 <c>--package</c> 时使用）。</summary>

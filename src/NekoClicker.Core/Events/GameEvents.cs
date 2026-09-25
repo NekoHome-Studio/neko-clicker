@@ -57,3 +57,16 @@ public sealed record GameSavedEvent(string Key) : IGameEvent;
 
 /// <summary>产量发生变化（购买、增益、成就导致的重算）。</summary>
 public sealed record ProductionChangedEvent(double CookiesPerSecond, double ClickPower) : IGameEvent;
+
+/// <summary>舍命进入下一纪元。</summary>
+/// <param name="PreviousEra">离开的层号。</param>
+/// <param name="NewEra">进入的层号。</param>
+/// <param name="ChipsGained">本次结算到的情感能量（可能为 0）。</param>
+/// <param name="BuildingsInherited">跨层保留下来的建筑总数。</param>
+/// <param name="NewEraName">新层的显示名。</param>
+public sealed record EraAdvancedEvent(
+    int PreviousEra,
+    int NewEra,
+    double ChipsGained,
+    int BuildingsInherited,
+    string NewEraName) : IGameEvent;

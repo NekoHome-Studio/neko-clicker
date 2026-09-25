@@ -44,6 +44,20 @@ public sealed class GameState
     /// <summary>转生次数。</summary>
     public int Ascensions { get; set; }
 
+    // ---------- 纪元（转生分层） ----------
+
+    /// <summary>当前纪元（层号）；没有分层的包恒为 1。</summary>
+    public int Era { get; set; } = 1;
+
+    /// <summary>已经完成（已舍命离开）的层号集合。</summary>
+    public HashSet<int> EraCompleted { get; } = [];
+
+    /// <summary>各层的完成记录（层号 → 记录），用于结算叙事与统计。</summary>
+    public Dictionary<int, EraRecord> EraHistory { get; } = [];
+
+    /// <summary>进入当前层时的累计游玩秒数，用于算"本层耗时"。</summary>
+    public double EraEnteredPlayTimeSeconds { get; set; }
+
     // ---------- 时间 ----------
 
     /// <summary>存档创建时刻。</summary>
@@ -118,6 +132,25 @@ public sealed class GameState
         foreach (int n in BuildingCounts.Values) sum += n;
         return sum;
     }
+}
+
+/// <summary>一层的完成记录（舍命离开时写入）。</summary>
+public sealed class EraRecord
+{
+    /// <summary>层号。</summary>
+    public int Index { get; set; }
+
+    /// <summary>本层实际耗费的游玩秒数。</summary>
+    public double PlayTimeSeconds { get; set; }
+
+    /// <summary>本层的累计赚取。</summary>
+    public double CookiesEarned { get; set; }
+
+    /// <summary>离开本层时结算到的转生货币。</summary>
+    public double ChipsGained { get; set; }
+
+    /// <summary>离开时刻。</summary>
+    public DateTimeOffset CompletedAt { get; set; }
 }
 
 /// <summary>一个正在生效的增益实例。</summary>

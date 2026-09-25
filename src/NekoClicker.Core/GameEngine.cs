@@ -107,7 +107,7 @@ public sealed class GameEngine
     public IGameMetrics Metrics => _metrics;
 
     /// <summary>平衡参数。</summary>
-    public GameBalance Balance => Content.Balance;
+    public GameBalance Balance => Content.BalanceFor(State.Era);
 
     /// <summary>已挂载模块。</summary>
     public IReadOnlyList<IGameModule> Modules => _modules;
@@ -206,6 +206,11 @@ public sealed class GameEngine
             State.CookiesEarnedThisRun = Num.SafeAdd(State.CookiesEarnedThisRun, gain);
             State.CookiesEarnedAllTime = Num.SafeAdd(State.CookiesEarnedAllTime, gain);
         }
+
+        // 峰值产量：单调不减，供分层转生的完成条件使用。
+        // 直接用 Cps 会让灰按钮在增益到期时闪烁、进度倒退，所以必须单独记峰值。
+        if (cps > State.GetCounter(EraSystem.PeakCpsCounterKey))
+            State.Counters[EraSystem.PeakCpsCounterKey] = cps;
 
         State.PlayTimeSeconds += deltaSeconds;
         State.TickCount++;
@@ -393,8 +398,20 @@ public sealed class GameEngine
             buffId, buff.Stacks, duration, buff.Stacks);
     }
 
-    /// <summary>执行转生。</summary>
-    public AscensionResult Ascend() => PrestigeSystem.Ascend(this);
+    /// <summary>
+    /// 转生 —— 整个游戏<b>唯一</b>的重置入口。<para>
+    /// 内容包定义了纪元（<see cref="GameContent.HasEras"/>）时，它是"舍一命"：
+    /// 必须完成本层主线才能调用，并且会推进层号；否则是经典的单轴转生（随时可用）。<para>
+    /// 之所以不做成两个按钮：只要能随时重置换情感能量，玩家就能在同一层无限刷，
+    /// 再从第 1 层平推到最后一层 —— 分层的意义会被抹掉（见 ROADMAP R1）。
+    /// 调用前请先查 <see cref="EraGate"/> 决定按钮是否置灰。
+    /// </para>
+    /// </summary>
+    public AscensionResult Ascend()
+        => Content.HasEras ? EraSystem.Advance(this) : PrestigeSystem.Ascend(this);
+
+    /// <summary>舍命按钮的状态（是否可以推进纪元、不能的原因、本层进度）。</summary>
+    public EraGate EraGate => EraSystem.CanAdvance(this);
 
     /// <summary>检查并解锁所有满足条件的成就。</summary>
     public IReadOnlyList<AchievementDefinition> CheckAchievements()

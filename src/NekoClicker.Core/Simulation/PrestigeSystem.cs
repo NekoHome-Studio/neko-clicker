@@ -126,15 +126,42 @@ public static class PrestigeSystem
     }
 
     /// <summary>
-    /// 重置"本轮"进度。永久升级（<see cref="UpgradePersistence.Permanent"/>）与转生货币不受影响。
+    /// 重置"本轮"进度。永久升级（<see cref="UpgradePersistence.Permanent"/>）与转生货币不受影响。<para>
+    /// 计数器（<c>Counters</c>）刻意不清空：第二资源与峰值统计要跨层保留。
+    /// </para>
     /// </summary>
-    public static void ResetRun(GameEngine engine, bool keepAchievements)
+    /// <param name="engine">宿主引擎。</param>
+    /// <param name="keepAchievements">是否保留成就。</param>
+    /// <param name="enteringEra">
+    /// 即将进入的纪元；其 <see cref="EraDefinition.InheritBuildingRatio"/> 与
+    /// <see cref="EraDefinition.InheritBuildings"/> 决定保留哪些建筑。
+    /// 为 <c>null</c>（经典转生）时全部清空。
+    /// </param>
+    /// <returns>被保留下来的建筑总数。</returns>
+    public static int ResetRun(GameEngine engine, bool keepAchievements, EraDefinition? enteringEra = null)
     {
         GameState state = engine.State;
+
+        double ratio = Math.Clamp(enteringEra?.InheritBuildingRatio ?? 0, 0, 1);
+        IReadOnlyList<string> whitelist = enteringEra?.InheritBuildings ?? [];
+
+        // 先算好要保留的建筑，再清空，最后写回 —— 顺序反了就会把白名单一起清掉。
+        Dictionary<string, int> inherited = new(StringComparer.Ordinal);
+        if (ratio > 0 || whitelist.Count > 0)
+        {
+            foreach ((string id, int count) in state.BuildingCounts)
+            {
+                int keep = whitelist.Contains(id, StringComparer.Ordinal)
+                    ? count
+                    : ratio > 0 ? (int)Math.Floor(count * ratio) : 0;
+                if (keep > 0) inherited[id] = keep;
+            }
+        }
 
         state.Cookies = 0;
         state.CookiesEarnedThisRun = 0;
         state.BuildingCounts.Clear();
+        foreach ((string id, int count) in inherited) state.BuildingCounts[id] = count;
         state.Buffs.Clear();
         state.GoldenCookies.Clear();
 
@@ -151,5 +178,9 @@ public static class PrestigeSystem
         if (!keepAchievements) state.Achievements.Clear();
 
         GoldenCookieSystem.ResetSchedule(engine);
+
+        int total = 0;
+        foreach (int count in inherited.Values) total += count;
+        return total;
     }
 }

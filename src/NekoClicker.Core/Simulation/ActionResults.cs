@@ -169,6 +169,12 @@ public sealed record AscensionResult
     /// <summary>累计转生次数。</summary>
     public int Ascensions { get; init; }
 
+    /// <summary>舍命后所处的纪元（层号）；非分层转生时为 0。</summary>
+    public int Era { get; init; }
+
+    /// <summary>本次是否推进了纪元（而非经典的单轴转生）。</summary>
+    public bool EraAdvanced { get; init; }
+
     /// <summary>构造失败结果。</summary>
     public static AscensionResult Fail(string message) => new() { Success = false, Message = message };
 }

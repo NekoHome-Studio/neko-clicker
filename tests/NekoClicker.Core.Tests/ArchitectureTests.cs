@@ -2,6 +2,7 @@ using System.Reflection;
 using System.Text;
 using NekoClicker.Content.Cafe;
 using NekoClicker.Content.Neko;
+using NekoClicker.Content.NineLives;
 using NekoClicker.Core;
 using NekoClicker.Core.Content;
 
@@ -47,6 +48,7 @@ public static class ArchitectureTests
         HashSet<string> contentIds = [];
         CollectIds(contentIds, NekoContent.Build());
         CollectIds(contentIds, CafeContent.Build());
+        CollectIds(contentIds, NineLivesContent.Build());
 
         Check.AtLeast(contentIds.Count, 100, "内容 id 集合不应为空（否则这条用例是假绿）。");
 
@@ -65,13 +67,46 @@ public static class ArchitectureTests
     {
         Assembly neko = typeof(NekoContent).Assembly;
         Assembly cafe = typeof(CafeContent).Assembly;
+        Assembly nineLives = typeof(NineLivesContent).Assembly;
 
-        Check.False(
-            References(neko, cafe),
-            $"{neko.GetName().Name} 引用了 {cafe.GetName().Name}：内容包之间必须彼此独立。");
-        Check.False(
-            References(cafe, neko),
-            $"{cafe.GetName().Name} 引用了 {neko.GetName().Name}：内容包之间必须彼此独立。");
+        foreach ((Assembly left, Assembly right) in new[]
+        {
+            (neko, cafe), (neko, nineLives), (cafe, nineLives), (cafe, neko), (nineLives, neko), (nineLives, cafe),
+        })
+        {
+            Check.False(
+                References(left, right),
+                $"{left.GetName().Name} 引用了 {right.GetName().Name}：内容包之间必须彼此独立。");
+        }
+    }
+
+    /// <summary>
+    /// A2：<c>Era</c> 只能通过四个接缝进入引擎，引擎里不得出现针对具体层号的比较。<para>
+    /// 这条测试防的是"为了让某一层有点特殊效果，在核心里写一个 if (era == 3)" ——
+    /// 一旦开了这个头，十个内容包的差异最后都会堆回核心里。
+    /// </para>
+    /// </summary>
+    [Test]
+    public static void Architecture_CoreHasNoEraSpecificBranches()
+    {
+        Assembly core = typeof(GameEngine).Assembly;
+
+        // 具体层号只能是 1（默认值），其余数字出现在 Era 相关的分支里都是可疑的。
+        string[] forbidden =
+        [
+            "era ==", "era !=", "Era ==", "Era !=",
+            "era >", "era <", "Era >", "Era <",
+            "switch (era", "switch (Era",
+        ];
+
+        byte[] coreImage = File.ReadAllBytes(core.Location);
+        List<string> found = [.. forbidden.Where(token => ContainsUtf16Token(coreImage, token))];
+
+        Check.Equal(
+            0,
+            found.Count,
+            "核心程序集里出现了针对层号的分支：" + string.Join("、", found) +
+            "（A2 不变量被破坏：Era 只能通过 BalanceFor / 修饰符来源 / 解锁指标 / 继承参数四个接缝进入引擎）。");
     }
 
     /// <summary>收集一个内容包的全部 id（建筑 / 升级 / 成就 / 增益 / 随机事件）。</summary>

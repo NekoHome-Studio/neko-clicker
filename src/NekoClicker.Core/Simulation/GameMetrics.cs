@@ -68,6 +68,9 @@ internal sealed class GameMetrics : IGameMetrics
     public int PurchasedUpgradeCount => S.UpgradeCounts.Count;
 
     /// <inheritdoc />
+    public int Era => S.Era;
+
+    /// <inheritdoc />
     public bool HasAchievement(string achievementId) => S.Achievements.Contains(achievementId);
 
     /// <inheritdoc />

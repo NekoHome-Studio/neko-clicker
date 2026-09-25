@@ -83,6 +83,38 @@ public sealed class GameContent
     /// <summary>随内容一起注册的模块；引擎创建时会自动挂载。</summary>
     public IReadOnlyList<IGameModule> Modules { get; init; } = [];
 
+    /// <summary>
+    /// 纪元（转生分层）列表，按 <see cref="EraDefinition.Index"/> 升序。<para>
+    /// 为空表示这个包没有分层转生，转生行为完全等同于经典的单轴 <c>Ascend</c>。
+    /// </para>
+    /// </summary>
+    public IReadOnlyList<EraDefinition> Eras { get; init; } = [];
+
+    /// <summary>纪元索引。</summary>
+    public IReadOnlyDictionary<int, EraDefinition> EraByIndex { get; init; }
+        = new Dictionary<int, EraDefinition>();
+
+    /// <summary>最大层号；没有分层时为 1。</summary>
+    public int MaxEraIndex { get; init; } = 1;
+
+    /// <summary>是否启用了分层转生。</summary>
+    public bool HasEras => Eras.Count > 0;
+
+    /// <summary>
+    /// 取第 <paramref name="era"/> 层生效的平衡参数。<para>
+    /// 这是 <c>Era</c> 进入引擎的接缝之一：引擎只问"这一层用什么数值"，
+    /// 不认识任何具体层号，也不出现 <c>if (era == ...)</c>。
+    /// </para>
+    /// </summary>
+    /// <param name="era">层号。</param>
+    public GameBalance BalanceFor(int era)
+        => EraByIndex.TryGetValue(era, out EraDefinition? definition) && definition.Balance is { } balance
+            ? balance
+            : Balance;
+
+    /// <summary>按层号查纪元定义。</summary>
+    public EraDefinition? FindEra(int index) => EraByIndex.TryGetValue(index, out EraDefinition? d) ? d : null;
+
     /// <summary>空内容（测试与骨架用）。</summary>
     public static GameContent Empty { get; } = new();
 

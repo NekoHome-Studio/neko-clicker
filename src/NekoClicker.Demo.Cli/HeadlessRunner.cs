@@ -92,16 +92,31 @@ internal static class HeadlessRunner
                 BuyGreedily(engine);
             }
 
+            // 分层转生的包：能舍命就舍命。经典包没有纪元，CanAdvance 恒为 false，
+            // 所以这一段对它们完全无副作用。
+            if (engine.EraGate.CanAdvance)
+            {
+                int before = engine.State.Era;
+                if (engine.Ascend().Success)
+                {
+                    Console.WriteLine(
+                        $"  [{NumFormat.Duration(totalSeconds - remaining),8}] " +
+                        $"—— 舍去第 {before} 命，进入第 {engine.State.Era} 命 ——");
+                }
+            }
+
             if (totalSeconds - remaining >= nextReport + reportEvery)
             {
                 nextReport = totalSeconds - remaining;
+                string era = engine.Content.HasEras ? $"  第 {engine.State.Era} 命" : string.Empty;
                 Console.WriteLine(
                     $"  [{NumFormat.Duration(totalSeconds - remaining),8}] " +
                     $"{NumFormat.FormatLong(engine.State.Cookies),12} {engine.Content.CurrencyName}" +
                     $"   产量 {NumFormat.FormatLong(engine.CookiesPerSecond),12}/s" +
                     $"   建筑 {NumFormat.FormatPlain(engine.State.TotalBuildings()),6}" +
                     $"   成就 {engine.State.Achievements.Count,3}" +
-                    $"   {package.GoldenCookieName} {NumFormat.FormatPlain(engine.State.GoldenCookiesClicked),4}");
+                    $"   {package.GoldenCookieName} {NumFormat.FormatPlain(engine.State.GoldenCookiesClicked),4}" +
+                    era);
             }
         }
 
@@ -167,6 +182,18 @@ internal static class HeadlessRunner
         Field("生效增益", state.Buffs.Count == 0
             ? "无"
             : string.Join("、", state.Buffs.Select(b => $"{b.Id} {NumFormat.Duration(b.RemainingSeconds)}")));
+
+        // 分层转生的包：先报纪元状态。这是"舍命"按钮的真实依据，
+        // 而下面的经典转生预览只描述情感能量的换算，不表示现在按得下去。
+        if (snap.Era is { } eraView)
+        {
+            Section("纪元");
+            Field("当前", $"第 {eraView.Index} / {eraView.Total} 层 · {eraView.Name}");
+            Field("本层主线", eraView.CanAdvance ? "已完成，可以舍命" : eraView.BlockedReason ?? "—");
+            Field("进度", eraView.ProgressText);
+            Field("下一层", eraView.NextIndex is { } next ? $"第 {next} 层 · {eraView.NextName}" : "已是最后一层");
+            Field("本层规则", eraView.ModifierSummary.Length > 0 ? eraView.ModifierSummary : "无额外倍率");
+        }
 
         Section(session.Package.PrestigeActionName);
         Field("当前等级", snap.PrestigeLevel.ToString());

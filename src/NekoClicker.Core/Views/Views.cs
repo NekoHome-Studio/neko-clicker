@@ -217,6 +217,76 @@ public sealed record GoldenCookieView
     public double Y { get; init; }
 }
 
+/// <summary>九层总览里的一行。</summary>
+/// <param name="Index">层号。</param>
+/// <param name="Name">显示名。</param>
+/// <param name="Icon">图标。</param>
+/// <param name="Theme">一句话主题。</param>
+/// <param name="Completed">是否已经舍命离开过。</param>
+/// <param name="Current">是否是当前所在层。</param>
+public sealed record EraSummary(int Index, string Name, string Icon, string Theme, bool Completed, bool Current);
+
+/// <summary>
+/// 舍命面板的数据。<para>
+/// UI 只需要读这个：<see cref="CanAdvance"/> 为真时按钮可用，否则置灰并把
+/// <see cref="BlockedReason"/> 显示出来；<see cref="Progress"/> 直接驱动进度条。
+/// 没有分层转生的内容包，<see cref="GameSnapshot.Era"/> 为 <c>null</c>，UI 自动隐藏该面板。
+/// </para>
+/// </summary>
+public sealed record EraView
+{
+    /// <summary>当前层号。</summary>
+    public int Index { get; init; }
+
+    /// <summary>总层数。</summary>
+    public int Total { get; init; }
+
+    /// <summary>当前层的 id。</summary>
+    public string Id { get; init; } = string.Empty;
+
+    /// <summary>当前层的显示名。</summary>
+    public string Name { get; init; } = string.Empty;
+
+    /// <summary>当前层的主题。</summary>
+    public string Theme { get; init; } = string.Empty;
+
+    /// <summary>当前层的图标。</summary>
+    public string Icon { get; init; } = string.Empty;
+
+    /// <summary>当前层的进入叙事。</summary>
+    public string EntryText { get; init; } = string.Empty;
+
+    /// <summary>舍命按钮是否可用。</summary>
+    public bool CanAdvance { get; init; }
+
+    /// <summary>不可用的原因（人类可读）；可用时为 <c>null</c>。</summary>
+    public string? BlockedReason { get; init; }
+
+    /// <summary>本层主线进度 [0,1]。</summary>
+    public double Progress { get; init; }
+
+    /// <summary>本层主线进度的文本形式，例如 <c>1.2 million / 1 billion（1%）</c>。</summary>
+    public string ProgressText { get; init; } = string.Empty;
+
+    /// <summary>下一层的层号；已是最后一层时为 <c>null</c>。</summary>
+    public int? NextIndex { get; init; }
+
+    /// <summary>下一层的显示名。</summary>
+    public string? NextName { get; init; }
+
+    /// <summary>若现在舍命可得的情感能量（可能为 0）。</summary>
+    public double ChipsOnAdvance { get; init; }
+
+    /// <summary>当前层叠加的常驻规则摘要。</summary>
+    public string ModifierSummary { get; init; } = string.Empty;
+
+    /// <summary>是否是最后一层。</summary>
+    public bool IsFinalEra { get; init; }
+
+    /// <summary>全部层的总览。</summary>
+    public IReadOnlyList<EraSummary> All { get; init; } = [];
+}
+
 /// <summary>
 /// 一帧 UI 所需的全部数据。<para>
 /// 这是引擎对前端的完整契约：前端只读它、只发命令，不接触 <see cref="GameState"/>。
@@ -326,4 +396,7 @@ public sealed record GameSnapshot
 
     /// <summary>转生预览。</summary>
     public PrestigePreview Prestige { get; init; }
+
+    /// <summary>舍命面板；内容包没有分层转生时为 <c>null</c>（UI 应隐藏该面板）。</summary>
+    public EraView? Era { get; init; }
 }

@@ -1,7 +1,7 @@
 # NekoClicker — 增量游戏框架（C# / .NET 8）
 
 参考 **Cookie Clicker** 的机制设计的一套**增量（放置 / 点击）游戏框架**，纯 C# 实现，
-**零第三方依赖**，附带两个内容包（示例包「猫咖物语」+ 内容包 #1《猫娘咖啡馆》）和一个可玩的终端 Demo。
+**零第三方依赖**，附带三个内容包（示例包「猫咖物语」+ #1《猫娘咖啡馆》+ #2《九命轮回》）和一个可玩的终端 Demo。
 
 框架的核心目标是**把"引擎"和"内容"彻底分开**：引擎负责时间推进、数值管线、存档与事件；
 内容只描述"这个世界有什么"。换掉内容包就能做出完全不同的游戏，引擎代码一行都不用改。
@@ -32,7 +32,7 @@
 > 在普通开发机上也可以直接 `dotnet build` / `dotnet run`。
 
 ```powershell
-# 构建 + 跑测试（161 个用例，零依赖迷你运行器）
+# 构建 + 跑测试（188 个用例，零依赖迷你运行器）
 .\tools\build.ps1
 
 # 只构建全部项目
@@ -44,9 +44,15 @@
 # 换内容包：玩内容包 #1《猫娘咖啡馆》（第二资源「幸福感」）
 .\tools\play.ps1 --package cafe
 
+# 换内容包：玩内容包 #2《九命轮回》（九层纪元 + 逐级推进的舍命按钮）
+.\tools\play.ps1 --package ninelines
+
 # 无头模拟：让机器人替你玩 6 小时并打印数值报告
 .\tools\play.ps1 --simulate 21600 --auto
 .\tools\play.ps1 --package cafe --simulate 21600 --auto
+
+# 分层转生的包要跑得久一点才看得出九命的推进（这里 48 小时）
+.\tools\play.ps1 --package ninelines --simulate 172800 --auto
 
 # 渲染一帧界面（用于验证布局 / 截图，可重定向到文件）
 .\tools\play.ps1 --simulate 1800 --auto --frame 118x32 --no-color
@@ -58,8 +64,9 @@
 src/NekoClicker.Core/            框架核心：内容定义、模拟引擎、存档、事件、UI 视图
 src/NekoClicker.Content.Neko/    示例内容包「猫咖物语」（纯数据，无逻辑；框架回归基线）
 src/NekoClicker.Content.Cafe/    内容包 #1《猫娘咖啡馆》（含幸福感模块，核心零改动）
+src/NekoClicker.Content.NineLives/ 内容包 #2《九命轮回》（九层纪元，第一个用分层转生的包）
 src/NekoClicker.Demo.Cli/        终端 UI 适配层（ANSI 全屏 + 键盘 + 无头模式 + --package）
-tests/NekoClicker.Core.Tests/    161 个测试 + 自研迷你测试运行器（含架构不变量测试）
+tests/NekoClicker.Core.Tests/    188 个测试 + 自研迷你测试运行器（含架构不变量与全程可达测试）
 docs/ARCHITECTURE.md             架构与设计决策
 docs/CONTENT_AUTHORING.md        如何写内容（数值节奏、校验规则、常见坑）
 docs/ROADMAP.md                  实施规划与决策记录：11 项已定决策、4 条架构不变量、5 个阶段
@@ -205,7 +212,9 @@ Console.WriteLine(engine.Save());           // JSON 存档
 
 ## 状态
 
-- 核心引擎、两个内容包（猫咖物语 / 猫娘咖啡馆）、终端 Demo、**161 个测试**全部通过。
+- 核心引擎、三个内容包（猫咖物语 / 猫娘咖啡馆 / 九命轮回）、终端 Demo、**188 个测试**全部通过。
+- **分层转生（`Era`）已落地**：九层纪元、逐级推进的舍命按钮、每层换规则的平衡覆盖、
+  跨层继承、构建期的完成条件单调性校验。九命全程可达由机器人测试守住。
 - **ROADMAP 阶段 0 已交付**：内容包 #1《猫娘咖啡馆》（10 建筑 / 48 升级 / 45 成就 /
   5 增益 / 8 随机事件 / 幸福感模块）+ Demo `--package` 切换 + 架构不变量测试，
   全部走既有框架能力（核心引擎零改动）。

@@ -14,6 +14,7 @@ public sealed class GameContentBuilder
     private readonly List<AchievementDefinition> _achievements = [];
     private readonly List<BuffDefinition> _buffs = [];
     private readonly List<GoldenCookieOutcome> _goldenCookieOutcomes = [];
+    private readonly List<EraDefinition> _eras = [];
     private readonly List<IGameModule> _modules = [];
 
     /// <summary>创建构建器。</summary>
@@ -161,6 +162,21 @@ public sealed class GameContentBuilder
         return this;
     }
 
+    /// <summary>添加一个纪元（转生分层）。</summary>
+    public GameContentBuilder Add(EraDefinition definition)
+    {
+        ArgumentNullException.ThrowIfNull(definition);
+        _eras.Add(definition);
+        return this;
+    }
+
+    /// <summary>批量添加纪元。</summary>
+    public GameContentBuilder AddEras(params EraDefinition[] definitions)
+    {
+        _eras.AddRange(definitions);
+        return this;
+    }
+
     /// <summary>构建并校验。</summary>
     /// <exception cref="GameContentValidationException">存在校验错误。</exception>
     public GameContent Build()
@@ -172,12 +188,14 @@ public sealed class GameContentBuilder
         var upgradeById = new Dictionary<string, UpgradeDefinition>(StringComparer.Ordinal);
         var achievementById = new Dictionary<string, AchievementDefinition>(StringComparer.Ordinal);
         var buffById = new Dictionary<string, BuffDefinition>(StringComparer.Ordinal);
+        var eraByIndex = new Dictionary<int, EraDefinition>();
         var errors = new List<string>();
 
         Index(_buildings, b => b.Id, buildingById, "建筑", errors);
         Index(_upgrades, u => u.Id, upgradeById, "升级", errors);
         Index(_achievements, a => a.Id, achievementById, "成就", errors);
         Index(_buffs, b => b.Id, buffById, "增益", errors);
+        IndexEras(eraByIndex, errors);
 
         foreach (BuildingDefinition b in _buildings)
         {
@@ -227,6 +245,12 @@ public sealed class GameContentBuilder
                 errors.Add($"金猫结果 「{o.Id}」 声明了增益但没有设置 BuffSeconds。");
         }
 
+        // 纪元的完成条件是灰按钮的数据源，必须单调——单独校验。
+        foreach (EraDefinition era in _eras)
+        {
+            ValidateEra(era, buildingById, upgradeById, achievementById, buffById, errors);
+        }
+
         // 最后做一次全局可达性分析：前两步只能发现"引用不存在"，
         // 发现不了"互相引用导致谁也解不开"。
         ValidateReachability(buildingById, upgradeById, achievementById, errors);
@@ -253,8 +277,118 @@ public sealed class GameContentBuilder
             GoldenCookieOutcomes = _goldenCookieOutcomes,
             GoldenCookieWeightTotal = _goldenCookieOutcomes.Sum(o => o.Weight),
             Modules = _modules,
+            Eras = [.. _eras.OrderBy(e => e.Index)],
+            EraByIndex = eraByIndex,
+            MaxEraIndex = eraByIndex.Count == 0 ? 1 : eraByIndex.Keys.Max(),
         };
     }
+
+    /// <summary>索引纪元并校验"从 1 开始连续"。</summary>
+    private void IndexEras(Dictionary<int, EraDefinition> eraByIndex, List<string> errors)
+    {
+        foreach (EraDefinition era in _eras)
+        {
+            if (string.IsNullOrWhiteSpace(era.Id)) { errors.Add("纪元存在空 id。"); continue; }
+            if (era.Index < 1) { errors.Add($"纪元 「{era.Id}」 的 Index 必须从 1 开始。"); continue; }
+            if (!eraByIndex.TryAdd(era.Index, era))
+                errors.Add($"纪元层号重复：{era.Index}（{era.Id}）。");
+        }
+
+        // 缺层会让"逐级推进"断链：第 3 层之后直接跳到第 5 层，玩家会卡在门后。
+        for (int index = 1; index <= eraByIndex.Count; index++)
+        {
+            if (!eraByIndex.ContainsKey(index))
+                errors.Add($"纪元层号不连续：缺少第 {index} 层（已定义 {eraByIndex.Count} 层）。");
+        }
+    }
+
+    /// <summary>校验单个纪元定义。</summary>
+    private static void ValidateEra(
+        EraDefinition era,
+        Dictionary<string, BuildingDefinition> buildings,
+        Dictionary<string, UpgradeDefinition> upgrades,
+        Dictionary<string, AchievementDefinition> achievements,
+        Dictionary<string, BuffDefinition> buffs,
+        List<string> errors)
+    {
+        string owner = $"纪元 「{era.Id}」";
+
+        if (!double.IsFinite(era.MetaRewardMultiplier) || era.MetaRewardMultiplier < 0)
+            errors.Add($"{owner} 的 MetaRewardMultiplier 必须是非负有限数（当前 {era.MetaRewardMultiplier}）。");
+
+        if (era.InheritBuildingRatio is < 0 or > 1)
+            errors.Add($"{owner} 的 InheritBuildingRatio 必须在 [0,1] 内（当前 {era.InheritBuildingRatio}）。");
+
+        foreach (string id in era.InheritBuildings)
+            if (!buildings.ContainsKey(id))
+                errors.Add($"{owner} 的保留白名单引用了不存在的建筑 「{id}」。");
+
+        foreach (string id in era.UnlocksBuildings)
+            if (!buildings.ContainsKey(id))
+                errors.Add($"{owner} 的 UnlocksBuildings 引用了不存在的建筑 「{id}」。");
+
+        foreach (string id in era.UnlocksUpgrades)
+            if (!upgrades.ContainsKey(id))
+                errors.Add($"{owner} 的 UnlocksUpgrades 引用了不存在的升级 「{id}」。");
+
+        ValidateModifiers(era.Modifiers, owner, buildings, buffs, errors);
+        ValidateCondition(era.Completion, owner, buildings, upgrades, achievements, errors);
+        ValidateCompletionIsMonotonic(era, errors);
+    }
+
+    /// <summary>
+    /// 完成条件必须<b>单调不减</b>。<para>
+    /// 这个条件会持续显示在舍命按钮上；一旦它引用的指标可能下降（花掉的货币、卖掉的建筑、
+    /// 到期后掉下来的产量、花掉的转生货币），玩家就会看到"进度倒退"、灰按钮闪烁，
+    /// 而且"不可能卡死"这个性质也随之失效——那正是不需要逃生阀的全部理由（ROADMAP R2/R3）。
+    /// </para>
+    /// </summary>
+    private static void ValidateCompletionIsMonotonic(EraDefinition era, List<string> errors)
+    {
+        foreach (NumericCondition condition in era.Completion.NumericLeaves())
+        {
+            if (ForbiddenInCompletion.Contains(condition.Metric))
+            {
+                errors.Add(
+                    $"纪元 「{era.Id}」 的完成条件用了会下降的指标 {condition.Metric}：" +
+                    $"灰按钮的进度会倒退，且可能让玩家卡在无法完成的状态。" +
+                    $"请改用累计赚取 / 成就数 / 点击数 / 时长 / " +
+                    $"{EraSystem.PeakCpsCounterKey} 计数器这类单调不减的指标。");
+            }
+            else if (!MonotonicMetrics.Contains(condition.Metric))
+            {
+                errors.Add(
+                    $"纪元 「{era.Id}」 的完成条件用了未经白名单确认的指标 {condition.Metric}：" +
+                    $"请先确认它单调不减，再把它加进 GameContentBuilder.MonotonicMetrics。");
+            }
+        }
+    }
+
+    /// <summary>允许出现在纪元完成条件里的指标（单调不减）。</summary>
+    private static readonly NumericMetric[] MonotonicMetrics =
+    [
+        NumericMetric.CookiesEarnedThisRun,   // 每层归零，但层内只增
+        NumericMetric.CookiesEarnedAllTime,
+        NumericMetric.Clicks,
+        NumericMetric.PrestigeLevel,
+        NumericMetric.AchievementCount,
+        NumericMetric.GoldenCookiesClicked,
+        NumericMetric.PurchasedUpgrades,
+        NumericMetric.PlayTimeSeconds,
+        NumericMetric.Counter,                // 计数器是否单调由内容/模块自己保证
+        NumericMetric.TaggedUpgrades,
+    ];
+
+    /// <summary>明确<b>禁止</b>出现在纪元完成条件里的指标（会下降）。</summary>
+    private static readonly NumericMetric[] ForbiddenInCompletion =
+    [
+        NumericMetric.CurrentCookies,   // 会被花掉
+        NumericMetric.Cps,              // 增益到期会掉，灰按钮会闪
+        NumericMetric.BuildingCount,    // 建筑可以卖
+        NumericMetric.TotalBuildings,   // 同上
+        NumericMetric.PrestigeChips,    // 会被花掉买永久升级
+        NumericMetric.Era,              // 会自我指涉：本层的条件不该引用层号
+    ];
 
     private static void Index<T>(
         IEnumerable<T> items,

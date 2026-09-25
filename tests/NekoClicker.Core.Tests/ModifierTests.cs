@@ -229,5 +229,6 @@ public static class ModifierTests
         public int TaggedUpgradeCount(string tag) => 0;
         public int TaggedBuildingCount(string tag) => 0;
         public double GetCounter(string key) => 0;
+        public int Era => 1;
     }
 }
