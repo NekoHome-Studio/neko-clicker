@@ -509,7 +509,69 @@ builder.AddLore(new LoreEntry
 两条线本来就在讲同一件事，只是谁也没提谁。**写互文时先去纪元表和别的包的 `Theme` 里找，
 通常一半的桥已经造好了。**
 
-## 13. 复查叙事与纪元节奏
+## 13. 选择、立场与结局
+
+一次**选择**（`ChoiceDefinition`）是一个需要玩家表态的时刻：条件达成后进入待答队列，
+玩家作答前**不产生任何效果**（R6：选择不阻塞，可以一直放着）。每条**立场**
+（`StanceDefinition`）是一个价值取向，累加权重；权重最高者成为**主导立场**，
+它的修饰符计入产量。
+
+```csharp
+builder
+    .AddStances(new StanceDefinition
+    {
+        Id = "divine", Name = "神性", Icon = "👁️",
+        CostText = "产量 ×1.25，但金猫频率 ×0.75。",
+        Modifiers = [Modifier.GlobalMultiplier(1.25), Modifier.GoldenCookieFrequency(0.75)],
+    })
+    .Add(new ChoiceDefinition
+    {
+        Id = "choice_name", Speaker = "她", Prompt = "要不要给我起个名字？",
+        EraId = "life_cafe",                                  // 硬门：只在这一层出现
+        Trigger = UnlockCondition.All(
+            UnlockCondition.EraAtLeast(2),
+            UnlockCondition.EarnedThisRunAtLeast(3.6e6)),
+        Options =
+        [
+            new ChoiceOption
+            {
+                Id = "name_write", Label = "写上去。", OutcomeText = "她念了两遍。",
+                StanceId = "divine", Weight = 2,
+                Modifiers = [Modifier.GlobalMultiplier(1.05)],
+            },
+            new ChoiceOption { Id = "name_blank", Label = "先空着。", OutcomeText = "她留下一个爪印。",
+                StanceId = "cat", Weight = 2, Modifiers = [Modifier.GoldenCookieReward(1.05)] },
+        ],
+    })
+    .AddEndings(
+        new EndingDefinition { Id = "end_god", Name = "成神", Text = "……", Priority = 0,
+            Condition = UnlockCondition.StanceWeight("divine", 5) },
+        // 兜底：不依赖任何表态，回避选择的玩家也走得到
+        new EndingDefinition { Id = "end_blank", Name = "无人再读", Text = "……", Priority = 100,
+            Condition = UnlockCondition.EraAtLeast(9) });
+```
+
+### 13.1 四条硬规则
+
+| 规则 | 为什么 |
+|---|---|
+| **每个选项都要在数值上留痕** | 设计文档"三条件"里的**有代价**。只把代价放在"主导立场"上会延迟结算，于是前几次表态在数值上完全无感，玩家做决定时没有分量。**两层叠加**：选项当场生效 + 该立场成为主导后再叠一次 |
+| **挂了 `EraId` 的选择，层内门槛必须 ≤ 该层的完成门槛** | `EraId` 是**硬门**，而"本轮累计赚取"在舍命时归零。门槛高于完成要求的话，玩家会在够条件前舍命走人，这个选择**永远**遇不到、那条立场永远攒不满、那个结局永久不可达。构建期强制校验 |
+| **必须留一个兜底结局** | 构建期要求至少一个结局的条件"不依赖表态、不含取反、只引用单调不减的指标"。否则回避表态或进度不足的玩家会走完主线却没有任何结局成立 |
+| **立场 id 是内容词汇，不是引擎枚举** | 核心不得出现内容 id（A1）。换包只改内容——3C 的实验室要用"道德"、公司要用"劳资"，核心一行不动 |
+
+### 13.2 结局的两条性质
+
+- **互斥靠 `Priority`**：判定时按优先级升序取第一个满足条件的，记下之后就再也不判。
+  立场权重与图鉴条数都单调不减，达成后会一直成立，所以必须"判一次就停"。
+  更稳的做法是让互斥**在构造上成立**——九命就是这样：每次表态在互斥选项间二选一，
+  每条立场机会数固定，门槛卡在"必须每次都选它"。
+- **不重置存档**：只写 `Counters["ending_<id>"] = 1` 与 `EndingsReached`。
+
+> 结局成就不要用 `Never` 或 `Custom` 去绕。写 `Unlock = EndingReached("end_god")`——
+> 条件树已经能表达"达成了某个结局"，引擎不需要为结局加特判。
+
+## 14. 复查叙事与纪元节奏
 
 改完叙事或纪元后，除了 §9 的三步，再多做两步：
 

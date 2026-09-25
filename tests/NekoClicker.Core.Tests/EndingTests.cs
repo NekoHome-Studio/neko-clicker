@@ -93,7 +93,7 @@ public static class EndingTests
     }
 
     [Test]
-    public static void Ending_PublishesEventAndGrantsAchievement()
+    public static void Ending_PublishesEventAndUnlocksAchievementGatedOnIt()
     {
         GameEngine engine = Create(Content());
         List<string> events = [];
@@ -104,7 +104,12 @@ public static class EndingTests
 
         Check.Equal(1, events.Count);
         Check.Equal("end_a", events[0]);
-        Check.True(engine.State.Achievements.Contains("ach_a"), "结局应当解锁它声明的成就。");
+
+        // 成就自己声明 Unlock = EndingReached("end_a")，走常规的成就检查路径解锁——
+        // 结局不需要知道"谁是它的成就"，也不需要引擎特判。
+        Check.False(engine.State.Achievements.Contains("ach_a"), "还没检查成就。");
+        engine.CheckAchievements();
+        Check.True(engine.State.Achievements.Contains("ach_a"));
     }
 
     // ---------------------------------------------------------------- 存档与视图
@@ -168,12 +173,14 @@ public static class EndingTests
                 })
                 .Build());
 
-        Check.Contains(string.Join("\n", ex.Errors), "至少留一个兜底结局");
+        Check.Contains(string.Join("\n", ex.Errors), "缺少兜底结局");
     }
 
     [Test]
-    public static void Validator_RejectsUnknownAchievementOnEnding()
+    public static void Validator_RejectsFallbackThatCanBecomeFalse()
     {
+        // 只查"不含选择/立场"是不够的：Not(LoreAtLeast(n)) 对读得多的玩家反而是假，
+        // 拿它冒充兜底，等于没有兜底。
         GameContentValidationException ex = Check.Throws<GameContentValidationException>(() =>
             new GameContentBuilder("X")
                 .AddEndings(new EndingDefinition
@@ -181,12 +188,28 @@ public static class EndingTests
                     Id = "e",
                     Name = "E",
                     Text = "T",
-                    Condition = UnlockCondition.Always,
-                    AchievementId = "ghost",
+                    Condition = UnlockCondition.Not(UnlockCondition.LoreAtLeast(40)),
                 })
                 .Build());
 
-        Check.Contains(string.Join("\n", ex.Errors), "不存在的成就");
+        Check.Contains(string.Join("\n", ex.Errors), "缺少兜底结局");
+    }
+
+    [Test]
+    public static void Validator_RejectsAchievementGatedOnUnknownEnding()
+    {
+        GameContentValidationException ex = Check.Throws<GameContentValidationException>(() =>
+            new GameContentBuilder("X")
+                .Add(new AchievementDefinition
+                {
+                    Id = "a",
+                    Name = "A",
+                    Unlock = UnlockCondition.EndingReached("ghost"),
+                })
+                .AddEndings(new EndingDefinition { Id = "d", Name = "D", Text = "T", Condition = UnlockCondition.Always })
+                .Build());
+
+        Check.Contains(string.Join("\n", ex.Errors), "不存在的 Ending");
     }
 
     [Test]
@@ -287,7 +310,13 @@ public static class EndingTests
         GameContentBuilder builder = new GameContentBuilder("Ending")
             .WithCurrency("单位", "u")
             .Add(new BuildingDefinition { Id = "b", Name = "工坊", BasePrice = 10, BaseCps = 1 })
-            .Add(new AchievementDefinition { Id = "ach_a", Name = "成神", Unlock = UnlockCondition.Always })
+            .Add(new AchievementDefinition
+            {
+                Id = "ach_a",
+                Name = "成神",
+                // 结局成就靠"结局已达成"这个条件解锁，而不是靠结局反过来去授予它。
+                Unlock = UnlockCondition.EndingReached("end_a"),
+            })
             .AddStances(
                 new StanceDefinition { Id = "a", Name = "A" },
                 new StanceDefinition { Id = "b", Name = "B" })
@@ -310,7 +339,6 @@ public static class EndingTests
                     Name = "成神",
                     Text = "她把自己拼回了一份。",
                     Priority = 0,
-                    AchievementId = "ach_a",
                     Condition = UnlockCondition.StanceWeight("a", 3),
                 },
                 new EndingDefinition

@@ -226,10 +226,13 @@ public sealed class GameEngine
         _achievementTimer += deltaSeconds;
         if (_achievementTimer < Math.Max(0.05, Balance.AchievementCheckInterval)) return;
         _achievementTimer = 0;
+
+        // 顺序有讲究：终局判定排在最前，这样同一拍里"依赖结局"的成就 / 剧情
+        // （Unlock = EndingReached(...)）就能立刻结算，而不用再等一个检查周期。
+        CheckEnding();
         CheckAchievements();
         CheckLore();
         CheckChoices();
-        CheckEnding();
     }
 
     // ---------------------------------------------------------------- 玩家动作

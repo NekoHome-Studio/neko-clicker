@@ -221,7 +221,6 @@ public static class GameViewFactory
             Name = ending.Name,
             Icon = ending.Icon,
             Text = ending.Text,
-            AchievementId = ending.AchievementId,
         };
     }
 

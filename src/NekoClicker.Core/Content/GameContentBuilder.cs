@@ -292,7 +292,7 @@ public sealed class GameContentBuilder
             if (b.BaseCps < 0) errors.Add($"建筑 「{b.Id}」 的 BaseCps 不能为负。");
             if (b.PriceGrowth <= 1) errors.Add($"建筑 「{b.Id}」 的 PriceGrowth 必须大于 1（否则价格不增长）。");
             if (b.SellRefundRate is < 0 or > 1) errors.Add($"建筑 「{b.Id}」 的 SellRefundRate 必须在 [0,1] 内。");
-            ValidateCondition(b.Unlock, $"建筑 「{b.Id}」", buildingById, upgradeById, achievementById, choiceById, errors);
+            ValidateCondition(b.Unlock, $"建筑 「{b.Id}」", buildingById, upgradeById, achievementById, choiceById, endingById, errors);
         }
 
         foreach (UpgradeDefinition u in _upgrades)
@@ -301,7 +301,7 @@ public sealed class GameContentBuilder
             if (u.MaxPurchases < 1) errors.Add($"升级 「{u.Id}」 的 MaxPurchases 至少为 1。");
             if (u.Persistence == UpgradePersistence.Permanent && u.Currency == UpgradeCurrency.Cookies)
                 errors.Add($"升级 「{u.Id}」 是 Permanent 但用普通货币计价；永久升级通常应以转生货币购买（如非本意请改为 Run）。");
-            ValidateCondition(u.Unlock, $"升级 「{u.Id}」", buildingById, upgradeById, achievementById, choiceById, errors);
+            ValidateCondition(u.Unlock, $"升级 「{u.Id}」", buildingById, upgradeById, achievementById, choiceById, endingById, errors);
             ValidateModifiers(u.Modifiers, $"升级 「{u.Id}」", buildingById, buffById, errors);
         }
 
@@ -309,7 +309,7 @@ public sealed class GameContentBuilder
         {
             if (a.Unlock is ConstantCondition { Value: false })
                 errors.Add($"成就 「{a.Id}」 的条件恒为假，永远无法解锁。");
-            ValidateCondition(a.Unlock, $"成就 「{a.Id}」", buildingById, upgradeById, achievementById, choiceById, errors);
+            ValidateCondition(a.Unlock, $"成就 「{a.Id}」", buildingById, upgradeById, achievementById, choiceById, endingById, errors);
             ValidateModifiers(a.Modifiers, $"成就 「{a.Id}」", buildingById, buffById, errors);
         }
 
@@ -337,7 +337,7 @@ public sealed class GameContentBuilder
         // 纪元的完成条件是灰按钮的数据源，必须单调——单独校验。
         foreach (EraDefinition era in _eras)
         {
-            ValidateEra(era, buildingById, upgradeById, achievementById, buffById, choiceById, errors);
+            ValidateEra(era, buildingById, upgradeById, achievementById, buffById, choiceById, endingById, errors);
         }
 
         // 叙事：条数声明、序号、剧情线引用都要自洽。
@@ -345,9 +345,9 @@ public sealed class GameContentBuilder
         var storylineById = new Dictionary<string, StorylineDefinition>(StringComparer.Ordinal);
         Index(_loreEntries, l => l.Id, loreById, "叙事条目", errors);
         Index(_storylines, s => s.Id, storylineById, "剧情线", errors);
-        ValidateLore(loreById, storylineById, buildingById, upgradeById, achievementById, choiceById, errors);
-        ValidateChoices(choiceById, stanceById, eraByIndex, buildingById, upgradeById, achievementById, buffById, errors);
-        ValidateEndings(_endings, buildingById, upgradeById, achievementById, choiceById, errors);
+        ValidateLore(loreById, storylineById, buildingById, upgradeById, achievementById, choiceById, endingById, errors);
+        ValidateChoices(choiceById, stanceById, eraByIndex, buildingById, upgradeById, achievementById, buffById, endingById, errors);
+        ValidateEndings(endingById, buildingById, upgradeById, achievementById, choiceById, errors);
 
         // 最后做一次全局可达性分析：前两步只能发现"引用不存在"，
         // 发现不了"互相引用导致谁也解不开"。
@@ -401,6 +401,7 @@ public sealed class GameContentBuilder
         Dictionary<string, UpgradeDefinition> upgrades,
         Dictionary<string, AchievementDefinition> achievements,
         Dictionary<string, ChoiceDefinition> choices,
+        Dictionary<string, EndingDefinition> endings,
         List<string> errors)
     {
         // 剧情线声明条数必须与实际一致，否则图鉴的 "3 / 20" 会骗人。
@@ -434,7 +435,7 @@ public sealed class GameContentBuilder
             if (entry.Reveal is ConstantCondition { Value: false })
                 errors.Add($"{owner} 的释放条件恒为假，永远放不出来。");
 
-            ValidateCondition(entry.Reveal, owner, buildings, upgrades, achievements, choices, errors);
+            ValidateCondition(entry.Reveal, owner, buildings, upgrades, achievements, choices, endings, errors);
         }
 
         foreach (StorylineDefinition storyline in storylineById.Values)
@@ -476,6 +477,7 @@ public sealed class GameContentBuilder
         Dictionary<string, AchievementDefinition> achievements,
         Dictionary<string, BuffDefinition> buffs,
         Dictionary<string, ChoiceDefinition> choices,
+        Dictionary<string, EndingDefinition> endings,
         List<string> errors)
     {
         string owner = $"纪元 「{era.Id}」";
@@ -499,7 +501,7 @@ public sealed class GameContentBuilder
                 errors.Add($"{owner} 的 UnlocksUpgrades 引用了不存在的升级 「{id}」。");
 
         ValidateModifiers(era.Modifiers, owner, buildings, buffs, errors);
-        ValidateCondition(era.Completion, owner, buildings, upgrades, achievements, choices, errors);
+        ValidateCondition(era.Completion, owner, buildings, upgrades, achievements, choices, endings, errors);
         ValidateCompletionIsMonotonic(era, errors);
     }
 
@@ -585,6 +587,7 @@ public sealed class GameContentBuilder
         Dictionary<string, UpgradeDefinition> upgrades,
         Dictionary<string, AchievementDefinition> achievements,
         Dictionary<string, ChoiceDefinition> choices,
+        Dictionary<string, EndingDefinition> endings,
         List<string> errors)
     {
         foreach (NumericCondition n in condition.NumericLeaves())
@@ -616,6 +619,7 @@ public sealed class GameContentBuilder
                 OwnedKind.Upgrade => upgrades.ContainsKey(o.Id),
                 OwnedKind.Achievement => achievements.ContainsKey(o.Id),
                 OwnedKind.Choice => choices.ContainsKey(o.Id),
+                OwnedKind.Ending => endings.ContainsKey(o.Id),
                 _ => false,
             };
             if (!ok) errors.Add($"{owner} 的解锁条件引用了不存在的 {o.Kind} 「{o.Id}」。");
@@ -637,6 +641,7 @@ public sealed class GameContentBuilder
         Dictionary<string, UpgradeDefinition> upgrades,
         Dictionary<string, AchievementDefinition> achievements,
         Dictionary<string, BuffDefinition> buffs,
+        Dictionary<string, EndingDefinition> endings,
         List<string> errors)
     {
         bool anyStanceOption = false;
@@ -654,13 +659,15 @@ public sealed class GameContentBuilder
 
             if (choice.EraId.Length > 0 && !eraIds.Contains(choice.EraId))
                 errors.Add($"{owner} 的 EraId 引用了不存在的纪元 「{choice.EraId}」。");
+            else if (choice.EraId.Length > 0)
+                ValidateChoiceFitsItsEra(choice, eras, owner, errors);
 
             if (choice.Trigger is ConstantCondition { Value: false })
                 errors.Add($"{owner} 的触发条件恒为假，玩家永远遇不到它。");
 
             // 触发条件也要做引用校验：漏掉这一句的话，"引用了一个不存在的选择"
             // 就只能靠后面的可达性分析兜底，报出来的原因是"依赖…解不开"而不是"引用了不存在的东西"。
-            ValidateCondition(choice.Trigger, owner, buildings, upgrades, achievements, choices, errors);
+            ValidateCondition(choice.Trigger, owner, buildings, upgrades, achievements, choices, endings, errors);
 
             if (choice.Options.Count < 2)
                 errors.Add($"{owner} 只有 {choice.Options.Count} 个选项——不构成选择（至少 2 个）。");
@@ -712,7 +719,7 @@ public sealed class GameContentBuilder
     /// </para>
     /// </summary>
     private static void ValidateEndings(
-        List<EndingDefinition> endings,
+        Dictionary<string, EndingDefinition> endings,
         Dictionary<string, BuildingDefinition> buildings,
         Dictionary<string, UpgradeDefinition> upgrades,
         Dictionary<string, AchievementDefinition> achievements,
@@ -723,7 +730,7 @@ public sealed class GameContentBuilder
 
         bool anyUnconditional = false;
 
-        foreach (EndingDefinition ending in endings)
+        foreach (EndingDefinition ending in endings.Values)
         {
             string owner = $"结局 「{ending.Id}」";
 
@@ -733,19 +740,90 @@ public sealed class GameContentBuilder
             if (ending.Condition is ConstantCondition { Value: false })
                 errors.Add($"{owner} 的条件恒为假，永远达不成。");
 
-            if (ending.AchievementId is { Length: > 0 } achievementId && !achievements.ContainsKey(achievementId))
-                errors.Add($"{owner} 引用了不存在的成就 「{achievementId}」。");
+            ValidateCondition(ending.Condition, owner, buildings, upgrades, achievements, choices, endings, errors);
 
-            ValidateCondition(ending.Condition, owner, buildings, upgrades, achievements, choices, errors);
-
-            // 条件里既没有选择节点、也没有立场权重 → 不依赖玩家表过什么态。
-            bool dependsOnStance = ending.Condition.OwnedLeaves().Any(o => o.Kind == OwnedKind.Choice)
-                                   || ending.Condition.NumericLeaves().Any(n => n.Metric == NumericMetric.StanceWeight);
-            if (!dependsOnStance) anyUnconditional = true;
+            if (IsStableFallback(ending.Condition)) anyUnconditional = true;
         }
 
         if (!anyUnconditional)
-            errors.Add("所有结局都依赖玩家的选择或立场——回避表态的玩家会走完主线却没有结局。至少留一个兜底结局。");
+            errors.Add(
+                "缺少兜底结局：所有结局的条件都可能对某些玩家永远不成立——"
+                + "回避表态、或进度不足的玩家会走完主线却没有结局。至少留一个条件“只依赖单调前进的指标、"
+                + "且不含选择/立场/取反”的结局。");
+    }
+
+    /// <summary>
+    /// 判断一个条件能不能当"兜底结局"。<para>
+    /// 要求：<b>不依赖玩家的表态、不含取反、且只引用单调不减的指标</b>。
+    /// 三者缺一不可——第一版只查了"不含选择/立场"，于是 <c>Not(LoreAtLeast(40))</c>
+    /// 这种条件也能冒充兜底，但它对读得多的玩家反而是假，等于没有兜底。
+    /// </para>
+    /// </summary>
+    private static bool IsStableFallback(UnlockCondition condition) => condition switch
+    {
+        ConstantCondition constant => constant.Value,
+        AllCondition all => all.Conditions.Count > 0 && all.Conditions.All(IsStableFallback),
+        AnyCondition any => any.Conditions.Count > 0 && any.Conditions.All(IsStableFallback),
+        // 取反条件会由真变假（"还差几条"这类），不能当兜底。
+        NotCondition => false,
+        // 选择节点依赖玩家表过态。
+        OwnedCondition owned => owned.Kind != OwnedKind.Choice,
+        NumericCondition numeric => numeric.Metric switch
+        {
+            NumericMetric.StanceWeight => false,          // 依赖表态
+            NumericMetric.CurrentCookies => false,        // 会被花掉
+            NumericMetric.Cps => false,                   // 增益到期会掉
+            NumericMetric.BuildingCount => false,         // 建筑可以卖
+            NumericMetric.TotalBuildings => false,        // 同上
+            NumericMetric.PrestigeChips => false,         // 会被花掉
+            _ => true,
+        },
+        // 自定义谓词无法静态判定，保守地不允许充当兜底。
+        _ => false,
+    };
+
+    /// <summary>
+    /// 校验挂了 <see cref="ChoiceDefinition.EraId"/> 的选择确实能在那一层里触发。<para>
+    /// <b>为什么必须有这条</b>：<c>EraId</c> 是硬门——只在这一层出现。而"本轮累计赚取"
+    /// 在舍命时归零，所以只要选择的层内里程碑 <b>高于</b>该层的完成门槛，玩家就会在
+    /// 够条件之前舍命走人，这个选择<b>永远</b>遇不到，那条立场也就永远攒不满权重。
+    /// </para>
+    /// <para>
+    /// 这类错误在运行期完全看不出来（选择只是"一直没出现"），而它的后果是
+    /// 某个结局永久不可达——所以必须在构建期拦住。
+    /// </para>
+    /// </summary>
+    private static void ValidateChoiceFitsItsEra(
+        ChoiceDefinition choice,
+        Dictionary<int, EraDefinition> eras,
+        string owner,
+        List<string> errors)
+    {
+        EraDefinition? era = null;
+        foreach (EraDefinition candidate in eras.Values)
+        {
+            if (!string.Equals(candidate.Id, choice.EraId, StringComparison.Ordinal)) continue;
+            era = candidate;
+            break;
+        }
+        if (era is null) return; // 引用不存在的情况上面已经报过了
+
+        double eraRequirement = 0;
+        foreach (NumericCondition leaf in era.Completion.NumericLeaves())
+        {
+            if (leaf.Metric != NumericMetric.CookiesEarnedThisRun) continue;
+            eraRequirement = Math.Max(eraRequirement, leaf.Target);
+        }
+
+        foreach (NumericCondition leaf in choice.Trigger.NumericLeaves())
+        {
+            if (leaf.Metric != NumericMetric.CookiesEarnedThisRun) continue;
+            if (leaf.Target <= eraRequirement) continue;
+            errors.Add(
+                $"{owner} 的层内门槛 {leaf.Target} 超过了纪元「{era.Id}」的完成门槛 {eraRequirement}——"
+                + $"玩家会在够条件之前舍命走人，这个选择永远遇不到（EraId 是硬门）。"
+                + $"请把门槛降到 {eraRequirement} 以下。");
+        }
     }
 
     private static void ValidateModifiers(
@@ -893,7 +971,8 @@ public sealed class GameContentBuilder
             {
                 OwnedKind.Upgrade => "升级",
                 OwnedKind.Achievement => "成就",
-                _ => "选择",
+                OwnedKind.Choice => "选择",
+                _ => "结局",
             },
             owned.Id)),
         // 只有"指定建筑的数量"会被别的内容卡住；其余指标都会随游戏进程自然增长。
@@ -918,7 +997,8 @@ public sealed class GameContentBuilder
                 {
                     OwnedKind.Upgrade => "升级",
                     OwnedKind.Achievement => "成就",
-                    _ => "选择",
+                    OwnedKind.Choice => "选择",
+                    _ => "结局",
                 },
                 o.Id);
         }

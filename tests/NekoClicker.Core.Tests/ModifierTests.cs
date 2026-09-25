@@ -233,5 +233,6 @@ public static class ModifierTests
         public int LoreCount => 0;
         public bool HasChoice(string choiceId) => false;
         public int StanceWeight(string stanceId) => 0;
+        public bool HasEnding(string endingId) => false;
     }
 }

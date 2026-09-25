@@ -461,9 +461,6 @@ public sealed record EndingView
 
     /// <summary>终局文本。</summary>
     public string Text { get; init; } = string.Empty;
-
-    /// <summary>该结局解锁的成就 id（若有）。</summary>
-    public string? AchievementId { get; init; }
 }
 
 /// <summary>

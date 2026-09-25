@@ -36,7 +36,8 @@ public static class EraTests
         }
 
         Check.Equal(12, content.Buildings.Count);
-        Check.Equal(63, content.Achievements.Count);
+        // 63 条常规成就 + 5 条结局成就（阶段 3B）。
+        Check.Equal(68, content.Achievements.Count);
         Check.AtLeast(content.Upgrades.Count, 45);
     }
 

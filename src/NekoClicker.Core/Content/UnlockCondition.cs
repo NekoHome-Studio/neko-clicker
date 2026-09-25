@@ -71,6 +71,9 @@ public enum OwnedKind
 
     /// <summary>已作答的选择。</summary>
     Choice,
+
+    /// <summary>已达成的结局。</summary>
+    Ending,
 }
 
 /// <summary>
@@ -195,6 +198,15 @@ public abstract record UnlockCondition
     /// <param name="weight">目标权重。</param>
     public static UnlockCondition StanceWeight(string stanceId, double weight)
         => new NumericCondition(NumericMetric.StanceWeight, weight, stanceId);
+
+    /// <summary>
+    /// 是否已达成某个结局。<para>
+    /// 有了它，与结局相关的内容（结局成就、终局后的追记）不需要引擎特殊对待——
+    /// 自己声明依赖即可，而且能继续组合。
+    /// </para>
+    /// </summary>
+    /// <param name="endingId">结局 id。</param>
+    public static UnlockCondition EndingReached(string endingId) => new OwnedCondition(OwnedKind.Ending, endingId);
 
     /// <summary>带指定标签的升级已购次数 ≥ count。</summary>
     /// <param name="tag">升级标签。</param>
@@ -414,6 +426,7 @@ public sealed record OwnedCondition(OwnedKind Kind, string Id) : UnlockCondition
         OwnedKind.Upgrade => metrics.HasUpgrade(Id),
         OwnedKind.Achievement => metrics.HasAchievement(Id),
         OwnedKind.Choice => metrics.HasChoice(Id),
+        OwnedKind.Ending => metrics.HasEnding(Id),
         _ => false,
     };
 
@@ -438,6 +451,11 @@ public sealed record OwnedCondition(OwnedKind Kind, string Id) : UnlockCondition
             string prompt = content is not null && content.ChoiceById.TryGetValue(Id, out ChoiceDefinition? c) ? c.Prompt : Id;
             return $"已经历「{prompt}」";
         }
+        if (Kind == OwnedKind.Ending)
+        {
+            string ending = content is not null && content.EndingById.TryGetValue(Id, out EndingDefinition? e) ? e.Name : Id;
+            return $"已抵达结局「{ending}」";
+        }
         string achievement = content is not null && content.AchievementById.TryGetValue(Id, out AchievementDefinition? a) ? a.Name : Id;
         return $"已解锁成就「{achievement}」";
     }
@@ -447,6 +465,7 @@ public sealed record OwnedCondition(OwnedKind Kind, string Id) : UnlockCondition
         OwnedKind.Upgrade => metrics.HasUpgrade(Id),
         OwnedKind.Achievement => metrics.HasAchievement(Id),
         OwnedKind.Choice => metrics.HasChoice(Id),
+        OwnedKind.Ending => metrics.HasEnding(Id),
         _ => false,
     };
 }

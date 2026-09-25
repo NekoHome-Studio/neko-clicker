@@ -194,7 +194,7 @@ internal static class Eras
             Completion = UnlockCondition.All(
                 UnlockCondition.EarnedThisRunAtLeast(1.5e9),
                 UnlockCondition.AchievementsAtLeast(30)),
-            CompletionHint = "本轮累计 1.5 billion，并解锁 30 个成就。",
+            CompletionHint = "本轮累计 1.5 billion，并解锁 30 个成就。走完这一世就是终局。",
             UnlocksBuildings = ["cat_universe"],
         },
     ];

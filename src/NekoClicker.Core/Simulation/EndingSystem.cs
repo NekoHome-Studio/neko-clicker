@@ -34,10 +34,7 @@ public static class EndingSystem
             state.EndingsReached.Add(ending.Id);
             state.SetCounter(CounterKey(ending.Id), 1);
 
-            if (ending.AchievementId is { Length: > 0 } achievementId)
-                state.Achievements.Add(achievementId);
-
-            engine.MarkDirty(); // 结局可能带成就，成就可能带修饰符
+            engine.MarkDirty();
             engine.Events.Publish(new EndingReachedEvent(ending.Id, ending.Name, ending.Icon, ending.Text));
             return ending;
         }

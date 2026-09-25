@@ -85,4 +85,7 @@ public interface IGameMetrics
 
     /// <summary>某立场的当前权重；不存在返回 0。</summary>
     int StanceWeight(string stanceId);
+
+    /// <summary>是否已达成某个结局。</summary>
+    bool HasEnding(string endingId);
 }

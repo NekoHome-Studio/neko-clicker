@@ -25,12 +25,15 @@ public static class NineLivesContent
             .WithBalance(balance)
             .AddBuildings(Buildings.All)
             .AddUpgrades(Upgrades.All)
-            .AddAchievements(Achievements.All)
+            .AddAchievements([.. Achievements.All, .. Endings.Achievements])
             .AddBuffs(Buffs.All)
             .AddGoldenCookieOutcomes(GoldenCookieOutcomes.All)
             .AddEras(Eras.All(balance))
             .AddStorylines(Lore.Storylines)
             .AddLore(Lore.Entries)
+            .AddStances(Stances.All)
+            .AddChoices(Choices.All)
+            .AddEndings(Endings.All)
             .Add(new FaithModule())
             .Build();
     }

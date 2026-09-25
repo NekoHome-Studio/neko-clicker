@@ -111,4 +111,7 @@ internal sealed class GameMetrics : IGameMetrics
 
     /// <inheritdoc />
     public int StanceWeight(string stanceId) => S.StanceWeight(stanceId);
+
+    /// <inheritdoc />
+    public bool HasEnding(string endingId) => S.EndingsReached.Contains(endingId);
 }

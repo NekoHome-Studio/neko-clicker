@@ -32,7 +32,4 @@ public sealed record EndingDefinition
 
     /// <summary>判定优先级，<b>小者优先</b>。同时满足时取小的那个。</summary>
     public int Priority { get; init; }
-
-    /// <summary>达成时一并解锁的成就 id（可选）。</summary>
-    public string? AchievementId { get; init; }
 }
