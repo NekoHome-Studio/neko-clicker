@@ -44,9 +44,15 @@ internal static class TerminalUi
         int bodyHeight = layout.Height - 9;
         int listRows = Math.Max(1, bodyHeight - 2);
 
-        bool rightIsUpgrades = session.Focus != PanelFocus.Achievements;
+        // 右栏内容跟随焦点：建筑聚焦时显示升级，否则显示焦点对应的面板。
+        PanelFocus right = session.Focus == PanelFocus.Buildings ? PanelFocus.Upgrades : session.Focus;
         int leftCount = session.Buildings.Count;
-        int rightCount = rightIsUpgrades ? session.Upgrades.Count : session.Achievements.Count;
+        int rightCount = right switch
+        {
+            PanelFocus.Achievements => session.Achievements.Count,
+            PanelFocus.Codex => session.Codex.Count,
+            _ => session.Upgrades.Count,
+        };
         int leftSelected = session.Focus == PanelFocus.Buildings ? session.Selected : -1;
         int rightSelected = session.Focus == PanelFocus.Buildings ? -1 : session.Selected;
 
@@ -69,9 +75,7 @@ internal static class TerminalUi
         {
             lines.Add(Column(layout,
                 PanelHeader(BuildBuildingTitle(session, bStart, bCount, leftCount), layout.Left),
-                PanelHeader(rightIsUpgrades
-                    ? BuildUpgradeTitle(session.Upgrades.Count, rStart, rCount, rightCount)
-                    : BuildAchievementTitle(snap, rStart, rCount, rightCount), layout.Right)));
+                PanelHeader(BuildRightTitle(session, snap, right, rStart, rCount, rightCount), layout.Right)));
 
             for (int i = 0; i < listRows; i++)
             {
@@ -84,8 +88,18 @@ internal static class TerminalUi
                 int rightIndex = rStart + i;
                 if (rightIndex < rStart + rCount)
                 {
-                    if (rightIsUpgrades) UpgradeRow(rightLine, session, session.Upgrades[rightIndex], rightIndex, layout.Right);
-                    else AchievementRow(rightLine, session, session.Achievements[rightIndex], rightIndex, layout.Right);
+                    switch (right)
+                    {
+                        case PanelFocus.Achievements:
+                            AchievementRow(rightLine, session, session.Achievements[rightIndex], rightIndex, layout.Right);
+                            break;
+                        case PanelFocus.Codex:
+                            CodexRow(rightLine, session, session.Codex[rightIndex], rightIndex, layout.Right);
+                            break;
+                        default:
+                            UpgradeRow(rightLine, session, session.Upgrades[rightIndex], rightIndex, layout.Right);
+                            break;
+                    }
                 }
 
                 lines.Add(Column(layout, leftLine, rightLine));
@@ -154,6 +168,16 @@ internal static class TerminalUi
                 .Add(" 抓住", Ansi.S(Style.Gray));
         }
 
+        if (snap.PendingLore.Count > 0)
+        {
+            return line.Add($"📖 有 {snap.PendingLore.Count} 段新剧情待读", Ansi.S(Style.Bold + Style.Cyan))
+                .Add("　", Ansi.S(Style.Gray))
+                .Add("Tab", Ansi.S(Style.Bold + Style.BrightGreen))
+                .Add(" 切到图鉴，", Ansi.S(Style.Gray))
+                .Add("Enter", Ansi.S(Style.Bold + Style.BrightGreen))
+                .Add(" 阅读", Ansi.S(Style.Gray));
+        }
+
         return line.Add($"🌟 下一只{session.Package.GoldenCookieName} ", Ansi.S(Style.Gray))
             .Add(NumFormat.Duration(Math.Max(0, snap.GoldenCookieCountdown)), Ansi.S(Style.Gray))
             .Add($"   已抓 {NumFormat.FormatPlain(snap.GoldenCookiesClicked)} 只", Ansi.S(Style.Gray))
@@ -193,6 +217,19 @@ internal static class TerminalUi
 
     private static string BuildAchievementTitle(GameSnapshot snap, int start, int count, int total)
         => $" 成就  {snap.AchievementCount}/{snap.AchievementTotal}{Scroll(start, count, total)}";
+
+    private static string BuildRightTitle(
+        GameSession session, GameSnapshot snap, PanelFocus panel, int start, int count, int total) => panel switch
+        {
+            PanelFocus.Achievements => BuildAchievementTitle(snap, start, count, total),
+            PanelFocus.Codex => BuildCodexTitle(snap, start, count, total),
+            _ => BuildUpgradeTitle(session.Upgrades.Count, start, count, total),
+        };
+
+    private static string BuildCodexTitle(GameSnapshot snap, int start, int count, int total)
+        => snap.Codex is { } codex
+            ? $" 图鉴  {codex.TotalUnlocked}/{codex.TotalEntries}{Scroll(start, count, total)}"
+            : " 图鉴  （本内容包没有剧情）";
 
     private static string Scroll(int start, int count, int total)
     {
@@ -267,6 +304,28 @@ internal static class TerminalUi
 
     private static string Slot(int index) => index < SlotKeys.Length ? SlotKeys[index] : "·";
 
+    /// <summary>图鉴的一行：已解锁显示剧情线名，未解锁显示条件进度。</summary>
+    private static void CodexRow(UiLine line, GameSession session, LoreView view, int index, int width)
+    {
+        bool selected = session.Focus == PanelFocus.Codex && index == session.Selected;
+
+        int tailWidth = Math.Clamp(width / 3, 0, 14);
+        int nameWidth = Math.Max(6, width - 8 - tailWidth);
+        // 未解锁时用百分比而不是 "16,276,467 / 20,000,000"——那一格放不下，
+        // 完整条件留给下方的详情行。
+        string tail = view.Unlocked ? view.StorylineName : NumFormat.Percent(view.Progress, 0);
+
+        string row = $" {(selected ? '▸' : ' ')}{(view.Unlocked ? '✓' : '·')} {view.Icon} " +
+                     $"{Ansi.PadRight(Ansi.Truncate(view.Title, nameWidth), nameWidth)} " +
+                     $"{Ansi.PadLeft(Ansi.Truncate(tail, tailWidth), tailWidth)}";
+
+        string style = selected
+            ? Ansi.S(Style.Inverse)
+            : view.Unlocked ? Ansi.S(Style.Green) : Ansi.S(Style.Gray);
+
+        line.Add(row, style);
+    }
+
     // ---------------------------------------------------------------- 详情 / 日志 / 键位
 
     private static UiLine DetailLine(GameSession session, GameSnapshot snap)
@@ -315,6 +374,23 @@ internal static class TerminalUi
                 line.Add($"{view.Icon} {view.Name}", Ansi.S(Style.Bold))
                     .Add($"　{view.Description}", Ansi.S(Style.Gray));
                 if (view.ProgressText.Length > 0) line.Add($"　进度 {view.ProgressText}", Ansi.S(Style.BrightYellow));
+                return line;
+            }
+
+            case PanelFocus.Codex when session.Selected < session.Codex.Count:
+            {
+                LoreView view = session.Codex[session.Selected];
+
+                if (!view.Unlocked)
+                {
+                    return line.Add("🔒 ", Ansi.S(Style.Gray))
+                        .Add($"还没读到：{view.RevealHint}", Ansi.S(Style.Yellow))
+                        .Add(view.ProgressText.Length > 0 ? $"　进度 {view.ProgressText}" : string.Empty, Ansi.S(Style.Gray));
+                }
+
+                line.Add($"{view.Icon} {view.Title}", Ansi.S(Style.Bold))
+                    .Add($"　【{view.StorylineName}】", Ansi.S(Style.Magenta))
+                    .Add($"　{view.Body}", Ansi.S(Style.Gray));
                 return line;
             }
 

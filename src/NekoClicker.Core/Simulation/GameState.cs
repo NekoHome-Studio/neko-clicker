@@ -58,6 +58,14 @@ public sealed class GameState
     /// <summary>进入当前层时的累计游玩秒数，用于算"本层耗时"。</summary>
     public double EraEnteredPlayTimeSeconds { get; set; }
 
+    // ---------- 叙事（图鉴） ----------
+
+    /// <summary>已释放的叙事条目 id 集合。</summary>
+    public HashSet<string> LoreUnlocked { get; } = new(StringComparer.Ordinal);
+
+    /// <summary>已释放但玩家还没点掉的弹窗条目 id（按释放顺序）。</summary>
+    public List<string> PendingLorePopups { get; } = [];
+
     // ---------- 时间 ----------
 
     /// <summary>存档创建时刻。</summary>

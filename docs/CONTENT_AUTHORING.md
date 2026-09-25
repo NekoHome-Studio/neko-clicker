@@ -365,3 +365,110 @@ internal sealed class HappinessModule : IGameModule
 | 驱动修饰符 | `Scaling(ScalingSource.CustomCounter, perUnit, Id: "happiness")` |
 | 作为解锁条件 | `UnlockCondition.Counter("happiness", 500)` |
 | 与内容包的边界 | 内容包只提供数据；模块可以提供行为。**核心引擎永远不依赖具体模块** |
+
+## 11. 纪元：把"重开"变成一条链
+
+普通的转生是**循环**（重开 → 变强 → 再重开）。纪元（`Era`）把它改成**链**：
+每一层有各自的完成条件，条件不满足时"舍一命"按钮是灰的，玩家不能跳过任何一层。
+
+```csharp
+builder.AddEras(
+    new EraDefinition
+    {
+        Index = 1,
+        Id = "nine_01",
+        Name = "第一命 · 纸箱纪元",
+        Theme = "从一只纸箱开始",
+        Icon = "📦",
+        EntryText = "你睁开眼，世界是纸箱做的。",
+        ExitText = "你把最后一条小鱼干留给下一只猫。",
+        Completion = UnlockCondition.EarnedThisRunAtLeast(1e5),   // 必须单调
+        Balance = new GameBalance { ClickBasePower = 2,           // 本层可以换规则
+                                    GoldenCookieMinDelay = 60 * 8 },
+        Modifiers = [Modifier.GlobalMultiplier(1.2)],             // 本层常驻倍率
+        InheritBuildingRatio = 0.0,                               // 进入本层的保留比例
+    },
+    /* …… 层号必须从 1 连续递增 …… */);
+```
+
+**规则**（构建期会替你拦住大部分错误）：
+
+| 事项 | 说明 |
+|---|---|
+| 层号连续 | 从 `1` 开始、无空洞。断链会让"逐级推进"失去意义，构建期直接报错 |
+| 完成条件**必须单调** | 白名单：累计赚取、成就数、点击数、金猫数、已购升级、游玩时长、计数器、标签升级数、图鉴条数。**禁止**：当前小鱼干、每秒产量、建筑数量、转生徽章、层号本身 |
+| 为什么单调 | 这个条件会一直显示在按钮上。指标一旦能下降，玩家就会看到进度倒退、灰按钮闪烁 |
+| `InheritBuildingRatio` 的语义 | 写在**目标层**上，表示"进入这一层时允许带进来什么"。不要写成"离开上一层时带走什么" |
+| 闸门只有一个 | UI 上不要另做"下一层"按钮。一个灰按钮 + 一行原因，玩家就懂 |
+| 层与内容的对应 | `UnlocksBuildings` / `UnlocksUpgrades` 只是**自查与展示用**，真正的门控写在各自定义的 `Unlock` 里 |
+
+> **验收**：内容包新增纪元后跑 `.\tools\build.ps1`，其中 `G4_RobotWalksFromTheFirstEraToTheLast`
+> 会让机器人从第一层一路走到最后一层。这条测试**证明的是内容在真实曲线下走得完**，
+> 而不只是"代码能跑"——#2 就是被它抓出"每层门槛 ×1000 导致第 4 层之后走不动"的。
+
+## 12. 图鉴：把叙事切成几十段放
+
+世界观一次讲完就浪费了。做法是把剧情切成几十条小条目，每条挂一个释放条件，
+于是故事随进度自然渗出——`UnlockCondition` 在这里不是门控工具，而是**节奏编排工具**。
+
+```csharp
+builder.AddStorylines(new StorylineDefinition
+{
+    Id = "door", Name = "两界之门", Theme = "它一直开着", Icon = "🚪",
+    TotalEntries = 20,          // 声明总数，图鉴显示 3/20
+});
+
+builder.AddLore(new LoreEntry
+{
+    Id = "door_01", Title = "门在厨房后面", StorylineId = "door", Order = 1,
+    Icon = "🚪",
+    Body = "你以为是储藏间。推开门的时候，风是从另一边吹来的。",
+    Reveal = UnlockCondition.ClicksAtLeast(1),
+    Channel = LoreChannel.Popup,     // 转折点才用弹窗
+});
+```
+
+**投放通道**（`LoreChannel`）：
+
+| 通道 | 行为 | 用在哪 |
+|---|---|---|
+| `Log` | 进通知栏，最轻 | 默认；补充设定 |
+| `Popup` | 弹窗，需要点掉 | 只给转折点 |
+| `Codex` | 只进图鉴，不打扰 | 藏在后面的伏笔 |
+| `EraText` | 不在此投放，走 `EraDefinition.EntryText` / `ExitText` | 层与层之间 |
+
+**要点**：
+
+| 事项 | 说明 |
+|---|---|
+| `TotalEntries` 是**声明值** | 构建期会校验它与实际条目数一致，防止"改条数忘了改声明" |
+| `Order` 同线内不得重复 | 构建期校验 |
+| 正文是静态文本 | 不支持 `{amount}` 占位符。**写完一条只讲一个信息点**，40~120 字 |
+| 藏一半 | 未解锁条目在图鉴里显示 `???` + 条件进度（如 `4%`），既是悬念也是长期目标 |
+| 前 10 分钟 ≤ 3 条 | G5 验收项。首轮咖啡馆释放了 6 条被测试抓出——**开场别把孩子一次放完** |
+| 多条线要并行起步 | 九命首轮只释放 1 条，因为三条线的开场条件挤在同一处；把 3 个开场条目分别挂到点击 1 / 25 / 100 次上就解决了 |
+| 消耗方式 | `UnlockCondition.LoreAtLeast(n)` 做门控，`Scaling(ScalingSource.LoreCount, ...)` 做成长 |
+
+## 13. 复查叙事与纪元节奏
+
+改完叙事或纪元后，除了 §9 的三步，再多做两步：
+
+```powershell
+# 看前 10 分钟释放了几条（G5 要求 ≤3）
+.\tools\play.ps1 --package cafe --simulate 600 --auto --no-color
+
+# 看整局的纪元推进与图鉴收集情况（报告末尾有「纪元」与「图鉴」两节）
+.\tools\play.ps1 --package ninelines --simulate 172800 --auto --no-color
+
+# 直接截图图鉴面板，肉眼确认 ??? 遮蔽与进度百分比
+.\tools\play.ps1 --package cafe --simulate 5400 --auto --frame 118x32 --panel codex --no-color
+```
+
+无头报告里 `── 图鉴 ──` 一节会按线列出 `已解锁 / 声明总数` 与进度条，
+外加"待点掉的弹窗"数量；`── 纪元 ──` 一节会列出**当前层**的主线、进度、下一层与本层规则，
+`── 舍命 ──` 一节给出舍命次数与若现在舍命的收益。**这两节是内容调参的主要反馈回路**：
+条目挤在一起、某层进度推进异常慢，都会在这里一眼看出来。
+
+> 想看**逐层耗时**（例如排查"第 5 命 19 小时凸起"），看 `── 舍命 ──` 的"舍命次数"
+> 配合不同 `--simulate` 时长做二分即可——目前报告只展开当前层，没有逐层历史表。
+

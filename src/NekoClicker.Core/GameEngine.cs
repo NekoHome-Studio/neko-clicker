@@ -227,6 +227,7 @@ public sealed class GameEngine
         if (_achievementTimer < Math.Max(0.05, Balance.AchievementCheckInterval)) return;
         _achievementTimer = 0;
         CheckAchievements();
+        CheckLore();
     }
 
     // ---------------------------------------------------------------- 玩家动作
@@ -425,6 +426,21 @@ public sealed class GameEngine
 
         return unlocked;
     }
+
+    /// <summary>
+    /// 检查并释放所有满足条件的叙事条目。<para>
+    /// 与成就同频执行——两者都是"把条件树定期扫一遍"。被
+    /// <see cref="GameEngineOptions.AutoCheckAchievements"/> 一并开关。
+    /// </para>
+    /// </summary>
+    public IReadOnlyList<LoreEntry> CheckLore() => LoreSystem.Check(this);
+
+    /// <summary>点掉一个叙事弹窗。</summary>
+    /// <param name="entryId">条目 id。</param>
+    public bool DismissLorePopup(string entryId) => LoreSystem.DismissPopup(this, entryId);
+
+    /// <summary>点掉全部叙事弹窗。</summary>
+    public int DismissAllLorePopups() => LoreSystem.DismissAllPopups(this);
 
     // ---------------------------------------------------------------- 离线收益
 

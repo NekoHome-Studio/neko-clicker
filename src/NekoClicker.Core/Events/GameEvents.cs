@@ -70,3 +70,16 @@ public sealed record EraAdvancedEvent(
     double ChipsGained,
     int BuildingsInherited,
     string NewEraName) : IGameEvent;
+
+/// <summary>释放了一条叙事条目。</summary>
+/// <param name="Id">条目 id。</param>
+/// <param name="Title">标题。</param>
+/// <param name="Icon">图标。</param>
+/// <param name="StorylineId">所属剧情线。</param>
+/// <param name="Channel">投放通道（UI 据此决定是提示、弹窗还是静默进图鉴）。</param>
+public sealed record LoreRevealedEvent(
+    string Id,
+    string Title,
+    string Icon,
+    string StorylineId,
+    Content.LoreChannel Channel) : IGameEvent;

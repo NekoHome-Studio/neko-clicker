@@ -41,6 +41,8 @@ public static class CafeContent
             .AddAchievements(Achievements.All)
             .AddBuffs(Buffs.All)
             .AddGoldenCookieOutcomes(GoldenCookieOutcomes.All)
+            .AddStorylines(Lore.Storylines)
+            .AddLore(Lore.Entries)
             .Build();
 
     /// <summary>

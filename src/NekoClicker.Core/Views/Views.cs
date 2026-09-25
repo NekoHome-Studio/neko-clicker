@@ -288,6 +288,95 @@ public sealed record EraView
 }
 
 /// <summary>
+/// 一条叙事条目在图鉴里的样子。<para>
+/// 未解锁时标题与正文都被隐藏（显示 ???），但<b>保留释放条件与进度</b>——
+/// 于是图鉴同时是一张"还没读到什么"的清单，而不是一堵 ??? 墙。
+/// </para>
+/// </summary>
+public sealed record LoreView
+{
+    /// <summary>条目 id。</summary>
+    public required string Id { get; init; }
+
+    /// <summary>标题（未解锁时为 ???）。</summary>
+    public string Title { get; init; } = string.Empty;
+
+    /// <summary>正文（未解锁时为空）。</summary>
+    public string Body { get; init; } = string.Empty;
+
+    /// <summary>图标（未解锁时为 🔒）。</summary>
+    public string Icon { get; init; } = string.Empty;
+
+    /// <summary>所属剧情线 id。</summary>
+    public string StorylineId { get; init; } = string.Empty;
+
+    /// <summary>所属剧情线名。</summary>
+    public string StorylineName { get; init; } = string.Empty;
+
+    /// <summary>线内序号。</summary>
+    public int Order { get; init; }
+
+    /// <summary>是否已释放。</summary>
+    public bool Unlocked { get; init; }
+
+    /// <summary>投放通道。</summary>
+    public LoreChannel Channel { get; init; }
+
+    /// <summary>释放条件描述。</summary>
+    public string RevealHint { get; init; } = string.Empty;
+
+    /// <summary>释放条件进度 [0,1]。</summary>
+    public double Progress { get; init; }
+
+    /// <summary>进度文本，例如 <c>3 / 25</c>。</summary>
+    public string ProgressText { get; init; } = string.Empty;
+}
+
+/// <summary>一条剧情线在图鉴里的样子。</summary>
+public sealed record StorylineView
+{
+    /// <summary>剧情线 id。</summary>
+    public string Id { get; init; } = string.Empty;
+
+    /// <summary>显示名。</summary>
+    public string Name { get; init; } = string.Empty;
+
+    /// <summary>主题。</summary>
+    public string Theme { get; init; } = string.Empty;
+
+    /// <summary>图标。</summary>
+    public string Icon { get; init; } = string.Empty;
+
+    /// <summary>已解锁条数。</summary>
+    public int Unlocked { get; init; }
+
+    /// <summary>声明总条数。</summary>
+    public int Total { get; init; }
+
+    /// <summary>进度 [0,1]。</summary>
+    public double Progress { get; init; }
+
+    /// <summary>本线的条目（按序号升序）。</summary>
+    public IReadOnlyList<LoreView> Entries { get; init; } = [];
+}
+
+/// <summary>图鉴：全部剧情线与叙事的只读视图。</summary>
+public sealed record CodexView
+{
+    /// <summary>已释放总条数。</summary>
+    public int TotalUnlocked { get; init; }
+
+    /// <summary>总条数。</summary>
+    public int TotalEntries { get; init; }
+
+    /// <summary>总进度 [0,1]。</summary>
+    public double Progress { get; init; }
+
+    /// <summary>全部剧情线。</summary>
+    public IReadOnlyList<StorylineView> Storylines { get; init; } = [];
+}
+
+/// <summary>
 /// 一帧 UI 所需的全部数据。<para>
 /// 这是引擎对前端的完整契约：前端只读它、只发命令，不接触 <see cref="GameState"/>。
 /// 由于是普通 record，前端可以直接做差异比较来决定重绘哪些行。
@@ -399,4 +488,10 @@ public sealed record GameSnapshot
 
     /// <summary>舍命面板；内容包没有分层转生时为 <c>null</c>（UI 应隐藏该面板）。</summary>
     public EraView? Era { get; init; }
+
+    /// <summary>图鉴；内容包没有叙事条目时为 <c>null</c>。</summary>
+    public CodexView? Codex { get; init; }
+
+    /// <summary>待玩家点掉的叙事弹窗（按释放顺序）。</summary>
+    public IReadOnlyList<LoreView> PendingLore { get; init; } = [];
 }

@@ -29,6 +29,8 @@ public static class NineLivesContent
             .AddBuffs(Buffs.All)
             .AddGoldenCookieOutcomes(GoldenCookieOutcomes.All)
             .AddEras(Eras.All(balance))
+            .AddStorylines(Lore.Storylines)
+            .AddLore(Lore.Entries)
             .Add(new FaithModule())
             .Build();
     }

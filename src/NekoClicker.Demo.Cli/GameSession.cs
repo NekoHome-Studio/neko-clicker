@@ -17,6 +17,9 @@ internal enum PanelFocus
 
     /// <summary>成就面板。</summary>
     Achievements,
+
+    /// <summary>图鉴（叙事条目）面板；内容包没有叙事时该面板为空。</summary>
+    Codex,
 }
 
 /// <summary>
@@ -38,6 +41,7 @@ internal sealed class GameSession : IDisposable
     private BuildingView[] _buildingCache = [];
     private UpgradeView[] _upgradeCache = [];
     private AchievementView[] _achievementCache = [];
+    private LoreView[] _codexCache = [];
 
     /// <summary>创建会话。</summary>
     /// <param name="package">要玩的内容包（决定构建哪份 <c>GameContent</c>）。</param>
@@ -136,8 +140,18 @@ internal sealed class GameSession : IDisposable
         {
             PanelFocus.Buildings => PanelFocus.Upgrades,
             PanelFocus.Upgrades => PanelFocus.Achievements,
+            PanelFocus.Achievements => PanelFocus.Codex,
             _ => PanelFocus.Buildings,
         };
+        Selected = 0;
+        RefreshCache();
+    }
+
+    /// <summary>直接指定焦点面板（用于 <c>--frame --panel codex</c> 这类验证场景）。</summary>
+    /// <param name="focus">目标面板。</param>
+    public void SetFocus(PanelFocus focus)
+    {
+        Focus = focus;
         Selected = 0;
         RefreshCache();
     }
@@ -231,9 +245,33 @@ internal sealed class GameSession : IDisposable
             case PanelFocus.Upgrades:
                 ActivateUpgrade(Selected);
                 break;
+            case PanelFocus.Codex:
+                ActivateLore(Selected);
+                break;
             default:
                 break;
         }
+    }
+
+    /// <summary>
+    /// 在图鉴里"读"一条：如果是待处理的弹窗就点掉它，已解锁的就在日志里重读一遍。
+    /// </summary>
+    /// <param name="index">条目下标。</param>
+    public void ActivateLore(int index)
+    {
+        if (index < 0 || index >= _codexCache.Length) return;
+
+        LoreView entry = _codexCache[index];
+
+        if (Engine.DismissLorePopup(entry.Id))
+        {
+            Log($"「{entry.Title}」", entry.Icon);
+            RefreshCache();
+            return;
+        }
+
+        if (entry.Unlocked) Log($"「{entry.Title}」{entry.Body}", entry.Icon);
+        else Log($"还没读到这一段。条件：{entry.RevealHint}", "🔒");
     }
 
     /// <summary>执行指定序号的建筑（供数字快捷键使用）。</summary>
@@ -336,11 +374,15 @@ internal sealed class GameSession : IDisposable
     /// <summary>可见成就。</summary>
     public IReadOnlyList<AchievementView> Achievements => _achievementCache;
 
+    /// <summary>图鉴条目（按剧情线与序号排好）。</summary>
+    public IReadOnlyList<LoreView> Codex => _codexCache;
+
     /// <summary>当前焦点面板的行数。</summary>
     public int RowCount => Focus switch
     {
         PanelFocus.Buildings => _buildingCache.Length,
         PanelFocus.Upgrades => _upgradeCache.Length,
+        PanelFocus.Codex => _codexCache.Length,
         _ => _achievementCache.Length,
     };
 
@@ -371,6 +413,9 @@ internal sealed class GameSession : IDisposable
         _buildingCache = [.. _snapshot.Buildings.Where(b => b.IsVisible)];
         _upgradeCache = [.. _snapshot.Upgrades.Where(u => u.IsAvailable).OrderBy(u => u.Price)];
         _achievementCache = [.. _snapshot.Achievements.Where(a => a.Unlocked || !a.Hidden)];
+        _codexCache = _snapshot.Codex is { } codex
+            ? [.. codex.Storylines.SelectMany(s => s.Entries)]
+            : [];
 
         int count = RowCount;
         if (Selected >= count) Selected = Math.Max(0, count - 1);

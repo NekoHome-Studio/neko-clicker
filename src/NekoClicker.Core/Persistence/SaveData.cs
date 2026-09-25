@@ -72,6 +72,13 @@ public sealed class SaveData
     /// <summary>进入当前层时的累计游玩秒数。</summary>
     public double EraEnteredPlayTimeSeconds { get; set; }
 
+    // ---- 叙事（图鉴） ----
+    /// <summary>已释放的叙事条目 id。</summary>
+    public List<string> LoreUnlocked { get; set; } = [];
+
+    /// <summary>已释放但尚未点掉的弹窗条目 id。</summary>
+    public List<string> PendingLorePopups { get; set; } = [];
+
     // ---- 金猫 ----
     /// <summary>下一次金猫倒计时。</summary>
     public double GoldenCookieCountdown { get; set; }

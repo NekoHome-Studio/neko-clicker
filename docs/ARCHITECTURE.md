@@ -20,17 +20,21 @@ NekoClicker.Core
 │   ├── Modifier.cs            修饰符 + 成长曲线
 │   ├── ModifierTarget.cs      作用目标
 │   ├── UnlockCondition.cs     可组合、可量化的解锁条件树
+│   ├── EraDefinition.cs       纪元定义 + 闸门状态（EraGate）
+│   ├── LoreEntry.cs           叙事条目 + 剧情线
 │   ├── GameBalance.cs         全局平衡参数
 │   ├── GameContent.cs         内容容器（含索引）
 │   └── GameContentBuilder.cs  构建 + 校验
 ├── Simulation/                运行时
-│   ├── GameState.cs           全部可变状态（含 ActiveBuff / GoldenCookieSpawn）
+│   ├── GameState.cs           全部可变状态（含 ActiveBuff / GoldenCookieSpawn / LoreUnlocked）
 │   ├── GameMetrics.cs         IGameMetrics 的引擎实现
 │   ├── ModifierSet.cs         修饰符累加器 + 求解器
 │   ├── ProductionCalculator.cs 生产管线
 │   ├── Pricing.cs             价格闭式解（单价 / 批量 / 买满 / 出售）
 │   ├── BuffSystem.cs          增益施加、叠加、到期 + 成就检查
 │   ├── PrestigeSystem.cs      转生公式、预览、重置语义
+│   ├── EraSystem.cs           纪元闸门判定、推进、跨层继承
+│   ├── LoreSystem.cs          叙事释放判定、待读队列、图鉴查询
 │   ├── GoldenCookieSystem.cs  随机事件：刷新、抽取、结算
 │   └── ActionResults.cs       动作结果类型（PurchaseResult 等）
 ├── Events/                    事件总线 + 领域事件
@@ -122,6 +126,39 @@ GameState  ←→  SaveData（DTO）  ←→  JSON / base64 分享码
 因此同一份存档、同一串操作必然得到同一结果——这是能对数值做回归测试与平衡验证的前提。
 `System.Random` 不可用：它的内部状态无法存取，且不同 .NET 版本的算法可能变化。
 
+## 纪元（`Era`）与叙事（`Lore`）
+
+这两套系统是为了让**同一个核心**承载十种完全不同世界观的内容包（见 NINE_LIVES_DESIGN）。
+它们的共同约束是：核心不知道任何具体层号、任何具体条目。
+
+### `Era` 只通过四个接缝进入引擎
+
+| 接缝 | 作用 |
+|---|---|
+| `GameContent.BalanceFor(eraIndex)` | 取本层的数值规则（未覆盖则回退内容包基准） |
+| `ModifierResolver.Build` 的第 4 个来源 | 本层常驻倍率，与升级 / 成就 / 增益同一条管线 |
+| `NumericMetric.Era` | 让条件树能引用层号（例如"只在第 3 层解锁"） |
+| `PrestigeSystem.ResetRun(..., enteringEra)` | 重置时按**进入的那一层**决定继承什么 |
+
+这四条就是架构不变量 A2 的全部内容。`ArchitectureTests` 里有一条测试扫描核心程序集，
+确保不出现 `era == 3` 这类层号比较——**"第 N 层有什么不同"必须由数据表达，不能由代码分支表达**。
+
+### 单调性是硬约束，不是建议
+
+`EraDefinition.Completion` 会被持续渲染在舍命按钮上（灰按钮 + 进度条 + 原因）。
+如果它可以下降，玩家就会看到进度倒退。因此构建期按**白名单**校验它引用的指标：
+累计赚取 / 成就数 / 点击数 / 金猫数 / 已购升级 / 游玩时长 / 计数器 / 标签升级数 / 图鉴条数可以，
+当前小鱼干 / 每秒产量 / 建筑数量 / 转生徽章 / 层号本身不行。
+
+### `Lore` 复用条件树做"节奏编排"
+
+`LoreSystem` 在成就检查的同一时点扫描未解锁条目，`Reveal` 达成就入 `PendingLorePopups`。
+`UnlockCondition` 在这里不是门控工具而是编排工具——同一个机制既拦内容也放故事。
+`TotalEntries` 是**声明值**而非统计值，构建期校验一致性，这样图鉴在条目没写完时也能显示 `3 / 20`。
+
+可达性校验（`ValidateReachability`）的不动点会把叙事节点一起算进去：
+一条"需要图鉴 N 条才解锁"的升级，不会因为那些条目本身不可达而变成死内容。
+
 ## 扩展点
 
 | 需求 | 做法 |
@@ -129,6 +166,8 @@ GameState  ←→  SaveData（DTO）  ←→  JSON / base64 分享码
 | 新增一种加成目标 | 扩展 `ModifierTargetKind` + `ModifierTarget.Describe` + 消费方读取 |
 | 新增一种解锁条件 | 继承 `UnlockCondition` 并实现 `IsMet` / `Describe` / `TryGetProgress` |
 | 新增一种成长曲线 | 扩展 `ScalingSource` + `Scaling.Evaluate` |
+| 新增一层纪元 | 往内容包加一条 `EraDefinition`（层号连续、完成条件单调），核心零改动 |
+| 新增一条叙事线 | 加 `StorylineDefinition` + 若干 `LoreEntry`，核心零改动 |
 | 接入引擎不认识的玩法 | 实现 `IGameModule`（`Configure` 补内容、`OnAttach` 订阅事件、`OnTick` 推进） |
 | 换存储介质 | 实现 `IStorage`（文件 / 内存 / 浏览器 localStorage / 云） |
 | 换时间源 | 实现 `IClock`（真实 / 手动 / 加速） |
@@ -138,7 +177,7 @@ GameState  ←→  SaveData（DTO）  ←→  JSON / base64 分享码
 ## 测试策略
 
 `tests/NekoClicker.Core.Tests` 自带 200 行迷你运行器（反射扫描 `[Test]` 方法），
-覆盖五类问题：
+共 **210 个用例**，覆盖六类问题：
 
 1. **数值正确性**：格式化边界、饱和算术、价格闭式解与暴力求和一致、买满的两侧夹逼。
 2. **规则正确性**：购买扣款、买不起时的降级、成就阈值、增益叠加与到期、转生重置语义。
@@ -147,5 +186,10 @@ GameState  ←→  SaveData（DTO）  ←→  JSON / base64 分享码
    且全程不出现 NaN/∞。单元测试能证明公式对，只有长跑能证明曲线是活的。
 5. **架构不变量**（`ArchitectureTests`，ROADMAP K1/A1/R7）：
    核心程序集不引用任何 `NekoClicker.Content.*`、其字符串字面量里不出现任何内容 id、
-   内容包之间互不引用。这三条是"核心不认识内容"这一主张的可执行版本——
+   内容包之间互不引用、核心不含层号分支。这几条是"核心不认识内容"这一主张的可执行版本——
    一旦被侵蚀，先红的不是文档而是 CI。
+6. **内容真的走得完**（`EraTests` / `LoreTests`，G4/G5）：
+   `G4_RobotWalksFromTheFirstEraToTheLast` 让机器人从第 1 命走到第 9 命，
+   证明**内容在真实曲线下可达**（首轮就抓出"第 4 层之后走不动"）；
+   `LoreTests` 锁定图鉴总数一致、前 10 分钟释放 ≤3 条、存档往返保留解锁状态。
+   这类测试证明的从来不是"代码能跑"，而是"这份内容成立"。

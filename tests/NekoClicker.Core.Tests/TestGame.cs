@@ -96,7 +96,7 @@ public static class TestGame
             Clock = clock,
             Seed = seed,
             GrantOfflineProgress = grantOffline,
-            MaxNotifications = 32,
+            MaxNotifications = 64,
         });
     }
 

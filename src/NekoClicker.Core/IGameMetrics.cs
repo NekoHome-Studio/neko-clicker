@@ -76,4 +76,7 @@ public interface IGameMetrics
 
     /// <summary>当前纪元（转生层号）；没有分层的包恒为 1。</summary>
     int Era { get; }
+
+    /// <summary>已释放的叙事条目数（图书馆纪元用它当"被阅读量"）。</summary>
+    int LoreCount { get; }
 }

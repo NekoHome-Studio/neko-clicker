@@ -48,6 +48,9 @@ internal static class HeadlessRunner
             Advance(session.Engine, options.SimulateSeconds, autoPlay: true, options.SimulateSeconds, options.Package);
 
         session.Refresh();
+
+        if (options.Panel is { } panel) session.SetFocus(panel);
+        session.Refresh();
         List<string> lines = TerminalUi.Render(session, options.Width, options.Height);
         foreach (string line in lines) Console.WriteLine(line);
         return 0;
@@ -182,6 +185,22 @@ internal static class HeadlessRunner
         Field("生效增益", state.Buffs.Count == 0
             ? "无"
             : string.Join("、", state.Buffs.Select(b => $"{b.Id} {NumFormat.Duration(b.RemainingSeconds)}")));
+
+        // 图鉴：剧情是按进度渗出来的，报告里给出各线的释放进度与最近读到的几条。
+        if (snap.Codex is { } codex)
+        {
+            Section("图鉴");
+            Field("已读到", $"{codex.TotalUnlocked}/{codex.TotalEntries}（{NumFormat.Percent(codex.Progress, 0)}）");
+            foreach (StorylineView storyline in codex.Storylines)
+            {
+                Console.WriteLine(
+                    $"  {storyline.Icon} {Ansi.PadRight(storyline.Name, 12)}" +
+                    $" {storyline.Unlocked,3}/{storyline.Total,-3}" +
+                    $" {Ansi.Repeat("█", (int)Math.Round(storyline.Progress * 12))}{Ansi.Repeat("░", 12 - (int)Math.Round(storyline.Progress * 12))}");
+            }
+
+            Field("待点掉的弹窗", state.PendingLorePopups.Count.ToString());
+        }
 
         // 分层转生的包：先报纪元状态。这是"舍命"按钮的真实依据，
         // 而下面的经典转生预览只描述情感能量的换算，不表示现在按得下去。

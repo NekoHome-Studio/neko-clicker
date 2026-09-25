@@ -201,6 +201,94 @@ public static class GameViewFactory
             Notifications = [.. engine.Notifications],
             Prestige = PrestigeSystem.Preview(engine),
             Era = BuildEraView(engine),
+            Codex = BuildCodexView(engine),
+            PendingLore = BuildPendingLore(engine),
+        };
+    }
+
+    /// <summary>构造图鉴；内容包没有叙事条目时返回 <c>null</c>。</summary>
+    private static CodexView? BuildCodexView(GameEngine engine)
+    {
+        GameContent content = engine.Content;
+        if (content.LoreEntries.Count == 0) return null;
+
+        GameState state = engine.State;
+        List<StorylineView> storylines = new(content.Storylines.Count);
+        int totalUnlocked = 0;
+
+        foreach (StorylineDefinition storyline in content.Storylines)
+        {
+            List<LoreView> entries = [];
+            foreach (LoreEntry entry in content.LoreOf(storyline.Id))
+            {
+                entries.Add(BuildLoreView(engine, entry, unlocked: state.LoreUnlocked.Contains(entry.Id)));
+            }
+
+            int unlocked = entries.Count(e => e.Unlocked);
+            totalUnlocked += unlocked;
+
+            int total = storyline.TotalEntries > 0 ? storyline.TotalEntries : entries.Count;
+            storylines.Add(new StorylineView
+            {
+                Id = storyline.Id,
+                Name = storyline.Name,
+                Theme = storyline.Theme,
+                Icon = storyline.Icon,
+                Unlocked = unlocked,
+                Total = total,
+                Progress = total > 0 ? Math.Clamp((double)unlocked / total, 0, 1) : 0,
+                Entries = entries,
+            });
+        }
+
+        int totalEntries = content.LoreEntries.Count;
+        return new CodexView
+        {
+            TotalUnlocked = totalUnlocked,
+            TotalEntries = totalEntries,
+            Progress = totalEntries > 0 ? Math.Clamp((double)totalUnlocked / totalEntries, 0, 1) : 0,
+            Storylines = storylines,
+        };
+    }
+
+    /// <summary>构造待处理的叙事弹窗列表。</summary>
+    private static IReadOnlyList<LoreView> BuildPendingLore(GameEngine engine)
+    {
+        List<string> pending = engine.State.PendingLorePopups;
+        if (pending.Count == 0) return [];
+
+        List<LoreView> views = new(pending.Count);
+        foreach (string id in pending)
+        {
+            if (engine.Content.FindLore(id) is { } entry) views.Add(BuildLoreView(engine, entry, unlocked: true));
+        }
+        return views;
+    }
+
+    private static LoreView BuildLoreView(GameEngine engine, LoreEntry entry, bool unlocked)
+    {
+        GameContent content = engine.Content;
+        string storylineName = content.FindStoryline(entry.StorylineId)?.Name ?? entry.StorylineId;
+
+        bool quantifiable = entry.Reveal.TryGetProgress(engine.Metrics, out double current, out double target) && target > 0;
+
+        return new LoreView
+        {
+            Id = entry.Id,
+            // 未解锁就只给 ???：世界观不该被图鉴一次性剧透。
+            Title = unlocked ? entry.Title : "???",
+            Body = unlocked ? entry.Body : string.Empty,
+            Icon = unlocked ? entry.Icon : "🔒",
+            StorylineId = entry.StorylineId,
+            StorylineName = storylineName,
+            Order = entry.Order,
+            Unlocked = unlocked,
+            Channel = entry.Channel,
+            RevealHint = entry.Reveal.Describe(content),
+            Progress = quantifiable ? Math.Clamp(current / target, 0, 1) : (unlocked ? 1 : 0),
+            ProgressText = quantifiable && !unlocked
+                ? $"{NumFormat.FormatPlain(Math.Min(current, target))} / {NumFormat.FormatPlain(target)}"
+                : string.Empty,
         };
     }
 

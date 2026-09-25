@@ -71,6 +71,9 @@ internal sealed class GameMetrics : IGameMetrics
     public int Era => S.Era;
 
     /// <inheritdoc />
+    public int LoreCount => S.LoreUnlocked.Count;
+
+    /// <inheritdoc />
     public bool HasAchievement(string achievementId) => S.Achievements.Contains(achievementId);
 
     /// <inheritdoc />

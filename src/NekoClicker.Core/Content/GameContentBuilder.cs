@@ -15,6 +15,8 @@ public sealed class GameContentBuilder
     private readonly List<BuffDefinition> _buffs = [];
     private readonly List<GoldenCookieOutcome> _goldenCookieOutcomes = [];
     private readonly List<EraDefinition> _eras = [];
+    private readonly List<LoreEntry> _loreEntries = [];
+    private readonly List<StorylineDefinition> _storylines = [];
     private readonly List<IGameModule> _modules = [];
 
     /// <summary>创建构建器。</summary>
@@ -177,6 +179,36 @@ public sealed class GameContentBuilder
         return this;
     }
 
+    /// <summary>添加一条叙事条目。</summary>
+    public GameContentBuilder Add(LoreEntry entry)
+    {
+        ArgumentNullException.ThrowIfNull(entry);
+        _loreEntries.Add(entry);
+        return this;
+    }
+
+    /// <summary>批量添加叙事条目。</summary>
+    public GameContentBuilder AddLore(params LoreEntry[] entries)
+    {
+        _loreEntries.AddRange(entries);
+        return this;
+    }
+
+    /// <summary>添加一条剧情线。</summary>
+    public GameContentBuilder Add(StorylineDefinition storyline)
+    {
+        ArgumentNullException.ThrowIfNull(storyline);
+        _storylines.Add(storyline);
+        return this;
+    }
+
+    /// <summary>批量添加剧情线。</summary>
+    public GameContentBuilder AddStorylines(params StorylineDefinition[] storylines)
+    {
+        _storylines.AddRange(storylines);
+        return this;
+    }
+
     /// <summary>构建并校验。</summary>
     /// <exception cref="GameContentValidationException">存在校验错误。</exception>
     public GameContent Build()
@@ -251,9 +283,16 @@ public sealed class GameContentBuilder
             ValidateEra(era, buildingById, upgradeById, achievementById, buffById, errors);
         }
 
+        // 叙事：条数声明、序号、剧情线引用都要自洽。
+        var loreById = new Dictionary<string, LoreEntry>(StringComparer.Ordinal);
+        var storylineById = new Dictionary<string, StorylineDefinition>(StringComparer.Ordinal);
+        Index(_loreEntries, l => l.Id, loreById, "叙事条目", errors);
+        Index(_storylines, s => s.Id, storylineById, "剧情线", errors);
+        ValidateLore(loreById, storylineById, buildingById, upgradeById, achievementById, errors);
+
         // 最后做一次全局可达性分析：前两步只能发现"引用不存在"，
         // 发现不了"互相引用导致谁也解不开"。
-        ValidateReachability(buildingById, upgradeById, achievementById, errors);
+        ValidateReachability(buildingById, upgradeById, achievementById, loreById, errors);
 
         if (errors.Count > 0) throw new GameContentValidationException(errors);
 
@@ -280,7 +319,68 @@ public sealed class GameContentBuilder
             Eras = [.. _eras.OrderBy(e => e.Index)],
             EraByIndex = eraByIndex,
             MaxEraIndex = eraByIndex.Count == 0 ? 1 : eraByIndex.Keys.Max(),
+            LoreEntries = [.. _loreEntries
+                .OrderBy(l => l.StorylineId, StringComparer.Ordinal)
+                .ThenBy(l => l.Order)],
+            LoreById = loreById,
+            Storylines = _storylines,
+            StorylineById = storylineById,
         };
+    }
+
+    /// <summary>校验叙事条目与剧情线的自洽性。</summary>
+    private static void ValidateLore(
+        Dictionary<string, LoreEntry> loreById,
+        Dictionary<string, StorylineDefinition> storylineById,
+        Dictionary<string, BuildingDefinition> buildings,
+        Dictionary<string, UpgradeDefinition> upgrades,
+        Dictionary<string, AchievementDefinition> achievements,
+        List<string> errors)
+    {
+        // 剧情线声明条数必须与实际一致，否则图鉴的 "3 / 20" 会骗人。
+        Dictionary<string, int> actual = new(StringComparer.Ordinal);
+        HashSet<string> orders = new(StringComparer.Ordinal);
+
+        foreach (LoreEntry entry in loreById.Values)
+        {
+            string owner = $"叙事条目 「{entry.Id}」";
+
+            if (string.IsNullOrWhiteSpace(entry.Title)) errors.Add($"{owner} 缺少标题。");
+            if (string.IsNullOrWhiteSpace(entry.Body)) errors.Add($"{owner} 缺少正文。");
+
+            if (!storylineById.ContainsKey(entry.StorylineId))
+            {
+                errors.Add($"{owner} 引用了不存在的剧情线 「{entry.StorylineId}」。");
+            }
+            else
+            {
+                actual[entry.StorylineId] = actual.GetValueOrDefault(entry.StorylineId) + 1;
+
+                // 同一条线里序号重复 → 剧情顺序不确定。
+                string orderKey = $"{entry.StorylineId}#{entry.Order}";
+                if (!orders.Add(orderKey))
+                    errors.Add($"{owner} 的序号与同剧情线的另一条重复（{entry.StorylineId} #{entry.Order}）。");
+            }
+
+            if (entry.Channel == LoreChannel.EraText)
+                errors.Add($"{owner} 使用了 EraText 通道，但那一通道由纪元定义的进 / 出文本承载，条目本身不该用它。");
+
+            if (entry.Reveal is ConstantCondition { Value: false })
+                errors.Add($"{owner} 的释放条件恒为假，永远放不出来。");
+
+            ValidateCondition(entry.Reveal, owner, buildings, upgrades, achievements, errors);
+        }
+
+        foreach (StorylineDefinition storyline in storylineById.Values)
+        {
+            int count = actual.GetValueOrDefault(storyline.Id);
+            if (count == 0)
+                errors.Add($"剧情线 「{storyline.Id}」 没有任何叙事条目。");
+            else if (storyline.TotalEntries != count)
+                errors.Add(
+                    $"剧情线 「{storyline.Id}」 声明了 {storyline.TotalEntries} 条，实际有 {count} 条" +
+                    $"（图鉴会显示错误的总数，请同步）。");
+        }
     }
 
     /// <summary>索引纪元并校验"从 1 开始连续"。</summary>
@@ -377,6 +477,7 @@ public sealed class GameContentBuilder
         NumericMetric.PlayTimeSeconds,
         NumericMetric.Counter,                // 计数器是否单调由内容/模块自己保证
         NumericMetric.TaggedUpgrades,
+        NumericMetric.LoreCount,
     ];
 
     /// <summary>明确<b>禁止</b>出现在纪元完成条件里的指标（会下降）。</summary>
@@ -528,12 +629,15 @@ public sealed class GameContentBuilder
         Dictionary<string, BuildingDefinition> buildings,
         Dictionary<string, UpgradeDefinition> upgrades,
         Dictionary<string, AchievementDefinition> achievements,
+        Dictionary<string, LoreEntry> loreEntries,
         List<string> errors)
     {
         var conditionByNode = new Dictionary<string, UnlockCondition>(StringComparer.Ordinal);
         foreach (BuildingDefinition b in buildings.Values) conditionByNode[NodeKey("建筑", b.Id)] = b.Unlock;
         foreach (UpgradeDefinition u in upgrades.Values) conditionByNode[NodeKey("升级", u.Id)] = u.Unlock;
         foreach (AchievementDefinition a in achievements.Values) conditionByNode[NodeKey("成就", a.Id)] = a.Unlock;
+        // 叙事条目也算节点：一段永远放不出来的剧情和一条解不开的升级一样，都是坏内容。
+        foreach (LoreEntry l in loreEntries.Values) conditionByNode[NodeKey("叙事", l.Id)] = l.Reveal;
 
         // 不动点：从"只依赖进度型指标"的节点出发反复放宽，直到不再有新节点可达。
         var reachable = new HashSet<string>(StringComparer.Ordinal);

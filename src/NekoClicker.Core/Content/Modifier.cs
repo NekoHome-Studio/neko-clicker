@@ -57,6 +57,9 @@ public enum ScalingSource
     /// <summary>游玩小时数。</summary>
     PlayTimeHours,
 
+    /// <summary>已释放的叙事条目数（"被阅读量"）。</summary>
+    LoreCount,
+
     /// <summary>自定义计数器（<see cref="Scaling.Id"/> = 计数器键）。</summary>
     CustomCounter,
 }
@@ -93,6 +96,7 @@ public sealed record Scaling(
             ScalingSource.TaggedUpgradeCount => metrics.TaggedUpgradeCount(Id ?? string.Empty),
             ScalingSource.GoldenCookiesClicked => metrics.GoldenCookiesClicked,
             ScalingSource.PlayTimeHours => metrics.PlayTimeSeconds / 3600.0,
+            ScalingSource.LoreCount => metrics.LoreCount,
             ScalingSource.CustomCounter => metrics.GetCounter(Id ?? string.Empty),
             _ => 0,
         };
@@ -118,6 +122,7 @@ public sealed record Scaling(
             ScalingSource.TaggedUpgradeCount => $"每个「{Id}」升级",
             ScalingSource.GoldenCookiesClicked => "每次金猫",
             ScalingSource.PlayTimeHours => "每小时游玩",
+            ScalingSource.LoreCount => "每段被读到的记忆",
             ScalingSource.CustomCounter => $"每点「{Id}」",
             _ => "每单位",
         };

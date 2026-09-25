@@ -46,6 +46,9 @@ internal sealed class CliOptions
     /// <summary>是否强制关闭 ANSI 颜色。</summary>
     public bool NoColor { get; private set; }
 
+    /// <summary>单帧渲染时初始聚焦的面板；<c>null</c> 表示默认（建筑）。</summary>
+    public PanelFocus? Panel { get; private set; }
+
     /// <summary>解析错误信息；非空时应当只打印错误。</summary>
     public string? Error { get; private set; }
 
@@ -131,6 +134,18 @@ internal sealed class CliOptions
                     options.NoColor = true;
                     break;
 
+                case "--panel":
+                    if (i + 1 < args.Length && TryParsePanel(args[i + 1], out PanelFocus panel))
+                    {
+                        options.Panel = panel;
+                        i++;
+                    }
+                    else
+                    {
+                        options.Error = "--panel 需要 buildings / upgrades / achievements / codex 之一。";
+                    }
+                    break;
+
                 default:
                     options.Error = $"未知参数：{arg}";
                     break;
@@ -172,16 +187,18 @@ internal sealed class CliOptions
           --no-save           本次运行不读写存档
           --frame [宽x高]     渲染一帧界面到标准输出后退出（默认 100x30）
           --size <宽x高>      指定界面尺寸
+          --panel <名称>      指定右侧面板初始焦点：buildings | upgrades | achievements | codex
           --no-color          关闭 ANSI 颜色
           -h, --help          显示本帮助
 
         内容包:
-          neko   猫咖物语（框架回归基线，第一只猫）
-          cafe   猫娘咖啡馆（内容包 #1，第二资源「幸福感」）
+          neko       猫咖物语（框架回归基线，第一只猫）
+          cafe       猫娘咖啡馆（内容包 #1，第二资源「幸福感」）
+          ninelines  九命猫娘（内容包 #2，九层轮回 + 图鉴长篇）
 
         游戏内按键:
           空格 / C    手动点击（撸猫 / 做咖啡）
-          Tab         切换面板焦点（建筑 → 升级 → 成就）
+          Tab         切换面板焦点（建筑 → 升级 → 成就 → 图鉴）
           ↑ / ↓       移动选择
           1-9, 0      直接选中当前面板的第 1~10 项
           Enter       执行（买建筑 / 买升级）
@@ -200,6 +217,19 @@ internal sealed class CliOptions
           neko-clicker --package cafe --simulate 21600 --auto
           neko-clicker --frame 120x34 --no-color > frame.txt
         """;
+
+    /// <summary>解析 <c>--panel</c> 的面板名。</summary>
+    private static bool TryParsePanel(string text, out PanelFocus panel)
+    {
+        switch (text.ToLowerInvariant())
+        {
+            case "buildings": panel = PanelFocus.Buildings; return true;
+            case "upgrades": panel = PanelFocus.Upgrades; return true;
+            case "achievements": panel = PanelFocus.Achievements; return true;
+            case "codex": panel = PanelFocus.Codex; return true;
+            default: panel = PanelFocus.Buildings; return false;
+        }
+    }
 
     private static bool TryParseSize(string text, out int width, out int height)
     {

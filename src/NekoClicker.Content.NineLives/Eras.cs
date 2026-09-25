@@ -188,9 +188,8 @@ internal static class Eras
             ExitText = "她把书合上了。合上不是结束，是等下一个读者。",
             Modifiers =
             [
-                // 设计里是"按已解锁叙事条目数成长"；叙事系统（S-B）属于阶段 2，
-                // 先用成就数作为"被阅读量"的替身，落地后换成 ScalingSource.LoreCount。
-                Modifier.GlobalPercent(0, new Scaling(ScalingSource.AchievementCount, 0.05, Cap: 60)),
+                // 产量随"被阅读量"成长：读到的记忆越多，这一世越强。
+                Modifier.GlobalPercent(0, new Scaling(ScalingSource.LoreCount, 0.02, Cap: 60)),
             ],
             Completion = UnlockCondition.All(
                 UnlockCondition.EarnedThisRunAtLeast(1.5e9),

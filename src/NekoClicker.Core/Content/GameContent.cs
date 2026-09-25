@@ -115,6 +115,31 @@ public sealed class GameContent
     /// <summary>按层号查纪元定义。</summary>
     public EraDefinition? FindEra(int index) => EraByIndex.TryGetValue(index, out EraDefinition? d) ? d : null;
 
+    /// <summary>全部叙事条目（按剧情线与序号排序）。</summary>
+    public IReadOnlyList<LoreEntry> LoreEntries { get; init; } = [];
+
+    /// <summary>叙事条目索引。</summary>
+    public IReadOnlyDictionary<string, LoreEntry> LoreById { get; init; }
+        = new Dictionary<string, LoreEntry>(StringComparer.Ordinal);
+
+    /// <summary>剧情线列表。</summary>
+    public IReadOnlyList<StorylineDefinition> Storylines { get; init; } = [];
+
+    /// <summary>剧情线索引。</summary>
+    public IReadOnlyDictionary<string, StorylineDefinition> StorylineById { get; init; }
+        = new Dictionary<string, StorylineDefinition>(StringComparer.Ordinal);
+
+    /// <summary>按 id 查叙事条目。</summary>
+    public LoreEntry? FindLore(string id) => LoreById.TryGetValue(id, out LoreEntry? d) ? d : null;
+
+    /// <summary>按 id 查剧情线。</summary>
+    public StorylineDefinition? FindStoryline(string id)
+        => StorylineById.TryGetValue(id, out StorylineDefinition? d) ? d : null;
+
+    /// <summary>某条剧情线下的全部条目，按序号升序。</summary>
+    public IReadOnlyList<LoreEntry> LoreOf(string storylineId)
+        => [.. LoreEntries.Where(e => string.Equals(e.StorylineId, storylineId, StringComparison.Ordinal)).OrderBy(e => e.Order)];
+
     /// <summary>空内容（测试与骨架用）。</summary>
     public static GameContent Empty { get; } = new();
 

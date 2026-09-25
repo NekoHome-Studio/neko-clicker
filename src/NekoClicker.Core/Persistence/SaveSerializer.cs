@@ -85,6 +85,8 @@ public static class SaveSerializer
             EraCompleted = [.. state.EraCompleted],
             EraHistory = new Dictionary<int, EraRecord>(state.EraHistory),
             EraEnteredPlayTimeSeconds = state.EraEnteredPlayTimeSeconds,
+            LoreUnlocked = [.. state.LoreUnlocked],
+            PendingLorePopups = [.. state.PendingLorePopups],
         };
     }
 
@@ -117,6 +119,8 @@ public static class SaveSerializer
 
         foreach (int index in data.EraCompleted) state.EraCompleted.Add(index);
         foreach ((int index, EraRecord record) in data.EraHistory) state.EraHistory[index] = record;
+        foreach (string id in data.LoreUnlocked) state.LoreUnlocked.Add(id);
+        foreach (string id in data.PendingLorePopups) state.PendingLorePopups.Add(id);
 
         foreach ((string id, int count) in data.Buildings) state.BuildingCounts[id] = count;
         foreach ((string id, int count) in data.Upgrades) state.UpgradeCounts[id] = count;
@@ -231,6 +235,8 @@ public static class SaveSerializer
         data.Metadata ??= new Dictionary<string, string>(StringComparer.Ordinal);
         data.EraCompleted ??= [];
         data.EraHistory ??= [];
+        data.LoreUnlocked ??= [];
+        data.PendingLorePopups ??= [];
 
         return data;
     }
