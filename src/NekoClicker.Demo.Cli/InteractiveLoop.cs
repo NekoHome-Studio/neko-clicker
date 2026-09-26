@@ -32,21 +32,63 @@ internal static class InteractiveLoop
             // 重定向输出时无法改编码，忽略即可。
         }
 
-        Console.Write(Ansi.EnterAlternateScreen() + Ansi.Clear() + Ansi.HideCursor());
+        TryWrite(Ansi.EnterAlternateScreen() + Ansi.Clear() + Ansi.HideCursor());
 
+        Exception? crash = null;
         try
         {
             Pump(session);
+        }
+        catch (Exception ex)
+        {
+            // 交互层是"环境相关崩溃"的重灾区（窗口缩放、字体、宿主差异），
+            // 不该把栈直接糊在玩家脸上：先记一份带环境信息的日志，最后给一句人话。
+            crash = ex;
         }
         finally
         {
             // 无论怎么退出都要还原终端，否则会把用户的 shell 留在备用屏幕里。
             // 先补一发 SyncEnd：万一是在同步输出窗口内异常退出，终端会一直攒着不上屏。
-            Console.Write(Ansi.SyncEnd() + Ansi.ShowCursor() + Ansi.ExitAlternateScreen());
-            Console.Out.Flush();
+            // 还原本身也可能失败（窗口正在关闭）——用 TryWrite，不能让收尾再抛一次。
+            TryWrite(Ansi.SyncEnd() + Ansi.ShowCursor() + Ansi.ExitAlternateScreen());
         }
 
-        return 0;
+        if (crash is null) return 0;
+
+        string? logPath = CrashLog.Write(crash);
+
+        try
+        {
+            Console.Error.WriteLine();
+            Console.Error.WriteLine($"界面出错了：{crash.GetType().Name}：{crash.Message}");
+            Console.Error.WriteLine(logPath is null
+                ? "（崩溃日志写入失败）"
+                : $"崩溃日志已写入：{logPath}——把它发给开发者即可定位。");
+        }
+        catch (IOException)
+        {
+            // 连 stderr 都写不进去时，只剩退出码可以表达"出错了"。
+        }
+        catch (ObjectDisposedException)
+        {
+        }
+
+        return 1;
+    }
+
+    /// <summary>写终端；缩放 / 关闭窗口时写入可能失败，忽略即可——不能因为写不进去再崩一次。</summary>
+    private static void TryWrite(string text)
+    {
+        try
+        {
+            Console.Write(text);
+        }
+        catch (IOException)
+        {
+        }
+        catch (ObjectDisposedException)
+        {
+        }
     }
 
     private static void Pump(GameSession session)
@@ -65,10 +107,20 @@ internal static class InteractiveLoop
 
             session.Update(delta);
 
-            while (Console.KeyAvailable)
+            try
             {
-                HandleKey(session, Console.ReadKey(intercept: true));
-                needsRender = true;
+                while (Console.KeyAvailable)
+                {
+                    HandleKey(session, Console.ReadKey(intercept: true));
+                    needsRender = true;
+                }
+            }
+            catch (InvalidOperationException)
+            {
+                // 输入句柄在缩放 / 切换焦点时可能短暂不可用：跳过这一轮轮询，下一轮再来。
+            }
+            catch (IOException)
+            {
             }
 
             if (needsRender || now - lastRender >= 1.0 / TargetFps)
@@ -113,7 +165,15 @@ internal static class InteractiveLoop
         /// <summary>按需绘制一帧；内容完全没变时一个字节都不写。</summary>
         public void Draw(GameSession session, double now)
         {
-            (int width, int height) = MeasureViewport();
+            (int Width, int Height)? viewport = MeasureViewport();
+            if (viewport is not { } size)
+            {
+                // 缩放 / 最小化的瞬间读不到窗口尺寸：这一帧不画。
+                // 千万不要拿一个假尺寸（比如 100×30）去写一个真实的小窗口——那正是滚屏的来源。
+                return;
+            }
+
+            (int width, int height) = size;
             List<string> lines = TerminalUi.Render(session, width, height);
 
             // 终端不支持 VT 转义：没有定位 / 清屏 / 备用屏幕能力，全屏界面无从谈起。
@@ -121,7 +181,7 @@ internal static class InteractiveLoop
             // 定位序列此时全是空串，所有行会被粘成一行。
             if (!Ansi.ColorEnabled)
             {
-                Console.Write(string.Join('\n', lines) + "\n");
+                TryWrite(string.Join('\n', lines) + "\n");
                 return;
             }
 
@@ -165,25 +225,33 @@ internal static class InteractiveLoop
             if (full) _lastFullRepaint = now;
 
             // 整帧一次 Write（而不是逐行 Write-Host 那种 N 次刷新），
-            // 并用同步输出把它作为一帧原子呈现。
-            Console.Write(Ansi.SyncStart() + builder.ToString() + Ansi.SyncEnd());
+            // 并用同步输出把它作为一帧原子呈现。写失败（窗口正在关闭）就丢掉这一帧。
+            TryWrite(Ansi.SyncStart() + builder.ToString() + Ansi.SyncEnd());
         }
     }
 
-    private static (int Width, int Height) MeasureViewport()
+    /// <summary>
+    /// 读取当前窗口尺寸；读不到时返回 <c>null</c>。<para>
+    /// <b>拖拽缩放窗口的瞬间，Windows 控制台会让 GetConsoleScreenBufferInfo 失败</b>
+    /// （<c>IOException</c> / <c>ArgumentOutOfRangeException</c> / 窗口最小化时读到 0 都见过）。
+    /// 这里把"读尺寸"当成可能失败的操作：失败就这一帧不画，绝不让它把游戏带崩，
+    /// 也不用假尺寸去写真实窗口（那会造成滚屏）。
+    /// </para>
+    /// </summary>
+    private static (int Width, int Height)? MeasureViewport()
     {
         try
         {
             int width = Console.WindowWidth;
             int height = Console.WindowHeight;
-            if (width > 20 && height > 8) return (width, height);
+            if (width > 0 && height > 0) return (width, height);
         }
-        catch (IOException)
+        catch (Exception)
         {
-            // 输出被重定向时取不到窗口尺寸。
+            // 见方法注释：缩放竞态下什么都可能抛，一律按"读不到"处理。
         }
 
-        return (100, 30);
+        return null;
     }
 
     private static void HandleKey(GameSession session, ConsoleKeyInfo key)

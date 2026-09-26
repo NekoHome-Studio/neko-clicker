@@ -133,6 +133,27 @@ public static class FrameRenderTests
             Check.AtMost(Ansi.DisplayWidth(Ansi.Truncate("猫咪咖啡馆的招牌", limit)), limit);
     }
 
+    [Test]
+    public static void RenderNeverThrowsForAnyWindowSize()
+    {
+        // 交互循环每帧都调 Render，任何 (宽, 高) 组合抛一次就是一次崩溃——
+        // 用户缩放窗口时正好踩到过。窗口尺寸的唯一上限是终端给的数，下限是 1。
+        using var session = new GameSession(ContentPackages.Default, savePath: null, seed: 7);
+
+        foreach (PanelFocus panel in Enum.GetValues<PanelFocus>())
+        {
+            session.SetFocus(panel);
+            for (int height = 1; height <= 40; height++)
+                for (int width = 1; width <= 120; width++)
+                    TerminalUi.Render(session, width, height);
+        }
+
+        session.ToggleHelp();
+        for (int height = 1; height <= 40; height++)
+            for (int width = 1; width <= 120; width++)
+                TerminalUi.Render(session, width, height);
+    }
+
     private static void AssertFits(List<string> lines, int width, int height, string what)
     {
         Check.Equal(height, lines.Count, $"{what} {width}×{height}：行数不匹配，多出来的行会让终端滚屏。");
