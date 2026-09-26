@@ -225,10 +225,10 @@ internal static class HeadlessRunner
             Section("立场");
             foreach (StanceView stance in stances)
             {
-                string marker = stance.IsDominant ? "▸" : " ";
+                string marker = stance.IsDominant ? ">" : " ";
                 Field(
                     $"{marker}{stance.Icon} {stance.Name}",
-                    $"{stance.Weight} 点（{NumFormat.Percent(stance.Share, 0)}）{(stance.IsDominant ? "　← 主导" : string.Empty)}");
+                    $"{stance.Weight} 点（{NumFormat.Percent(stance.Share, 0)}）{(stance.IsDominant ? "　<- 主导" : string.Empty)}");
             }
 
             Field("待表态", $"{state.PendingChoices.Count} 项");

@@ -173,7 +173,7 @@ internal static class TerminalUi
 
         if (session.AwaitingAscendConfirm)
         {
-            return line.Add($"⚠ 确认{session.Package.PrestigeActionName}？", Ansi.S(Style.Bold + Style.Red))
+            return line.Add($"! 确认{session.Package.PrestigeActionName}？", Ansi.S(Style.Bold + Style.Red))
                 .Add(" 将清空本轮进度（建筑、普通升级、增益），换取 ", Ansi.S(Style.Yellow))
                 .Add(NumFormat.FormatLong(snap.Prestige.ChipsOnAscend), Ansi.S(Style.Bold + Style.Green))
                 .Add($" {snap.PrestigeCurrencyName}。按 ", Ansi.S(Style.Gray))
@@ -270,7 +270,7 @@ internal static class TerminalUi
 
         // "过了这层就遇不到"不是吓唬：选择挂了 EraId，是硬门。
         // 动作名用各包自己的叫法（舍命 / 开新批次 / 重组），别把九命的词焊到别的包上。
-        return $" 表态  {pending} 项待答 ⚠{session.Package.PrestigeActionName}后不再{Scroll(start, count, total)}";
+        return $" 表态  {pending} 项待答 !{session.Package.PrestigeActionName}后不再{Scroll(start, count, total)}";
     }
 
     private static string BuildCodexTitle(GameSnapshot snap, int start, int count, int total)
@@ -281,8 +281,8 @@ internal static class TerminalUi
     private static string Scroll(int start, int count, int total)
     {
         if (total <= count) return string.Empty;
-        string up = start > 0 ? "↑" : string.Empty;
-        string down = start + count < total ? "↓" : string.Empty;
+        string up = start > 0 ? "^" : string.Empty;
+        string down = start + count < total ? "v" : string.Empty;
         return $"  {up}{down} {start + 1}-{start + count}";
     }
 
@@ -295,9 +295,9 @@ internal static class TerminalUi
         string name = view.IsUnlocked ? view.Name : $"{view.Name}（未解锁）";
         string price = view.IsUnlocked ? NumFormat.Format(view.UnitPrice, NumberStyle.Short) : "—";
 
-        // 结构：空格 ▸ 1 🐈 名称(可变) 数量(4) 单价(9) 尾空格 —— 合计 nameWidth + 23 列
+        // 结构：空格 > 1 🐈 名称(可变) 数量(4) 单价(9) 尾空格 —— 合计 nameWidth + 23 列
         int nameWidth = Math.Max(6, width - 23);
-        string row = $" {(selected ? '▸' : ' ')}{Slot(index)} {view.Icon} " +
+        string row = $" {(selected ? '>' : ' ')}{Slot(index)} {view.Icon} " +
                      $"{Ansi.PadRight(Ansi.Truncate(name, nameWidth), nameWidth)} " +
                      $"{Ansi.PadLeft(view.Owned.ToString(), 4)} {Ansi.PadLeft(price, 9)}";
 
@@ -317,9 +317,9 @@ internal static class TerminalUi
         string price = NumFormat.Format(view.Price, NumberStyle.Short) + currency;
         string name = view.Owned > 0 ? $"{view.Name} ×{view.Owned}" : view.Name;
 
-        // 结构：空格 ▸ 1 🐈 名称(可变) 价格(10) 尾空格 —— 合计 nameWidth + 19 列
+        // 结构：空格 > 1 🐈 名称(可变) 价格(10) 尾空格 —— 合计 nameWidth + 19 列
         int nameWidth = Math.Max(6, width - 19);
-        string row = $" {(selected ? '▸' : ' ')}{Slot(index)} {view.Icon} " +
+        string row = $" {(selected ? '>' : ' ')}{Slot(index)} {view.Icon} " +
                      $"{Ansi.PadRight(Ansi.Truncate(name, nameWidth), nameWidth)} " +
                      $"{Ansi.PadLeft(price, 10)}";
 
@@ -340,9 +340,9 @@ internal static class TerminalUi
             ? $"{option.StanceIcon}{option.StanceName}+{option.Weight}"
             : "中立";
 
-        // 结构：空格 ▸ 1 标签(可变) 立场(约 6~12) 尾空格
+        // 结构：空格 > 1 标签(可变) 立场(约 6~12) 尾空格
         int labelWidth = Math.Max(6, width - 8 - Ansi.DisplayWidth(stance));
-        string text = $" {(selected ? '▸' : ' ')}{Slot(index)} " +
+        string text = $" {(selected ? '>' : ' ')}{Slot(index)} " +
                       $"{Ansi.PadRight(Ansi.Truncate(option.Label, labelWidth), labelWidth)} {stance}";
 
         line.Add(text, selected ? Ansi.S(Style.Inverse) : Ansi.S(Style.BrightYellow));
@@ -352,10 +352,10 @@ internal static class TerminalUi
     {
         bool selected = session.Focus == PanelFocus.Achievements && index == session.Selected;
 
-        // 结构：空格 ▸ ✓ 🐈 名称(可变) 进度(可变) 尾空格 —— 合计 nameWidth + progressWidth + 10 列
+        // 结构：空格 > ✓ 🐈 名称(可变) 进度(可变) 尾空格 —— 合计 nameWidth + progressWidth + 10 列
         int progressWidth = Math.Clamp(width / 4, 0, 12);
         int nameWidth = Math.Max(6, width - 10 - progressWidth);
-        string row = $" {(selected ? '▸' : ' ')}{(view.Unlocked ? '✓' : '·')} {view.Icon} " +
+        string row = $" {(selected ? '>' : ' ')}{(view.Unlocked ? 'v' : '-')} {view.Icon} " +
                      $"{Ansi.PadRight(Ansi.Truncate(view.Name, nameWidth), nameWidth)} " +
                      $"{Ansi.PadLeft(Ansi.Truncate(view.ProgressText, progressWidth), progressWidth)}";
 
@@ -366,7 +366,7 @@ internal static class TerminalUi
         line.Add(row, style);
     }
 
-    private static string Slot(int index) => index < SlotKeys.Length ? SlotKeys[index] : "·";
+    private static string Slot(int index) => index < SlotKeys.Length ? SlotKeys[index] : "+";
 
     /// <summary>图鉴的一行：已解锁显示剧情线名，未解锁显示条件进度。</summary>
     private static void CodexRow(UiLine line, GameSession session, LoreView view, int index, int width)
@@ -379,7 +379,7 @@ internal static class TerminalUi
         // 完整条件留给下方的详情行。
         string tail = view.Unlocked ? view.StorylineName : NumFormat.Percent(view.Progress, 0);
 
-        string row = $" {(selected ? '▸' : ' ')}{(view.Unlocked ? '✓' : '·')} {view.Icon} " +
+        string row = $" {(selected ? '>' : ' ')}{(view.Unlocked ? 'v' : '-')} {view.Icon} " +
                      $"{Ansi.PadRight(Ansi.Truncate(view.Title, nameWidth), nameWidth)} " +
                      $"{Ansi.PadLeft(Ansi.Truncate(tail, tailWidth), tailWidth)}";
 
@@ -497,13 +497,13 @@ internal static class TerminalUi
     /// <summary>立场轴一行文本；没有立场轴时给出通用操作提示。</summary>
     private static string StanceAxis(GameSnapshot snap)
     {
-        if (snap.Stances is not { } stances) return "按 Tab 切换面板，↑↓ 选择，Enter 执行。";
+        if (snap.Stances is not { } stances) return "按 Tab 切换面板，^v 选择，Enter 执行。";
 
         var text = new System.Text.StringBuilder("⚖️ 立场　");
         foreach (StanceView stance in stances)
         {
             text.Append(stance.Icon).Append(stance.Name).Append(' ').Append(stance.Weight);
-            if (stance.IsDominant) text.Append("▸");
+            if (stance.IsDominant) text.Append(">");
             text.Append("　");
         }
 
@@ -580,7 +580,7 @@ internal static class TerminalUi
             "  按键",
             $"    空格 / C    {snap.ClickActionName}（手动点击，收益 = 1 + 当前每秒产量的 {NumFormat.Percent(clickRatio, 1)}）",
             "    Tab         切换面板焦点：建筑 → 升级 → 成就",
-            "    ↑ / ↓       移动选择    1-9 / 0 直接跳到第 1~10 项",
+            "    ^ / v       移动选择    1-9 / 0 直接跳到第 1~10 项",
             "    Enter       购买选中的建筑或升级",
             "    X           切换批量档位：×1 → ×10 → ×100 → 买满",
             $"    V           在「买」与「卖」之间切换（卖出返还 {NumFormat.Percent(sellRefund, 0)}）",

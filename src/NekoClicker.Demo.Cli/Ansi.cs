@@ -101,17 +101,26 @@ internal static class Ansi
         return current >= width ? text : new string(' ', width - current) + text;
     }
 
-    /// <summary>按显示宽度截断，超出时以 "…" 结尾。</summary>
+    /// <summary>
+    /// 按显示宽度截断，超出时以两个 ASCII 点 <c>..</c> 结尾。<para>
+    /// 刻意不用 <c>…</c>：它是 East Asian Ambiguous 宽度字符——在中文 Windows 上常被
+    /// 字体回退按 2 列渲染，在拉丁等宽字体里却是 1 列。截断符会出现在大量行里，
+    /// 宽度算错一次就整行错位（右边的分隔线会跟着偏）。
+    /// </para>
+    /// </summary>
     public static string Truncate(string text, int maxWidth)
     {
         if (maxWidth <= 0) return string.Empty;
         if (DisplayWidth(text) <= maxWidth) return text;
 
+        // 太窄时连两个点都放不下：能放几个点就放几个。
+        if (maxWidth <= 2) return new string('.', maxWidth);
+
         var builder = new StringBuilder();
         int width = 0;
         foreach (Rune rune in Enumerate(text))
         {
-            if (width + rune.Width > maxWidth - 1) return builder.Append('…').ToString();
+            if (width + rune.Width > maxWidth - 2) return builder.Append("..").ToString();
             builder.Append(rune.Text);
             width += rune.Width;
         }
@@ -214,6 +223,25 @@ internal static class Ansi
             {
                 width = 2;
                 charLength++;
+            }
+
+            // ZWJ 序列（例如 ❤️‍🔥）：终端把它当**一个** emoji 画，宽 2 列。
+            // 逐码位相加会算成 4 列，让整行短 2 列——右边的分隔线会往左偏。
+            if (i + charLength < text.Length && text[i + charLength] == '\u200D')
+            {
+                int end = i + charLength;
+                while (end < text.Length && text[end] == '\u200D')
+                {
+                    end++; // ZWJ 本身零宽
+                    if (end >= text.Length) break;
+
+                    end += char.IsHighSurrogate(text[end]) && end + 1 < text.Length
+                           && char.IsLowSurrogate(text[end + 1]) ? 2 : 1;
+                    if (end < text.Length && text[end] == '\uFE0F') end++;
+                }
+
+                charLength = end - i;
+                width = 2;
             }
 
             yield return new Rune(text.Substring(i, charLength), width);

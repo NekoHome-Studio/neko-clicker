@@ -140,7 +140,7 @@ internal static class GoldenCookieOutcomes
             Id = "ruin",
             Name = "虚无侵蚀",
             Icon = "🕳️",
-            Description = "损失 {amount} 条小鱼干……有人忘了读她那一段。",
+            Description = "损失 {amount} 条小鱼干...有人忘了读她那一段。",
             Weight = 4,
             StealBankFraction = 0.05,
             IsRare = true,

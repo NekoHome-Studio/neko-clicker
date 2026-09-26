@@ -89,6 +89,50 @@ public static class FrameRenderTests
             "过小窗口应当给一句人话提示，而不是硬渲染一屏放不下的界面（那会持续滚屏）。");
     }
 
+    [Test]
+    public static void FramesAvoidFontFallbackProneGlyphs()
+    {
+        // 这些字符是 Unicode East Asian Ambiguous：在中文 Windows 上常被字体回退按 2 列渲染，
+        // 在拉丁等宽字体里却是 1 列。它们一旦出现在行内，宽度就算不准——右边的分隔线会偏、
+        // 行尾会折到下一行被覆盖（"选项消失"）。布局里一律用确定性宽度的替代品：
+        // 箭头 ^ / v、勾 v、叉 -、警告 !、省略号 ..
+        // 制表符（│ ─ ╭…）与 · × █ ░ 不在此列：主流等宽字体自带单宽字形，实测也没有问题。
+        char[] forbidden = ['▸', '✓', '⚠', '↑', '↓', '←', '…'];
+
+        using var session = new GameSession(ContentPackages.Default, savePath: null, seed: 7);
+
+        foreach (PanelFocus panel in Enum.GetValues<PanelFocus>())
+        {
+            session.SetFocus(panel);
+            IReadOnlyList<string> lines = TerminalUi.Render(session, 118, 32);
+
+            foreach (string line in lines)
+            {
+                foreach (char ch in forbidden)
+                {
+                    Check.False(
+                        line.Contains(ch, StringComparison.Ordinal),
+                        $"面板 {panel} 的帧里出现了宽度不可靠的字符「{ch}」（U+{(int)ch:X4}）：{line}");
+                }
+            }
+        }
+    }
+
+    [Test]
+    public static void WidthModel_HandlesEscapesWideCharsAndZwj()
+    {
+        // 转义序列是零宽：带样式的字符串必须和它的可见文本一样宽。
+        Check.Equal(2, Ansi.DisplayWidth("\u001b[32m猫\u001b[0m"));
+        Check.Equal(2, Ansi.DisplayWidth("猫"), "汉字按两列算。");
+        Check.Equal(1, Ansi.DisplayWidth("a"));
+        Check.Equal(2, Ansi.DisplayWidth("🐈"), "emoji 按两列算。");
+        Check.Equal(2, Ansi.DisplayWidth("❤️‍🔥"), "ZWJ 序列是一个 emoji，不能逐码位相加（那会算成 4 列）。");
+
+        // 截断后不能超宽（换行/滚屏的根源就是"截完还超"）。
+        foreach (int limit in new[] { 1, 2, 3, 4, 6, 9 })
+            Check.AtMost(Ansi.DisplayWidth(Ansi.Truncate("猫咪咖啡馆的招牌", limit)), limit);
+    }
+
     private static void AssertFits(List<string> lines, int width, int height, string what)
     {
         Check.Equal(height, lines.Count, $"{what} {width}×{height}：行数不匹配，多出来的行会让终端滚屏。");

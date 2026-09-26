@@ -76,7 +76,7 @@ public sealed class SaveManager : IDisposable
         catch (Exception ex)
         {
             LastError = ex;
-            _engine.Notify($"存档失败：{ex.Message}", NotificationKind.Warning, "⚠");
+            _engine.Notify($"存档失败：{ex.Message}", NotificationKind.Warning, "!");
             return false;
         }
     }
@@ -87,7 +87,7 @@ public sealed class SaveManager : IDisposable
         string? json = _storage.Read(Slot);
         if (json is null)
         {
-            _engine.Notify("没有找到存档。", NotificationKind.Warning, "⚠");
+            _engine.Notify("没有找到存档。", NotificationKind.Warning, "!");
             return false;
         }
 
@@ -102,7 +102,7 @@ public sealed class SaveManager : IDisposable
         {
             // 存档损坏时保留玩家当前进度，不要因为读档失败而把游戏搞崩。
             LastError = ex;
-            _engine.Notify($"读档失败：{ex.Message}", NotificationKind.Warning, "⚠");
+            _engine.Notify($"读档失败：{ex.Message}", NotificationKind.Warning, "!");
             return false;
         }
     }

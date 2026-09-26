@@ -217,7 +217,7 @@ internal sealed class GameSession : IDisposable
 
         string id = Engine.State.GoldenCookies[0].InstanceId;
         GoldenCookieResult result = Engine.ClickGoldenCookie(id);
-        Log(result.Message, result.Success ? result.Icon : "⚠");
+        Log(result.Message, result.Success ? result.Icon : "!");
     }
 
     /// <summary>切换批量档位。</summary>
@@ -309,7 +309,7 @@ internal sealed class GameSession : IDisposable
         ChoiceRow row = _choiceCache[index];
         if (!Engine.AnswerChoice(row.Choice.Id, row.Option.Id))
         {
-            Log("这次表态已经不成立了。", "⚠");
+            Log("这次表态已经不成立了。", "!");
             RefreshCache();
             return;
         }
@@ -334,7 +334,7 @@ internal sealed class GameSession : IDisposable
             ? Engine.SellBuilding(view.Id, amount)
             : Engine.BuyBuilding(view.Id, amount);
 
-        Log(result.Message, result.Success ? (selling ? "💸" : "🛒") : "⚠");
+        Log(result.Message, result.Success ? (selling ? "💸" : "🛒") : "!");
         RefreshCache();
     }
 
@@ -346,7 +346,7 @@ internal sealed class GameSession : IDisposable
 
         UpgradeView view = _upgradeCache[index];
         PurchaseResult result = Engine.BuyUpgrade(view.Id);
-        Log(result.Message, result.Success ? "⬆" : "⚠");
+        Log(result.Message, result.Success ? "⬆" : "!");
         RefreshCache();
     }
 
@@ -365,7 +365,7 @@ internal sealed class GameSession : IDisposable
             Log(
                 $"还不能{Package.PrestigeActionName}：历史累计 {NumFormat.FormatLong(Engine.State.CookiesEarnedAllTime)} / " +
                 $"{NumFormat.FormatLong(preview.CookiesForNextLevel)}。",
-                "⚠");
+                "!");
             return;
         }
 
@@ -380,7 +380,7 @@ internal sealed class GameSession : IDisposable
     {
         AwaitingAscendConfirm = false;
         AscensionResult result = Engine.Ascend();
-        Log(result.Message, result.Success ? "🌿" : "⚠");
+        Log(result.Message, result.Success ? "🌿" : "!");
         RefreshCache();
     }
 
