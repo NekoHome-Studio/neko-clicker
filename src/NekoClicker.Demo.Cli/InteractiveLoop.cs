@@ -37,13 +37,20 @@ internal static class InteractiveLoop
         // 认不出现代宿主就别用备用屏。
         bool altScreen = TerminalHost.UseAlternateScreen(altScreenMode);
 
-        TryWrite((altScreen ? Ansi.EnterAlternateScreen() : string.Empty)
+        // 主缓冲区模式（= 传统 conhost）：先把滚动缓冲清掉。conhost 在窗口宽度变化时会做
+        // 换行重排，缓冲区里任何一行被重排都可能踩到它的缺陷（microsoft/terminal#9461）；
+        // 清掉进入游戏前的 shell 历史，缓冲区里只剩我们自己的帧，风险面小得多。
+        TryWrite((altScreen ? Ansi.EnterAlternateScreen() : Ansi.ClearScrollback())
                  + Ansi.Clear() + Ansi.Home() + Ansi.HideCursor());
+
+        // 传统 conhost 下再留一格安全边距（见 FramePainter）：每行不写满整宽，
+        // 缩一列就不会触发"整屏换行重排"。
+        int safeMargin = altScreen ? 0 : 1;
 
         Exception? crash = null;
         try
         {
-            Pump(session);
+            Pump(session, safeMargin);
         }
         catch (Exception ex)
         {
@@ -84,25 +91,33 @@ internal static class InteractiveLoop
         return 1;
     }
 
-    /// <summary>写终端；缩放 / 关闭窗口时写入可能失败，忽略即可——不能因为写不进去再崩一次。</summary>
-    private static void TryWrite(string text)
+    /// <summary>
+    /// 写终端；成功返回 <c>true</c>。<para>
+    /// 缩放 / 关闭窗口 / 宿主崩溃后写入都会失败——由调用方决定怎么办：
+    /// 单帧偶发失败丢掉即可，连续失败说明"窗口已经没了"，继续转下去只会留下看不见的僵尸进程。
+    /// </para>
+    /// </summary>
+    private static bool TryWrite(string text)
     {
         try
         {
             Console.Write(text);
+            return true;
         }
         catch (IOException)
         {
+            return false;
         }
         catch (ObjectDisposedException)
         {
+            return false;
         }
     }
 
-    private static void Pump(GameSession session)
+    private static void Pump(GameSession session, int safeMargin)
     {
         var stopwatch = Stopwatch.StartNew();
-        var painter = new FramePainter();
+        var painter = new FramePainter(safeMargin);
         double lastFrame = 0;
         double lastRender = double.NegativeInfinity;
         bool needsRender = true;
@@ -165,10 +180,30 @@ internal static class InteractiveLoop
         /// <summary>每隔这么久整屏重画一次，兜底外部程序往终端里写过东西的情况。</summary>
         private const double FullRepaintSeconds = 5.0;
 
+        /// <summary>窗口尺寸刚变化后的静默期：这段时间不写终端，等宿主把重排做完。</summary>
+        private const double ResizeQuietSeconds = 0.2;
+
+        /// <summary>连续写失败多少次后判定"宿主已经没了"，主动退出，别留僵尸进程。</summary>
+        private const int MaxWriteFailures = 8;
+
         private readonly List<string> _previous = [];
+        private readonly int _safeMargin;
         private int _width;
         private int _height = -1;
         private double _lastFullRepaint = double.NegativeInfinity;
+        private double _quietUntil;
+        private int _writeFailures;
+
+        /// <summary>创建绘制器。</summary>
+        /// <param name="safeMargin">
+        /// 安全边距（列与行各留几格不写）。传统 conhost 传 1：每行不写满整宽，
+        /// 窗口缩一列时就不会触发 conhost 的"整屏换行重排"（那一带有崩溃缺陷）。
+        /// 现代宿主传 0，画面铺满。
+        /// </param>
+        public FramePainter(int safeMargin)
+        {
+            _safeMargin = Math.Max(0, safeMargin);
+        }
 
         /// <summary>按需绘制一帧；内容完全没变时一个字节都不写。</summary>
         public void Draw(GameSession session, double now)
@@ -182,21 +217,39 @@ internal static class InteractiveLoop
             }
 
             (int width, int height) = size;
-            List<string> lines = TerminalUi.Render(session, width, height);
+
+            // 尺寸刚变：先记下来，并进入一小段静默期。宿主正在做缓冲区重排，
+            // 这时候往里写是纯粹的添乱（conhost 的重排缺陷就是这么被踩中的）。
+            bool sizeChanged = _width > 0 && (width != _width || height != _height);
+            if (sizeChanged)
+            {
+                _previous.Clear(); // 几何变了：强制整帧重写
+                _quietUntil = Math.Max(_quietUntil, now + ResizeQuietSeconds);
+            }
+
+            _width = width;
+            _height = height;
+
+            if (now < _quietUntil) return;
+
+            // 安全边距：传统 conhost 下每行/每屏各留一格不写。
+            // 每行写满整宽时，窗口缩一列会让 conhost 把每一行都换行重排一遍，
+            // 而它的重排实现有崩溃缺陷；留一格就不触发这一次重排。
+            int renderWidth = Math.Max(1, width - _safeMargin);
+            int renderHeight = Math.Max(1, height - _safeMargin);
+            List<string> lines = TerminalUi.Render(session, renderWidth, renderHeight);
 
             // 终端不支持 VT 转义：没有定位 / 清屏 / 备用屏幕能力，全屏界面无从谈起。
             // 退化成"每次追加一整帧"的普通输出——绝不能走下面的增量路径：
             // 定位序列此时全是空串，所有行会被粘成一行。
             if (!Ansi.ColorEnabled)
             {
-                TryWrite(string.Join('\n', lines) + "\n");
+                if (!TryWrite(string.Join('\n', lines) + "\n")) CountWriteFailure(session);
                 return;
             }
 
             // 尺寸变了 / 到了兜底间隔 → 整屏重画。
-            bool full = width != _width
-                        || height != _height
-                        || now - _lastFullRepaint >= FullRepaintSeconds;
+            bool full = sizeChanged || now - _lastFullRepaint >= FullRepaintSeconds;
 
             var builder = new StringBuilder();
             int written = 0;
@@ -223,18 +276,33 @@ internal static class InteractiveLoop
                 written++;
             }
 
+            // 安全边距留出的底部空行也要擦掉，否则窗口变矮时会留着上一帧的残影。
+            if (_safeMargin > 0 && lines.Count < height)
+                builder.Append(Ansi.MoveTo(lines.Count + 1)).Append(Ansi.ClearToEnd());
+
             _previous.Clear();
             _previous.AddRange(lines);
-            _width = width;
-            _height = height;
 
-            if (written == 0) return; // 画面没变：不写，屏幕上就不该有任何动静
+            if (written == 0 && !sizeChanged) return; // 画面没变：不写，屏幕上就不该有任何动静
 
             if (full) _lastFullRepaint = now;
 
             // 整帧一次 Write（而不是逐行 Write-Host 那种 N 次刷新），
-            // 并用同步输出把它作为一帧原子呈现。写失败（窗口正在关闭）就丢掉这一帧。
-            TryWrite(Ansi.SyncStart() + builder.ToString() + Ansi.SyncEnd());
+            // 并用同步输出把它作为一帧原子呈现。
+            if (TryWrite(Ansi.SyncStart() + builder.ToString() + Ansi.SyncEnd()))
+                _writeFailures = 0;
+            else
+                CountWriteFailure(session);
+        }
+
+        /// <summary>
+        /// 连续写失败到一定次数 → 宿主窗口已经没了（例如 conhost 崩溃把控制台带走）。
+        /// 这时候主动退出：否则进程会在后台空转（写入一直失败、循环却不停），而且会锁住程序文件。
+        /// </summary>
+        private void CountWriteFailure(GameSession session)
+        {
+            if (++_writeFailures < MaxWriteFailures) return;
+            session.Quit();
         }
     }
 

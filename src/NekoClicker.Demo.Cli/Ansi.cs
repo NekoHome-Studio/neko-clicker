@@ -56,6 +56,15 @@ internal static class Ansi
     /// <summary>清屏。</summary>
     public static string Clear() => ColorEnabled ? "\u001b[2J" : string.Empty;
 
+    /// <summary>
+    /// 清空滚动缓冲（<c>ED 3</c>：erase saved lines）。<para>
+    /// 传统 conhost 在"窗口宽度变化 + 换行重排"时有崩溃缺陷：缓冲区里任何一行被重排都可能踩到。
+    /// 主缓冲区模式下先把进入游戏前的 shell 历史清掉，缓冲区里就只剩我们自己的帧，
+    /// 重排的风险面小得多。不支持这条序列的终端会忽略它。
+    /// </para>
+    /// </summary>
+    public static string ClearScrollback() => ColorEnabled ? "\u001b[3J" : string.Empty;
+
     /// <summary>清除光标之后的内容。</summary>
     public static string ClearToEnd() => ColorEnabled ? "\u001b[J" : string.Empty;
 
