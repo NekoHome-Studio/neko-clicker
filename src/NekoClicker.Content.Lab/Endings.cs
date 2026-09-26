@@ -8,9 +8,16 @@ namespace NekoClicker.Content.Lab;
 /// 每个结局自己写 <c>EraAtLeast(7)</c>。互斥靠 <see cref="EndingDefinition.Priority"/>。
 /// </para>
 /// <para>
-/// 兜底结局 <c>end_open</c>「没有结论」刻意只依赖批次进度：一次都不表态的研究员
-/// 也必须有收场——这在构建期是被强制的（<c>ValidateEndings</c> 要求至少一个
-/// "不依赖表态、不含取反、只引用单调指标"的结局）。
+/// <b>所有结局都要求末层主线完成</b>（<see cref="Finished"/>），而不是"走到第 7 批"就算。
+/// 这条不是修辞：终局判定每秒钟都会跑一次，如果只要 <c>EraAtLeast(7)</c>，
+/// 玩家一进第 7 批，兜底结局就会立刻成立；而乌托邦 / 共存这两条立场的第三次表态机会
+/// 恰好在第 7 批里（<c>choice_archive</c>），于是那两个结局会永远拿不到。
+/// 修法见 3C-1 补丁，回归测试见 <c>LabEndingTests</c>。
+/// </para>
+/// <para>
+/// 兜底结局 <c>end_open</c>「没有结论」只依赖主线完成，不依赖任何表态：
+/// 一次都不表态的研究员也必须有收场——这在构建期是被强制的（<c>ValidateEndings</c> 要求
+/// 至少一个"不依赖表态、不含取反、只引用单调指标"的结局）。
 /// </para>
 /// </summary>
 internal static class Endings
@@ -68,8 +75,8 @@ internal static class Endings
             Name = "没有结论",
             Icon = "📄",
             Priority = 100,
-            // 兜底：只依赖"走到了最后一批"，不依赖任何表态，也不含取反。
-            Condition = UnlockCondition.EraAtLeast(7),
+            // 兜底：只依赖"末层主线完成"，不依赖任何表态，也不含取反。
+            Condition = Finished,
             Text = "第七批结束了。没有人问过你任何问题，所以也没有任何答案被写下来。"
                    + "结题报告的最后一页是空的——不是遗漏，是你确实什么都没决定。"
                    + "她走出档案室的时候回头看了你一眼，那一秒也没被记录。",
@@ -91,10 +98,21 @@ internal static class Endings
         Ending("ach_end_open", "没有结论", "end_open", "📄"),
     ];
 
-    /// <summary>一条路的完整条件：走到最后一批 + 在这条路上承诺过。</summary>
-    private static UnlockCondition Committed(string stanceId)
+    /// <summary>
+    /// 末层主线完成：走到第 7 批，且第 7 批的完成条件成立。<para>
+    /// 复用 <see cref="Eras.FinalCompletion"/> 而不是抄一遍数值——两条门槛一旦分叉，
+    /// "结局在末层完成后判定"这条规则就会悄悄失效。
+    /// </para>
+    /// </summary>
+    private static UnlockCondition Finished
         => UnlockCondition.All(
             UnlockCondition.EraAtLeast(7),
+            Eras.FinalCompletion);
+
+    /// <summary>一条路的完整条件：末层主线完成 + 在这条路上承诺过。</summary>
+    private static UnlockCondition Committed(string stanceId)
+        => UnlockCondition.All(
+            Finished,
             UnlockCondition.StanceWeight(stanceId, Stances.EndingThreshold));
 
     private static AchievementDefinition Ending(string id, string name, string endingId, string icon) => new()

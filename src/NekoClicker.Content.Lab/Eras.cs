@@ -137,10 +137,19 @@ internal static class Eras
                 Modifier.GlobalMultiplier(2.5),
                 new Modifier(ModifierTarget.BuffDuration(null), ModifierOperation.Multiplicative, 0.5),
             ],
-            Completion = UnlockCondition.All(
-                UnlockCondition.EarnedThisRunAtLeast(1e9),
-                UnlockCondition.Counter(EthicsModule.CounterKey, 2000)),
+            Completion = FinalCompletion,
             CompletionHint = "本轮累计 1 billion，并积累 2000 点伦理值。",
         },
     ];
+
+    /// <summary>
+    /// 最后一批（第 7 批）的完成条件。<para>
+    /// 单独暴露出来是给终局判定用的：结局必须等到<b>末层主线完成之后</b>才成立。
+    /// 否则玩家一进入第 7 批，兜底结局就立刻触发，而乌托邦 / 共存这两个立场的
+    /// 第三次表态机会在第 7 批里——那两个结局会永远拿不到（详见 <c>LabEndingTests</c>）。
+    /// </para>
+    /// </summary>
+    public static UnlockCondition FinalCompletion => UnlockCondition.All(
+        UnlockCondition.EarnedThisRunAtLeast(1e9),
+        UnlockCondition.Counter(EthicsModule.CounterKey, 2000));
 }
