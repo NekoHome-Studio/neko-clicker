@@ -28,6 +28,23 @@ public sealed class GameContent
     /// <summary>游戏标题。</summary>
     public string Title { get; init; } = "Incremental Game";
 
+    /// <summary>
+    /// 计数器的显示名（内部键 → 玩家可见名）。<para>
+    /// 计数器本质上只是一个字典键，内容与模块用它来存第二资源；但键是英文的内部标识，
+    /// 直接渲染进解锁提示或规则说明里就成了「每点「readership」」这种半成品文案。
+    /// 模块在自己的 <see cref="IGameModule.Configure"/> 里登记显示名，
+    /// 所有面向玩家的渲染（<c>Scaling.Describe</c> / <c>UnlockCondition.Describe</c>）都会走这张表。
+    /// 没登记的键回退成键本身——旧内容不会因为这次改动而崩，只是文案保持原样。
+    /// </para>
+    /// </summary>
+    public IReadOnlyDictionary<string, string> CounterNames { get; init; }
+        = new Dictionary<string, string>(StringComparer.Ordinal);
+
+    /// <summary>取计数器的玩家可见名；没登记就回退成内部键。</summary>
+    /// <param name="key">计数器键。</param>
+    public string CounterName(string key)
+        => CounterNames.TryGetValue(key, out string? name) ? name : key;
+
     /// <summary>主货币名称（单数/复数同形使用）。</summary>
     public string CurrencyName { get; init; } = "cookies";
 

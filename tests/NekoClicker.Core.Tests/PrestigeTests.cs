@@ -1,10 +1,76 @@
 using NekoClicker.Core.Content;
+using NekoClicker.Core;
 
 namespace NekoClicker.Core.Tests;
 
 /// <summary>转生公式与重置语义。</summary>
 public static class PrestigeTests
 {
+    /// <summary>
+    /// 纪元包的永久升级线必须**在一次自然游玩里买得起**。
+    /// <para>
+    /// 这条守卫来自一个真实缺陷：七个内容包原本都照抄 <c>PrestigeDivisor = 1e12</c>，
+    /// 而纪元包的可结算历史累计被自己的阶梯卡在 1e8~1e11（等级只在舍命那一刻结算，
+    /// 最后一次结算之后就再也不会换了）。实测五个纪元包各跑一遍，结算货币全是 <b>0</b>，
+    /// 于是「前世技能 / 前世经验 / 余烬 / 批注」这几条线**结构上打不开**——
+    /// 不是难，是永远拿不到，而运行期完全看不出来（它们只是"一直没亮"）。
+    /// </para>
+    /// <para>
+    /// <b>为什么只守纪元包</b>：经典包（示例包、咖啡馆）的转生是**可重复的循环**，
+    /// 一局买不完可以再转生几次，包络是开放的；纪元包的一局只有那几次结算，
+    /// 所以必须一次买得起。两边的判据不同，不能用一个阈值糊过去。
+    /// </para>
+    /// </summary>
+    [Test]
+    public static void EraPacks_PermanentUpgradesAreAffordableWithinOneRun()
+    {
+        foreach ((string name, GameEngine engine) in EraPacks())
+        {
+            for (int round = 0; round < 60_000 && engine.ReachedEnding is null; round++)
+            {
+                for (int i = 0; i < 8; i++) engine.Click();
+                TestGame.BuyGreedily(engine);   // 只买普通升级，转生升级留给这条断言去算
+
+                for (int i = engine.State.GoldenCookies.Count - 1; i >= 0; i--)
+                    engine.ClickGoldenCookie(engine.State.GoldenCookies[i].InstanceId);
+
+                if (engine.EraGate.CanAdvance) engine.Ascend();
+                engine.Simulate(engine.State.Era >= 5 ? 0.25 : 30);
+            }
+
+            List<UpgradeDefinition> line =
+            [
+                .. engine.Content.Upgrades.Where(u => u.Persistence == UpgradePersistence.Permanent),
+            ];
+            double total = line.Sum(u => u.Price);
+            double chips = engine.State.PrestigeChips;
+
+            Console.WriteLine(
+                $"      {name}：一次游玩结算 {chips:F0} 点转生货币，永久线总价 {total:F0}"
+                + $"（{string.Join(" / ", line.Select(u => u.Price.ToString("F0")))}）");
+
+            Check.True(line.Count > 0, $"{name} 没有任何永久升级。");
+            Check.AtLeast(
+                chips,
+                total,
+                $"{name} 一次自然游玩只结算出 {chips:F0} 点转生货币，"
+                + $"而永久线总价 {total:F0}——这条线里有内容永远买不到。");
+        }
+    }
+
+    private static (string Name, GameEngine Engine)[] EraPacks()
+    {
+        ManualClock _;
+        return
+        [
+            ("#2 九命", TestGame.CreateNineLives(out _)),
+            ("#3 实验室", TestGame.CreateLab(out _)),
+            ("#10 公司", TestGame.CreateCompany(out _)),
+            ("#6 末世", TestGame.CreateApocalypse(out _)),
+            ("#9 图书馆", TestGame.CreateLibrary(out _)),
+        ];
+    }
+
     [Test]
     public static void LevelFormula_MatchesCookieClicker()
     {

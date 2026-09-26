@@ -257,12 +257,31 @@ public sealed class GameContentBuilder
         return this;
     }
 
+    /// <summary>
+    /// 登记一个计数器的显示名（玩家可见文案里用它代替内部键）。<para>
+    /// 由模块在自己的 <c>Configure</c> 里调用；构建期最后会检查"内容引用到的计数器
+    /// 是否都登记过"（见 <c>CounterNames_AreRegisteredForEveryReferencedCounter</c>）。
+    /// </para>
+    /// </summary>
+    /// <param name="key">计数器键。</param>
+    /// <param name="displayName">玩家可见名，例如「被阅读度」。</param>
+    public GameContentBuilder AddCounterName(string key, string displayName)
+    {
+        _counterNames[key] = displayName;
+        return this;
+    }
+
+    private readonly Dictionary<string, string> _counterNames = new(StringComparer.Ordinal);
+
     /// <summary>构建并校验。</summary>
     /// <exception cref="GameContentValidationException">存在校验错误。</exception>
     public GameContent Build()
     {
         // 模块先补充定义，再一并校验。
         foreach (IGameModule module in _modules) module.Configure(this);
+
+        // 核心自己拥有的计数器也要有显示名——峰值产量会出现在灰按钮的说明里。
+        _counterNames.TryAdd(EraSystem.PeakCpsCounterKey, "峰值产量");
 
         var buildingById = new Dictionary<string, BuildingDefinition>(StringComparer.Ordinal);
         var upgradeById = new Dictionary<string, UpgradeDefinition>(StringComparer.Ordinal);
@@ -375,6 +394,7 @@ public sealed class GameContentBuilder
             GoldenCookieOutcomes = _goldenCookieOutcomes,
             GoldenCookieWeightTotal = _goldenCookieOutcomes.Sum(o => o.Weight),
             Modules = _modules,
+            CounterNames = _counterNames,
             Eras = [.. _eras.OrderBy(e => e.Index)],
             EraByIndex = eraByIndex,
             MaxEraIndex = eraByIndex.Count == 0 ? 1 : eraByIndex.Keys.Max(),

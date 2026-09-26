@@ -273,8 +273,57 @@ new GoldenCookieOutcome
 | `GoldenCookieMinDelay` / `MaxDelay` | 5 / 15 分钟 | 随机事件间隔 |
 | `FirstGoldenCookieDelayFactor` | 0.25 | 第一只提前出现，让新手尽早接触这个机制 |
 | `OfflineCapSeconds` | 3 小时 | 离线收益上限 |
-| `PrestigeDivisor` / `Exponent` | 1e12 / 1/3 | 转生公式；1 兆 = 1 级 |
+| `PrestigeDivisor` / `Exponent` | 1e12 / 1/3 | 转生公式；1 兆 = 1 级。**别照抄——见 §7.1** |
 | `MaxBulkBuy` | 100000 | `BuyMax` 单次上限，防止极端数值下的求解抖动 |
+
+### 7.1 转生除数要照着自己包的阶梯标定，不能照抄 1e12
+
+`PrestigeDivisor` 决定"多少历史累计换 1 级"，而永久升级（`Persistence = Permanent`）只能用
+转生货币买。**所以这两个数必须一起标定，否则整条永久线就是死内容**——而且死得很安静：
+它只是永远不亮，运行期没有任何报错。
+
+两个必须一起看的机制：
+
+| 机制 | 含义 |
+|---|---|
+| 等级只在**舍命那一刻**结算 | 非纪元包随时能转生，是**可重复的循环**；纪元包一局只有那几次结算，**最后一次之后就再也不会换** |
+| 转生除数决定**可结算**的历史累计 | 纪元包的收益被自己的阶梯卡住，除数定高了，等级恒为 0 |
+
+判据（阶段 4C 定的，有守卫守着）：
+
+- **纪元包**：一次自然游玩结算出的转生货币，必须 **≥ 整条永久线的总价**。
+  实测方法就是跑一次机器人，读 `State.PrestigeChips`——守卫
+  `PrestigeTests.EraPacks_PermanentUpgradesAreAffordableWithinOneRun` 每次都替你跑。
+- **非纪元包**：包络是开放的（买不完可以再转生几次），所以不套这条判据。
+
+标定手法：先量出"最后一次结算时的历史累计" `A`，想要 `L` 级就取
+`PrestigeDivisor = A / L³`（因为 `LevelFor = floor((A/D)^(1/3))`）。
+阶段 4C 取 `L ≈ 100`，然后把永久线总价压到 80 上下——留出余量，
+因为 `MetaRewardMultiplier < 1` 的层会把实发货币打折。
+
+> **反面教材**（真实发生过）：七个包全抄 `1e12`。实测五个纪元包的结算货币全为 **0**
+> ——「前世技能 / 前世经验 / 余烬 / 批注」全部拿不到。修法见 ROADMAP 阶段 4C。
+
+### 7.2 计数器的显示名要登记
+
+计数器（`GameState.Counters`）的键是内部标识：`readership`、`morale`、`faith`……
+而它会出现在三个玩家可见的地方：
+
+- `UnlockCondition.Counter("readership", 4000)` → 升级的解锁提示
+- `Scaling(ScalingSource.CustomCounter, …, Id: "readership")` → 升级效果与「本层规则」
+- 成就描述（手写的，容易漏）
+
+不登记的话渲染出来是「每点「readership」 +0.01%」。在模块里登记一次即可：
+
+```csharp
+public void Configure(GameContentBuilder builder)
+    => builder.AddCounterName(CounterKey, "被阅读度");
+```
+
+渲染层（`Scaling.Describe` / `UnlockCondition.Describe`）会自动走这张表；
+没登记的键回退成键本身，旧内容不会崩。守卫
+`ContentTests.CounterNames_AreRegisteredForEveryReferencedCounter` 会横扫**全部内容包**，
+要求"引用到的每个计数器都登记过"，并且**真的渲染一遍**，断言输出里既含显示名、又不含内部键。
 
 ## 8. 常见坑
 

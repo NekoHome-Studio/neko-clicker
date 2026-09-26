@@ -145,6 +145,23 @@ public static class TestGame
         }
     }
 
+    /// <summary>
+    /// 全部内容包（含显示名）。<para>
+    /// 给"横扫每一个包"的通用守卫用：这类守卫只写一份、自动覆盖后续新增的包，
+    /// 比在每个包的专项用例里各写一遍可靠得多——阶段 4B 的两条真缺陷都是这么抓出来的。
+    /// </para>
+    /// </summary>
+    public static (string Name, GameContent Content)[] AllContentPacks() =>
+    [
+        ("猫咖物语", NekoContent),
+        ("#1 咖啡馆", CafeContent),
+        ("#2 九命", NineLives),
+        ("#3 实验室", Lab),
+        ("#10 公司", Company),
+        ("#6 末世", Apocalypse),
+        ("#9 图书馆", Library),
+    ];
+
     /// <summary>创建使用示例内容包的引擎，时间由 <see cref="ManualClock"/> 控制。</summary>
     public static GameEngine CreateNeko(out ManualClock clock, ulong seed = 12345, bool grantOffline = true)
     {

@@ -82,7 +82,11 @@ public static class ApocalypseContent
         OfflineEfficiency = 0.65,
         MinimumOfflineSeconds = 60,
 
-        PrestigeDivisor = 1e12,
+        // 转生除数按**本包的阶梯**标定，而不是照抄配方 1e12：
+        // 目标是"最后一次结算落在 ~100 级"，让永久线的总价（≤ 80）
+        // 在一次自然游玩里就买得起。照抄 1e12 的话，纪元包的可结算历史累计
+        // 被阶梯卡在 1e8~1e11，等级恒为 0 —— 整条永久线**结构上打不开**。
+        PrestigeDivisor = 1.3e4,
         PrestigeExponent = 1.0 / 3.0,
         PrestigeChipsPerLevel = 1,
 

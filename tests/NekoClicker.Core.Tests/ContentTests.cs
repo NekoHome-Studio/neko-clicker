@@ -123,6 +123,78 @@ public static class ContentTests
     }
 
     [Test]
+    public static void CounterNames_AreRegisteredForEveryReferencedCounter()
+    {
+        // 计数器键是内部标识（`readership` / `memory_shards` / `morale`…），而它会出现在
+        // 解锁提示、升级效果说明与"本层规则"里。没有显示名的话，玩家看到的是
+        // 「每点「readership」 +0.01%」这种半成品文案——七个包全都有这个问题，因为
+        // 渲染层一直在拿键当名字用。
+        //
+        // 修法是把"显示名"变成内容可以声明的东西（`IGameModule.Configure` 里登记），
+        // 这条守卫则保证**内容引用到的每一个计数器都登记过**——而不是靠人去记。
+        foreach ((string name, GameContent content) in TestGame.AllContentPacks())
+        {
+            foreach (string key in ReferencedCounters(content))
+            {
+                Check.True(
+                    content.CounterNames.TryGetValue(key, out string? display),
+                    $"{name} 引用了计数器「{key}」却没有登记显示名——玩家会看到内部键。"
+                    + "在模块的 Configure 里调用 AddCounterName 即可。");
+
+                // 光登记还不够：两条渲染路径都得**真的**用上它。
+                string hint = UnlockCondition.Counter(key, 1).Describe(content);
+                Check.Contains(hint, display!, $"{name} 的解锁提示没有用计数器的显示名：{hint}");
+                Check.False(
+                    hint.Contains(key, StringComparison.Ordinal),
+                    $"{name} 的解锁提示里还露着内部键：{hint}");
+
+                string effect = Modifier
+                    .GlobalPercent(0, new Scaling(ScalingSource.CustomCounter, 0.001, Id: key))
+                    .Describe(content);
+                Check.Contains(effect, display!, $"{name} 的升级效果没有用计数器的显示名：{effect}");
+                Check.False(
+                    effect.Contains(key, StringComparison.Ordinal),
+                    $"{name} 的升级效果里还露着内部键：{effect}");
+            }
+        }
+    }
+
+    /// <summary>扫出一个内容包里所有被引用的计数器键（成长曲线 + 解锁条件）。</summary>
+    private static IEnumerable<string> ReferencedCounters(GameContent content)
+    {
+        List<UnlockCondition> conditions =
+        [
+            .. content.Buildings.Select(b => b.Unlock),
+            .. content.Upgrades.Select(u => u.Unlock),
+            .. content.Achievements.Select(a => a.Unlock),
+            .. content.Eras.Select(e => e.Completion),
+            .. content.LoreEntries.Select(l => l.Reveal),
+            .. content.Choices.Select(c => c.Trigger),
+            .. content.Endings.Select(e => e.Condition),
+        ];
+
+        List<IReadOnlyList<Modifier>> modifierLists =
+        [
+            .. content.Upgrades.Select(u => u.Modifiers),
+            .. content.Achievements.Select(a => a.Modifiers),
+            .. content.Buffs.Select(b => b.Modifiers),
+            .. content.Eras.Select(e => e.Modifiers),
+            .. content.Choices.SelectMany(c => c.Options).Select(o => o.Modifiers),
+        ];
+
+        return conditions
+            .SelectMany(c => c.NumericLeaves())
+            .Where(leaf => leaf.Metric == NumericMetric.Counter && !string.IsNullOrEmpty(leaf.Id))
+            .Select(leaf => leaf.Id!)
+            .Concat(modifierLists
+                .SelectMany(list => list)
+                .Where(m => m.Scaling is { Source: ScalingSource.CustomCounter } s
+                            && !string.IsNullOrEmpty(s.Id))
+                .Select(m => m.Scaling!.Id!))
+            .Distinct(StringComparer.Ordinal);
+    }
+
+    [Test]
     public static void DuplicateIds_AreRejected()
     {
         Check.Throws<GameContentValidationException>(() => new GameContentBuilder("X")

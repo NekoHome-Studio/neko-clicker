@@ -1,4 +1,5 @@
 using NekoClicker.Core;
+using NekoClicker.Core.Content;
 
 namespace NekoClicker.Content.Cafe;
 
@@ -31,6 +32,17 @@ internal sealed class HappinessModule : IGameModule
 
     /// <summary>每多少座建筑每秒产出 1 点幸福感。</summary>
     public const double BuildingsPerPointPerSecond = 50.0;
+
+    /// <summary>
+    /// 登记这个计数器的<b>玩家可见名</b>。
+    /// <para>
+    /// 计数器键是内部标识（英文、下划线），而它会出现在解锁提示、升级效果与纪元规则里。
+    /// 不登记的话玩家看到的是「每点「happiness」」这种半成品文案。
+    /// </para>
+    /// </summary>
+    /// <param name="builder">内容构建器。</param>
+    public void Configure(GameContentBuilder builder)
+        => builder.AddCounterName(CounterKey, "幸福感");
 
     /// <summary>模块名（用于诊断）。</summary>
     public string Name => "happiness";

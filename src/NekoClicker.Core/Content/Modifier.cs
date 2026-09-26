@@ -107,7 +107,11 @@ public sealed record Scaling(
     public double Apply(double baseValue, IGameMetrics metrics) => baseValue + (PerUnit * Evaluate(metrics));
 
     /// <summary>人类可读的成长说明。</summary>
-    public string Describe()
+    /// <param name="content">
+    /// 内容定义；用来把计数器键换成它的显示名（<c>readership</c> → 「被阅读度」）。
+    /// 不传就回退成键本身——引擎侧的诊断输出不需要好看，玩家侧的渲染一律要传。
+    /// </param>
+    public string Describe(GameContent? content = null)
     {
         string unit = Source switch
         {
@@ -123,7 +127,7 @@ public sealed record Scaling(
             ScalingSource.GoldenCookiesClicked => "每次金猫",
             ScalingSource.PlayTimeHours => "每小时游玩",
             ScalingSource.LoreCount => "每段被读到的记忆",
-            ScalingSource.CustomCounter => $"每点「{Id}」",
+            ScalingSource.CustomCounter => $"每点「{content?.CounterName(Id ?? string.Empty) ?? Id}」",
             _ => "每单位",
         };
 
@@ -166,7 +170,7 @@ public sealed record Modifier(
             ModifierOperation.Power => $"{target} 的 {Value} 次方",
             _ => target,
         };
-        return Scaling is null ? body : $"{body}；{Scaling.Describe()}";
+        return Scaling is null ? body : $"{body}；{Scaling.Describe(content)}";
     }
 
     // ---- 内容作者用的快捷构造 ----

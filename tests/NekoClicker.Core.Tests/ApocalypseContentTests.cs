@@ -333,66 +333,7 @@ public static class ApocalypseContentTests
         Check.Equal("end_revive", both.ReachedEnding?.Id, "两个条件同时成立时应当取 Priority 更小的那个。");
     }
 
-    [Test]
-    public static void EmberUpgrades_AreForPlayersWhoStoreUpBeforeRestarting()
-    {
-        // 一个跨包的发现（实测四个纪元包各跑 48 小时，等级与转生货币都是 0）：
-        // 等级只在**舍命那一刻**结算，而"够条件就走"的机器人永远在等级 0 的时候舍命，
-        // 于是余烬 / 前世经验这一整条线看起来像死内容。
-        //
-        // 但它不是死的：只要在第 4 次重启之前把历史累计顶过 1e12（等级 1 的门槛），
-        // 重启就能拿到火种，余烬线随之打开。这正是这个包想鼓励的玩法——
-        // 记忆残片的产率也取决于"重启前留下了多少"，两套系统奖励同一件事。
-        GameEngine engine = TestGame.CreateApocalypse(out _);
-        engine.State.CookiesEarnedAllTime = 1e12;
-        engine.State.CookiesEarnedThisRun = 8e9;
-        engine.State.Era = 4;
-        engine.State.SetCounter(EraSystem.PeakCpsCounterKey, 5e7);
-        engine.State.Achievements.Clear();
-        for (int i = 0; i < 10; i++) engine.State.Achievements.Add($"dummy_{i}");
-        engine.MarkDirty();
 
-        Check.True(engine.EraGate.CanAdvance, "第 4 层的完成条件应当已经满足。");
-        engine.Ascend();
-
-        Check.Equal(5, engine.State.Era);
-        Check.AtLeast(engine.State.PrestigeLevel, 1, "攒到 1e12 之后再重启，等级至少应当有 1 级。");
-        Check.AtLeast(engine.State.PrestigeChips, 1, "有等级就该拿到火种。");
-        Check.True(
-            engine.Content.UpgradeById["ember_hands"].Unlock.IsMet(engine.Metrics, engine.Content),
-            "拿到火种之后「余烬之手」应当已经解锁。");
-    }
-
-    [Test]
-    public static void StoringUpBeforeTheLastRestart_IsAffordable()
-    {
-        // 上一条用例证明了"攒够了就能拿到"，这一条量的是"攒够要多久"——
-        // 阈值不能靠推理定（阶段 2.7 的 3e14 + Lv5 实测是 200 小时也读不完的死内容）。
-        GameEngine engine = LoadFrom(EraFourSave.Value);
-        double start = engine.State.PlayTimeSeconds;
-
-        for (int round = 0; round < 200_000; round++)
-        {
-            if (PrestigeSystem.LevelFor(engine.State.CookiesEarnedAllTime, engine.Content.Balance) >= 1) break;
-
-            for (int i = 0; i < 8; i++) engine.Click();
-            TestGame.BuyGreedily(engine);
-
-            for (int i = engine.State.GoldenCookies.Count - 1; i >= 0; i--)
-                engine.ClickGoldenCookie(engine.State.GoldenCookies[i].InstanceId);
-
-            engine.Simulate(30);
-        }
-
-        double hours = (engine.State.PlayTimeSeconds - start) / 3600;
-        Console.WriteLine($"      在第 4 层多攒到等级 1，额外用了 {hours:F1} 游戏小时");
-
-        Check.AtLeast(
-            PrestigeSystem.LevelFor(engine.State.CookiesEarnedAllTime, engine.Content.Balance),
-            1,
-            "在第 4 层里等下去也到不了等级 1——那余烬线就是真的死内容。");
-        Check.AtMost(hours, 12, "攒到等级 1 要的额外时间太长，玩家不会这么做。");
-    }
 
     // ---------------------------------------------------------------- 辅助
 
@@ -424,9 +365,6 @@ public static class ApocalypseContentTests
     /// </para>
     /// </summary>
     private static readonly Lazy<string> LastRestartSave = new(() => PlayToEra(5).Save());
-
-    /// <summary>一次真实游玩，停在"刚进入第 4 层"这一刻（用来量"多攒一轮"的代价）。</summary>
-    private static readonly Lazy<string> EraFourSave = new(() => PlayToEra(4).Save());
 
     private static GameEngine PlayToEra(int target)
     {

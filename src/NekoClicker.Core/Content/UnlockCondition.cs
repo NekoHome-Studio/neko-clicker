@@ -404,7 +404,7 @@ public sealed record NumericCondition(NumericMetric Metric, double Target, strin
             NumericMetric.AchievementCount => $"解锁 {amount} 个成就",
             NumericMetric.GoldenCookiesClicked => $"点击 {amount} 次金猫",
             NumericMetric.PurchasedUpgrades => $"购买 {amount} 个升级",
-            NumericMetric.Counter => $"「{Id}」达到 {amount}",
+            NumericMetric.Counter => $"「{content?.CounterName(Id ?? string.Empty) ?? Id}」达到 {amount}",
             NumericMetric.TaggedUpgrades => $"购买 {amount} 个「{Id}」类升级",
             NumericMetric.Era => $"进入第 {amount} 纪元",
             NumericMetric.LoreCount => $"读到 {amount} 段记忆",

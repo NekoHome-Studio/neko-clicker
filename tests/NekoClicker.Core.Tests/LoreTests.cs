@@ -149,15 +149,7 @@ public static class LoreTests
 
     /// <summary>全部内容包（守卫用例要横扫每一个，而不是只盯着最近改的那个）。</summary>
     private static GameContent[] AllPacks() =>
-    [
-        TestGame.NekoContent,
-        TestGame.CafeContent,
-        TestGame.NineLives,
-        TestGame.Lab,
-        TestGame.Company,
-        TestGame.Apocalypse,
-        TestGame.Library,
-    ];
+        [.. TestGame.AllContentPacks().Select(p => p.Content)];
 
     [Test]
     public static void Era9Rule_UsesLoreCount()
