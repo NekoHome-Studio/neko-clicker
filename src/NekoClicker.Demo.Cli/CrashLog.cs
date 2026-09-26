@@ -29,6 +29,7 @@ internal static class CrashLog
                 .AppendLine($"命令行 ：{Environment.CommandLine}")
                 .AppendLine($"窗口   ：{DescribeViewport()}")
                 .AppendLine($"VT 转义：{Ansi.ColorEnabled}")
+                .AppendLine($"宿主   ：{TerminalHost.Describe()}")
                 .AppendLine()
                 .AppendLine(exception.ToString());
 

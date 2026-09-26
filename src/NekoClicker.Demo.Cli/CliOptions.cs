@@ -16,11 +16,27 @@ internal enum RunMode
     Help,
 }
 
+/// <summary>备用屏幕缓冲区的使用策略。</summary>
+internal enum AltScreenMode
+{
+    /// <summary>自动：Windows 上只认得出的"现代宿主"才用备用屏（传统 conhost 缩放会崩）。</summary>
+    Auto,
+
+    /// <summary>强制使用备用屏（Windows Terminal / VS Code 终端等）。</summary>
+    On,
+
+    /// <summary>强制不用备用屏（万一宿主仍会崩，用它兜底）。</summary>
+    Off,
+}
+
 /// <summary>命令行参数。</summary>
 internal sealed class CliOptions
 {
     /// <summary>运行模式。</summary>
     public RunMode Mode { get; private set; } = RunMode.Interactive;
+
+    /// <summary>备用屏策略。</summary>
+    public AltScreenMode AltScreen { get; private set; } = AltScreenMode.Auto;
 
     /// <summary>模拟时长（秒）。</summary>
     public double SimulateSeconds { get; private set; } = 3600;
@@ -134,6 +150,14 @@ internal sealed class CliOptions
                     options.NoColor = true;
                     break;
 
+                case "--altscreen":
+                    options.AltScreen = AltScreenMode.On;
+                    break;
+
+                case "--no-altscreen":
+                    options.AltScreen = AltScreenMode.Off;
+                    break;
+
                 case "--panel":
                     if (i + 1 < args.Length && TryParsePanel(args[i + 1], out PanelFocus panel))
                     {
@@ -189,6 +213,8 @@ internal sealed class CliOptions
           --size <宽x高>      指定界面尺寸
           --panel <名称>      指定右侧面板初始焦点：buildings | upgrades | achievements | codex | choices
           --no-color          关闭 ANSI 颜色
+          --no-altscreen      不用备用屏幕缓冲区（传统 conhost 缩放时崩，默认已自动规避）
+          --altscreen         强制使用备用屏（Modern Windows Terminal / VS Code 终端等）
           -h, --help          显示本帮助
 
         内容包:
@@ -196,6 +222,7 @@ internal sealed class CliOptions
           cafe       猫娘咖啡馆（内容包 #1，第二资源「幸福感」）
           ninelines  九命猫娘（内容包 #2，九层轮回 + 图鉴长篇）
           lab        猫娘实验室（内容包 #3，七批次 + 伦理值 + 道德轴）
+          company    猫娘公司（内容包 #10，三轮重组 + 士气 + 劳资轴）
 
         游戏内按键:
           空格 / C    手动点击（撸猫 / 做咖啡）

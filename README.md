@@ -34,9 +34,14 @@
 > 下面的命令使用 `.\tools\` 下的脚本调用（Windows PowerShell 与 PowerShell 7 都适用）。
 > 若执行策略拦截脚本，先在当前会话运行 `Set-ExecutionPolicy -Scope Process Bypass`。
 > 在普通开发机上也可以直接 `dotnet build` / `dotnet run`。
+>
+> 传统 conhost（PowerShell 5.1 / cmd 直接打开的窗口）下会自动改用主缓冲区渲染：
+> conhost 在「备用屏缓冲区 + 缩放窗口」组合下有一个已知崩溃（microsoft/terminal#13037），
+> 那是宿主进程崩溃，程序里捕获不到。Windows Terminal / VS Code 终端等不受影响；
+> 也可以用 `--no-altscreen` / `--altscreen` 手动覆盖。
 
 ```powershell
-# 构建 + 跑测试（277 个用例，零依赖迷你运行器）
+# 构建 + 跑测试（291 个用例，零依赖迷你运行器）
 .\tools\build.ps1
 
 # 只构建全部项目
@@ -96,7 +101,7 @@ src/NekoClicker.Content.NineLives/ 内容包 #2《九命轮回》（九层纪元
 src/NekoClicker.Content.Lab/     内容包 #3《猫娘实验室》（七批纪元，第一个同时用 Era+Lore+Choice 的包）
 src/NekoClicker.Content.Company/ 内容包 #10《猫娘公司》（三轮重组，第二个用 Choice + 自己的劳资立场轴）
 src/NekoClicker.Demo.Cli/        终端 UI 适配层（ANSI 全屏 + 键盘 + 无头模式 + --package）
-tests/NekoClicker.Core.Tests/    277 个测试 + 自研迷你测试运行器（含架构不变量与全程可达测试）
+tests/NekoClicker.Core.Tests/    291 个测试 + 自研迷你测试运行器（含架构不变量与全程可达测试）
 docs/ARCHITECTURE.md             架构与设计决策
 docs/CONTENT_AUTHORING.md        如何写内容（数值节奏、校验规则、常见坑）
 docs/ROADMAP.md                  实施规划与决策记录：11 项已定决策、4 条架构不变量、5 个阶段
@@ -247,7 +252,7 @@ Console.WriteLine(engine.Save());           // JSON 存档
 ## 状态
 
 - 核心引擎、五个内容包（猫咖物语 / 猫娘咖啡馆 / 九命轮回 / 猫娘实验室 / 猫娘公司）、
-  终端 Demo，**277 个测试**全部通过。
+  终端 Demo，**291 个测试**全部通过。
 - **分层转生（`Era`）已落地**：逐级推进的转生按钮、每层换规则的平衡覆盖、
   跨层继承、构建期的完成条件单调性校验。九命（9 层）、实验室（7 批）、公司（3 轮）
   全程可达由机器人测试守住。

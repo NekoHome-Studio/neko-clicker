@@ -63,6 +63,6 @@ internal static class Program
         }
 
         using var session = new GameSession(options.Package, options.SavePath, options.Seed);
-        return InteractiveLoop.Run(session);
+        return InteractiveLoop.Run(session, options.AltScreen);
     }
 }

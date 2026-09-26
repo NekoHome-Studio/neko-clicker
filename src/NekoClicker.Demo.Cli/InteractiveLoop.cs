@@ -17,8 +17,9 @@ internal static class InteractiveLoop
 
     /// <summary>运行交互循环。</summary>
     /// <param name="session">会话。</param>
+    /// <param name="altScreenMode">备用屏策略；默认自动（conhost 上自动不用）。</param>
     /// <returns>进程退出码。</returns>
-    public static int Run(GameSession session)
+    public static int Run(GameSession session, AltScreenMode altScreenMode = AltScreenMode.Auto)
     {
         bool colorSupported = Ansi.TryEnableVirtualTerminal();
         Ansi.ColorEnabled = colorSupported;
@@ -32,7 +33,12 @@ internal static class InteractiveLoop
             // 重定向输出时无法改编码，忽略即可。
         }
 
-        TryWrite(Ansi.EnterAlternateScreen() + Ansi.Clear() + Ansi.HideCursor());
+        // conhost 在"备用屏 + 缩放"组合下会自己崩（宿主进程崩，抓不到异常）：
+        // 认不出现代宿主就别用备用屏。
+        bool altScreen = TerminalHost.UseAlternateScreen(altScreenMode);
+
+        TryWrite((altScreen ? Ansi.EnterAlternateScreen() : string.Empty)
+                 + Ansi.Clear() + Ansi.Home() + Ansi.HideCursor());
 
         Exception? crash = null;
         try
@@ -47,10 +53,12 @@ internal static class InteractiveLoop
         }
         finally
         {
-            // 无论怎么退出都要还原终端，否则会把用户的 shell 留在备用屏幕里。
+            // 用备用屏时退出即可恢复原屏幕；不用备用屏时（conhost），退出前把画面清掉，
+            // 别把一屏游戏界面留在 shell 的滚动缓冲里。
             // 先补一发 SyncEnd：万一是在同步输出窗口内异常退出，终端会一直攒着不上屏。
             // 还原本身也可能失败（窗口正在关闭）——用 TryWrite，不能让收尾再抛一次。
-            TryWrite(Ansi.SyncEnd() + Ansi.ShowCursor() + Ansi.ExitAlternateScreen());
+            TryWrite(Ansi.SyncEnd() + Ansi.ShowCursor()
+                     + (altScreen ? Ansi.ExitAlternateScreen() : Ansi.Home() + Ansi.Clear()));
         }
 
         if (crash is null) return 0;

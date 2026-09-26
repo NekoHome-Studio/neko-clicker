@@ -154,6 +154,31 @@ public static class FrameRenderTests
                 TerminalUi.Render(session, width, height);
     }
 
+    [Test]
+    public static void RenderNeverThrowsWithAFullGameState()
+    {
+        // 开局状态的列表都很短，索引边界与真实游玩完全不同。这里先跑出一段真实进度
+        //（成就 / 图鉴 / 待答选择都攒起来），再按各种高度渲染一遍。
+        using var session = new GameSession(ContentPackages.Find("company")!, savePath: null, seed: 20240924);
+
+        for (int round = 0; round < 300; round++)
+        {
+            for (int i = 0; i < 8; i++) session.Engine.Click();
+            TestGame.BuyGreedily(session.Engine);
+            if (session.Engine.EraGate.CanAdvance) session.Engine.Ascend();
+            session.Engine.Simulate(18);
+        }
+        session.Refresh();
+
+        foreach (PanelFocus panel in Enum.GetValues<PanelFocus>())
+        {
+            session.SetFocus(panel);
+            for (int height = 1; height <= 40; height++)
+                for (int width = 1; width <= 80; width++)
+                    TerminalUi.Render(session, width, height);
+        }
+    }
+
     private static void AssertFits(List<string> lines, int width, int height, string what)
     {
         Check.Equal(height, lines.Count, $"{what} {width}×{height}：行数不匹配，多出来的行会让终端滚屏。");
