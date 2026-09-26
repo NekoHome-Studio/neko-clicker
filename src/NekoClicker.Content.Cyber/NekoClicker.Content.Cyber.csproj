@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>NekoClicker.Content.Cyber</RootNamespace>
+    <AssemblyName>NekoClicker.Content.Cyber</AssemblyName>
+    <!--
+      内容包 #5：赛博猫娘（数字层 + 算力）。
+      ROADMAP 阶段 5 的换皮批产之一：只用 Era + Lore + 一个第二资源计数器，
+      **不得新增任何核心代码**——目标是从第 1 层（进程）走到最后一层（根服务器）。
+    -->
+    <Description>内容包 #5：赛博猫娘的全部数值与文案（算力 + 迁服务器 + 五层数字层）。</Description>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\NekoClicker.Core\NekoClicker.Core.csproj" />
+  </ItemGroup>
+
+</Project>

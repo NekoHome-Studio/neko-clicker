@@ -2,6 +2,8 @@ using NekoClicker.Core;
 using NekoClicker.Core.Content;
 using NekoClicker.Content.Apocalypse;
 using NekoClicker.Content.Cafe;
+using NekoClicker.Content.Civ;
+using NekoClicker.Content.Cyber;
 using NekoClicker.Content.God;
 using NekoClicker.Content.Library;
 using NekoClicker.Content.Company;
@@ -22,6 +24,8 @@ public static class TestGame
     private static readonly Lazy<GameContent> ApocalypseContentCache = new(ApocalypseContent.Build);
     private static readonly Lazy<GameContent> LibraryContentCache = new(LibraryContent.Build);
     private static readonly Lazy<GameContent> GodContentCache = new(GodContent.Build);
+    private static readonly Lazy<GameContent> CivContentCache = new(CivContent.Build);
+    private static readonly Lazy<GameContent> CyberContentCache = new(CyberContent.Build);
 
     /// <summary>示例内容包（不可变，可安全共享）。</summary>
     public static GameContent NekoContent => NekoContentCache.Value;
@@ -78,6 +82,38 @@ public static class TestGame
     {
         clock = new ManualClock();
         return new GameEngine(God, new GameEngineOptions
+        {
+            Clock = clock,
+            Seed = seed,
+            GrantOfflineProgress = grantOffline,
+            MaxNotifications = 64,
+        });
+    }
+
+    /// <summary>内容包 #4《猫娘文明》（五个时代 + 文化 + 三个结局；不可变，可安全共享）。</summary>
+    public static GameContent Civ => CivContentCache.Value;
+
+    /// <summary>内容包 #5《赛博猫娘》（五层数字层 + 算力 + 两个结局；不可变，可安全共享）。</summary>
+    public static GameContent Cyber => CyberContentCache.Value;
+
+    /// <summary>创建《猫娘文明》的引擎。</summary>
+    public static GameEngine CreateCiv(out ManualClock clock, ulong seed = 12345, bool grantOffline = true)
+    {
+        clock = new ManualClock();
+        return new GameEngine(Civ, new GameEngineOptions
+        {
+            Clock = clock,
+            Seed = seed,
+            GrantOfflineProgress = grantOffline,
+            MaxNotifications = 64,
+        });
+    }
+
+    /// <summary>创建《赛博猫娘》的引擎。</summary>
+    public static GameEngine CreateCyber(out ManualClock clock, ulong seed = 12345, bool grantOffline = true)
+    {
+        clock = new ManualClock();
+        return new GameEngine(Cyber, new GameEngineOptions
         {
             Clock = clock,
             Seed = seed,
@@ -179,6 +215,8 @@ public static class TestGame
         ("#6 末世", Apocalypse),
         ("#9 图书馆", Library),
         ("#7 神明", God),
+        ("#4 文明", Civ),
+        ("#5 赛博", Cyber),
     ];
 
     /// <summary>创建使用示例内容包的引擎，时间由 <see cref="ManualClock"/> 控制。</summary>

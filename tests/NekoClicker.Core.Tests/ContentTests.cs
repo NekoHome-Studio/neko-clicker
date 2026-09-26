@@ -91,6 +91,36 @@ public static class ContentTests
     }
 
     [Test]
+    public static void BuildingCurve_FollowsTheRecipeInEveryContentPack()
+    {
+        // 曲线配方（CONTENT_AUTHORING §2 / STAGE_5_RESKINS §4 第 1 条）：相邻价格 ×5~20、
+        // 产量 ×3~12，且从第 3 座起价格涨得必须比产量快——否则早期建筑永远不会被淘汰，
+        // 玩家会一直买第一座。**换包换的是叙事，不是手感**，所以这条对每个包都成立。
+        //
+        // 加这条通用守卫之前先把既有 8 个包量了一遍（含九命那 12 座）：全部落在带内，
+        // 所以它不是"给新包开的特例"，而是把一条一直靠人记的纪律变成守卫。
+        foreach ((string name, GameContent content) in TestGame.AllContentPacks())
+        {
+            for (int i = 1; i < content.Buildings.Count; i++)
+            {
+                BuildingDefinition previous = content.Buildings[i - 1];
+                BuildingDefinition current = content.Buildings[i];
+
+                Check.Greater(current.BasePrice, previous.BasePrice, $"{name}：「{current.Name}」的价格应高于上一层。");
+                Check.Greater(current.BaseCps, previous.BaseCps, $"{name}：「{current.Name}」的产量应高于上一层。");
+
+                double priceRatio = current.BasePrice / previous.BasePrice;
+                double cpsRatio = current.BaseCps / previous.BaseCps;
+                Check.True(priceRatio is >= 5 and <= 20, $"{name}：「{previous.Name}」→「{current.Name}」价格倍率 {priceRatio:F2} 超出 5~20。");
+                Check.True(cpsRatio is >= 3 and <= 12, $"{name}：「{previous.Name}」→「{current.Name}」产量倍率 {cpsRatio:F2} 超出 3~12。");
+
+                if (i >= 2)
+                    Check.Greater(priceRatio, cpsRatio, $"{name}：「{current.Name}」的产量倍率不应超过价格倍率，否则价格曲线会失控。");
+            }
+        }
+    }
+
+    [Test]
     public static void NekoContent_UnlockThresholdsRiseWithTier()
     {
         GameContent content = NekoContent.Build();

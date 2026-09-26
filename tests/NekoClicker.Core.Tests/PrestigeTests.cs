@@ -69,6 +69,8 @@ public static class PrestigeTests
             ("#6 末世", TestGame.CreateApocalypse(out _)),
             ("#9 图书馆", TestGame.CreateLibrary(out _)),
             ("#7 神明", TestGame.CreateGod(out _)),
+            ("#4 文明", TestGame.CreateCiv(out _)),
+            ("#5 赛博", TestGame.CreateCyber(out _)),
         ];
     }
 

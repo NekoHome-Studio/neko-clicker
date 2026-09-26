@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>NekoClicker.Content.Civ</RootNamespace>
+    <AssemblyName>NekoClicker.Content.Civ</AssemblyName>
+    <!--
+      内容包 #4：猫娘文明（文明演进 + 文化）。
+      ROADMAP 阶段 5 的换皮批产之一：只用 Era + Lore + 一个第二资源计数器，
+      **不得新增任何核心代码**——目标是从第 1 层（猫窝）走到最后一层（星港）。
+    -->
+    <Description>内容包 #4：猫娘文明的全部数值与文案（文化 + 时代更替 + 五层文明演进）。</Description>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\NekoClicker.Core\NekoClicker.Core.csproj" />
+  </ItemGroup>
+
+</Project>
