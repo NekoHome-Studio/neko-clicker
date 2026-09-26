@@ -9,6 +9,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- 帧渲染的尺寸不变量由测试项目直接盯着（FrameRenderTests）：
+         Render 返回的每一行必须恰好等于终端宽/高，这类错误在真实终端上表现为滚屏与错位，
+         在无头环境里却完全看不出来——必须用测试钉住。 -->
+    <InternalsVisibleTo Include="NekoClicker.Core.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <!-- 全部内容包都引用：用命令行 package 参数选择要玩的游戏。 -->
     <ProjectReference Include="..\NekoClicker.Core\NekoClicker.Core.csproj" />
     <ProjectReference Include="..\NekoClicker.Content.Neko\NekoClicker.Content.Neko.csproj" />

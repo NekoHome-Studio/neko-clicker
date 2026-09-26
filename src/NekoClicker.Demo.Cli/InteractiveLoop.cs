@@ -116,10 +116,18 @@ internal static class InteractiveLoop
             (int width, int height) = MeasureViewport();
             List<string> lines = TerminalUi.Render(session, width, height);
 
-            // 尺寸变了 / ANSI 不可用 / 到了兜底间隔 → 整屏重画。
+            // 终端不支持 VT 转义：没有定位 / 清屏 / 备用屏幕能力，全屏界面无从谈起。
+            // 退化成"每次追加一整帧"的普通输出——绝不能走下面的增量路径：
+            // 定位序列此时全是空串，所有行会被粘成一行。
+            if (!Ansi.ColorEnabled)
+            {
+                Console.Write(string.Join('\n', lines) + "\n");
+                return;
+            }
+
+            // 尺寸变了 / 到了兜底间隔 → 整屏重画。
             bool full = width != _width
                         || height != _height
-                        || !Ansi.ColorEnabled
                         || now - _lastFullRepaint >= FullRepaintSeconds;
 
             var builder = new StringBuilder();
@@ -138,9 +146,11 @@ internal static class InteractiveLoop
                     continue;
                 }
 
-                // 整屏重画：首行归位，行间用换行推进。
-                // 末行之后<b>不补换行</b>——那会把整屏往上滚一格，是另一种闪烁。
-                builder.Append(full ? (i == 0 ? Ansi.Home() : "\n") : Ansi.MoveTo(i + 1));
+                // 定位一律用绝对坐标（CUP），不用 \n 推进行：
+                // LF 在宿主终端里可能被解释成"光标已在最后一行 → 滚屏"，
+                // conhost（PowerShell 的宿主）尤其明显——那正是随机的整屏跳动。
+                // 绝对定位没有这个歧义，代价是每行多几个字节。
+                builder.Append(Ansi.MoveTo(i + 1));
                 builder.Append(lines[i]).Append(Ansi.ClearLine());
                 written++;
             }

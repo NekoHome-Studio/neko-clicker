@@ -17,16 +17,24 @@ internal static class TerminalUi
 {
     private static readonly string[] SlotKeys = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"];
 
+    /// <summary>能画出完整界面的最小终端尺寸；更小的窗口只显示一行提示。</summary>
+    private const int MinWidth = 40;
+    private const int MinHeight = 14;
+
     /// <summary>界面布局尺寸。集中算一次，避免各面板各算一套导致列宽不一致。</summary>
     private readonly record struct Layout(int Width, int Height, int Inner, int Left, int Right)
     {
         public static Layout Create(int width, int height)
         {
-            width = Math.Max(40, width);
-            height = Math.Max(14, height);
             int inner = width - 2;
             int left = Math.Clamp((int)(inner * 0.46), 26, 54);
-            return new Layout(width, height, inner, left, inner - left);
+
+            // 两栏行 = "│" + 左栏 + "│" + 右栏 + "│"，分隔符吃掉 3 列；
+            // 而 Inner 是给"整行只有左右两个边框"的 Border / FullRow 用的（吃掉 2 列）。
+            // 所以右栏要再减 1：Left + Right + 3 == Width。
+            // 首版按 inner - left 算，于是每条两栏行都比终端宽出 1 列——多出来的那一列会折到
+            // 下一行，接着把整屏顶下去；在 conhost（PowerShell 的宿主）上表现为持续滚屏与错位。
+            return new Layout(width, height, inner, left, inner - left - 1);
         }
     }
 
@@ -37,6 +45,13 @@ internal static class TerminalUi
     /// <returns>恰好 <paramref name="height"/> 行，每行显示宽度恰好 <paramref name="width"/>。</returns>
     public static List<string> Render(GameSession session, int width, int height)
     {
+        width = Math.Max(1, width);
+        height = Math.Max(1, height);
+
+        // 窗口装不下完整界面时，给一个"恰好装得下"的提示帧。
+        // 绝不能按最小尺寸硬渲染：那会让每一行都超宽、每一帧都滚屏——正是首版的另一个 bug。
+        if (width < MinWidth || height < MinHeight) return TooSmallFrame(width, height);
+
         Layout layout = Layout.Create(width, height);
         GameSnapshot snap = session.Snapshot;
 
@@ -590,6 +605,26 @@ internal static class TerminalUi
     }
 
     // ---------------------------------------------------------------- 布局工具
+
+    /// <summary>
+    /// 窗口小于 <see cref="MinWidth"/>×<see cref="MinHeight"/> 时的兜底帧。<para>
+    /// 只有第一行有提示，其余填空；每一行都<b>恰好</b> width 列、总行数<b>恰好</b> height 行。
+    /// 兜底帧自己也必须守这两条不变量——否则小窗口里照样滚屏，兜底就成了另一种坏。
+    /// </para>
+    /// </summary>
+    private static List<string> TooSmallFrame(int width, int height)
+    {
+        string hint = $" 终端太小：{width}×{height}（至少 {MinWidth}×{MinHeight}）";
+        var lines = new List<string>(height);
+
+        for (int i = 0; i < height; i++)
+        {
+            string text = i == 0 ? Ansi.Truncate(hint, width) : string.Empty;
+            lines.Add(Ansi.PadRight(text, width));
+        }
+
+        return lines;
+    }
 
     private static string Border(Layout layout, char left, char right, string? label)
     {

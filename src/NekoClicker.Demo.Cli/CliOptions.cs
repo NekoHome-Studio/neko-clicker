@@ -242,8 +242,11 @@ internal sealed class CliOptions
         if (parts.Length != 2) return false;
         if (!int.TryParse(parts[0], out width) || !int.TryParse(parts[1], out height)) return false;
 
-        width = Math.Clamp(width, 40, 400);
-        height = Math.Clamp(height, 12, 200);
+        // 下限刻意压到 1：`--frame 30x9` 要能真的渲染出 30×9 的东西，
+        // 否则"小窗口会不会滚屏"这种事在命令行下根本测不出来。
+        // 装不下完整界面时，TerminalUi.Render 会返回同样尺寸的提示帧（绝不溢出）。
+        width = Math.Clamp(width, 1, 400);
+        height = Math.Clamp(height, 1, 200);
         return true;
     }
 }

@@ -185,6 +185,18 @@ internal static class Ansi
     {
         for (int i = 0; i < text.Length; i++)
         {
+            // ANSI 转义序列：可见宽度为 0，但必须原样保留。
+            // ProgressBar 这类"已经上好色的字符串"会作为普通文本传给 Slice / DisplayWidth，
+            // 若把 ESC[32m 里的 '[' '3' '2' 'm' 当可见字符计数，排版预算会被吃掉，
+            // 进度条会整段被裁掉、行也跟着变短——首版的"选项消失"就是这么来的。
+            if (text[i] == '\u001b')
+            {
+                int escapeLength = EscapeLength(text, i);
+                yield return new Rune(text.Substring(i, escapeLength), 0);
+                i += escapeLength - 1;
+                continue;
+            }
+
             int codePoint = text[i];
             int charLength = 1;
 
@@ -207,6 +219,21 @@ internal static class Ansi
             yield return new Rune(text.Substring(i, charLength), width);
             i += charLength - 1;
         }
+    }
+
+    /// <summary>从 <paramref name="start"/>（一个 ESC 的位置）起算整条转义序列的长度。</summary>
+    private static int EscapeLength(string text, int start)
+    {
+        int i = start + 1;
+        if (i >= text.Length) return 1;
+
+        // 两字符转义（ESC + 单字符），例如 ESC ( B。
+        if (text[i] != '[') return 2;
+
+        // CSI：ESC [ 参数 中间字节 终止字节（0x40~0x7E）。
+        i++;
+        while (i < text.Length && !(text[i] >= '@' && text[i] <= '~')) i++;
+        return Math.Min(i + 1, text.Length) - start;
     }
 
     private static int CodePointWidth(int codePoint)
