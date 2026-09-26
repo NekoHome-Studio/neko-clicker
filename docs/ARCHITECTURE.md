@@ -80,6 +80,12 @@ Simulate(seconds)             跳跃式推进，不受补算上限约束（测�
   3. 缓存结果；购买 / 成就解锁 / 增益增减 / 读档都会 MarkDirty()
 ```
 
+**"脏标记驱动"有一个内容侧后果**：`Step()` 的顺序是「先重算 → 再结算 → 最后才 `module.OnTick`」，
+所以模块在 tick 里改了计数器（第二资源）**不会自动触发重算**——它驱动的 `Scaling` 会一直用旧值，
+直到别的事情把引擎弄脏（买东西、增益变化、金猫刷新）。单调且缓慢的计数器靠"玩家总在买东西"盖得住，
+**会掉的计数器盖不住**；正确做法是跨过一个量子时显式 `MarkDirty()`
+（见 `docs/CONTENT_AUTHORING.md` §10 与 `ReadershipModule`）。
+
 **全局乘方怎么摊回每个建筑？** 先算未施加乘方的总量 `T`，再算最终量 `T^p`，
 得到一个标量因子 `T^p / T` 乘回每个建筑。这样"各建筑占比"在乘方后依然自洽。
 
@@ -245,6 +251,9 @@ GameState  ←→  SaveData（DTO）  ←→  JSON / base64 分享码
 | 新增一种加成目标 | 扩展 `ModifierTargetKind` + `ModifierTarget.Describe` + 消费方读取 |
 | 新增一种解锁条件 | 继承 `UnlockCondition` 并实现 `IsMet` / `Describe` / `TryGetProgress` |
 | 新增一种成长曲线 | 扩展 `ScalingSource` + `Scaling.Evaluate` |
+| 新增一个第二资源（计数器） | 实现 `IGameModule`：状态放 `GameState.Counters`（跨转生保留）、`OnTick` 推进、`OnOffline` 补算、`OnAscend` 决定要不要清零 |
+| 让计数器驱动产量 | `Modifier.GlobalPercent(0, new Scaling(ScalingSource.CustomCounter, perUnit, Cap: …, Id: "键"))`——**不需要新增来源**；注意 `Cap` 限的是计数值而不是加成结果 |
+| 让计数器出现在玩家文案里 | `builder.AddCounterName(计数器键, "显示名")`（写在模块的 `Configure` 里）；未登记则回退成键本身 |
 | 新增一层纪元 | 往内容包加一条 `EraDefinition`（层号连续、完成条件单调），核心零改动 |
 | 新增一条叙事线 | 加 `StorylineDefinition` + 若干 `LoreEntry`，核心零改动 |
 | 接入引擎不认识的玩法 | 实现 `IGameModule`（`Configure` 补内容、`OnAttach` 订阅事件、`OnTick` 推进） |

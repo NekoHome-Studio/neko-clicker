@@ -51,12 +51,12 @@
 | 猫薄荷 | 限时增益 `BuffDefinition` | ✅ |
 | 情感能量 | 转生货币，复用 `PrestigeSystem` 公式 | ✅ 改文案 |
 | 纸箱 / 猫窝 / 猫塔… | `BuildingDefinition`，按 `Era` 分层揭示 | ✅ |
-| 命 / 轮回 / 批次 / 时代 / 服务器 | **`Era`（同一机制的十种叙事包装）** | ❌ 系统 A |
+| 命 / 轮回 / 批次 / 时代 / 服务器 | **`Era`（同一机制的十种叙事包装）** | ✅ 已落地（系统 A） |
 | 前世技能 / 常客记忆 / 残留记忆 | `UpgradePersistence.Permanent` 升级 | ✅ |
-| 幸福感 / 信仰 / 士气 | `GameState.Counters[...]` | ✅ 复用计数器 |
-| 剧情释放（日志/弹窗/图鉴） | 叙事条目 + 剧情线分组 | ❌ 系统 B |
-| 独立目标与选择 | 立场轴 | ❌ 系统 C |
-| 被阅读度 / 虚无化 | 衰减机制 | ❌ 系统 D（仅图书馆包需要） |
+| 幸福感 / 信仰 / 士气 / 记忆残片 / 被阅读度 | `GameState.Counters[...]` | ✅ 复用计数器（显示名在模块的 `Configure` 里登记） |
+| 剧情释放（日志/弹窗/图鉴） | 叙事条目 + 剧情线分组 | ✅ 已落地（系统 B） |
+| 独立目标与选择 | 立场轴 | ✅ 已落地（系统 C） |
+| 被阅读度 / 虚无化 | 衰减机制 | ✅ 已落地（仅图书馆包需要）：**会掉的计数器**，按比例衰减、每次开新书清零，核心零改动 |
 
 > **十个包的差异，主要就是上表"改文案"与"换 `Era` 语义"的组合。**
 > 真正需要新写引擎代码的只有 A/B/C/D 四项能力。
@@ -414,12 +414,16 @@ public sealed record ChoiceDefinition
 | A 转生分层 | `Content/EraDefinition.cs`、`Simulation/EraSystem.cs`、`Views/EraView` | `GameState`、`SaveData`、`GameContent`、`GameEngine.Balance`、`UnlockCondition`、`Scaling`、`ModifierResolver`、`PrestigeSystem.ResetRun` | 中 |
 | B 叙事释放 | `Content/LoreEntry.cs`、`Simulation/LoreSystem.cs`、`Views/LoreView` | `GameState`、`SaveData`、`GameContentBuilder`、`GameEngine` | 中 |
 | C 选择分支 | `Content/ChoiceDefinition.cs`、`Simulation/ChoiceSystem.cs`、`Views/ChoiceView` | `GameState`、`ModifierResolver`、`GameSnapshot` | 中 |
-| D 虚无化 | — （`Simulation/DecaySystem.cs`） | `GameState`、`ModifierResolver`（被阅读度作为来源） | 小（仅图书馆包） |
+| D 虚无化 | —（**内容侧的 `ReadershipModule`，核心零改动**） | — | 小（仅图书馆包） |
 | 内容包 | 每包一个项目：建筑表 / 升级表 / 成就表 / 叙事表 / 层定义 | — | **大**（主要在文案） |
 
-`ModifierResolver` 的生效来源最终变成 6 个：
-**升级 / 成就 / 增益 / 当前纪元 / 主导立场 / 被阅读度**。
-新增来源是本次改动里最便宜的一环——生产管线一行不改。
+**D 落地之后的更正**：原计划给 `ModifierResolver` 加"第 6 个来源（被阅读度）"，
+**实际不需要**。`ModifierResolver` 的生效来源就是 6 个，但那 6 个是
+**升级 / 成就 / 增益 / 当前纪元 / 已作答选择 / 主导立场**；
+第二资源（幸福感 / 信仰 / 士气 / 记忆残片 / 被阅读度）一概通过
+`Scaling(ScalingSource.CustomCounter, …, Id: 计数器键)` 表达——
+"某个计数器的函数"这个需求，已经被 C1 那次 3 行改动泛化掉了，再加一个来源是重复机制。
+生产管线确实一行不改，但省下的是**整个来源**，不是"最便宜的一环"。
 
 ---
 

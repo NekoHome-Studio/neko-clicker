@@ -93,6 +93,11 @@
 # 图书馆跑 12 小时左右能写完五本书（机器人一路「够条件就开新书」 → 自然落到某个结局）
 .\tools\play.ps1 --package library --simulate 43200 --auto
 
+
+# 无头模拟默认读写 saves/<包>.json。旧存档里的纪元 / 转生状态会一起读进来，
+# 量"这个包现在跑得怎么样"时请指向一个新文件，否则读到的可能是上一轮的终局状态。
+.\tools\play.ps1 --package ninelines --simulate 43200 --auto --save .tmp/probe.json
+
 # 渲染一帧界面（用于验证布局 / 截图，可重定向到文件）
 .\tools\play.ps1 --simulate 1800 --auto --frame 118x32 --no-color
 
@@ -130,6 +135,7 @@ docs/CONTENT_AUTHORING.md        如何写内容（数值节奏、校验规则�
 docs/ROADMAP.md                  实施规划与决策记录：11 项已定决策、4 条架构不变量、5 个阶段
 docs/NINE_LIVES_DESIGN.md        《九命猫娘》设计映射：1 个共享核心 + 10 个内容包（6 个已落地）
 docs/PACK_01_CAT_CAFE.md         #1《猫娘咖啡馆》完整内容规格（已落代码，也是其余九个包的模板）
+docs/STAGE_5_RESKINS.md           阶段 5 换皮批产手册：#4/#5/#7/#8 四个包的交接件（规则清单 + 验收命令 + 已知坑）
 tools/build.ps1                  一键构建 + 测试
 tools/play.ps1                   构建并运行终端 Demo（参数转发给程序）
 tools/dnet.ps1                   在受限环境里运行 dotnet CLI 的包装脚本
