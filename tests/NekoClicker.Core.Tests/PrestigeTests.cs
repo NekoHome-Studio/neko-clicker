@@ -68,6 +68,7 @@ public static class PrestigeTests
             ("#10 公司", TestGame.CreateCompany(out _)),
             ("#6 末世", TestGame.CreateApocalypse(out _)),
             ("#9 图书馆", TestGame.CreateLibrary(out _)),
+            ("#7 神明", TestGame.CreateGod(out _)),
         ];
     }
 

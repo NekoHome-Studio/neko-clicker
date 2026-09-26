@@ -2,6 +2,7 @@ using NekoClicker.Core;
 using NekoClicker.Core.Content;
 using NekoClicker.Content.Apocalypse;
 using NekoClicker.Content.Cafe;
+using NekoClicker.Content.God;
 using NekoClicker.Content.Library;
 using NekoClicker.Content.Company;
 using NekoClicker.Content.Neko;
@@ -20,6 +21,7 @@ public static class TestGame
     private static readonly Lazy<GameContent> CompanyContentCache = new(CompanyContent.Build);
     private static readonly Lazy<GameContent> ApocalypseContentCache = new(ApocalypseContent.Build);
     private static readonly Lazy<GameContent> LibraryContentCache = new(LibraryContent.Build);
+    private static readonly Lazy<GameContent> GodContentCache = new(GodContent.Build);
 
     /// <summary>示例内容包（不可变，可安全共享）。</summary>
     public static GameContent NekoContent => NekoContentCache.Value;
@@ -60,6 +62,22 @@ public static class TestGame
     {
         clock = new ManualClock();
         return new GameEngine(Library, new GameEngineOptions
+        {
+            Clock = clock,
+            Seed = seed,
+            GrantOfflineProgress = grantOffline,
+            MaxNotifications = 64,
+        });
+    }
+
+    /// <summary>内容包 #7《猫娘神明》（五套神话体系 + 信仰 + 三个结局；不可变，可安全共享）。</summary>
+    public static GameContent God => GodContentCache.Value;
+
+    /// <summary>创建《猫娘神明》的引擎。</summary>
+    public static GameEngine CreateGod(out ManualClock clock, ulong seed = 12345, bool grantOffline = true)
+    {
+        clock = new ManualClock();
+        return new GameEngine(God, new GameEngineOptions
         {
             Clock = clock,
             Seed = seed,
@@ -160,6 +178,7 @@ public static class TestGame
         ("#10 公司", Company),
         ("#6 末世", Apocalypse),
         ("#9 图书馆", Library),
+        ("#7 神明", God),
     ];
 
     /// <summary>创建使用示例内容包的引擎，时间由 <see cref="ManualClock"/> 控制。</summary>

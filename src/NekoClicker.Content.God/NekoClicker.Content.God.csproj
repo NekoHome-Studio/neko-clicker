@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>NekoClicker.Content.God</RootNamespace>
+    <AssemblyName>NekoClicker.Content.God</AssemblyName>
+    <!--
+      内容包 #7：猫娘神明（轻松搞笑的 meta 层）。
+      它是 ROADMAP 阶段 5「换皮批产」的第一个包，也是四个换皮包的形态样板：
+      Era（五套神话体系）+ Lore（四条线）+ 一个只涨不花的第二资源（信仰/在线人数）+ 三个结局，
+      **核心零改动**。设计输入是 NINE_LIVES_DESIGN §3.4 的五层表。
+    -->
+    <Description>内容包 #7：猫娘神明的全部数值与文案（信仰模块 + 五套神话体系 + 神迹）。</Description>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\NekoClicker.Core\NekoClicker.Core.csproj" />
+  </ItemGroup>
+
+</Project>

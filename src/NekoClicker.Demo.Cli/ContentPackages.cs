@@ -1,6 +1,7 @@
 using NekoClicker.Core.Content;
 using NekoClicker.Content.Apocalypse;
 using NekoClicker.Content.Cafe;
+using NekoClicker.Content.God;
 using NekoClicker.Content.Library;
 using NekoClicker.Content.Company;
 using NekoClicker.Content.Lab;
@@ -187,6 +188,32 @@ internal static class ContentPackages
             ],
             ReportTip: "提示：被阅读度会衰减、每次开新书还会清零，所以这个包不是「攒够就行」——"
                      + "你得一直有人读。想拿「被读到最后」，合上书的那一刻阅览室里得还亮着灯。"),
+        new ContentPackage(
+            Id: "god",
+            Name: GodContent.GameTitle,
+            Build: GodContent.Build,
+            Welcome: "欢迎来到猫娘神明！先按空格显灵，攒够 15 点香火就能立起第一座家神龛。"
+                   + "这一次，你要换五套神话体系——神也要恰饭。",
+            PrestigeActionName: "切换神话体系",
+            PrestigeHint: "切换神话体系：上一套神话退场，下一套开张，按历史累计换取「神格」；"
+                        + "本套体系的主线未完成时按钮会置灰。信仰不会清零——信徒跑不掉的。",
+            GoldenCookieName: "神迹",
+            HelpTips:
+            [
+                "    · 这是分层转生的包：一共五套神话体系（家猫神 / 埃及猫神 / 希腊猫神 / 北欧猫神 / 克苏鲁猫），每层规则都不一样。",
+                "    · 「信仰」是第二资源：神殿类建筑养它，它只涨不花，切换神话体系也不会清零——信徒跑不掉的。",
+                "    · 信仰直接变成产量：每点 +0.01%，10 万点封顶（+1000%）——差多少在「模块」一栏看得见。",
+                "    · 「直播在线人数」记的是历史峰值：每 40 点信仰折 1 个人在看，每座直播间再加 5 个位置。",
+                "    · 「切换神话体系」按钮必须先完成本层主线才会亮；条件与进度会显示在按钮上。",
+                "    · 每座建筑的强化升级需要持有到 1 / 10 / 25 个才会出现。",
+                "    · 建筑的解锁看「本轮累计」：换一套神话，世界重新揭示一遍。",
+                "    · 「神迹」不全是好事：朝圣潮很香，供品荒、异端审判、被做成梗也很真实。",
+                "    · 神也要恰饭：直播间、周边工厂、联名款是后半程的主力。",
+                "    · 三个结局取决于你读完了多少神话——这个包没有需要表态的场合。",
+            ],
+            ReportTip: "提示：信仰只涨不花，四层神话的完成条件都挂在它上面；"
+                     + "而结局挂在图鉴厚度上——一路冲关的人只记得几个梗，"
+                     + "把 40 条读完了才认得出她是谁。"),
     ];
 
     /// <summary>默认内容包（未显式指定 <c>--package</c> 时使用）。</summary>
