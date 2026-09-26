@@ -1,5 +1,6 @@
 using NekoClicker.Core.Content;
 using NekoClicker.Content.Cafe;
+using NekoClicker.Content.Company;
 using NekoClicker.Content.Lab;
 using NekoClicker.Content.Neko;
 using NekoClicker.Content.NineLives;
@@ -115,6 +116,28 @@ internal static class ContentPackages
             ],
             ReportTip: "提示：伦理值只由「有谁在看」的建筑产出，所以克制的路线反而更强——"
                      + "四条道德方向会在最后一批收束成四个结局。"),
+        new ContentPackage(
+            Id: "company",
+            Name: CompanyContent.GameTitle,
+            Build: CompanyContent.Build,
+            Welcome: "欢迎来到猫娘公司！先按空格谈单，攒够 15 点营收就能买下第一个工位。"
+                   + "这一次，你要决定这家公司是谁的。",
+            PrestigeActionName: "重组",
+            PrestigeHint: "重组：公司推倒重来，按历史累计换取「期权」；"
+                        + "本轮主线未完成时按钮会置灰——三轮只能一轮一轮走。",
+            GoldenCookieName: "甲方改需求",
+            HelpTips:
+            [
+                "    · 这是分层转生的包：一共三轮（车库创业 / A 轮 / 上市），每轮规则都不一样。",
+                "    · 「士气」由工位 / 会议室 / 增长团队养起来，会被加班类升级和 A 轮后的全员加班吃掉。",
+                "    · 每台设备的强化升级需要持有到 1 / 10 / 25 个才会出现。",
+                "    · 「甲方改需求」不全是坏事：融资、出圈很香，半夜改需求、宕机、挖角也很真实。",
+                "    · 第 1 轮起就有需要你表态的时刻（「表态」面板）。表态会错过，答了会改产量。",
+                "    · 每条立场要每次都选它才够门槛——结局是承诺，不是倾向。",
+                "    · 期权买到的「前世经验」跨重组保留——那是你唯一带得走的东西。",
+            ],
+            ReportTip: "提示：士气靠团队建筑养、被加班吃，所以「又快又不累」在这个包里做不到——"
+                     + "三条劳资方向会在上市前收束成三个结局。"),
     ];
 
     /// <summary>默认内容包（未显式指定 <c>--package</c> 时使用）。</summary>

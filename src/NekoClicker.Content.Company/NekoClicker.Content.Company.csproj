@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>NekoClicker.Content.Company</RootNamespace>
+    <AssemblyName>NekoClicker.Content.Company</AssemblyName>
+    <!--
+      内容包 #10：猫娘公司（社畜共鸣 + 黑色幽默）。
+      第三个用 Era 的包、第二个用 Choice 的包，核心零改动——
+      它要证明的是：同一个核心能承载第三套"纪元叙事"和第二套"立场轴"（劳资）。
+    -->
+    <Description>内容包 #10：猫娘公司的全部数值与文案（士气模块 + 三次重组 + 劳资轴）。</Description>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\NekoClicker.Core\NekoClicker.Core.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -104,14 +104,14 @@ internal static class HeadlessRunner
                 {
                     Console.WriteLine(
                         $"  [{NumFormat.Duration(totalSeconds - remaining),8}] " +
-                        $"—— 舍去第 {before} 命，进入第 {engine.State.Era} 命 ——");
+                        $"—— {package.PrestigeActionName}：{EraLabel(engine, before)} → {EraLabel(engine, engine.State.Era)} ——");
                 }
             }
 
             if (totalSeconds - remaining >= nextReport + reportEvery)
             {
                 nextReport = totalSeconds - remaining;
-                string era = engine.Content.HasEras ? $"  第 {engine.State.Era} 命" : string.Empty;
+                string era = engine.Content.HasEras ? $"  {EraLabel(engine, engine.State.Era)}" : string.Empty;
                 Console.WriteLine(
                     $"  [{NumFormat.Duration(totalSeconds - remaining),8}] " +
                     $"{NumFormat.FormatLong(engine.State.Cookies),12} {engine.Content.CurrencyName}" +
@@ -202,13 +202,17 @@ internal static class HeadlessRunner
             Field("待点掉的弹窗", state.PendingLorePopups.Count.ToString());
         }
 
-        // 分层转生的包：先报纪元状态。这是"舍命"按钮的真实依据，
+        // 分层转生的包：先报纪元状态。这是转生按钮的真实依据，
         // 而下面的经典转生预览只描述情感能量的换算，不表示现在按得下去。
         if (snap.Era is { } eraView)
         {
             Section("纪元");
             Field("当前", $"第 {eraView.Index} / {eraView.Total} 层 · {eraView.Name}");
-            Field("本层主线", eraView.CanAdvance ? "已完成，可以舍命" : eraView.BlockedReason ?? "—");
+            Field(
+                "本层主线",
+                eraView.CanAdvance
+                    ? $"已完成，可以{session.Package.PrestigeActionName}"
+                    : eraView.BlockedReason ?? "—");
             Field("进度", eraView.ProgressText);
             Field("下一层", eraView.NextIndex is { } next ? $"第 {next} 层 · {eraView.NextName}" : "已是最后一层");
             Field("本层规则", eraView.ModifierSummary.Length > 0 ? eraView.ModifierSummary : "无额外倍率");
@@ -265,6 +269,10 @@ internal static class HeadlessRunner
         Console.WriteLine();
         Console.WriteLine($"── {title} " + new string('─', Math.Max(0, 46 - Ansi.DisplayWidth(title))));
     }
+
+    /// <summary>某一层的显示名；内容里查不到时退回层号。日志与报告都用它，避免把"命 / 批 / 轮"写死。</summary>
+    private static string EraLabel(GameEngine engine, int index)
+        => engine.Content.FindEra(index)?.Name ?? $"第 {index} 层";
 
     private static void Field(string label, string value)
         => Console.WriteLine($"  {Ansi.PadRight(label, 16)} {value}");

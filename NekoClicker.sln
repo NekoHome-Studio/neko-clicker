@@ -1,4 +1,4 @@
-﻿
+
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
@@ -20,6 +20,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NekoClicker.Content.NineLives", "src\NekoClicker.Content.NineLives\NekoClicker.Content.NineLives.csproj", "{5B4DEA9F-F952-45AF-941F-62AB023C3945}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NekoClicker.Content.Lab", "src\NekoClicker.Content.Lab\NekoClicker.Content.Lab.csproj", "{3BB6B47C-7B26-43B6-9489-6968E5D0012B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NekoClicker.Content.Company", "src\NekoClicker.Content.Company\NekoClicker.Content.Company.csproj", "{6A1D4E2B-9C3F-4B7A-8E52-1F0D3C6B9A47}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -58,6 +60,10 @@ Global
 		{3BB6B47C-7B26-43B6-9489-6968E5D0012B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3BB6B47C-7B26-43B6-9489-6968E5D0012B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3BB6B47C-7B26-43B6-9489-6968E5D0012B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6A1D4E2B-9C3F-4B7A-8E52-1F0D3C6B9A47}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6A1D4E2B-9C3F-4B7A-8E52-1F0D3C6B9A47}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6A1D4E2B-9C3F-4B7A-8E52-1F0D3C6B9A47}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6A1D4E2B-9C3F-4B7A-8E52-1F0D3C6B9A47}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{AF52C313-0331-42F0-BBF9-978A2C2279BD} = {0FEE24DC-5291-4FE1-B7AB-005490FC51FD}
@@ -67,5 +73,6 @@ Global
 		{CC5DF4CC-7A9F-4BCF-ABED-A2526A318940} = {B9FAACE6-63A4-4695-8DE0-FF68D7C28A8B}
 		{5B4DEA9F-F952-45AF-941F-62AB023C3945} = {0FEE24DC-5291-4FE1-B7AB-005490FC51FD}
 		{3BB6B47C-7B26-43B6-9489-6968E5D0012B} = {0FEE24DC-5291-4FE1-B7AB-005490FC51FD}
+		{6A1D4E2B-9C3F-4B7A-8E52-1F0D3C6B9A47} = {0FEE24DC-5291-4FE1-B7AB-005490FC51FD}
 	EndGlobalSection
 EndGlobal

@@ -253,8 +253,9 @@ internal static class TerminalUi
         int pending = session.Snapshot.PendingChoices.Count;
         if (pending == 0) return $" 表态  （没有待答）{Scroll(start, count, total)}";
 
-        // "舍命后不再"不是吓唬：选择挂了 EraId，是硬门，过了那一层就永远遇不到。
-        return $" 表态  {pending} 项待答 ⚠舍命后不再{Scroll(start, count, total)}";
+        // "过了这层就遇不到"不是吓唬：选择挂了 EraId，是硬门。
+        // 动作名用各包自己的叫法（舍命 / 开新批次 / 重组），别把九命的词焊到别的包上。
+        return $" 表态  {pending} 项待答 ⚠{session.Package.PrestigeActionName}后不再{Scroll(start, count, total)}";
     }
 
     private static string BuildCodexTitle(GameSnapshot snap, int start, int count, int total)
