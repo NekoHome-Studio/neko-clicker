@@ -71,6 +71,7 @@ public static class PrestigeTests
             ("#7 神明", TestGame.CreateGod(out _)),
             ("#4 文明", TestGame.CreateCiv(out _)),
             ("#5 赛博", TestGame.CreateCyber(out _)),
+            ("#8 梦境", TestGame.CreateDream(out _)),
         ];
     }
 

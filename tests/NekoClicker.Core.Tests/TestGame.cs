@@ -4,6 +4,7 @@ using NekoClicker.Content.Apocalypse;
 using NekoClicker.Content.Cafe;
 using NekoClicker.Content.Civ;
 using NekoClicker.Content.Cyber;
+using NekoClicker.Content.Dream;
 using NekoClicker.Content.God;
 using NekoClicker.Content.Library;
 using NekoClicker.Content.Company;
@@ -26,6 +27,7 @@ public static class TestGame
     private static readonly Lazy<GameContent> GodContentCache = new(GodContent.Build);
     private static readonly Lazy<GameContent> CivContentCache = new(CivContent.Build);
     private static readonly Lazy<GameContent> CyberContentCache = new(CyberContent.Build);
+    private static readonly Lazy<GameContent> DreamContentCache = new(DreamContent.Build);
 
     /// <summary>示例内容包（不可变，可安全共享）。</summary>
     public static GameContent NekoContent => NekoContentCache.Value;
@@ -114,6 +116,22 @@ public static class TestGame
     {
         clock = new ManualClock();
         return new GameEngine(Cyber, new GameEngineOptions
+        {
+            Clock = clock,
+            Seed = seed,
+            GrantOfflineProgress = grantOffline,
+            MaxNotifications = 64,
+        });
+    }
+
+    /// <summary>内容包 #8《猫娘梦境》（五层梦 + 梦境能量 + 两个结局；不可变，可安全共享）。</summary>
+    public static GameContent Dream => DreamContentCache.Value;
+
+    /// <summary>创建《猫娘梦境》的引擎。</summary>
+    public static GameEngine CreateDream(out ManualClock clock, ulong seed = 12345, bool grantOffline = true)
+    {
+        clock = new ManualClock();
+        return new GameEngine(Dream, new GameEngineOptions
         {
             Clock = clock,
             Seed = seed,
@@ -217,6 +235,7 @@ public static class TestGame
         ("#7 神明", God),
         ("#4 文明", Civ),
         ("#5 赛博", Cyber),
+        ("#8 梦境", Dream),
     ];
 
     /// <summary>创建使用示例内容包的引擎，时间由 <see cref="ManualClock"/> 控制。</summary>

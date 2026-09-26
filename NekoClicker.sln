@@ -33,6 +33,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NekoClicker.Content.Civ", "
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NekoClicker.Content.Cyber", "src\NekoClicker.Content.Cyber\NekoClicker.Content.Cyber.csproj", "{6052764D-FCB4-4057-9450-54BACA48D62A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NekoClicker.Content.Dream", "src\NekoClicker.Content.Dream\NekoClicker.Content.Dream.csproj", "{5A112025-335F-470F-8901-4F0611D990FB}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -94,6 +96,10 @@ Global
 		{6052764D-FCB4-4057-9450-54BACA48D62A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6052764D-FCB4-4057-9450-54BACA48D62A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6052764D-FCB4-4057-9450-54BACA48D62A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5A112025-335F-470F-8901-4F0611D990FB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5A112025-335F-470F-8901-4F0611D990FB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5A112025-335F-470F-8901-4F0611D990FB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5A112025-335F-470F-8901-4F0611D990FB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{AF52C313-0331-42F0-BBF9-978A2C2279BD} = {0FEE24DC-5291-4FE1-B7AB-005490FC51FD}
@@ -109,5 +115,6 @@ Global
 		{4D8B1C63-9F2A-4E75-B3D8-6A1F7C20E594} = {0FEE24DC-5291-4FE1-B7AB-005490FC51FD}
 		{2DD8AE92-E20E-4298-B52D-D722C3C2D303} = {0FEE24DC-5291-4FE1-B7AB-005490FC51FD}
 		{6052764D-FCB4-4057-9450-54BACA48D62A} = {0FEE24DC-5291-4FE1-B7AB-005490FC51FD}
+		{5A112025-335F-470F-8901-4F0611D990FB} = {0FEE24DC-5291-4FE1-B7AB-005490FC51FD}
 	EndGlobalSection
 EndGlobal

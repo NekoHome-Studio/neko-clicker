@@ -1,6 +1,7 @@
 # 阶段 5 换皮批产手册
 
-> **这份文档是给"下一个会话"的交接件。** 目标：交付内容包
+> **这份文档是"下一个会话"的交接件**（阶段 5 已于 2026-09-26 全部交付，见 §7）。
+> 目标：交付内容包
 > **#4 猫娘文明 / #5 赛博猫娘 / #7 猫娘神明 / #8 猫娘梦境**，四个包，
 > **不得新增任何核心代码**（ROADMAP 阶段 5 的特有验收，也是架构不变量 A3 的检验）。
 >
@@ -23,7 +24,7 @@
 | 3 | **核心零改动** | 本阶段的 diff 里 `src/NekoClicker.Core/` 一行都不动；K1 架构测试全绿 |
 | 4 | 图鉴读得完 | `--panel codex` 或机器人跑图，**40/40** |
 | 5 | 结局可达且互斥、有兜底 | 包内结局用例 + 构建期 `ValidateEndings` |
-| 6 | 既有 320 个用例全绿 | `.\tools\build.ps1 -Strict` 退出码 0 |
+| 6 | 既有 320 个用例全绿 | `.\tools\build.ps1 -Strict` 退出码 0（阶段 5 交付后共 **394** 个） |
 
 **如果某个包逼你动核心，先停下来**：那说明抽象不成立，而这件事本身比多做一个包重要——
 写进 ROADMAP 的交付记录，别硬塞。
@@ -37,6 +38,7 @@
 | #9 图书馆 | **首选模板**：`Era` + `Lore` + 一个计数器 + 2 个结局，而且它有"会掉的计数器"这个最复杂的形态 | `src/NekoClicker.Content.Library/` |
 | #6 末世 | 只有一个第二资源、没有立场轴、3 个结局 | `src/NekoClicker.Content.Apocalypse/` |
 | #2 九命 | 层数多（9 层）、每层换规则、有立场轴（本阶段四个包**不需要**） | `src/NekoClicker.Content.NineLives/` |
+| #7/#4/#5/#8 | **阶段 5 自己交付的四个换皮包**——要写第五个换皮包时，抄它们比抄 #9 更贴近（同样的 11 文件结构、同样的第二资源形态、同样的包内用例清单） | `src/NekoClicker.Content.{God,Civ,Cyber,Dream}/` |
 
 一个包的完整文件清单（以 #9 为例，行数是实际值，规模参考用）：
 
@@ -105,7 +107,7 @@ ReadershipModule.cs                  81   第二资源（IGameModule）
 | 8 | **计数器必须在 `Configure` 里登记显示名**，否则玩家看到 `每点「readership」` | `ContentTests.CounterNames_AreRegisteredForEveryReferencedCounter`（会真渲染一遍） |
 | 9 | **计数器驱动产量不需要新来源**：`Scaling(ScalingSource.CustomCounter, …, Id: 键)` 就够 | ARCHITECTURE「扩展点」 |
 | 10 | **会掉的计数器要按量子 `MarkDirty()`**（`Step()` 是先重算再 tick，模块改计数器不会自动让产量变脏），而且**不能进完成条件** | `CONTENT_AUTHORING` §10 |
-| 11 | **转生除数按自己包的阶梯标定**（目标"最后一次结算落在 ~100 级"），**永久线总价 ≤ 一次游玩结算出的货币** | `CONTENT_AUTHORING` §7.1；`PrestigeTests.EraPacks_PermanentUpgradesAreAffordableWithinOneRun` |
+| 11 | **转生除数按自己包的阶梯标定**（目标"最后一次结算落在 ~100 级"），**永久线总价 ≤ 一次游玩结算出的货币**。⚠️ **光加进 `AllContentPacks()` 还不够**：`PrestigeTests.EraPacks()` 是一份**硬编码的包清单**，不手动加一行，这个包的永久线就没人守（阶段 5 有 3 个包各自踩到） | `CONTENT_AUTHORING` §7.1；`PrestigeTests.EraPacks_PermanentUpgradesAreAffordableWithinOneRun` |
 | 12 | **结局必须有兜底**，且所有结局都要 `EraAtLeast(末层) + 末层完成条件`（否则一进末层兜底结局就抢答了） | `ValidateEndings` + `LabEndingTests` 的教训 |
 | 13 | **建筑解锁**：不做继承的包用 `EarnedThisRunAtLeast` 是**有意的**（每层重新揭示）；**只有做继承的包**才必须换成 `EarnedAllTimeAtLeast`，否则"拥有但未解锁" | `CONTENT_AUTHORING` §11.1 |
 | 14 | **永久升级必须用转生货币计价**，否则构建期直接报错 | `GameContentBuilder` 校验 |
@@ -179,16 +181,28 @@ ASCII 双引号会截断 C# 字符串字面量，只能在编译期发现。`doc
 
 ---
 
-## 7. 交付清单（DoD）
+## 7. 交付清单（DoD）—— ✅ 全部完成（2026-09-26）
 
-- [ ] 四个包的项目 / sln / Demo 引用 / `ContentPackages` 注册 / `TestGame.AllContentPacks()` 全部就位
-- [ ] 每个包：9 建筑 / ≥40 升级 / ≥60 成就 / ≥6 增益 / ≥8 金猫结果 / 40 条叙事 / 5 层 / 2~3 结局
-- [ ] 每个包的专项用例（抄 `LibraryContentTests`）：结构 / 叙事唯一 / 真跑顺序 / G5 / 第二资源 / 机器人可达 / 结局互斥
-- [ ] `tools/build.ps1 -Strict` 全绿、0 警告
-- [ ] `src/NekoClicker.Core/` **零改动**（`git diff --stat` 自查）
-- [ ] 四个包各跑一次 `--simulate 43200 --auto --save .tmp/<包>.json`，图鉴 40/40
-- [ ] README 的包清单 / 用例数 / 快速开始命令；ROADMAP 阶段 5 交付记录；NINE_LIVES_DESIGN §2 矩阵的 "❌" 改成 "✅ 已落地"
-- [ ] 提交信息按仓库风格：现象 → 处理 → 验证，写清"零核心改动"这条证据
+- [x] 四个包的项目 / sln / Demo 引用 / `ContentPackages` 注册 / `TestGame.AllContentPacks()` 全部就位
+- [x] 每个包：9 建筑 / ≥40 升级 / ≥60 成就 / ≥6 增益 / ≥8 金猫结果 / 40 条叙事 / 5 层 / 2~3 结局
+      （实际：神明 49/71/8/10、文明 51/65/9/11、赛博 48/74/8/10、梦境 52/68/10/10）
+- [x] 每个包的专项用例：结构 / 叙事唯一 / 真跑顺序 / G5 / 第二资源 / 机器人可达 / 结局互斥
+      （神明 18 条 / 文明 19 条 / 赛博 19 条 / 梦境 17 条）
+- [x] `tools/build.ps1 -Strict` 全绿、**0 警告**（**394 个用例**，阶段 5 前是 320）
+- [x] `src/NekoClicker.Core/` **零改动**（四个包逐个 `git diff --stat src/NekoClicker.Core/` 为空）
+- [x] 四个包各跑一次 `--simulate 43200 --auto --save .tmp/<包>.json`，图鉴全部 **40/40**，
+      分别落到 成为主神 / 星际文明 / 找到主人的数据残影 / 叫醒梦者
+- [x] README 的包清单 / 用例数 / 快速开始命令；ROADMAP 阶段 5 交付记录；NINE_LIVES_DESIGN §2 矩阵的 "❌" 改成 "✅ 已落地"
+- [x] 提交信息按仓库风格：现象 → 处理 → 验证，写清"零核心改动"这条证据
+      （`0d57884` 阶段 5A：#7；`2c2bf6e` 阶段 5B：#4 + #5；#8 见其后一条提交）
+
+**这一阶段额外落了一条守卫**（不在原 DoD 里，是执行中发现的缺口）：
+`ContentTests.BuildingCurve_FollowsTheRecipeInEveryContentPack` —— 把 §4 第 1 条的曲线配方
+从"纪律"变成对全部内容包生效的守卫（加它之前先量过既有 8 个包，全部落在带内）。
+
+**另外发现手册的一条错误假设**（已更正在 §4 第 11 条）：`PrestigeTests.EraPacks()` 是**硬编码
+的包清单**，"通用守卫会自动横扫新包"对它不成立——不手动加行，那个包的永久线就没人守。
+四个包里有三个代理各自独立踩到并补了行。
 
 ---
 

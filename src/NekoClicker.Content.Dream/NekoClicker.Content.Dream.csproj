@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>NekoClicker.Content.Dream</RootNamespace>
+    <AssemblyName>NekoClicker.Content.Dream</AssemblyName>
+    <!--
+      内容包 #8：猫娘梦境（梦层 + 梦境能量）。
+      ROADMAP 阶段 5 的换皮批产之一：只用 Era + Lore + 一个第二资源计数器，
+      **不得新增任何核心代码**——目标是从第 1 层（枕头）走到最后一层（梦核）。
+    -->
+    <Description>内容包 #8：猫娘梦境的全部数值与文案（梦境能量 + 梦醒 / 入梦嵌套 + 五层梦层）。</Description>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\NekoClicker.Core\NekoClicker.Core.csproj" />
+  </ItemGroup>
+
+</Project>

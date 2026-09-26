@@ -3,6 +3,7 @@ using NekoClicker.Content.Apocalypse;
 using NekoClicker.Content.Cafe;
 using NekoClicker.Content.Civ;
 using NekoClicker.Content.Cyber;
+using NekoClicker.Content.Dream;
 using NekoClicker.Content.God;
 using NekoClicker.Content.Library;
 using NekoClicker.Content.Company;
@@ -263,6 +264,30 @@ internal static class ContentPackages
             ],
             ReportTip: "提示：算力只由「常驻类」建筑产出、且只涨不跌，所以这个包越往上越吃机群规模——"
                      + "想拿「找到主人的数据残影」，光有钱不够，得把算力堆到根层。"),
+        new ContentPackage(
+            Id: "dream",
+            Name: DreamContent.GameTitle,
+            Build: DreamContent.Build,
+            Welcome: "欢迎来到猫娘梦境！先按空格闭眼，攒够 15 点梦就能买下第一个枕头。"
+                   + "这一次，梦有五层——越往下越深，也越难醒。",
+            PrestigeActionName: "再睡一层",
+            PrestigeHint: "再睡一层：这一层梦塌下去，新的梦更大，按历史累计换取「梦屑」；"
+                        + "本层主线未完成时按钮会置灰。梦不会白做——梦境能量会跟着她一起往下走。",
+            GoldenCookieName: "梦魇",
+            HelpTips:
+            [
+                "    · 这是分层转生的包：一共五层梦（浅眠 / 深眠 / 清明梦 / 噩梦层 / 梦核），每层规则都不一样。",
+                "    · 「梦境能量」是这个包的核心：只有梦层类建筑养得起它，而它只涨不落。",
+                "    · 「再睡一层」不会清空梦境能量：梦会留在她身上，所以越往下梦越浓、产量越高。",
+                "    · 梦境能量 10,000 点时全局 ×3，80,000 点时 ×17 封顶——差多少在「模块」一栏看得见。",
+                "    · 第 2 层「深眠」把离线结算上限翻倍：睡得更沉，离线收益也更好。",
+                "    · 「梦魇」里负面结果的比例比其他包高一点，第 3 层起还会来得更频繁。",
+                "    · 每座建筑的强化升级需要持有到 1 / 10 / 25 个才会出现。",
+                "    · 两个结局只差一件事：攒够了力气就把她叫醒，没攒够就永远留在梦里。",
+            ],
+            ReportTip: "提示：梦境能量是「越睡越浓」的一条曲线（10,000 → ×3、80,000 → ×17 封顶），"
+                     + "所以往下睡一层不是清零而是加码。想拿「叫醒梦者」，"
+                     + "最后一层里得攒够把她拉出来的力气。"),
     ];
 
     /// <summary>默认内容包（未显式指定 <c>--package</c> 时使用）。</summary>
