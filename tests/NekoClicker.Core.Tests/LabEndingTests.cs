@@ -40,6 +40,18 @@ public static class LabEndingTests
         Check.Equal("end_open", engine.ReachedEnding?.Id, "一次都不表态也必须有一个收场。");
     }
 
+    [Test]
+    public static void LastLayerGate_ReportsTheEndingInsteadOfAPromise()
+    {
+        GameEngine engine = PlayToEnding(answerUtopia: false);
+        string reason = engine.EraGate.BlockedReason ?? string.Empty;
+
+        Check.Contains(reason, "终局", "走完末层主线后，灰按钮应当说明接下来是终局判定。");
+        Check.False(
+            reason.Contains("后续阶段", StringComparison.Ordinal),
+            "终局判定在阶段 3B 就接入了，按钮不能再显示「后续阶段」这种空头承诺。");
+    }
+
     /// <summary>
     /// 机器人从第 1 批跑到终局：每次有待答就作答（能选乌托邦就选），完成主线就舍命。<para>
     /// 最后一批改用细步长推进——表态门槛（3.4e8）与完成门槛（1e9）之间的窗口只有几秒，

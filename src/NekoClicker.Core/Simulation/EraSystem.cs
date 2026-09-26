@@ -48,13 +48,16 @@ public static class EraSystem
 
         if (!hasNext)
         {
-            // 最后一层：终局判定属于阶段 4。在那之前这里诚实地保持置灰，
-            // 而不是偷偷允许无限重置。
+            // 最后一层：不会再有下一层，按钮永远置灰——这不是错误，是设计。
+            // 主线完成后给一句诚实的说明：有结局的包说"接下来是终局判定"，
+            // 没有结局的包说"这里就是结尾"（别撒谎说"后续阶段接入"，终局判定早就接入了）。
             bool lastMet = current.Completion.IsMet(engine.Metrics, content);
             return new EraGate(
                 false,
                 lastMet
-                    ? "这是最后一命。终局判定将在后续阶段接入。"
+                    ? content.Endings.Count > 0
+                        ? "这是最后一层。主线已完成，接下来是终局判定。"
+                        : "这是最后一层。主线已完成，这里就是结尾。"
                     : BlockedReason(current, engine),
                 Progress(current, engine),
                 state.Era,
