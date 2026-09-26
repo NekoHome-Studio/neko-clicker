@@ -437,7 +437,7 @@ internal static class Lore
             Order = 6,
             Icon = "🏕️",
             Channel = LoreChannel.Popup,
-            Reveal = UnlockCondition.All(UnlockCondition.EraAtLeast(4), UnlockCondition.Counter(ShardsModule.CounterKey, 6e4)),
+            Reveal = UnlockCondition.All(UnlockCondition.EraAtLeast(4), UnlockCondition.Counter(ShardsModule.CounterKey, 5e4)),
             Body = "第三次重启之后，她不再是唯一一个「记得上一次」的人了："
                  + "有三个人保留着上一次的手艺，其中一个还记得她上一次说过的一句玩笑。"
                  + "她听见那句话被重复出来的那个瞬间，忽然觉得重启这件事没有那么冷。",
@@ -450,7 +450,7 @@ internal static class Lore
             Order = 7,
             Icon = "⚖️",
             Channel = LoreChannel.Codex,
-            Reveal = UnlockCondition.All(UnlockCondition.EraAtLeast(4), UnlockCondition.Counter(ShardsModule.CounterKey, 1.2e5)),
+            Reveal = UnlockCondition.All(UnlockCondition.EraAtLeast(4), UnlockCondition.Counter(ShardsModule.CounterKey, 8e4)),
             Body = "残片越攒越多之后，产量反而开始变好——她自己也没想到。"
                  + "「记得住的人少走弯路。」她在账本上写，然后补了一句："
                  + "「但也走得慢一点，因为会回头。」",
@@ -463,7 +463,7 @@ internal static class Lore
             Order = 8,
             Icon = "🕸️",
             Channel = LoreChannel.Popup,
-            Reveal = UnlockCondition.All(UnlockCondition.EraAtLeast(4), UnlockCondition.Counter(ShardsModule.CounterKey, 2e5)),
+            Reveal = UnlockCondition.All(UnlockCondition.EraAtLeast(4), UnlockCondition.Counter(ShardsModule.CounterKey, 1.1e5)),
             Body = "这一次她提前把整座档案馆抄了一遍关键字，抄在能带走的金属片上。"
                  + "有人说没必要，她说不，有必要：「上一次我也以为没必要。」",
         },
@@ -475,7 +475,7 @@ internal static class Lore
             Order = 9,
             Icon = "🌫️",
             Channel = LoreChannel.Codex,
-            Reveal = UnlockCondition.All(UnlockCondition.EraAtLeast(5), UnlockCondition.Counter(ShardsModule.CounterKey, 2.5e5)),
+            Reveal = UnlockCondition.All(UnlockCondition.EraAtLeast(5), UnlockCondition.Counter(ShardsModule.CounterKey, 1.3e5)),
             Body = "档案馆里有一整排没有人认领的记忆：一双手在系鞋带、一个孩子在笑、"
                  + "一场雨里有人跑过马路。她给这排抽屉起了个名字叫「无论如何」。"
                  + "有人问她为什么不删掉，她说：「删掉更麻烦，得先决定谁有资格删。」",
@@ -488,7 +488,7 @@ internal static class Lore
             Order = 10,
             Icon = "🏚️",
             Channel = LoreChannel.Popup,
-            Reveal = UnlockCondition.All(UnlockCondition.EraAtLeast(5), UnlockCondition.Counter(ShardsModule.CounterKey, 3e5)),
+            Reveal = UnlockCondition.All(UnlockCondition.EraAtLeast(5), UnlockCondition.Counter(ShardsModule.CounterKey, 1.6e5)),
             Body = "第五次重启之后她清点过一遍：这条街上七成的东西都在，"
                  + "连最老的那批废墟都还在原地。她在账本上写："
                  + "「这一次，我几乎把整个文明搬过来了。」写完又划掉，改成「带过来了」。",

@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>NekoClicker.Content.Library</RootNamespace>
+    <AssemblyName>NekoClicker.Content.Library</AssemblyName>
+    <!--
+      内容包 #9：猫娘图书馆（文艺 meta + 轻悬疑）。
+      它是 ROADMAP 阶段 4B 的落点，也是「虚无化」唯一的用武之地：书被读才存在。
+      结论写在 docs/ROADMAP.md §6.5：这一项**不需要核心改动**——被阅读度是一个
+      IGameModule 维护的计数器，衰减只是它的内部动态，乘数走已有的 Scaling 接缝。
+    -->
+    <Description>内容包 #9：猫娘图书馆的全部数值与文案（被阅读度模块 + 五次开新书 + 虚无化）。</Description>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\NekoClicker.Core\NekoClicker.Core.csproj" />
+  </ItemGroup>
+
+</Project>

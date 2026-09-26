@@ -87,7 +87,7 @@ internal static class Endings
     /// 门槛一旦分叉就会变成"多玩一会儿的人反而拿到更差的那个"。
     /// </para>
     /// </summary>
-    public const double ShardsForEnding = 300_000;
+    public const double ShardsForEnding = 130_000;
 
     /// <summary>「复活人类」额外要求的图鉴条数——拼出一个完整的人，光有碎片不够，还得读过他们怎么活。</summary>
     public const double LoreForRevival = 30;

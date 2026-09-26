@@ -198,11 +198,11 @@ internal static class Achievements
         (string Id, string Name, double Value, string Note)[] tiers =
         [
             ("shards_500", "第一片", 500, "玻璃渣一样的东西，举到光下能看见上面有字。"),
-            ("shards_5000", "开始分类", 5_000, "她给抽屉贴了标签，用的还是上一世的字。"),
-            ("shards_20000", "拼出第一句话", 20_000, "那句话是「不要一个人出去」。"),
-            ("shards_100000", "拼出一张脸", 100_000, "她盯着那张脸看了很久，然后把它收起来了。"),
-            ("shards_500000", "拼出一座城", 500_000, "整座城的轮廓，包括城墙外那一片。"),
-            ("shards_2000000", "拼出一个人类", 2_000_000, "完整的那一种，会说话，会写字，会留下东西。"),
+            ("shards_4000", "开始分类", 4_000, "她给抽屉贴了标签，用的还是上一世的字。"),
+            ("shards_15000", "拼出第一句话", 15_000, "那句话是「不要一个人出去」。"),
+            ("shards_45000", "拼出一张脸", 45_000, "她盯着那张脸看了很久，然后把它收起来了。"),
+            ("shards_90000", "拼出一座城", 90_000, "整座城的轮廓，包括城墙外那一片。"),
+            ("shards_150000", "拼出一个人类", 150_000, "完整的那一种，会说话，会写字，会留下东西。"),
         ];
 
         foreach ((string id, string name, double value, string note) in tiers)
@@ -214,7 +214,7 @@ internal static class Achievements
                 Icon = "🔮",
                 Description = $"{note}（记忆残片 {Core.Numbers.NumFormat.Format(value)}）",
                 Unlock = UnlockCondition.Counter(ShardsModule.CounterKey, value),
-                Modifiers = id == "shards_2000000" ? [Modifier.GlobalMultiplier(1.4)] : [],
+                Modifiers = id == "shards_150000" ? [Modifier.GlobalMultiplier(1.4)] : [],
             };
         }
     }

@@ -135,14 +135,14 @@ internal static class Upgrades
             Id = "shard_lens",
             Name = "残片镜",
             Icon = "🔍",
-            Description = "全局产量 +0.05%／每片记忆残片（上限 +75%）。把碎片举到光底下，能看见上面还有字。",
+            Description = "全局产量 +0.05%／每片记忆残片（最多 1,500 片，+75%）。把碎片举到光底下，能看见上面还有字。",
             Price = 8_000_000,
             Unlock = UnlockCondition.Counter(ShardsModule.CounterKey, 200),
             Modifiers =
             [
                 Modifier.GlobalPercent(
                     0,
-                    new Scaling(ScalingSource.CustomCounter, 0.0005, Cap: 75, Id: ShardsModule.CounterKey)),
+                    new Scaling(ScalingSource.CustomCounter, 0.0005, Cap: 1_500, Id: ShardsModule.CounterKey)),
             ],
             Category = "memory",
             Tier = 1,
@@ -195,7 +195,7 @@ internal static class Upgrades
             Id = "ruins_to_tower",
             Name = "从废墟里架起来的天线",
             Icon = "📡",
-            Description = "数据塔产量 +2%／每座废墟（上限 +200%）。天线是拿拆下来的钢筋搭的。",
+            Description = "数据塔产量 +2%／每座废墟（最多 100 座，+200%）。天线是拿拆下来的钢筋搭的。",
             Price = 60_000_000,
             Unlock = UnlockCondition.BuildingsAtLeast("ruins", 100),
             Modifiers =
@@ -203,7 +203,7 @@ internal static class Upgrades
                 Modifier.BuildingPercent(
                     "data_tower",
                     0,
-                    new Scaling(ScalingSource.BuildingCount, 0.02, Cap: 200, Id: "ruins")),
+                    new Scaling(ScalingSource.BuildingCount, 0.02, Cap: 100, Id: "ruins")),
             ],
             Category = "link",
             Tier = 1,
@@ -215,7 +215,7 @@ internal static class Upgrades
             Id = "water_to_greenhouse",
             Name = "水浇出来的绿",
             Icon = "🚿",
-            Description = "温室产量 +1.5%／每台净水器（上限 +150%）。干净的水先给能长东西的地方。",
+            Description = "温室产量 +1.5%／每台净水器（最多 100 台，+150%）。干净的水先给能长东西的地方。",
             Price = 900_000_000,
             Unlock = UnlockCondition.BuildingsAtLeast("water_purifier", 75),
             Modifiers =
@@ -223,7 +223,7 @@ internal static class Upgrades
                 Modifier.BuildingPercent(
                     "greenhouse",
                     0,
-                    new Scaling(ScalingSource.BuildingCount, 0.015, Cap: 150, Id: "water_purifier")),
+                    new Scaling(ScalingSource.BuildingCount, 0.015, Cap: 100, Id: "water_purifier")),
             ],
             Category = "link",
             Tier = 2,
@@ -235,7 +235,7 @@ internal static class Upgrades
             Id = "reactor_to_city",
             Name = "整座城的电",
             Icon = "🔋",
-            Description = "遗迹之城产量 +1%／每座聚变堆（上限 +300%）。她给整座废墟通了电，只为了让灯替她守着。",
+            Description = "遗迹之城产量 +1%／每座聚变堆（最多 300 座，+300%）。她给整座废墟通了电，只为了让灯替她守着。",
             Price = 4e11,
             Unlock = UnlockCondition.All(
                 UnlockCondition.BuildingsAtLeast("fusion_reactor", 50),
@@ -403,7 +403,8 @@ internal static class Upgrades
             Id = "ember_promise",
             Name = "余烬之约",
             Icon = "🕯️",
-            Description = "全局产量 ×2、记忆残片产率 ×1.5。她答应过的东西比她自己记得的多。",
+            Description = "全局产量 ×2，另按记忆残片加成（每 5,000 片 +10%，最多 60,000 片，+120%）。"
+                 + "她答应过的东西比她自己记得的多。",
             Price = 70,
             Currency = UpgradeCurrency.PrestigeChips,
             Persistence = UpgradePersistence.Permanent,
@@ -413,7 +414,7 @@ internal static class Upgrades
                 Modifier.GlobalMultiplier(2),
                 Modifier.GlobalPercent(
                     0,
-                    new Scaling(ScalingSource.CustomCounter, 0.0002, Cap: 60, Id: ShardsModule.CounterKey)),
+                    new Scaling(ScalingSource.CustomCounter, 0.00002, Cap: 60_000, Id: ShardsModule.CounterKey)),
             ],
             Category = "ember",
             Tier = 4,

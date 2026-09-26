@@ -131,6 +131,10 @@ public static class ApocalypseContentTests
         }
 
         Console.WriteLine($"      一次完整游玩解锁 {unlockedAt.Count}/{engine.Content.LoreEntries.Count} 条叙事");
+        Console.WriteLine(
+            $"      结束时：记忆残片 {engine.State.GetCounter(ApocalypseContent.ShardsCounterKey):F0}；"
+            + $"图鉴 {engine.State.LoreUnlocked.Count}；成就 {engine.State.Achievements.Count}；"
+            + $"未读到的条目 [{string.Join(", ", engine.Content.LoreEntries.Select(e => e.Id).Where(id => !engine.State.LoreUnlocked.Contains(id)))}]");
     }
 
     [Test]

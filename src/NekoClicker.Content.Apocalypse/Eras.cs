@@ -91,7 +91,7 @@ internal static class Eras
                 Modifier.GlobalMultiplier(2),
                 Modifier.GlobalPercent(
                     0,
-                    new Scaling(ScalingSource.CustomCounter, 0.0005, Cap: 150, Id: ShardsModule.CounterKey)),
+                    new Scaling(ScalingSource.CustomCounter, 0.00002, Cap: 60_000, Id: ShardsModule.CounterKey)),
             ],
             UnlocksBuildings = ["data_tower", "archive"],
             Completion = UnlockCondition.All(

@@ -19,6 +19,7 @@
     <ProjectReference Include="..\..\src\NekoClicker.Content.Lab\NekoClicker.Content.Lab.csproj" />
     <ProjectReference Include="..\..\src\NekoClicker.Content.Company\NekoClicker.Content.Company.csproj" />
     <ProjectReference Include="..\..\src\NekoClicker.Content.Apocalypse\NekoClicker.Content.Apocalypse.csproj" />
+    <ProjectReference Include="..\..\src\NekoClicker.Content.Library\NekoClicker.Content.Library.csproj" />
     <!-- 帧渲染的尺寸不变量（FrameRenderTests）：测的是 Demo 的 TerminalUi.Render。 -->
     <ProjectReference Include="..\..\src\NekoClicker.Demo.Cli\NekoClicker.Demo.Cli.csproj" />
   </ItemGroup>

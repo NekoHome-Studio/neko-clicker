@@ -88,8 +88,7 @@ public static class LoreTests
     public static void EveryStoryline_OpensReachablyAndMostOpenEarly()
     {
         foreach (GameContent content in new[] { TestGame.CafeContent, TestGame.NineLives })
-        {
-            int earlyOpeners = 0;
+        {            int earlyOpeners = 0;
 
             foreach (StorylineDefinition storyline in content.Storylines)
             {
@@ -111,6 +110,54 @@ public static class LoreTests
                 $"{content.Title} 里真正早期能读到的剧情线太少，图鉴开场就全是 ???。");
         }
     }
+
+    [Test]
+    public static void EraGatedLore_StaysBelowItsEraCompletion()
+    {
+        // 阶段 3B 定下的纪律：挂了纪元门槛的叙事，其层内门槛必须**低于**该层的完成门槛。
+        // 否则玩家会在够条件前舍命走人，这条永远读不到——而运行期完全看不出来
+        // （它只是"一直没出现"），所以必须由测试拦住。
+        //
+        // 这条纪律以前只写在文档里。#9 的 she_12 挂在 1.4e11 上、而第 5 本的完成门槛是 1e11，
+        // 于是它是**结构上读不到**的死内容（最后一条还是靠"冲过头"才偶然读到的），
+        // 所以把它变成通用守卫，对全部内容包生效。
+        foreach (GameContent content in AllPacks())
+        {
+            foreach (LoreEntry entry in content.LoreEntries)
+            {
+                NumericCondition? eraLeaf = entry.Reveal.NumericLeaves()
+                    .FirstOrDefault(leaf => leaf.Metric == NumericMetric.Era);
+                NumericCondition? runLeaf = entry.Reveal.NumericLeaves()
+                    .FirstOrDefault(leaf => leaf.Metric == NumericMetric.CookiesEarnedThisRun);
+
+                if (eraLeaf is null || runLeaf is null) continue;
+                if (!content.EraByIndex.TryGetValue((int)eraLeaf.Target, out EraDefinition? era)) continue;
+
+                // 该层没用量级门槛（例如只考成就数），就没有可比的上限，跳过。
+                NumericCondition? ceiling = era.Completion.NumericLeaves()
+                    .FirstOrDefault(leaf => leaf.Metric == NumericMetric.CookiesEarnedThisRun);
+                if (ceiling is null) continue;
+
+                Check.True(
+                    runLeaf.Target < ceiling.Target,
+                    $"{content.Title} 的 {entry.Id} 门槛是 {runLeaf.Target:R}，"
+                    + $"而第 {(int)eraLeaf.Target} 层的完成门槛是 {ceiling.Target:R}——"
+                    + "两层一跨过去玩家就舍命走人了，这条永远读不到。");
+            }
+        }
+    }
+
+    /// <summary>全部内容包（守卫用例要横扫每一个，而不是只盯着最近改的那个）。</summary>
+    private static GameContent[] AllPacks() =>
+    [
+        TestGame.NekoContent,
+        TestGame.CafeContent,
+        TestGame.NineLives,
+        TestGame.Lab,
+        TestGame.Company,
+        TestGame.Apocalypse,
+        TestGame.Library,
+    ];
 
     [Test]
     public static void Era9Rule_UsesLoreCount()

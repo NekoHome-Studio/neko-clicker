@@ -1,6 +1,7 @@
 using NekoClicker.Core.Content;
 using NekoClicker.Content.Apocalypse;
 using NekoClicker.Content.Cafe;
+using NekoClicker.Content.Library;
 using NekoClicker.Content.Company;
 using NekoClicker.Content.Lab;
 using NekoClicker.Content.Neko;
@@ -163,6 +164,29 @@ internal static class ContentPackages
             ReportTip: "提示：记忆残片的产率取决于上一次重启继承了多少建筑，"
                      + "所以「多攒一点再重启」在这个包里是有回报的——"
                      + "记得住多少，决定了最后能不能把人类叫回来。"),
+        new ContentPackage(
+            Id: "library",
+            Name: LibraryContent.GameTitle,
+            Build: LibraryContent.Build,
+            Welcome: "欢迎来到猫娘图书馆！先按空格提笔，攒够 15 页就能上第一排书架。"
+                   + "这一次，你要写五本书——而且没人读的书会消失。",
+            PrestigeActionName: "开新书",
+            PrestigeHint: "开新书：上一本合上，新世界开始，按历史累计换取「书签」；"
+                        + "本书主线未完成时按钮会置灰。注意：新书没有读者，被阅读度会清零。",
+            GoldenCookieName: "蠹虫",
+            HelpTips:
+            [
+                "    · 这是分层转生的包：一共五本书（五次开新书），每一本的规则都不一样。",
+                "    · 「被阅读度」是这个包的核心：只有带读者属性的建筑才养得起它，而它会自己掉。",
+                "    · 没有人读的书等于没写：被阅读度 0 时全部产量 ×0.5，但永远不会归零。",
+                "    · 被阅读度 2 万时回到 ×1.0，6 万时 ×2.0 封顶——差多少在「模块」一栏看得见。",
+                "    · 每次「开新书」被阅读度都会清零：上一本的读者不会自动读新书。",
+                "    · 每座建筑的强化升级需要持有到 1 / 10 / 25 个才会出现。",
+                "    · 建筑的解锁看「历史累计」：写过的东西，开新书之后还是会的。",
+                "    · 两个结局只差一件事：合上最后一页的时候，还有没有人在读。",
+            ],
+            ReportTip: "提示：被阅读度会衰减、每次开新书还会清零，所以这个包不是「攒够就行」——"
+                     + "你得一直有人读。想拿「被读到最后」，合上书的那一刻阅览室里得还亮着灯。"),
     ];
 
     /// <summary>默认内容包（未显式指定 <c>--package</c> 时使用）。</summary>

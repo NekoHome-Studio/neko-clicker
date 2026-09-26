@@ -2,6 +2,7 @@ using NekoClicker.Core;
 using NekoClicker.Core.Content;
 using NekoClicker.Content.Apocalypse;
 using NekoClicker.Content.Cafe;
+using NekoClicker.Content.Library;
 using NekoClicker.Content.Company;
 using NekoClicker.Content.Neko;
 using NekoClicker.Content.NineLives;
@@ -18,6 +19,7 @@ public static class TestGame
     private static readonly Lazy<GameContent> LabContentCache = new(NekoClicker.Content.Lab.LabContent.Build);
     private static readonly Lazy<GameContent> CompanyContentCache = new(CompanyContent.Build);
     private static readonly Lazy<GameContent> ApocalypseContentCache = new(ApocalypseContent.Build);
+    private static readonly Lazy<GameContent> LibraryContentCache = new(LibraryContent.Build);
 
     /// <summary>示例内容包（不可变，可安全共享）。</summary>
     public static GameContent NekoContent => NekoContentCache.Value;
@@ -42,6 +44,22 @@ public static class TestGame
     {
         clock = new ManualClock();
         return new GameEngine(Apocalypse, new GameEngineOptions
+        {
+            Clock = clock,
+            Seed = seed,
+            GrantOfflineProgress = grantOffline,
+            MaxNotifications = 64,
+        });
+    }
+
+    /// <summary>内容包 #9《猫娘图书馆》（五本书 + 被阅读度 + 虚无化；不可变，可安全共享）。</summary>
+    public static GameContent Library => LibraryContentCache.Value;
+
+    /// <summary>创建《猫娘图书馆》的引擎。</summary>
+    public static GameEngine CreateLibrary(out ManualClock clock, ulong seed = 12345, bool grantOffline = true)
+    {
+        clock = new ManualClock();
+        return new GameEngine(Library, new GameEngineOptions
         {
             Clock = clock,
             Seed = seed,

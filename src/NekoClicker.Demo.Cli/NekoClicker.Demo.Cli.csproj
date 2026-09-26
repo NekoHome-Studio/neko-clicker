@@ -24,6 +24,7 @@
     <ProjectReference Include="..\NekoClicker.Content.Lab\NekoClicker.Content.Lab.csproj" />
     <ProjectReference Include="..\NekoClicker.Content.Company\NekoClicker.Content.Company.csproj" />
     <ProjectReference Include="..\NekoClicker.Content.Apocalypse\NekoClicker.Content.Apocalypse.csproj" />
+    <ProjectReference Include="..\NekoClicker.Content.Library\NekoClicker.Content.Library.csproj" />
   </ItemGroup>
 
 </Project>
