@@ -1,5 +1,6 @@
 using NekoClicker.Core;
 using NekoClicker.Core.Content;
+using NekoClicker.Content.Apocalypse;
 using NekoClicker.Content.Cafe;
 using NekoClicker.Content.Company;
 using NekoClicker.Content.Neko;
@@ -16,6 +17,7 @@ public static class TestGame
     private static readonly Lazy<GameContent> NineLivesContentCache = new(NineLivesContent.Build);
     private static readonly Lazy<GameContent> LabContentCache = new(NekoClicker.Content.Lab.LabContent.Build);
     private static readonly Lazy<GameContent> CompanyContentCache = new(CompanyContent.Build);
+    private static readonly Lazy<GameContent> ApocalypseContentCache = new(ApocalypseContent.Build);
 
     /// <summary>示例内容包（不可变，可安全共享）。</summary>
     public static GameContent NekoContent => NekoContentCache.Value;
@@ -31,6 +33,22 @@ public static class TestGame
 
     /// <summary>内容包 #10《猫娘公司》（三轮重组 + 士气 + 劳资轴；不可变，可安全共享）。</summary>
     public static GameContent Company => CompanyContentCache.Value;
+
+    /// <summary>内容包 #6《猫娘末世》（五次重启 + 记忆残片 + 跨转生继承；不可变，可安全共享）。</summary>
+    public static GameContent Apocalypse => ApocalypseContentCache.Value;
+
+    /// <summary>创建《猫娘末世》的引擎。</summary>
+    public static GameEngine CreateApocalypse(out ManualClock clock, ulong seed = 12345, bool grantOffline = true)
+    {
+        clock = new ManualClock();
+        return new GameEngine(Apocalypse, new GameEngineOptions
+        {
+            Clock = clock,
+            Seed = seed,
+            GrantOfflineProgress = grantOffline,
+            MaxNotifications = 64,
+        });
+    }
 
     /// <summary>创建《猫娘公司》的引擎。</summary>
     public static GameEngine CreateCompany(out ManualClock clock, ulong seed = 12345, bool grantOffline = true)

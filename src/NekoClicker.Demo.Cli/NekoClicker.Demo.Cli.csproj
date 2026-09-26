@@ -23,6 +23,7 @@
     <ProjectReference Include="..\NekoClicker.Content.NineLives\NekoClicker.Content.NineLives.csproj" />
     <ProjectReference Include="..\NekoClicker.Content.Lab\NekoClicker.Content.Lab.csproj" />
     <ProjectReference Include="..\NekoClicker.Content.Company\NekoClicker.Content.Company.csproj" />
+    <ProjectReference Include="..\NekoClicker.Content.Apocalypse\NekoClicker.Content.Apocalypse.csproj" />
   </ItemGroup>
 
 </Project>

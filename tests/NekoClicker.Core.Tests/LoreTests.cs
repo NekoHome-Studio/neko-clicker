@@ -474,10 +474,15 @@ public static class LoreTests
     /// 于是这条断言对任何带纪元门槛的开篇都失效（重排后九命四线全是这样，它就完全没判别力了）。
     /// </para>
     /// <para>没有量级叶子时返回 <see cref="Unjudgeable"/>，语义是"无法判早"，按不早期处理。</para>
+    /// <para>
+    /// <c>internal</c> 而不是 <c>private</c>：各内容包的专项用例（例如末世包的
+    /// <c>EveryStorylineOpensEarlyEnough</c>）要用同一把尺子量自己那包的开篇，
+    /// 各写一份迟早会长出两个不一致的判定。
+    /// </para>
     /// </summary>
     private const double Unjudgeable = 1e12;
 
-    private static double FirstThreshold(UnlockCondition condition)
+    internal static double FirstThreshold(UnlockCondition condition)
     {
         double min = double.PositiveInfinity;
         foreach (NumericCondition leaf in condition.NumericLeaves())

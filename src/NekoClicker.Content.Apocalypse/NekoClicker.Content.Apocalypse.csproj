@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>NekoClicker.Content.Apocalypse</RootNamespace>
+    <AssemblyName>NekoClicker.Content.Apocalypse</AssemblyName>
+    <!--
+      内容包 #6：猫娘末世（后人类 + 重启文明）。
+      它是第一个用「跨转生继承」的包——前面四个包的 ResetRun 语义都是"全清"，
+      末世要的是"重启文明，但保留上纪元的猫娘"。核心的继承参数在阶段 1 就位，
+      这个包是它的第一次实物验证。
+    -->
+    <Description>内容包 #6：猫娘末世的全部数值与文案（记忆残片模块 + 五次重启 + 跨转生继承）。</Description>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\NekoClicker.Core\NekoClicker.Core.csproj" />
+  </ItemGroup>
+
+</Project>

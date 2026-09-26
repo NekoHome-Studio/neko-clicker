@@ -1,4 +1,5 @@
 using NekoClicker.Core.Content;
+using NekoClicker.Content.Apocalypse;
 using NekoClicker.Content.Cafe;
 using NekoClicker.Content.Company;
 using NekoClicker.Content.Lab;
@@ -138,6 +139,30 @@ internal static class ContentPackages
             ],
             ReportTip: "提示：士气靠团队建筑养、被加班吃，所以「又快又不累」在这个包里做不到——"
                      + "三条劳资方向会在上市前收束成三个结局。"),
+        new ContentPackage(
+            Id: "apocalypse",
+            Name: ApocalypseContent.GameTitle,
+            Build: ApocalypseContent.Build,
+            Welcome: "欢迎来到猫娘末世！先按空格翻找，攒够 15 点物资就能清出第一片废墟。"
+                   + "这一次，文明可以重启五次。",
+            PrestigeActionName: "重启",
+            PrestigeHint: "重启：世界推倒重来，按历史累计换取「火种」；"
+                        + "本轮主线未完成时按钮会置灰。每一次重启，继承下来的东西都比上一次多。",
+            GoldenCookieName: "变异体",
+            HelpTips:
+            [
+                "    · 这是分层转生的包：一共五次重启，每一次世界都不太一样。",
+                "    · 这是唯一会「继承」的包：重启之后，上一轮的一部分建筑会留在原地。",
+                "    · 「记忆残片」只由上一次重启留下来的东西产出——想记住更多，就先多留下一点。",
+                "    · 每座建筑的强化升级需要持有到 1 / 10 / 25 个才会出现。",
+                "    · 建筑的解锁看「历史累计」：造过一次的东西，重启之后还是会的。",
+                "    · 「变异体」不全是坏事：变异潮很香，断电、辐射、疫病也很真实。",
+                "    · 三个结局取决于你记住了多少、图鉴读了多少——这个包没有需要表态的场合。",
+                "    · 火种买到的「余烬」跨重启保留——那是唯一确定带得走的东西。",
+            ],
+            ReportTip: "提示：记忆残片的产率取决于上一次重启继承了多少建筑，"
+                     + "所以「多攒一点再重启」在这个包里是有回报的——"
+                     + "记得住多少，决定了最后能不能把人类叫回来。"),
     ];
 
     /// <summary>默认内容包（未显式指定 <c>--package</c> 时使用）。</summary>
