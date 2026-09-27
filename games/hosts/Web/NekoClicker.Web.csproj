@@ -16,6 +16,15 @@
           net10.0 的宿主引用 net8.0 的库是完全合法的，所以公开 API 与快照守卫一律不受影响。
     -->
     <TargetFramework>net10.0</TargetFramework>
+
+    <!--
+      语言版本也要跟着放开。Directory.Build.props 把它钉在 12.0，而 net10.0 上的
+      System.Threading.Lock（C# 13 起 lock 语句对它走专用代码路径）用不了——实测报
+      CS9202「Feature 'Lock object' is not available in C# 12.0」。
+      与 TargetFramework 是同一类处置：**只有这个宿主项目**跟着它自己的框架走，
+      引擎与内容包一律留在 C# 12.0 / net8.0，公开 API 与快照守卫不受影响。
+    -->
+    <LangVersion>latest</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>

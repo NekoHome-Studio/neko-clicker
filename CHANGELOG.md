@@ -9,19 +9,32 @@
 
 ## [未发布]
 
-分支 `feature/web-frontend-ui`。**公开 API 一行未改**，用例数仍为 404——所以还没到发版本的时候。
+分支 `feature/web-frontend-ui`。**公开 API 一行未改**——所以还没到发版本的时候。
 
 ### 新增
 
-- **Web 前端宿主骨架** `games/hosts/Web/`：把引擎暴露给浏览器。
-  - `/api/ping`——宿主自证：报出 `ApiVersion.Current` 与运行时版本（阶段 6 的 `ApiVersion`
-    第一个真实消费者）。
-  - `/api/packs`——运行时扫描输出目录里的 `NekoClicker.Content.*.dll` 发现内容包，
-    宿主代码里没有任何包名字面量。
-  - `wwwroot/index.html`——骨架页，证明"引擎 → 浏览器"这条线是通的。
-  - **尚无游戏界面**：快照推送方式（轮询 / SSE）与存档槽位接线是两个未定决策，
-    写在骨架页与 `Program.cs` 注释里，不替使用者决定。
+- **Web 前端可玩闭环** `games/hosts/Web/`：浏览器里能真正玩起来。
+  - **界面**：大数字（每帧插值平滑）、点击、金猫浮层（抓到有奖）、增益条、
+    **纪元面板**（唯一的「舍一命」主按钮 + 进度条 + 卡在哪一项）、**表态**（待答卡片 +
+    立场轴 + 结局）、**图鉴**（按剧情线分组，未读到显示 `???` 但保留条件与进度）、
+    成就、建筑与升级列表（批量档位 ×1 / ×10 / ×100 / 买满）。
+    面板切换与 URL hash 双向同步，于是 `#tab=codex` 可以直接发给别人。
+  - **零前端依赖**：手写 ES 模块 + 一份 CSS，`wwwroot/` 直接签进仓库。
+    没有 npm、没有打包步骤——"clone 下来只要有 dotnet 就能跑"这条前提保持不变。
+  - **推送协议** `SnapshotProtocol.cs`：SSE 推「信封 + 变化字段」。
+    **实测：全量 56.9 KB，增量均 1.99 KB，省 97%**（见下面「这一版学到的三件事」）。
+  - **单线程状态所有权** `GameHost.cs`：一条专用线程独占 `GameEngine`（引擎是单线程可变对象，
+    而 ASP.NET Core 用线程池——连点两下就是两个并发请求），HTTP 命令走 `Channel` 投递。
+  - **内容包运行时发现** `PackageCatalog.cs`：扫描输出目录里的 `NekoClicker.Content.*.dll`，
+    宿主里没有任何包名字面量。`?package=<id>` 换包，缺省用目录里第一个。
+  - **存档**：复用引擎自带的 `FileStorage`（已是"先写 .tmp 再原子替换"）与 `SaveManager`，
+    槽位与终端 Demo 同构（`saves/<包 id>.json`），于是**同一份存档两个前端都能接着玩**。
+    关停时经 `ApplicationStopping` 强制存档一次。
 - **`tools/web.ps1`**：`build` / `run` / `clean`，环境重定向与 `tools/dnet.ps1` 一致。
+- **协议契约测试** `engine/tests/WebSnapshotProtocolTests.cs`（**10 条**，用例 404 → 414）：
+  增量累积必须与全量在协议口径下逐字节相同、字段名必须是 camelCase、
+  `null` 补丁要应用而不是跳过、跨纪元仍能还原、派生字段翻转不能重发整表、
+  以及**按字节数**守住增量协议的前提。
 
 ### 变更
 
@@ -36,7 +49,26 @@
     `games/docs/`（路线图、世界观、包规格、换皮手册）。`README.md` 与 `CHANGELOG.md`
     刻意留在仓库根——版本守卫直接读它们。
   - `NekoClicker.sln` 的解决方案文件夹同步为 `engine` / `games` / `tests`。
+- `games/hosts/Web/NekoClicker.Web.csproj` 除 `TargetFramework` 外还覆盖了 `LangVersion`
+  （`Directory.Build.props` 钉在 C# 12.0，而 net10.0 上的 `System.Threading.Lock` 要 C# 13）。
+  只有这个宿主项目跟着自己的框架走，引擎与内容包一律留在 C# 12.0 / net8.0。
 - `.gitignore` 增补 web 前端相关（`.pnpm-store/`、`node_modules/`、`.tmp/`）。
+
+### 这一版学到的三件事（都是实测，不是推理）
+
+1. **"挂机时只推变化字段"要成立，得先把派生字段处理掉。**
+   第一版按顶层字段做 diff，结果每次推送都带上 28 KB：不是因为有东西真的变了，
+   而是 `canAfford`（48 条升级各自的"买得起"）、`unlockProgress` / `progress`（比例值）
+   随产量每帧在小数点后第 5 位以后漂移。**当时的用例断言"变化字段数 ≤ 4"，照样是绿的**
+   ——所以现在的判据是**字节数**：一个 tick 的增量必须小于全量的 5%。
+   修法是三类：派生量不进增量（`canAfford` 由前端推）、量化后比较（比例值到 1%）、
+   派生文本不进增量（`progressText` / `effectSummary`）。
+2. **`System.Text.Json` 默认不转换命名**，`PropertyNamingPolicy` 忘了设就会输出
+   `Cookies` 而不是 `cookies`。前端按 `cookies` 取值，于是服务端一切正常、浏览器上什么都不动。
+   这一条是被契约测试 `FieldNames_AreCamelCase` 抓住的。
+3. **`wwwroot` 在开发期由 Web SDK 的 staticwebassets 清单解析到源码目录，只有 publish 才复制进
+   `bin`**。所以必须 `dotnet run` 启动（或发布产物）；直接起 `bin` 里的 exe 会让 `/api/*`
+   全部正常而首页 404，且编译期 0 警告 0 错误。
 
 ---
 
