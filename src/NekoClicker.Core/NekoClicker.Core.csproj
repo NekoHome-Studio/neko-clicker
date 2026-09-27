@@ -8,4 +8,15 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
+  <!--
+    公开 API 快照（见 docs/VERSIONING.md）。
+    它被<b>嵌进程序集</b>而不是留在测试项目里，理由是这份快照属于 Core 自己的契约：
+    任何拿到 NekoClicker.Core.dll 的宿主都能断言"这个 dll 的公开 API 与我预期的一致"，
+    而不需要拿到本仓库的测试代码。测试项目通过 EmbeddedResource 清单把它读出来做比较。
+    内容由 tools\public-api.ps1 生成，不要手改。
+  -->
+  <ItemGroup>
+    <EmbeddedResource Include="PublicApi.txt" LogicalName="NekoClicker.Core.PublicApi.txt" />
+  </ItemGroup>
+
 </Project>

@@ -1,9 +1,12 @@
-# NekoClicker — 增量游戏框架（C# / .NET 8）
+﻿# NekoClicker — 增量游戏框架（C# / .NET 8）
 
 参考 **Cookie Clicker** 的机制设计的一套**增量（放置 / 点击）游戏框架**，纯 C# 实现，
 **零第三方依赖**，附带十一个内容包（示例包「猫咖物语」+ #1《猫娘咖啡馆》+ #2《九命轮回》
 + #3《猫娘实验室》+ #10《猫娘公司》+ #6《猫娘末世》+ #9《猫娘图书馆》
 + #7《猫娘神明》+ #4《猫娘文明》+ #5《赛博猫娘》+ #8《猫娘梦境》）和一个可玩的终端 Demo。
+
+**当前版本 `1.0.0`**（`NekoClicker.Core` 的公开 API 版本）。从这一版起
+**公开 API 只增不改**，而且有测试守着——见 [版本与兼容性承诺](#版本与兼容性承诺)。
 
 框架的核心目标是**把"引擎"和"内容"彻底分开**：引擎负责时间推进、数值管线、存档与事件；
 内容只描述"这个世界有什么"。换掉内容包就能做出完全不同的游戏，引擎代码一行都不用改。
@@ -52,7 +55,7 @@
 > 代价是画面右侧与底部各有一格空白——这是换「拖横向不崩」付出的代价。
 
 ```powershell
-# 构建 + 跑测试（396 个用例，零依赖迷你运行器）
+# 构建 + 跑测试（404 个用例，零依赖迷你运行器）
 .\tools\build.ps1
 
 # 只构建全部项目
@@ -150,16 +153,19 @@ src/NekoClicker.Content.Civ/     内容包 #4《猫娘文明》（五个时代�
 src/NekoClicker.Content.Cyber/   内容包 #5《赛博猫娘》（五层数字层，迁服务器）
 src/NekoClicker.Content.Dream/   内容包 #8《猫娘梦境》（五层梦，越睡越浓的梦境能量）
 src/NekoClicker.Demo.Cli/        终端 UI 适配层（ANSI 全屏 + 键盘 + 无头模式 + --package）
-tests/NekoClicker.Core.Tests/    396 个测试 + 自研迷你测试运行器（含架构不变量与全程可达测试）
+tests/NekoClicker.Core.Tests/    404 个测试 + 自研迷你测试运行器（含架构不变量与全程可达测试）
 docs/ARCHITECTURE.md             架构与设计决策
 docs/CONTENT_AUTHORING.md        如何写内容（数值节奏、校验规则、常见坑）
+docs/VERSIONING.md               版本与兼容性承诺：什么改动升哪一位、公开 API 快照怎么用
 docs/ROADMAP.md                  实施规划与决策记录：11 项已定决策、4 条架构不变量、5 个阶段
 docs/NINE_LIVES_DESIGN.md        《九命猫娘》设计映射：1 个共享核心 + 10 个内容包（10 个已落地）
 docs/PACK_01_CAT_CAFE.md         #1《猫娘咖啡馆》完整内容规格（已落代码，也是其余九个包的模板）
 docs/STAGE_5_RESKINS.md           阶段 5 换皮批产手册：#4/#5/#7/#8 四个包的交接件（规则清单 + 验收命令 + 已知坑）
+CHANGELOG.md                     变更日志（按版本记录，含兼容性影响）
 tools/build.ps1                  一键构建 + 测试
 tools/play.ps1                   构建并运行终端 Demo（参数转发给程序）
 tools/dnet.ps1                   在受限环境里运行 dotnet CLI 的包装脚本
+tools/public-api.ps1             重新生成公开 API 快照（有意改动 API 后的最后一步）
 tools/seed-packages.ps1          把全局 NuGet 缓存里的 net8.0 targeting pack 播种进仓库（离线构建）
 ```
 
@@ -273,6 +279,45 @@ Console.WriteLine(engine.Save());           // JSON 存档
 
 ---
 
+## 版本与兼容性承诺
+
+**当前版本 `1.0.0`。从这一版起，`NekoClicker.Core` 的公开 API 只增不改。**
+
+| 改动 | 升哪一位 |
+|---|---|
+| 公开 API 只增不改（新增方法 / 类型 / 带默认值的参数） | minor |
+| 公开 API 有不兼容改动（删除、改签名、收紧可空标注、改语义） | major |
+| 公开 API 一行没动（内容数值、文案、修 bug） | patch |
+
+版本号的单一事实来源是 `Directory.Build.props` 的 `<Version>`，宿主可以在运行时读到它：
+
+```csharp
+using NekoClicker.Core;
+
+Console.WriteLine(ApiVersion.Current);         // "1.0.0"
+Console.WriteLine(ApiVersion.AssemblyVersion);  // 1.0.0.0
+```
+
+### 这条承诺是怎么被守住的
+
+不是靠自觉，是靠一份**快照**加四条守卫：
+
+- `src/NekoClicker.Core/PublicApi.txt` —— 1897 行的公开表面逐项清单，
+  **嵌进 `NekoClicker.Core.dll`**，随 dll 一起走。任何拿到这个 dll 的宿主都能自己断言
+  "这份二进制的公开 API 与我预期的一致"，不需要把本仓库的测试代码也带走。
+- `PublicApiTests` —— 快照必须逐项一致；快照必须真的覆盖每个公开成员（防止守卫自己瞎掉）；
+  快照记录的版本必须等于当前版本（**这是"改 API 必须同时升版本"的执法点**）；
+  外加一条**故障注入**用例，用五类真实改动证明守卫真的会红。
+- `VersionTests` —— 版本号与程序集元数据、API 快照、CHANGELOG 三方对齐。
+
+守卫红了的时候，它想问的是「你知道自己在破坏兼容性吗」，而不是「要我帮你把红变绿吗」——
+所以 `tools/public-api.ps1` 只是流程的**最后一步**，不是第一步。
+
+完整规矩、发布检查清单，以及这套机制**保证不了**什么（语义变化、存档兼容、数值一致性），
+见 **[docs/VERSIONING.md](docs/VERSIONING.md)**；逐版本记录见 [CHANGELOG.md](CHANGELOG.md)。
+
+---
+
 ## 环境说明（为什么有 `tools/dnet.ps1`）
 
 本仓库的构建脚本不是多余的包装，它解决三个真实约束：
@@ -302,7 +347,7 @@ Console.WriteLine(engine.Save());           // JSON 存档
 ## 状态
 
 - 核心引擎、十一个内容包（猫咖物语 / 猫娘咖啡馆 / 九命轮回 / 猫娘实验室 / 猫娘公司 / 猫娘末世 /
-  猫娘图书馆 / 猫娘神明 / 猫娘文明 / 赛博猫娘 / 猫娘梦境）、终端 Demo，**396 个测试**全部通过。
+  猫娘图书馆 / 猫娘神明 / 猫娘文明 / 赛博猫娘 / 猫娘梦境）、终端 Demo，**404 个测试**全部通过。
 - **分层转生（`Era`）已落地**：逐级推进的转生按钮、每层换规则的平衡覆盖、
   跨层继承、构建期的完成条件单调性校验。九命（9 层）、实验室（7 批）、公司（3 轮）、
   末世（5 次重启）、图书馆（5 本书）、神明（5 套神话）、文明（5 个时代）、赛博（5 层）、
@@ -370,6 +415,11 @@ Console.WriteLine(engine.Save());           // JSON 存档
   未登记的键回退成键本身（旧内容不会崩）。
   守卫：`ContentTests.CounterNames_AreRegisteredForEveryReferencedCounter`——
   它要求「引用到的每个计数器都登记过」，而且**真的去渲染一遍**，断言输出里既含显示名、又不含内部键。
+- **v1.0.0：框架已被产品化**——规划范围内的功能早已全部交付，缺的是"别人能安全依赖它"
+  这件事。这一版补齐的就是它：版本号单一事实来源、`ApiVersion`、1897 行公开 API 快照、
+  五条版本守卫（含故障注入证明守卫会红）、`docs/VERSIONING.md` 与 `CHANGELOG.md`。
+  **没有改任何游戏行为**——十一个内容包与 396 条既有用例的行为完全不变，用例 396 → 404。
+  这一步也把"核心零内容知识"这条主张补上了它的另一半：**公开 API 只增不改**。
 - **未包含**：图形前端、本地化资源系统、账号/云存档、排行榜、反作弊。
   这些都被设计为引擎外部的宿主职责。ROADMAP 规划范围内的**十个内容包至此全部交付**，
   四个引擎能力里只有 S-A / S-B / S-C 动过核心（S-D 一行核心代码都没写）。

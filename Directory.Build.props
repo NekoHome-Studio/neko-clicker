@@ -27,4 +27,34 @@
     <Deterministic>true</Deterministic>
   </PropertyGroup>
 
+  <!--
+    版本号（单一事实来源）。
+    ============================================================================
+    这里定的版本会同时成为程序集版本、文件版本，以及 NekoClicker.Core 对外承诺的
+    公开 API 版本（"framework 版本"），三者在 tools/build.ps1 里被一条守卫要求一致。
+
+    为什么必须手写在这个文件里、而不是从 git tag 推导：
+    `dnet.ps1` 的存在前提就是"本机可能没有网络、也可能没有 git 元数据"，从 tag 推导
+    会让构建在浅克隆 / 导出源码包 / 无 .git 的环境里直接失败或产出 0.0.0。
+    版本号是这个框架对使用者的承诺，不该依赖构建环境碰巧具备什么。
+
+    改版本号的规矩（详见 docs/VERSIONING.md）：
+      - 公开 API 只增不改（新增类型 / 新增成员）        → minor
+      - 公开 API 有任何不兼容改动（删 / 改签名 / 改语义）→ major
+      - 纯文案、数值、内容包、注释                      → patch
+    改完必须同时更新 src/NekoClicker.Core/PublicApi.txt 与 CHANGELOG.md，
+    否则 tools/build.ps1 -Strict 会红（PublicApiTests + VersionTests 两条守卫）。
+  -->
+  <PropertyGroup>
+    <Version>1.0.0</Version>
+    <!--
+      程序集版本 = 完整语义版本（而不是只取 major）。
+      消费者可能把 NekoClicker.Core.dll 直接拷进宿主目录（Unity / Mono 场景），
+      同目录覆盖升级时，只取 major 会让 1.1.0 和 1.0.0 的文件版本号无法区分。
+    -->
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>1.0.0.0</FileVersion>
+    <Product>NekoClicker</Product>
+  </PropertyGroup>
+
 </Project>

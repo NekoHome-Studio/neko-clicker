@@ -1,0 +1,1897 @@
+# NekoClicker 公开 API 快照 format=1 assembly=NekoClicker.Core version=1.0.0
+
+public static class NekoClicker.Core.AchievementSystem
+  method static System.Collections.Generic.List<NekoClicker.Core.Content.AchievementDefinition>! Check(NekoClicker.Core.Content.GameContent! content, NekoClicker.Core.GameState! state, NekoClicker.Core.IGameMetrics! metrics, NekoClicker.Core.Events.GameEventBus! events)
+  method static System.ValueTuple<System.Double, System.Double> Progress(NekoClicker.Core.Content.AchievementDefinition! definition, NekoClicker.Core.IGameMetrics! metrics)
+
+public sealed class NekoClicker.Core.ActiveBuff
+  ctor NekoClicker.Core.ActiveBuff()
+  prop System.Double Progress { get; }
+  prop System.Double RemainingSeconds { get; set; }
+  prop System.Double TotalSeconds { get; set; }
+  prop System.Int32 Stacks { get; set; }
+  prop System.String! Id { get; set; }
+
+public static class NekoClicker.Core.ApiVersion
+  prop static System.Int32 Major { get; }
+  prop static System.Int32 Minor { get; }
+  prop static System.Int32 Patch { get; }
+  prop static System.String! Current { get; }
+  prop static System.Version! AssemblyVersion { get; }
+
+public sealed class NekoClicker.Core.AscensionResult : System.IEquatable<NekoClicker.Core.AscensionResult>
+  ctor NekoClicker.Core.AscensionResult()
+  method System.Boolean Equals(NekoClicker.Core.AscensionResult? other)
+  method static NekoClicker.Core.AscensionResult! Fail(System.String! message)
+  method static System.Boolean op_Equality(NekoClicker.Core.AscensionResult? left, NekoClicker.Core.AscensionResult? right)
+  method static System.Boolean op_Inequality(NekoClicker.Core.AscensionResult? left, NekoClicker.Core.AscensionResult? right)
+  method virtual System.Boolean Equals(System.Object? obj)
+  method virtual System.Int32 GetHashCode()
+  method virtual System.String! ToString()
+  prop System.Boolean EraAdvanced { get; init; }
+  prop System.Boolean Success { get; init; }
+  prop System.Double ChipsGained { get; init; }
+  prop System.Int32 Ascensions { get; init; }
+  prop System.Int32 Era { get; init; }
+  prop System.Int32 NewLevel { get; init; }
+  prop System.Int32 PreviousLevel { get; init; }
+  prop System.String! Message { get; init; }
+
+public static class NekoClicker.Core.BuffSystem
+  method static NekoClicker.Core.ActiveBuff! Apply(NekoClicker.Core.GameState! state, NekoClicker.Core.Events.GameEventBus! events, NekoClicker.Core.Content.BuffDefinition! definition, System.Double durationSeconds)
+  method static NekoClicker.Core.ActiveBuff? Find(NekoClicker.Core.GameState! state, System.String! buffId)
+  method static System.Boolean Tick(NekoClicker.Core.GameState! state, System.Double deltaSeconds, NekoClicker.Core.Events.GameEventBus! events)
+  method static System.Double ScaledDuration(NekoClicker.Core.ModifierSet! modifiers, System.String! buffId, System.Double baseSeconds)
+  method static System.Void Clear(NekoClicker.Core.GameState! state)
+
+public struct NekoClicker.Core.BuildingProduction : System.IEquatable<NekoClicker.Core.BuildingProduction>
+  ctor NekoClicker.Core.BuildingProduction(System.String! Id, System.Int32 Count, System.Double BaseCps, System.Double Multiplier, System.Double Cps, System.Double Share)
+  method System.Boolean Equals(NekoClicker.Core.BuildingProduction other)
+  method System.Void Deconstruct(out System.String Id, out System.Int32 Count, out System.Double BaseCps, out System.Double Multiplier, out System.Double Cps, out System.Double Share)
+  method static System.Boolean op_Equality(NekoClicker.Core.BuildingProduction left, NekoClicker.Core.BuildingProduction right)
+  method static System.Boolean op_Inequality(NekoClicker.Core.BuildingProduction left, NekoClicker.Core.BuildingProduction right)
+  method virtual System.Boolean Equals(System.Object obj)
+  method virtual System.Int32 GetHashCode()
+  method virtual System.String ToString()
+  prop System.Double BaseCps { get; init; }
+  prop System.Double Cps { get; init; }
+  prop System.Double Multiplier { get; init; }
+  prop System.Double Share { get; init; }
+  prop System.Int32 Count { get; init; }
+  prop System.String! Id { get; init; }
+
+public static class NekoClicker.Core.ChoiceSystem
+  method static NekoClicker.Core.Content.ChoiceOption? AnswerOf(NekoClicker.Core.Content.GameContent! content, NekoClicker.Core.GameState! state, System.String! choiceId)
+  method static System.Boolean Answer(NekoClicker.Core.GameEngine! engine, System.String! choiceId, System.String! optionId)
+  method static System.Collections.Generic.List<NekoClicker.Core.Content.ChoiceDefinition>! Check(NekoClicker.Core.GameEngine! engine)
+  method static System.Collections.Generic.List<NekoClicker.Core.Content.ChoiceDefinition>! Unanswered(NekoClicker.Core.Content.GameContent! content, NekoClicker.Core.GameState! state)
+  method static System.String? DominantStance(NekoClicker.Core.Content.GameContent! content, NekoClicker.Core.GameState! state)
+
+public struct NekoClicker.Core.ClickResult : System.IEquatable<NekoClicker.Core.ClickResult>
+  ctor NekoClicker.Core.ClickResult(System.Double Gained, System.Double CookiesAfter, System.Double ClickPower)
+  method System.Boolean Equals(NekoClicker.Core.ClickResult other)
+  method System.Void Deconstruct(out System.Double Gained, out System.Double CookiesAfter, out System.Double ClickPower)
+  method static System.Boolean op_Equality(NekoClicker.Core.ClickResult left, NekoClicker.Core.ClickResult right)
+  method static System.Boolean op_Inequality(NekoClicker.Core.ClickResult left, NekoClicker.Core.ClickResult right)
+  method virtual System.Boolean Equals(System.Object obj)
+  method virtual System.Int32 GetHashCode()
+  method virtual System.String ToString()
+  prop System.Double ClickPower { get; init; }
+  prop System.Double CookiesAfter { get; init; }
+  prop System.Double Gained { get; init; }
+
+public sealed class NekoClicker.Core.Content.AchievementDefinition : System.IEquatable<NekoClicker.Core.Content.AchievementDefinition>
+  ctor NekoClicker.Core.Content.AchievementDefinition()
+  method System.Boolean Equals(NekoClicker.Core.Content.AchievementDefinition? other)
+  method static System.Boolean op_Equality(NekoClicker.Core.Content.AchievementDefinition? left, NekoClicker.Core.Content.AchievementDefinition? right)
+  method static System.Boolean op_Inequality(NekoClicker.Core.Content.AchievementDefinition? left, NekoClicker.Core.Content.AchievementDefinition? right)
+  method virtual System.Boolean Equals(System.Object? obj)
+  method virtual System.Int32 GetHashCode()
+  method virtual System.String! ToString()
+  prop NekoClicker.Core.Content.UnlockCondition! Unlock { get; init; }
+  prop System.Boolean Hidden { get; init; }
+  prop System.Collections.Generic.IReadOnlyList<NekoClicker.Core.Content.Modifier>! Modifiers { get; init; }
+  prop System.Int32 Tier { get; init; }
+  prop System.String! Category { get; init; }
+  prop System.String! Description { get; init; }
+  prop System.String! Icon { get; init; }
+  prop System.String! Id { get; init; }
+  prop System.String! Name { get; init; }
+
+public sealed class NekoClicker.Core.Content.AllCondition : NekoClicker.Core.Content.UnlockCondition, System.IEquatable<NekoClicker.Core.Content.AllCondition>, System.IEquatable<NekoClicker.Core.Content.UnlockCondition>
+  ctor NekoClicker.Core.Content.AllCondition(System.Collections.Generic.IReadOnlyList<NekoClicker.Core.Content.UnlockCondition>! Conditions)
+  method System.Boolean Equals(NekoClicker.Core.Content.AllCondition? other)
+  method System.Boolean Equals(NekoClicker.Core.Content.UnlockCondition? other)
+  method System.Void Deconstruct(out System.Collections.Generic.IReadOnlyList<NekoClicker.Core.Content.UnlockCondition> Conditions)
+  method static System.Boolean op_Equality(NekoClicker.Core.Content.AllCondition? left, NekoClicker.Core.Content.AllCondition? right)
+  method static System.Boolean op_Inequality(NekoClicker.Core.Content.AllCondition? left, NekoClicker.Core.Content.AllCondition? right)
+  method virtual System.Boolean Equals(System.Object? obj)
+  method virtual System.Boolean IsMet(NekoClicker.Core.IGameMetrics! metrics, NekoClicker.Core.Content.GameContent! content)
+  method virtual System.Boolean PrintMembers(System.Text.StringBuilder! builder)
+  method virtual System.Boolean TryGetProgress(NekoClicker.Core.IGameMetrics! metrics, out System.Double current, out System.Double target)
+  method virtual System.Collections.Generic.IEnumerable<NekoClicker.Core.Content.UnlockCondition>! Flatten()
+  method virtual System.Int32 GetHashCode()
+  method virtual System.String! Describe(NekoClicker.Core.Content.GameContent? content = null)
+  method virtual System.String! ToString()
+  prop System.Collections.Generic.IReadOnlyList<NekoClicker.Core.Content.UnlockCondition>! Conditions { get; init; }
+  prop virtual System.Type! EqualityContract { get; }
+
+public sealed class NekoClicker.Core.Content.AnyCondition : NekoClicker.Core.Content.UnlockCondition, System.IEquatable<NekoClicker.Core.Content.AnyCondition>, System.IEquatable<NekoClicker.Core.Content.UnlockCondition>
+  ctor NekoClicker.Core.Content.AnyCondition(System.Collections.Generic.IReadOnlyList<NekoClicker.Core.Content.UnlockCondition>! Conditions)
+  method System.Boolean Equals(NekoClicker.Core.Content.AnyCondition? other)
+  method System.Boolean Equals(NekoClicker.Core.Content.UnlockCondition? other)
+  method System.Void Deconstruct(out System.Collections.Generic.IReadOnlyList<NekoClicker.Core.Content.UnlockCondition> Conditions)
+  method static System.Boolean op_Equality(NekoClicker.Core.Content.AnyCondition? left, NekoClicker.Core.Content.AnyCondition? right)
+  method static System.Boolean op_Inequality(NekoClicker.Core.Content.AnyCondition? left, NekoClicker.Core.Content.AnyCondition? right)
+  method virtual System.Boolean Equals(System.Object? obj)
+  method virtual System.Boolean IsMet(NekoClicker.Core.IGameMetrics! metrics, NekoClicker.Core.Content.GameContent! content)
+  method virtual System.Boolean PrintMembers(System.Text.StringBuilder! builder)
+  method virtual System.Boolean TryGetProgress(NekoClicker.Core.IGameMetrics! metrics, out System.Double current, out System.Double target)
+  method virtual System.Collections.Generic.IEnumerable<NekoClicker.Core.Content.UnlockCondition>! Flatten()
+  method virtual System.Int32 GetHashCode()
+  method virtual System.String! Describe(NekoClicker.Core.Content.GameContent? content = null)
+  method virtual System.String! ToString()
+  prop System.Collections.Generic.IReadOnlyList<NekoClicker.Core.Content.UnlockCondition>! Conditions { get; init; }
+  prop virtual System.Type! EqualityContract { get; }
+
+public sealed class NekoClicker.Core.Content.BuffDefinition : System.IEquatable<NekoClicker.Core.Content.BuffDefinition>
+  ctor NekoClicker.Core.Content.BuffDefinition()
+  method System.Boolean Equals(NekoClicker.Core.Content.BuffDefinition? other)
+  method static System.Boolean op_Equality(NekoClicker.Core.Content.BuffDefinition? left, NekoClicker.Core.Content.BuffDefinition? right)
+  method static System.Boolean op_Inequality(NekoClicker.Core.Content.BuffDefinition? left, NekoClicker.Core.Content.BuffDefinition? right)
+  method virtual System.Boolean Equals(System.Object? obj)
+  method virtual System.Int32 GetHashCode()
+  method virtual System.String! ToString()
+  prop NekoClicker.Core.Content.BuffStackMode StackMode { get; init; }
+  prop System.Boolean Dispellable { get; init; }
+  prop System.Boolean IsDebuff { get; init; }
+  prop System.Collections.Generic.IReadOnlyList<NekoClicker.Core.Content.Modifier>! Modifiers { get; init; }
+  prop System.Double Duration { get; init; }
+  prop System.Int32 MaxStacks { get; init; }
+  prop System.String! Description { get; init; }
+  prop System.String! Icon { get; init; }
+  prop System.String! Id { get; init; }
+  prop System.String! Name { get; init; }
+
+public enum NekoClicker.Core.Content.BuffStackMode : System.Int32
+  field Extend = Extend
+  field Refresh = Refresh
+  field Stack = Stack
+
+public sealed class NekoClicker.Core.Content.BuildingDefinition : System.IEquatable<NekoClicker.Core.Content.BuildingDefinition>
+  ctor NekoClicker.Core.Content.BuildingDefinition()
+  method System.Boolean Equals(NekoClicker.Core.Content.BuildingDefinition? other)
+  method static System.Boolean op_Equality(NekoClicker.Core.Content.BuildingDefinition? left, NekoClicker.Core.Content.BuildingDefinition? right)
+  method static System.Boolean op_Inequality(NekoClicker.Core.Content.BuildingDefinition? left, NekoClicker.Core.Content.BuildingDefinition? right)
+  method virtual System.Boolean Equals(System.Object? obj)
+  method virtual System.Int32 GetHashCode()
+  method virtual System.String! ToString()
+  prop NekoClicker.Core.Content.UnlockCondition! Unlock { get; init; }
+  prop System.Boolean HiddenUntilUnlocked { get; init; }
+  prop System.Collections.Generic.IReadOnlyList<System.String>! Tags { get; init; }
+  prop System.Double BaseCps { get; init; }
+  prop System.Double BasePrice { get; init; }
+  prop System.Double PriceGrowth { get; init; }
+  prop System.Nullable<System.Double> SellRefundRate { get; init; }
+  prop System.String! Category { get; init; }
+  prop System.String! Description { get; init; }
+  prop System.String! Icon { get; init; }
+  prop System.String! Id { get; init; }
+  prop System.String! Name { get; init; }
+
+public sealed class NekoClicker.Core.Content.ChoiceDefinition : System.IEquatable<NekoClicker.Core.Content.ChoiceDefinition>
+  ctor NekoClicker.Core.Content.ChoiceDefinition()
+  method System.Boolean Equals(NekoClicker.Core.Content.ChoiceDefinition? other)
+  method static System.Boolean op_Equality(NekoClicker.Core.Content.ChoiceDefinition? left, NekoClicker.Core.Content.ChoiceDefinition? right)
+  method static System.Boolean op_Inequality(NekoClicker.Core.Content.ChoiceDefinition? left, NekoClicker.Core.Content.ChoiceDefinition? right)
+  method virtual System.Boolean Equals(System.Object? obj)
+  method virtual System.Int32 GetHashCode()
+  method virtual System.String! ToString()
+  prop NekoClicker.Core.Content.UnlockCondition! Trigger { get; init; }
+  prop System.Collections.Generic.IReadOnlyList<NekoClicker.Core.Content.ChoiceOption>! Options { get; init; }
+  prop System.String! EraId { get; init; }
+  prop System.String! Id { get; init; }
+  prop System.String! Prompt { get; init; }
+  prop System.String! Speaker { get; init; }
+
+public sealed class NekoClicker.Core.Content.ChoiceOption : System.IEquatable<NekoClicker.Core.Content.ChoiceOption>
+  ctor NekoClicker.Core.Content.ChoiceOption()
+  method System.Boolean Equals(NekoClicker.Core.Content.ChoiceOption? other)
+  method static System.Boolean op_Equality(NekoClicker.Core.Content.ChoiceOption? left, NekoClicker.Core.Content.ChoiceOption? right)
+  method static System.Boolean op_Inequality(NekoClicker.Core.Content.ChoiceOption? left, NekoClicker.Core.Content.ChoiceOption? right)
+  method virtual System.Boolean Equals(System.Object? obj)
+  method virtual System.Int32 GetHashCode()
+  method virtual System.String! ToString()
+  prop System.Collections.Generic.IReadOnlyList<NekoClicker.Core.Content.Modifier>! Modifiers { get; init; }
+  prop System.Int32 Weight { get; init; }
+  prop System.String! Id { get; init; }
+  prop System.String! Label { get; init; }
+  prop System.String! OutcomeText { get; init; }
+  prop System.String! StanceId { get; init; }
+
+public sealed class NekoClicker.Core.Content.ConstantCondition : NekoClicker.Core.Content.UnlockCondition, System.IEquatable<NekoClicker.Core.Content.ConstantCondition>, System.IEquatable<NekoClicker.Core.Content.UnlockCondition>
+  ctor NekoClicker.Core.Content.ConstantCondition(System.Boolean Value)
+  method System.Boolean Equals(NekoClicker.Core.Content.ConstantCondition? other)
+  method System.Boolean Equals(NekoClicker.Core.Content.UnlockCondition? other)
+  method System.Void Deconstruct(out System.Boolean Value)
+  method static System.Boolean op_Equality(NekoClicker.Core.Content.ConstantCondition? left, NekoClicker.Core.Content.ConstantCondition? right)
+  method static System.Boolean op_Inequality(NekoClicker.Core.Content.ConstantCondition? left, NekoClicker.Core.Content.ConstantCondition? right)
+  method virtual System.Boolean Equals(System.Object? obj)
+  method virtual System.Boolean IsMet(NekoClicker.Core.IGameMetrics! metrics, NekoClicker.Core.Content.GameContent! content)
+  method virtual System.Boolean PrintMembers(System.Text.StringBuilder! builder)
+  method virtual System.Boolean TryGetProgress(NekoClicker.Core.IGameMetrics! metrics, out System.Double current, out System.Double target)
+  method virtual System.Int32 GetHashCode()
+  method virtual System.String! Describe(NekoClicker.Core.Content.GameContent? content = null)
+  method virtual System.String! ToString()
+  prop System.Boolean Value { get; init; }
+  prop virtual System.Type! EqualityContract { get; }
+
+public sealed class NekoClicker.Core.Content.CustomCondition : NekoClicker.Core.Content.UnlockCondition, System.IEquatable<NekoClicker.Core.Content.CustomCondition>, System.IEquatable<NekoClicker.Core.Content.UnlockCondition>
+  ctor NekoClicker.Core.Content.CustomCondition(System.String! Description, System.Func<NekoClicker.Core.IGameMetrics, System.Boolean>! Predicate)
+  method System.Boolean Equals(NekoClicker.Core.Content.CustomCondition? other)
+  method System.Boolean Equals(NekoClicker.Core.Content.UnlockCondition? other)
+  method System.Void Deconstruct(out System.String Description, out System.Func<NekoClicker.Core.IGameMetrics, System.Boolean> Predicate)
+  method static System.Boolean op_Equality(NekoClicker.Core.Content.CustomCondition? left, NekoClicker.Core.Content.CustomCondition? right)
+  method static System.Boolean op_Inequality(NekoClicker.Core.Content.CustomCondition? left, NekoClicker.Core.Content.CustomCondition? right)
+  method virtual System.Boolean Equals(System.Object? obj)
+  method virtual System.Boolean IsMet(NekoClicker.Core.IGameMetrics! metrics, NekoClicker.Core.Content.GameContent! content)
+  method virtual System.Boolean PrintMembers(System.Text.StringBuilder! builder)
+  method virtual System.Int32 GetHashCode()
+  method virtual System.String! Describe(NekoClicker.Core.Content.GameContent? content = null)
+  method virtual System.String! ToString()
+  prop System.Func<NekoClicker.Core.IGameMetrics, System.Boolean>! Predicate { get; init; }
+  prop System.String! Description { get; init; }
+  prop virtual System.Type! EqualityContract { get; }
+
+public sealed class NekoClicker.Core.Content.EndingDefinition : System.IEquatable<NekoClicker.Core.Content.EndingDefinition>
+  ctor NekoClicker.Core.Content.EndingDefinition()
+  method System.Boolean Equals(NekoClicker.Core.Content.EndingDefinition? other)
+  method static System.Boolean op_Equality(NekoClicker.Core.Content.EndingDefinition? left, NekoClicker.Core.Content.EndingDefinition? right)
+  method static System.Boolean op_Inequality(NekoClicker.Core.Content.EndingDefinition? left, NekoClicker.Core.Content.EndingDefinition? right)
+  method virtual System.Boolean Equals(System.Object? obj)
+  method virtual System.Int32 GetHashCode()
+  method virtual System.String! ToString()
+  prop NekoClicker.Core.Content.UnlockCondition! Condition { get; init; }
+  prop System.Int32 Priority { get; init; }
+  prop System.String! Icon { get; init; }
+  prop System.String! Id { get; init; }
+  prop System.String! Name { get; init; }
+  prop System.String! Text { get; init; }
+
+public sealed class NekoClicker.Core.Content.EraDefinition : System.IEquatable<NekoClicker.Core.Content.EraDefinition>
+  ctor NekoClicker.Core.Content.EraDefinition()
+  method System.Boolean Equals(NekoClicker.Core.Content.EraDefinition? other)
+  method static System.Boolean op_Equality(NekoClicker.Core.Content.EraDefinition? left, NekoClicker.Core.Content.EraDefinition? right)
+  method static System.Boolean op_Inequality(NekoClicker.Core.Content.EraDefinition? left, NekoClicker.Core.Content.EraDefinition? right)
+  method virtual System.Boolean Equals(System.Object? obj)
+  method virtual System.Int32 GetHashCode()
+  method virtual System.String! ToString()
+  prop NekoClicker.Core.Content.GameBalance? Balance { get; init; }
+  prop NekoClicker.Core.Content.UnlockCondition! Completion { get; init; }
+  prop System.Collections.Generic.IReadOnlyList<NekoClicker.Core.Content.Modifier>! Modifiers { get; init; }
+  prop System.Collections.Generic.IReadOnlyList<System.String>! InheritBuildings { get; init; }
+  prop System.Collections.Generic.IReadOnlyList<System.String>! UnlocksBuildings { get; init; }
+  prop System.Collections.Generic.IReadOnlyList<System.String>! UnlocksUpgrades { get; init; }
+  prop System.Double InheritBuildingRatio { get; init; }
+  prop System.Double MetaRewardMultiplier { get; init; }
+  prop System.Int32 Index { get; init; }
+  prop System.String! CompletionHint { get; init; }
+  prop System.String! EntryText { get; init; }
+  prop System.String! ExitText { get; init; }
+  prop System.String! Icon { get; init; }
+  prop System.String! Id { get; init; }
+  prop System.String! Name { get; init; }
+  prop System.String! Theme { get; init; }
+
+public struct NekoClicker.Core.Content.EraGate : System.IEquatable<NekoClicker.Core.Content.EraGate>
+  ctor NekoClicker.Core.Content.EraGate(System.Boolean CanAdvance, System.String? BlockedReason, System.Double Progress, System.Int32 CurrentIndex, System.Nullable<System.Int32> NextIndex)
+  method System.Boolean Equals(NekoClicker.Core.Content.EraGate other)
+  method System.Void Deconstruct(out System.Boolean CanAdvance, out System.String BlockedReason, out System.Double Progress, out System.Int32 CurrentIndex, out System.Nullable<System.Int32> NextIndex)
+  method static System.Boolean op_Equality(NekoClicker.Core.Content.EraGate left, NekoClicker.Core.Content.EraGate right)
+  method static System.Boolean op_Inequality(NekoClicker.Core.Content.EraGate left, NekoClicker.Core.Content.EraGate right)
+  method virtual System.Boolean Equals(System.Object obj)
+  method virtual System.Int32 GetHashCode()
+  method virtual System.String ToString()
+  prop System.Boolean CanAdvance { get; init; }
+  prop System.Double Progress { get; init; }
+  prop System.Int32 CurrentIndex { get; init; }
+  prop System.Nullable<System.Int32> NextIndex { get; init; }
+  prop System.String? BlockedReason { get; init; }
+
+public sealed class NekoClicker.Core.Content.GameBalance : System.IEquatable<NekoClicker.Core.Content.GameBalance>
+  ctor NekoClicker.Core.Content.GameBalance()
+  method System.Boolean Equals(NekoClicker.Core.Content.GameBalance? other)
+  method static System.Boolean op_Equality(NekoClicker.Core.Content.GameBalance? left, NekoClicker.Core.Content.GameBalance? right)
+  method static System.Boolean op_Inequality(NekoClicker.Core.Content.GameBalance? left, NekoClicker.Core.Content.GameBalance? right)
+  method virtual System.Boolean Equals(System.Object? obj)
+  method virtual System.Int32 GetHashCode()
+  method virtual System.String! ToString()
+  prop System.Boolean AllowSelling { get; init; }
+  prop System.Boolean GoldenCookiesEnabled { get; init; }
+  prop System.Boolean KeepAchievementsOnAscend { get; init; }
+  prop System.Double AchievementCheckInterval { get; init; }
+  prop System.Double AutoSaveInterval { get; init; }
+  prop System.Double ClickBasePower { get; init; }
+  prop System.Double ClickCpsRatio { get; init; }
+  prop System.Double DefaultSellRefundRate { get; init; }
+  prop System.Double FirstGoldenCookieDelayFactor { get; init; }
+  prop System.Double FixedDeltaSeconds { get; }
+  prop System.Double GoldenCookieLifetime { get; init; }
+  prop System.Double GoldenCookieMaxDelay { get; init; }
+  prop System.Double GoldenCookieMinDelay { get; init; }
+  prop System.Double MaxCatchUpSeconds { get; init; }
+  prop System.Double MinimumOfflineSeconds { get; init; }
+  prop System.Double OfflineCapSeconds { get; init; }
+  prop System.Double OfflineEfficiency { get; init; }
+  prop System.Double PrestigeChipsPerLevel { get; init; }
+  prop System.Double PrestigeDivisor { get; init; }
+  prop System.Double PrestigeExponent { get; init; }
+  prop System.Double TickRate { get; init; }
+  prop System.Int32 MaxBulkBuy { get; init; }
+  prop System.Int32 MaxConcurrentGoldenCookies { get; init; }
+
+public sealed class NekoClicker.Core.Content.GameContent
+  ctor NekoClicker.Core.Content.GameContent()
+  method NekoClicker.Core.Content.AchievementDefinition? FindAchievement(System.String! id)
+  method NekoClicker.Core.Content.BuffDefinition? FindBuff(System.String! id)
+  method NekoClicker.Core.Content.BuildingDefinition? FindBuilding(System.String! id)
+  method NekoClicker.Core.Content.ChoiceDefinition? FindChoice(System.String! id)
+  method NekoClicker.Core.Content.EndingDefinition? FindEnding(System.String! id)
+  method NekoClicker.Core.Content.EraDefinition? FindEra(System.Int32 index)
+  method NekoClicker.Core.Content.GameBalance! BalanceFor(System.Int32 era)
+  method NekoClicker.Core.Content.LoreEntry? FindLore(System.String! id)
+  method NekoClicker.Core.Content.StanceDefinition? FindStance(System.String! id)
+  method NekoClicker.Core.Content.StorylineDefinition? FindStoryline(System.String! id)
+  method NekoClicker.Core.Content.UpgradeDefinition? FindUpgrade(System.String! id)
+  method System.Collections.Generic.IReadOnlyList<NekoClicker.Core.Content.LoreEntry>! LoreOf(System.String! storylineId)
+  method System.String! CounterName(System.String! key)
+  prop NekoClicker.Core.Content.GameBalance! Balance { get; init; }
+  prop System.Boolean HasEras { get; }
+  prop System.Boolean HasStances { get; }
+  prop System.Collections.Generic.IReadOnlyDictionary<System.Int32, NekoClicker.Core.Content.EraDefinition>! EraByIndex { get; init; }
+  prop System.Collections.Generic.IReadOnlyDictionary<System.String, NekoClicker.Core.Content.AchievementDefinition>! AchievementById { get; init; }
+  prop System.Collections.Generic.IReadOnlyDictionary<System.String, NekoClicker.Core.Content.BuffDefinition>! BuffById { get; init; }
+  prop System.Collections.Generic.IReadOnlyDictionary<System.String, NekoClicker.Core.Content.BuildingDefinition>! BuildingById { get; init; }
+  prop System.Collections.Generic.IReadOnlyDictionary<System.String, NekoClicker.Core.Content.ChoiceDefinition>! ChoiceById { get; init; }
+  prop System.Collections.Generic.IReadOnlyDictionary<System.String, NekoClicker.Core.Content.EndingDefinition>! EndingById { get; init; }
+  prop System.Collections.Generic.IReadOnlyDictionary<System.String, NekoClicker.Core.Content.LoreEntry>! LoreById { get; init; }
+  prop System.Collections.Generic.IReadOnlyDictionary<System.String, NekoClicker.Core.Content.StanceDefinition>! StanceById { get; init; }
+  prop System.Collections.Generic.IReadOnlyDictionary<System.String, NekoClicker.Core.Content.StorylineDefinition>! StorylineById { get; init; }
+  prop System.Collections.Generic.IReadOnlyDictionary<System.String, NekoClicker.Core.Content.UpgradeDefinition>! UpgradeById { get; init; }
+  prop System.Collections.Generic.IReadOnlyDictionary<System.String, System.String>! CounterNames { get; init; }
+  prop System.Collections.Generic.IReadOnlyList<NekoClicker.Core.Content.AchievementDefinition>! Achievements { get; init; }
+  prop System.Collections.Generic.IReadOnlyList<NekoClicker.Core.Content.BuffDefinition>! Buffs { get; init; }
+  prop System.Collections.Generic.IReadOnlyList<NekoClicker.Core.Content.BuildingDefinition>! Buildings { get; init; }
+  prop System.Collections.Generic.IReadOnlyList<NekoClicker.Core.Content.ChoiceDefinition>! Choices { get; init; }
+  prop System.Collections.Generic.IReadOnlyList<NekoClicker.Core.Content.EndingDefinition>! Endings { get; init; }
+  prop System.Collections.Generic.IReadOnlyList<NekoClicker.Core.Content.EraDefinition>! Eras { get; init; }
+  prop System.Collections.Generic.IReadOnlyList<NekoClicker.Core.Content.GoldenCookieOutcome>! GoldenCookieOutcomes { get; init; }
+  prop System.Collections.Generic.IReadOnlyList<NekoClicker.Core.Content.LoreEntry>! LoreEntries { get; init; }
+  prop System.Collections.Generic.IReadOnlyList<NekoClicker.Core.Content.StanceDefinition>! Stances { get; init; }
+  prop System.Collections.Generic.IReadOnlyList<NekoClicker.Core.Content.StorylineDefinition>! Storylines { get; init; }
+  prop System.Collections.Generic.IReadOnlyList<NekoClicker.Core.Content.UpgradeDefinition>! Upgrades { get; init; }
+  prop System.Collections.Generic.IReadOnlyList<NekoClicker.Core.IGameModule>! Modules { get; init; }
+  prop System.Double GoldenCookieWeightTotal { get; init; }
+  prop System.Int32 MaxEraIndex { get; init; }
+  prop System.String! ClickActionName { get; init; }
+  prop System.String! CurrencyIcon { get; init; }
+  prop System.String! CurrencyName { get; init; }
+  prop System.String! PrestigeCurrencyIcon { get; init; }
+  prop System.String! PrestigeCurrencyName { get; init; }
+  prop System.String! Title { get; init; }
+  prop static NekoClicker.Core.Content.GameContent! Empty { get; }
+
+public sealed class NekoClicker.Core.Content.GameContentBuilder
+  ctor NekoClicker.Core.Content.GameContentBuilder(System.String! title = "Incremental Game")
+  method NekoClicker.Core.Content.GameContent! Build()
+  method NekoClicker.Core.Content.GameContentBuilder! Add(NekoClicker.Core.Content.AchievementDefinition! definition)
+  method NekoClicker.Core.Content.GameContentBuilder! Add(NekoClicker.Core.Content.BuffDefinition! definition)
+  method NekoClicker.Core.Content.GameContentBuilder! Add(NekoClicker.Core.Content.BuildingDefinition! definition)
+  method NekoClicker.Core.Content.GameContentBuilder! Add(NekoClicker.Core.Content.ChoiceDefinition! choice)
+  method NekoClicker.Core.Content.GameContentBuilder! Add(NekoClicker.Core.Content.EndingDefinition! ending)
+  method NekoClicker.Core.Content.GameContentBuilder! Add(NekoClicker.Core.Content.EraDefinition! definition)
+  method NekoClicker.Core.Content.GameContentBuilder! Add(NekoClicker.Core.Content.GoldenCookieOutcome! outcome)
+  method NekoClicker.Core.Content.GameContentBuilder! Add(NekoClicker.Core.Content.LoreEntry! entry)
+  method NekoClicker.Core.Content.GameContentBuilder! Add(NekoClicker.Core.Content.StanceDefinition! stance)
+  method NekoClicker.Core.Content.GameContentBuilder! Add(NekoClicker.Core.Content.StorylineDefinition! storyline)
+  method NekoClicker.Core.Content.GameContentBuilder! Add(NekoClicker.Core.Content.UpgradeDefinition! definition)
+  method NekoClicker.Core.Content.GameContentBuilder! Add(NekoClicker.Core.IGameModule! module)
+  method NekoClicker.Core.Content.GameContentBuilder! AddAchievements(params NekoClicker.Core.Content.AchievementDefinition[]! definitions)
+  method NekoClicker.Core.Content.GameContentBuilder! AddBuffs(params NekoClicker.Core.Content.BuffDefinition[]! definitions)
+  method NekoClicker.Core.Content.GameContentBuilder! AddBuildings(params NekoClicker.Core.Content.BuildingDefinition[]! definitions)
+  method NekoClicker.Core.Content.GameContentBuilder! AddChoices(params NekoClicker.Core.Content.ChoiceDefinition[]! choices)
+  method NekoClicker.Core.Content.GameContentBuilder! AddCounterName(System.String! key, System.String! displayName)
+  method NekoClicker.Core.Content.GameContentBuilder! AddEndings(params NekoClicker.Core.Content.EndingDefinition[]! endings)
+  method NekoClicker.Core.Content.GameContentBuilder! AddEras(params NekoClicker.Core.Content.EraDefinition[]! definitions)
+  method NekoClicker.Core.Content.GameContentBuilder! AddGoldenCookieOutcomes(params NekoClicker.Core.Content.GoldenCookieOutcome[]! outcomes)
+  method NekoClicker.Core.Content.GameContentBuilder! AddLore(params NekoClicker.Core.Content.LoreEntry[]! entries)
+  method NekoClicker.Core.Content.GameContentBuilder! AddStances(params NekoClicker.Core.Content.StanceDefinition[]! stances)
+  method NekoClicker.Core.Content.GameContentBuilder! AddStorylines(params NekoClicker.Core.Content.StorylineDefinition[]! storylines)
+  method NekoClicker.Core.Content.GameContentBuilder! AddUpgrades(params NekoClicker.Core.Content.UpgradeDefinition[]! definitions)
+  method NekoClicker.Core.Content.GameContentBuilder! WithBalance(NekoClicker.Core.Content.GameBalance! balance)
+  method NekoClicker.Core.Content.GameContentBuilder! WithCurrency(System.String! name, System.String! icon, System.String? clickActionName = null)
+  method NekoClicker.Core.Content.GameContentBuilder! WithPrestigeCurrency(System.String! name, System.String! icon)
+  method NekoClicker.Core.Content.GameContentBuilder! WithTitle(System.String! title)
+  prop NekoClicker.Core.Content.GameBalance! Balance { get; }
+  prop System.Collections.Generic.IReadOnlyList<NekoClicker.Core.IGameModule>! Modules { get; }
+  prop System.String! ClickActionName { get; }
+  prop System.String! CurrencyIcon { get; }
+  prop System.String! CurrencyName { get; }
+  prop System.String! PrestigeCurrencyIcon { get; }
+  prop System.String! PrestigeCurrencyName { get; }
+  prop System.String! Title { get; }
+
+public sealed class NekoClicker.Core.Content.GameContentValidationException : System.Exception, System.Runtime.Serialization.ISerializable
+  ctor NekoClicker.Core.Content.GameContentValidationException(System.Collections.Generic.IReadOnlyList<System.String>! errors)
+  prop System.Collections.Generic.IReadOnlyList<System.String>! Errors { get; }
+
+public sealed class NekoClicker.Core.Content.GoldenCookieOutcome : System.IEquatable<NekoClicker.Core.Content.GoldenCookieOutcome>
+  ctor NekoClicker.Core.Content.GoldenCookieOutcome()
+  method System.Boolean Equals(NekoClicker.Core.Content.GoldenCookieOutcome? other)
+  method static System.Boolean op_Equality(NekoClicker.Core.Content.GoldenCookieOutcome? left, NekoClicker.Core.Content.GoldenCookieOutcome? right)
+  method static System.Boolean op_Inequality(NekoClicker.Core.Content.GoldenCookieOutcome? left, NekoClicker.Core.Content.GoldenCookieOutcome? right)
+  method virtual System.Boolean Equals(System.Object? obj)
+  method virtual System.Int32 GetHashCode()
+  method virtual System.String! ToString()
+  prop System.Boolean IsRare { get; init; }
+  prop System.Double BuffSeconds { get; init; }
+  prop System.Double CookiesFlat { get; init; }
+  prop System.Double CookiesFromBankFraction { get; init; }
+  prop System.Double CookiesFromBankFractionCapSecondsOfCps { get; init; }
+  prop System.Double CookiesFromCpsSeconds { get; init; }
+  prop System.Double SecondaryBuffSeconds { get; init; }
+  prop System.Double StealBankFraction { get; init; }
+  prop System.Double Weight { get; init; }
+  prop System.String! Description { get; init; }
+  prop System.String! Icon { get; init; }
+  prop System.String! Id { get; init; }
+  prop System.String! Name { get; init; }
+  prop System.String? BuffId { get; init; }
+  prop System.String? SecondaryBuffId { get; init; }
+
+public enum NekoClicker.Core.Content.LoreChannel : System.Int32
+  field Codex = Codex
+  field EraText = EraText
+  field Log = Log
+  field Popup = Popup
+
+public sealed class NekoClicker.Core.Content.LoreEntry : System.IEquatable<NekoClicker.Core.Content.LoreEntry>
+  ctor NekoClicker.Core.Content.LoreEntry()
+  method System.Boolean Equals(NekoClicker.Core.Content.LoreEntry? other)
+  method static System.Boolean op_Equality(NekoClicker.Core.Content.LoreEntry? left, NekoClicker.Core.Content.LoreEntry? right)
+  method static System.Boolean op_Inequality(NekoClicker.Core.Content.LoreEntry? left, NekoClicker.Core.Content.LoreEntry? right)
+  method virtual System.Boolean Equals(System.Object? obj)
+  method virtual System.Int32 GetHashCode()
+  method virtual System.String! ToString()
+  prop NekoClicker.Core.Content.LoreChannel Channel { get; init; }
+  prop NekoClicker.Core.Content.UnlockCondition! Reveal { get; init; }
+  prop System.Int32 Order { get; init; }
+  prop System.String! Body { get; init; }
+  prop System.String! Icon { get; init; }
+  prop System.String! Id { get; init; }
+  prop System.String! StorylineId { get; init; }
+  prop System.String! Title { get; init; }
+
+public sealed class NekoClicker.Core.Content.Modifier : System.IEquatable<NekoClicker.Core.Content.Modifier>
+  ctor NekoClicker.Core.Content.Modifier(NekoClicker.Core.Content.ModifierTarget! Target, NekoClicker.Core.Content.ModifierOperation Operation, System.Double Value, NekoClicker.Core.Content.Scaling? Scaling = null)
+  method System.Boolean Equals(NekoClicker.Core.Content.Modifier? other)
+  method System.Double Resolve(NekoClicker.Core.IGameMetrics! metrics)
+  method System.String! Describe(NekoClicker.Core.Content.GameContent? content = null)
+  method System.Void Deconstruct(out NekoClicker.Core.Content.ModifierTarget Target, out NekoClicker.Core.Content.ModifierOperation Operation, out System.Double Value, out NekoClicker.Core.Content.Scaling Scaling)
+  method static NekoClicker.Core.Content.Modifier! BuildingMultiplier(System.String! buildingId, System.Double factor)
+  method static NekoClicker.Core.Content.Modifier! BuildingPercent(System.String! buildingId, System.Double fraction, NekoClicker.Core.Content.Scaling? scaling = null)
+  method static NekoClicker.Core.Content.Modifier! ClickFlat(System.Double amount)
+  method static NekoClicker.Core.Content.Modifier! ClickMultiplier(System.Double factor)
+  method static NekoClicker.Core.Content.Modifier! ClickPercent(System.Double fraction)
+  method static NekoClicker.Core.Content.Modifier! GlobalMultiplier(System.Double factor)
+  method static NekoClicker.Core.Content.Modifier! GlobalPercent(System.Double fraction, NekoClicker.Core.Content.Scaling? scaling = null)
+  method static NekoClicker.Core.Content.Modifier! GoldenCookieFrequency(System.Double factor)
+  method static NekoClicker.Core.Content.Modifier! GoldenCookieReward(System.Double factor)
+  method static NekoClicker.Core.Content.Modifier! PriceDiscount(System.Double fraction)
+  method static NekoClicker.Core.Content.Modifier! PriceMultiplier(System.Double factor, System.String? buildingId = null)
+  method static System.Boolean op_Equality(NekoClicker.Core.Content.Modifier? left, NekoClicker.Core.Content.Modifier? right)
+  method static System.Boolean op_Inequality(NekoClicker.Core.Content.Modifier? left, NekoClicker.Core.Content.Modifier? right)
+  method virtual System.Boolean Equals(System.Object? obj)
+  method virtual System.Int32 GetHashCode()
+  method virtual System.String! ToString()
+  prop NekoClicker.Core.Content.ModifierOperation Operation { get; init; }
+  prop NekoClicker.Core.Content.ModifierTarget! Target { get; init; }
+  prop NekoClicker.Core.Content.Scaling? Scaling { get; init; }
+  prop System.Double Value { get; init; }
+
+public enum NekoClicker.Core.Content.ModifierOperation : System.Int32
+  field AdditivePercent = AdditivePercent
+  field Flat = Flat
+  field Multiplicative = Multiplicative
+  field Power = Power
+
+public sealed class NekoClicker.Core.Content.ModifierTarget : System.IEquatable<NekoClicker.Core.Content.ModifierTarget>
+  ctor NekoClicker.Core.Content.ModifierTarget(NekoClicker.Core.Content.ModifierTargetKind Kind, System.String? Id = null)
+  field static readonly NekoClicker.Core.Content.ModifierTarget! ClickPower
+  field static readonly NekoClicker.Core.Content.ModifierTarget! GlobalCps
+  field static readonly NekoClicker.Core.Content.ModifierTarget! GlobalPrice
+  field static readonly NekoClicker.Core.Content.ModifierTarget! GoldenCookieDuration
+  field static readonly NekoClicker.Core.Content.ModifierTarget! GoldenCookieFrequency
+  field static readonly NekoClicker.Core.Content.ModifierTarget! GoldenCookieReward
+  field static readonly NekoClicker.Core.Content.ModifierTarget! OfflineEfficiency
+  method System.Boolean Equals(NekoClicker.Core.Content.ModifierTarget? other)
+  method System.String! Describe(NekoClicker.Core.Content.GameContent? content = null)
+  method System.Void Deconstruct(out NekoClicker.Core.Content.ModifierTargetKind Kind, out System.String Id)
+  method static NekoClicker.Core.Content.ModifierTarget! BuffDuration(System.String? buffId = null)
+  method static NekoClicker.Core.Content.ModifierTarget! BuildingCps(System.String! buildingId)
+  method static NekoClicker.Core.Content.ModifierTarget! BuildingPrice(System.String! buildingId)
+  method static System.Boolean op_Equality(NekoClicker.Core.Content.ModifierTarget? left, NekoClicker.Core.Content.ModifierTarget? right)
+  method static System.Boolean op_Inequality(NekoClicker.Core.Content.ModifierTarget? left, NekoClicker.Core.Content.ModifierTarget? right)
+  method virtual System.Boolean Equals(System.Object? obj)
+  method virtual System.Int32 GetHashCode()
+  method virtual System.String! ToString()
+  prop NekoClicker.Core.Content.ModifierTargetKind Kind { get; init; }
+  prop System.String? Id { get; init; }
+
+public enum NekoClicker.Core.Content.ModifierTargetKind : System.Int32
+  field BuffDuration = BuffDuration
+  field BuildingCps = BuildingCps
+  field BuildingPrice = BuildingPrice
+  field ClickPower = ClickPower
+  field GlobalCps = GlobalCps
+  field GlobalPrice = GlobalPrice
+  field GoldenCookieDuration = GoldenCookieDuration
+  field GoldenCookieFrequency = GoldenCookieFrequency
+  field GoldenCookieReward = GoldenCookieReward
+  field OfflineEfficiency = OfflineEfficiency
+
+public sealed class NekoClicker.Core.Content.NotCondition : NekoClicker.Core.Content.UnlockCondition, System.IEquatable<NekoClicker.Core.Content.NotCondition>, System.IEquatable<NekoClicker.Core.Content.UnlockCondition>
+  ctor NekoClicker.Core.Content.NotCondition(NekoClicker.Core.Content.UnlockCondition! Condition)
+  method System.Boolean Equals(NekoClicker.Core.Content.NotCondition? other)
+  method System.Boolean Equals(NekoClicker.Core.Content.UnlockCondition? other)
+  method System.Void Deconstruct(out NekoClicker.Core.Content.UnlockCondition Condition)
+  method static System.Boolean op_Equality(NekoClicker.Core.Content.NotCondition? left, NekoClicker.Core.Content.NotCondition? right)
+  method static System.Boolean op_Inequality(NekoClicker.Core.Content.NotCondition? left, NekoClicker.Core.Content.NotCondition? right)
+  method virtual System.Boolean Equals(System.Object? obj)
+  method virtual System.Boolean IsMet(NekoClicker.Core.IGameMetrics! metrics, NekoClicker.Core.Content.GameContent! content)
+  method virtual System.Boolean PrintMembers(System.Text.StringBuilder! builder)
+  method virtual System.Collections.Generic.IEnumerable<NekoClicker.Core.Content.UnlockCondition>! Flatten()
+  method virtual System.Int32 GetHashCode()
+  method virtual System.String! Describe(NekoClicker.Core.Content.GameContent? content = null)
+  method virtual System.String! ToString()
+  prop NekoClicker.Core.Content.UnlockCondition! Condition { get; init; }
+  prop virtual System.Type! EqualityContract { get; }
+
+public sealed class NekoClicker.Core.Content.NumericCondition : NekoClicker.Core.Content.UnlockCondition, System.IEquatable<NekoClicker.Core.Content.NumericCondition>, System.IEquatable<NekoClicker.Core.Content.UnlockCondition>
+  ctor NekoClicker.Core.Content.NumericCondition(NekoClicker.Core.Content.NumericMetric Metric, System.Double Target, System.String? Id = null)
+  method System.Boolean Equals(NekoClicker.Core.Content.NumericCondition? other)
+  method System.Boolean Equals(NekoClicker.Core.Content.UnlockCondition? other)
+  method System.Double Read(NekoClicker.Core.IGameMetrics! metrics)
+  method System.Void Deconstruct(out NekoClicker.Core.Content.NumericMetric Metric, out System.Double Target, out System.String Id)
+  method static System.Boolean op_Equality(NekoClicker.Core.Content.NumericCondition? left, NekoClicker.Core.Content.NumericCondition? right)
+  method static System.Boolean op_Inequality(NekoClicker.Core.Content.NumericCondition? left, NekoClicker.Core.Content.NumericCondition? right)
+  method virtual System.Boolean Equals(System.Object? obj)
+  method virtual System.Boolean IsMet(NekoClicker.Core.IGameMetrics! metrics, NekoClicker.Core.Content.GameContent! content)
+  method virtual System.Boolean PrintMembers(System.Text.StringBuilder! builder)
+  method virtual System.Boolean TryGetProgress(NekoClicker.Core.IGameMetrics! metrics, out System.Double current, out System.Double target)
+  method virtual System.Int32 GetHashCode()
+  method virtual System.String! Describe(NekoClicker.Core.Content.GameContent? content = null)
+  method virtual System.String! ToString()
+  prop NekoClicker.Core.Content.NumericMetric Metric { get; init; }
+  prop System.Double Target { get; init; }
+  prop System.String? Id { get; init; }
+  prop virtual System.Type! EqualityContract { get; }
+
+public enum NekoClicker.Core.Content.NumericMetric : System.Int32
+  field AchievementCount = AchievementCount
+  field BuildingCount = BuildingCount
+  field Clicks = Clicks
+  field CookiesEarnedAllTime = CookiesEarnedAllTime
+  field CookiesEarnedThisRun = CookiesEarnedThisRun
+  field Counter = Counter
+  field Cps = Cps
+  field CurrentCookies = CurrentCookies
+  field Era = Era
+  field GoldenCookiesClicked = GoldenCookiesClicked
+  field LoreCount = LoreCount
+  field PlayTimeSeconds = PlayTimeSeconds
+  field PrestigeChips = PrestigeChips
+  field PrestigeLevel = PrestigeLevel
+  field PurchasedUpgrades = PurchasedUpgrades
+  field StanceWeight = StanceWeight
+  field TaggedUpgrades = TaggedUpgrades
+  field TotalBuildings = TotalBuildings
+
+public sealed class NekoClicker.Core.Content.OwnedCondition : NekoClicker.Core.Content.UnlockCondition, System.IEquatable<NekoClicker.Core.Content.OwnedCondition>, System.IEquatable<NekoClicker.Core.Content.UnlockCondition>
+  ctor NekoClicker.Core.Content.OwnedCondition(NekoClicker.Core.Content.OwnedKind Kind, System.String! Id)
+  method System.Boolean Equals(NekoClicker.Core.Content.OwnedCondition? other)
+  method System.Boolean Equals(NekoClicker.Core.Content.UnlockCondition? other)
+  method System.Void Deconstruct(out NekoClicker.Core.Content.OwnedKind Kind, out System.String Id)
+  method static System.Boolean op_Equality(NekoClicker.Core.Content.OwnedCondition? left, NekoClicker.Core.Content.OwnedCondition? right)
+  method static System.Boolean op_Inequality(NekoClicker.Core.Content.OwnedCondition? left, NekoClicker.Core.Content.OwnedCondition? right)
+  method virtual System.Boolean Equals(System.Object? obj)
+  method virtual System.Boolean IsMet(NekoClicker.Core.IGameMetrics! metrics, NekoClicker.Core.Content.GameContent! content)
+  method virtual System.Boolean PrintMembers(System.Text.StringBuilder! builder)
+  method virtual System.Boolean TryGetProgress(NekoClicker.Core.IGameMetrics! metrics, out System.Double current, out System.Double target)
+  method virtual System.Int32 GetHashCode()
+  method virtual System.String! Describe(NekoClicker.Core.Content.GameContent? content = null)
+  method virtual System.String! ToString()
+  prop NekoClicker.Core.Content.OwnedKind Kind { get; init; }
+  prop System.String! Id { get; init; }
+  prop virtual System.Type! EqualityContract { get; }
+
+public enum NekoClicker.Core.Content.OwnedKind : System.Int32
+  field Achievement = Achievement
+  field Choice = Choice
+  field Ending = Ending
+  field Upgrade = Upgrade
+
+public sealed class NekoClicker.Core.Content.Scaling : System.IEquatable<NekoClicker.Core.Content.Scaling>
+  ctor NekoClicker.Core.Content.Scaling(NekoClicker.Core.Content.ScalingSource Source, System.Double PerUnit, System.Double Cap = Infinity, System.String? Id = null)
+  method System.Boolean Equals(NekoClicker.Core.Content.Scaling? other)
+  method System.Double Apply(System.Double baseValue, NekoClicker.Core.IGameMetrics! metrics)
+  method System.Double Evaluate(NekoClicker.Core.IGameMetrics! metrics)
+  method System.String! Describe(NekoClicker.Core.Content.GameContent? content = null)
+  method System.Void Deconstruct(out NekoClicker.Core.Content.ScalingSource Source, out System.Double PerUnit, out System.Double Cap, out System.String Id)
+  method static System.Boolean op_Equality(NekoClicker.Core.Content.Scaling? left, NekoClicker.Core.Content.Scaling? right)
+  method static System.Boolean op_Inequality(NekoClicker.Core.Content.Scaling? left, NekoClicker.Core.Content.Scaling? right)
+  method virtual System.Boolean Equals(System.Object? obj)
+  method virtual System.Int32 GetHashCode()
+  method virtual System.String! ToString()
+  prop NekoClicker.Core.Content.ScalingSource Source { get; init; }
+  prop System.Double Cap { get; init; }
+  prop System.Double PerUnit { get; init; }
+  prop System.String? Id { get; init; }
+
+public enum NekoClicker.Core.Content.ScalingSource : System.Int32
+  field AchievementCount = AchievementCount
+  field BuildingCount = BuildingCount
+  field CookiesEarnedAllTime = CookiesEarnedAllTime
+  field CookiesEarnedThisRun = CookiesEarnedThisRun
+  field CustomCounter = CustomCounter
+  field GoldenCookiesClicked = GoldenCookiesClicked
+  field LoreCount = LoreCount
+  field None = None
+  field PlayTimeHours = PlayTimeHours
+  field PrestigeLevel = PrestigeLevel
+  field PurchasedUpgrades = PurchasedUpgrades
+  field TaggedUpgradeCount = TaggedUpgradeCount
+  field TotalBuildings = TotalBuildings
+  field TotalClicks = TotalClicks
+
+public sealed class NekoClicker.Core.Content.StanceDefinition : System.IEquatable<NekoClicker.Core.Content.StanceDefinition>
+  ctor NekoClicker.Core.Content.StanceDefinition()
+  method System.Boolean Equals(NekoClicker.Core.Content.StanceDefinition? other)
+  method static System.Boolean op_Equality(NekoClicker.Core.Content.StanceDefinition? left, NekoClicker.Core.Content.StanceDefinition? right)
+  method static System.Boolean op_Inequality(NekoClicker.Core.Content.StanceDefinition? left, NekoClicker.Core.Content.StanceDefinition? right)
+  method virtual System.Boolean Equals(System.Object? obj)
+  method virtual System.Int32 GetHashCode()
+  method virtual System.String! ToString()
+  prop System.Collections.Generic.IReadOnlyList<NekoClicker.Core.Content.Modifier>! Modifiers { get; init; }
+  prop System.String! CostText { get; init; }
+  prop System.String! Icon { get; init; }
+  prop System.String! Id { get; init; }
+  prop System.String! Name { get; init; }
+  prop System.String! Theme { get; init; }
+
+public sealed class NekoClicker.Core.Content.StorylineDefinition : System.IEquatable<NekoClicker.Core.Content.StorylineDefinition>
+  ctor NekoClicker.Core.Content.StorylineDefinition()
+  method System.Boolean Equals(NekoClicker.Core.Content.StorylineDefinition? other)
+  method static System.Boolean op_Equality(NekoClicker.Core.Content.StorylineDefinition? left, NekoClicker.Core.Content.StorylineDefinition? right)
+  method static System.Boolean op_Inequality(NekoClicker.Core.Content.StorylineDefinition? left, NekoClicker.Core.Content.StorylineDefinition? right)
+  method virtual System.Boolean Equals(System.Object? obj)
+  method virtual System.Int32 GetHashCode()
+  method virtual System.String! ToString()
+  prop System.Int32 TotalEntries { get; init; }
+  prop System.String! Icon { get; init; }
+  prop System.String! Id { get; init; }
+  prop System.String! Name { get; init; }
+  prop System.String! Theme { get; init; }
+
+public abstract class NekoClicker.Core.Content.UnlockCondition : System.IEquatable<NekoClicker.Core.Content.UnlockCondition>
+  ctor NekoClicker.Core.Content.UnlockCondition()
+  ctor NekoClicker.Core.Content.UnlockCondition(NekoClicker.Core.Content.UnlockCondition! original)
+  field static readonly NekoClicker.Core.Content.UnlockCondition! Always
+  field static readonly NekoClicker.Core.Content.UnlockCondition! Never
+  method System.Collections.Generic.IEnumerable<NekoClicker.Core.Content.NumericCondition>! NumericLeaves()
+  method System.Collections.Generic.IEnumerable<NekoClicker.Core.Content.OwnedCondition>! OwnedLeaves()
+  method abstract System.Boolean IsMet(NekoClicker.Core.IGameMetrics! metrics, NekoClicker.Core.Content.GameContent! content)
+  method static NekoClicker.Core.Content.UnlockCondition! AchievementUnlocked(System.String! achievementId)
+  method static NekoClicker.Core.Content.UnlockCondition! AchievementsAtLeast(System.Double count)
+  method static NekoClicker.Core.Content.UnlockCondition! All(params NekoClicker.Core.Content.UnlockCondition[]! conditions)
+  method static NekoClicker.Core.Content.UnlockCondition! Any(params NekoClicker.Core.Content.UnlockCondition[]! conditions)
+  method static NekoClicker.Core.Content.UnlockCondition! BuildingsAtLeast(System.String! buildingId, System.Double count)
+  method static NekoClicker.Core.Content.UnlockCondition! ChoiceMade(System.String! choiceId)
+  method static NekoClicker.Core.Content.UnlockCondition! ClicksAtLeast(System.Double count)
+  method static NekoClicker.Core.Content.UnlockCondition! CookiesAtLeast(System.Double amount)
+  method static NekoClicker.Core.Content.UnlockCondition! Counter(System.String! counterKey, System.Double target)
+  method static NekoClicker.Core.Content.UnlockCondition! CpsAtLeast(System.Double amount)
+  method static NekoClicker.Core.Content.UnlockCondition! Custom(System.String! description, System.Func<NekoClicker.Core.IGameMetrics, System.Boolean>! predicate)
+  method static NekoClicker.Core.Content.UnlockCondition! EarnedAllTimeAtLeast(System.Double amount)
+  method static NekoClicker.Core.Content.UnlockCondition! EarnedThisRunAtLeast(System.Double amount)
+  method static NekoClicker.Core.Content.UnlockCondition! EndingReached(System.String! endingId)
+  method static NekoClicker.Core.Content.UnlockCondition! EraAtLeast(System.Double era)
+  method static NekoClicker.Core.Content.UnlockCondition! GoldenCookiesAtLeast(System.Double count)
+  method static NekoClicker.Core.Content.UnlockCondition! LoreAtLeast(System.Double count)
+  method static NekoClicker.Core.Content.UnlockCondition! Not(NekoClicker.Core.Content.UnlockCondition! condition)
+  method static NekoClicker.Core.Content.UnlockCondition! PlayTimeAtLeast(System.Double seconds)
+  method static NekoClicker.Core.Content.UnlockCondition! PrestigeChipsAtLeast(System.Double amount)
+  method static NekoClicker.Core.Content.UnlockCondition! PrestigeLevelAtLeast(System.Double level)
+  method static NekoClicker.Core.Content.UnlockCondition! StanceWeight(System.String! stanceId, System.Double weight)
+  method static NekoClicker.Core.Content.UnlockCondition! TaggedUpgradesAtLeast(System.String! tag, System.Double count)
+  method static NekoClicker.Core.Content.UnlockCondition! TotalBuildingsAtLeast(System.Double count)
+  method static NekoClicker.Core.Content.UnlockCondition! UpgradeOwned(System.String! upgradeId)
+  method static NekoClicker.Core.Content.UnlockCondition! UpgradesAtLeast(System.Double count)
+  method static System.Boolean op_Equality(NekoClicker.Core.Content.UnlockCondition? left, NekoClicker.Core.Content.UnlockCondition? right)
+  method static System.Boolean op_Inequality(NekoClicker.Core.Content.UnlockCondition? left, NekoClicker.Core.Content.UnlockCondition? right)
+  method virtual System.Boolean Equals(NekoClicker.Core.Content.UnlockCondition? other)
+  method virtual System.Boolean Equals(System.Object? obj)
+  method virtual System.Boolean PrintMembers(System.Text.StringBuilder! builder)
+  method virtual System.Boolean TryGetProgress(NekoClicker.Core.IGameMetrics! metrics, out System.Double current, out System.Double target)
+  method virtual System.Collections.Generic.IEnumerable<NekoClicker.Core.Content.UnlockCondition>! Flatten()
+  method virtual System.Int32 GetHashCode()
+  method virtual System.String! Describe(NekoClicker.Core.Content.GameContent? content = null)
+  method virtual System.String! ToString()
+  prop virtual System.Type! EqualityContract { get; }
+
+public enum NekoClicker.Core.Content.UpgradeCurrency : System.Int32
+  field Cookies = Cookies
+  field PrestigeChips = PrestigeChips
+
+public sealed class NekoClicker.Core.Content.UpgradeDefinition : System.IEquatable<NekoClicker.Core.Content.UpgradeDefinition>
+  ctor NekoClicker.Core.Content.UpgradeDefinition()
+  method System.Boolean Equals(NekoClicker.Core.Content.UpgradeDefinition? other)
+  method static System.Boolean op_Equality(NekoClicker.Core.Content.UpgradeDefinition? left, NekoClicker.Core.Content.UpgradeDefinition? right)
+  method static System.Boolean op_Inequality(NekoClicker.Core.Content.UpgradeDefinition? left, NekoClicker.Core.Content.UpgradeDefinition? right)
+  method virtual System.Boolean Equals(System.Object? obj)
+  method virtual System.Int32 GetHashCode()
+  method virtual System.String! ToString()
+  prop NekoClicker.Core.Content.UnlockCondition! Unlock { get; init; }
+  prop NekoClicker.Core.Content.UpgradeCurrency Currency { get; init; }
+  prop NekoClicker.Core.Content.UpgradePersistence Persistence { get; init; }
+  prop System.Boolean HiddenUntilUnlocked { get; init; }
+  prop System.Collections.Generic.IReadOnlyList<NekoClicker.Core.Content.Modifier>! Modifiers { get; init; }
+  prop System.Collections.Generic.IReadOnlyList<System.String>! Tags { get; init; }
+  prop System.Double Price { get; init; }
+  prop System.Double PriceGrowth { get; init; }
+  prop System.Int32 MaxPurchases { get; init; }
+  prop System.Int32 Tier { get; init; }
+  prop System.String! Category { get; init; }
+  prop System.String! Description { get; init; }
+  prop System.String! Icon { get; init; }
+  prop System.String! Id { get; init; }
+  prop System.String! Name { get; init; }
+
+public enum NekoClicker.Core.Content.UpgradePersistence : System.Int32
+  field Permanent = Permanent
+  field Run = Run
+
+public static class NekoClicker.Core.EndingSystem
+  method static NekoClicker.Core.Content.EndingDefinition? Check(NekoClicker.Core.GameEngine! engine)
+  method static NekoClicker.Core.Content.EndingDefinition? Reached(NekoClicker.Core.Content.GameContent! content, NekoClicker.Core.GameState! state)
+  method static System.String! CounterKey(System.String! endingId)
+
+public sealed class NekoClicker.Core.EraRecord
+  ctor NekoClicker.Core.EraRecord()
+  prop System.DateTimeOffset CompletedAt { get; set; }
+  prop System.Double ChipsGained { get; set; }
+  prop System.Double CookiesEarned { get; set; }
+  prop System.Double PlayTimeSeconds { get; set; }
+  prop System.Int32 Index { get; set; }
+
+public static class NekoClicker.Core.EraSystem
+  field const System.String! PeakCpsCounterKey = "peak_cps"
+  method static NekoClicker.Core.AscensionResult! Advance(NekoClicker.Core.GameEngine! engine)
+  method static NekoClicker.Core.Content.EraGate CanAdvance(NekoClicker.Core.GameEngine! engine)
+  method static System.Double ChipsOnAdvance(NekoClicker.Core.GameEngine! engine)
+  method static System.String! DescribeProgress(NekoClicker.Core.GameEngine! engine)
+
+public sealed class NekoClicker.Core.Events.AchievementUnlockedEvent : NekoClicker.Core.Events.IGameEvent, System.IEquatable<NekoClicker.Core.Events.AchievementUnlockedEvent>
+  ctor NekoClicker.Core.Events.AchievementUnlockedEvent(System.String! Id, System.String! Name, System.String! Icon)
+  method System.Boolean Equals(NekoClicker.Core.Events.AchievementUnlockedEvent? other)
+  method System.Void Deconstruct(out System.String Id, out System.String Name, out System.String Icon)
+  method static System.Boolean op_Equality(NekoClicker.Core.Events.AchievementUnlockedEvent? left, NekoClicker.Core.Events.AchievementUnlockedEvent? right)
+  method static System.Boolean op_Inequality(NekoClicker.Core.Events.AchievementUnlockedEvent? left, NekoClicker.Core.Events.AchievementUnlockedEvent? right)
+  method virtual System.Boolean Equals(System.Object? obj)
+  method virtual System.Int32 GetHashCode()
+  method virtual System.String! ToString()
+  prop System.String! Icon { get; init; }
+  prop System.String! Id { get; init; }
+  prop System.String! Name { get; init; }
+
+public sealed class NekoClicker.Core.Events.AscendedEvent : NekoClicker.Core.Events.IGameEvent, System.IEquatable<NekoClicker.Core.Events.AscendedEvent>
+  ctor NekoClicker.Core.Events.AscendedEvent(System.Int32 PreviousLevel, System.Int32 NewLevel, System.Double ChipsGained, System.Int32 Ascensions)
+  method System.Boolean Equals(NekoClicker.Core.Events.AscendedEvent? other)
+  method System.Void Deconstruct(out System.Int32 PreviousLevel, out System.Int32 NewLevel, out System.Double ChipsGained, out System.Int32 Ascensions)
+  method static System.Boolean op_Equality(NekoClicker.Core.Events.AscendedEvent? left, NekoClicker.Core.Events.AscendedEvent? right)
+  method static System.Boolean op_Inequality(NekoClicker.Core.Events.AscendedEvent? left, NekoClicker.Core.Events.AscendedEvent? right)
+  method virtual System.Boolean Equals(System.Object? obj)
+  method virtual System.Int32 GetHashCode()
+  method virtual System.String! ToString()
+  prop System.Double ChipsGained { get; init; }
+  prop System.Int32 Ascensions { get; init; }
+  prop System.Int32 NewLevel { get; init; }
+  prop System.Int32 PreviousLevel { get; init; }
+
+public sealed class NekoClicker.Core.Events.BuffAppliedEvent : NekoClicker.Core.Events.IGameEvent, System.IEquatable<NekoClicker.Core.Events.BuffAppliedEvent>
+  ctor NekoClicker.Core.Events.BuffAppliedEvent(System.String! Id, System.String! Name, System.Double Seconds, System.Int32 Stacks)
+  method System.Boolean Equals(NekoClicker.Core.Events.BuffAppliedEvent? other)
+  method System.Void Deconstruct(out System.String Id, out System.String Name, out System.Double Seconds, out System.Int32 Stacks)
+  method static System.Boolean op_Equality(NekoClicker.Core.Events.BuffAppliedEvent? left, NekoClicker.Core.Events.BuffAppliedEvent? right)
+  method static System.Boolean op_Inequality(NekoClicker.Core.Events.BuffAppliedEvent? left, NekoClicker.Core.Events.BuffAppliedEvent? right)
+  method virtual System.Boolean Equals(System.Object? obj)
+  method virtual System.Int32 GetHashCode()
+  method virtual System.String! ToString()
+  prop System.Double Seconds { get; init; }
+  prop System.Int32 Stacks { get; init; }
+  prop System.String! Id { get; init; }
+  prop System.String! Name { get; init; }
+
+public sealed class NekoClicker.Core.Events.BuffExpiredEvent : NekoClicker.Core.Events.IGameEvent, System.IEquatable<NekoClicker.Core.Events.BuffExpiredEvent>
+  ctor NekoClicker.Core.Events.BuffExpiredEvent(System.String! Id)
+  method System.Boolean Equals(NekoClicker.Core.Events.BuffExpiredEvent? other)
+  method System.Void Deconstruct(out System.String Id)
+  method static System.Boolean op_Equality(NekoClicker.Core.Events.BuffExpiredEvent? left, NekoClicker.Core.Events.BuffExpiredEvent? right)
+  method static System.Boolean op_Inequality(NekoClicker.Core.Events.BuffExpiredEvent? left, NekoClicker.Core.Events.BuffExpiredEvent? right)
+  method virtual System.Boolean Equals(System.Object? obj)
+  method virtual System.Int32 GetHashCode()
+  method virtual System.String! ToString()
+  prop System.String! Id { get; init; }
+
+public sealed class NekoClicker.Core.Events.BuildingPurchasedEvent : NekoClicker.Core.Events.IGameEvent, System.IEquatable<NekoClicker.Core.Events.BuildingPurchasedEvent>
+  ctor NekoClicker.Core.Events.BuildingPurchasedEvent(System.String! Id, System.Int32 Amount, System.Double UnitPrice, System.Double TotalPrice, System.Int32 OwnedAfter)
+  method System.Boolean Equals(NekoClicker.Core.Events.BuildingPurchasedEvent? other)
+  method System.Void Deconstruct(out System.String Id, out System.Int32 Amount, out System.Double UnitPrice, out System.Double TotalPrice, out System.Int32 OwnedAfter)
+  method static System.Boolean op_Equality(NekoClicker.Core.Events.BuildingPurchasedEvent? left, NekoClicker.Core.Events.BuildingPurchasedEvent? right)
+  method static System.Boolean op_Inequality(NekoClicker.Core.Events.BuildingPurchasedEvent? left, NekoClicker.Core.Events.BuildingPurchasedEvent? right)
+  method virtual System.Boolean Equals(System.Object? obj)
+  method virtual System.Int32 GetHashCode()
+  method virtual System.String! ToString()
+  prop System.Double TotalPrice { get; init; }
+  prop System.Double UnitPrice { get; init; }
+  prop System.Int32 Amount { get; init; }
+  prop System.Int32 OwnedAfter { get; init; }
+  prop System.String! Id { get; init; }
+
+public sealed class NekoClicker.Core.Events.BuildingSoldEvent : NekoClicker.Core.Events.IGameEvent, System.IEquatable<NekoClicker.Core.Events.BuildingSoldEvent>
+  ctor NekoClicker.Core.Events.BuildingSoldEvent(System.String! Id, System.Int32 Amount, System.Double Refund, System.Int32 OwnedAfter)
+  method System.Boolean Equals(NekoClicker.Core.Events.BuildingSoldEvent? other)
+  method System.Void Deconstruct(out System.String Id, out System.Int32 Amount, out System.Double Refund, out System.Int32 OwnedAfter)
+  method static System.Boolean op_Equality(NekoClicker.Core.Events.BuildingSoldEvent? left, NekoClicker.Core.Events.BuildingSoldEvent? right)
+  method static System.Boolean op_Inequality(NekoClicker.Core.Events.BuildingSoldEvent? left, NekoClicker.Core.Events.BuildingSoldEvent? right)
+  method virtual System.Boolean Equals(System.Object? obj)
+  method virtual System.Int32 GetHashCode()
+  method virtual System.String! ToString()
+  prop System.Double Refund { get; init; }
+  prop System.Int32 Amount { get; init; }
+  prop System.Int32 OwnedAfter { get; init; }
+  prop System.String! Id { get; init; }
+
+public sealed class NekoClicker.Core.Events.ChoiceMadeEvent : NekoClicker.Core.Events.IGameEvent, System.IEquatable<NekoClicker.Core.Events.ChoiceMadeEvent>
+  ctor NekoClicker.Core.Events.ChoiceMadeEvent(System.String! ChoiceId, System.String! OptionId, System.String! StanceId, System.String! OutcomeText)
+  method System.Boolean Equals(NekoClicker.Core.Events.ChoiceMadeEvent? other)
+  method System.Void Deconstruct(out System.String ChoiceId, out System.String OptionId, out System.String StanceId, out System.String OutcomeText)
+  method static System.Boolean op_Equality(NekoClicker.Core.Events.ChoiceMadeEvent? left, NekoClicker.Core.Events.ChoiceMadeEvent? right)
+  method static System.Boolean op_Inequality(NekoClicker.Core.Events.ChoiceMadeEvent? left, NekoClicker.Core.Events.ChoiceMadeEvent? right)
+  method virtual System.Boolean Equals(System.Object? obj)
+  method virtual System.Int32 GetHashCode()
+  method virtual System.String! ToString()
+  prop System.String! ChoiceId { get; init; }
+  prop System.String! OptionId { get; init; }
+  prop System.String! OutcomeText { get; init; }
+  prop System.String! StanceId { get; init; }
+
+public sealed class NekoClicker.Core.Events.ChoiceTriggeredEvent : NekoClicker.Core.Events.IGameEvent, System.IEquatable<NekoClicker.Core.Events.ChoiceTriggeredEvent>
+  ctor NekoClicker.Core.Events.ChoiceTriggeredEvent(System.String! Id, System.String! Speaker, System.String! Prompt)
+  method System.Boolean Equals(NekoClicker.Core.Events.ChoiceTriggeredEvent? other)
+  method System.Void Deconstruct(out System.String Id, out System.String Speaker, out System.String Prompt)
+  method static System.Boolean op_Equality(NekoClicker.Core.Events.ChoiceTriggeredEvent? left, NekoClicker.Core.Events.ChoiceTriggeredEvent? right)
+  method static System.Boolean op_Inequality(NekoClicker.Core.Events.ChoiceTriggeredEvent? left, NekoClicker.Core.Events.ChoiceTriggeredEvent? right)
+  method virtual System.Boolean Equals(System.Object? obj)
+  method virtual System.Int32 GetHashCode()
+  method virtual System.String! ToString()
+  prop System.String! Id { get; init; }
+  prop System.String! Prompt { get; init; }
+  prop System.String! Speaker { get; init; }
+
+public sealed class NekoClicker.Core.Events.ClickedEvent : NekoClicker.Core.Events.IGameEvent, System.IEquatable<NekoClicker.Core.Events.ClickedEvent>
+  ctor NekoClicker.Core.Events.ClickedEvent(System.Double Gained, System.Double CookiesAfter)
+  method System.Boolean Equals(NekoClicker.Core.Events.ClickedEvent? other)
+  method System.Void Deconstruct(out System.Double Gained, out System.Double CookiesAfter)
+  method static System.Boolean op_Equality(NekoClicker.Core.Events.ClickedEvent? left, NekoClicker.Core.Events.ClickedEvent? right)
+  method static System.Boolean op_Inequality(NekoClicker.Core.Events.ClickedEvent? left, NekoClicker.Core.Events.ClickedEvent? right)
+  method virtual System.Boolean Equals(System.Object? obj)
+  method virtual System.Int32 GetHashCode()
+  method virtual System.String! ToString()
+  prop System.Double CookiesAfter { get; init; }
+  prop System.Double Gained { get; init; }
+
+public sealed class NekoClicker.Core.Events.DominantStanceChangedEvent : NekoClicker.Core.Events.IGameEvent, System.IEquatable<NekoClicker.Core.Events.DominantStanceChangedEvent>
+  ctor NekoClicker.Core.Events.DominantStanceChangedEvent(System.String? PreviousStanceId, System.String? CurrentStanceId)
+  method System.Boolean Equals(NekoClicker.Core.Events.DominantStanceChangedEvent? other)
+  method System.Void Deconstruct(out System.String PreviousStanceId, out System.String CurrentStanceId)
+  method static System.Boolean op_Equality(NekoClicker.Core.Events.DominantStanceChangedEvent? left, NekoClicker.Core.Events.DominantStanceChangedEvent? right)
+  method static System.Boolean op_Inequality(NekoClicker.Core.Events.DominantStanceChangedEvent? left, NekoClicker.Core.Events.DominantStanceChangedEvent? right)
+  method virtual System.Boolean Equals(System.Object? obj)
+  method virtual System.Int32 GetHashCode()
+  method virtual System.String! ToString()
+  prop System.String? CurrentStanceId { get; init; }
+  prop System.String? PreviousStanceId { get; init; }
+
+public sealed class NekoClicker.Core.Events.EndingReachedEvent : NekoClicker.Core.Events.IGameEvent, System.IEquatable<NekoClicker.Core.Events.EndingReachedEvent>
+  ctor NekoClicker.Core.Events.EndingReachedEvent(System.String! Id, System.String! Name, System.String! Icon, System.String! Text)
+  method System.Boolean Equals(NekoClicker.Core.Events.EndingReachedEvent? other)
+  method System.Void Deconstruct(out System.String Id, out System.String Name, out System.String Icon, out System.String Text)
+  method static System.Boolean op_Equality(NekoClicker.Core.Events.EndingReachedEvent? left, NekoClicker.Core.Events.EndingReachedEvent? right)
+  method static System.Boolean op_Inequality(NekoClicker.Core.Events.EndingReachedEvent? left, NekoClicker.Core.Events.EndingReachedEvent? right)
+  method virtual System.Boolean Equals(System.Object? obj)
+  method virtual System.Int32 GetHashCode()
+  method virtual System.String! ToString()
+  prop System.String! Icon { get; init; }
+  prop System.String! Id { get; init; }
+  prop System.String! Name { get; init; }
+  prop System.String! Text { get; init; }
+
+public sealed class NekoClicker.Core.Events.EraAdvancedEvent : NekoClicker.Core.Events.IGameEvent, System.IEquatable<NekoClicker.Core.Events.EraAdvancedEvent>
+  ctor NekoClicker.Core.Events.EraAdvancedEvent(System.Int32 PreviousEra, System.Int32 NewEra, System.Double ChipsGained, System.Int32 BuildingsInherited, System.String! NewEraName)
+  method System.Boolean Equals(NekoClicker.Core.Events.EraAdvancedEvent? other)
+  method System.Void Deconstruct(out System.Int32 PreviousEra, out System.Int32 NewEra, out System.Double ChipsGained, out System.Int32 BuildingsInherited, out System.String NewEraName)
+  method static System.Boolean op_Equality(NekoClicker.Core.Events.EraAdvancedEvent? left, NekoClicker.Core.Events.EraAdvancedEvent? right)
+  method static System.Boolean op_Inequality(NekoClicker.Core.Events.EraAdvancedEvent? left, NekoClicker.Core.Events.EraAdvancedEvent? right)
+  method virtual System.Boolean Equals(System.Object? obj)
+  method virtual System.Int32 GetHashCode()
+  method virtual System.String! ToString()
+  prop System.Double ChipsGained { get; init; }
+  prop System.Int32 BuildingsInherited { get; init; }
+  prop System.Int32 NewEra { get; init; }
+  prop System.Int32 PreviousEra { get; init; }
+  prop System.String! NewEraName { get; init; }
+
+public sealed class NekoClicker.Core.Events.GameEventBus
+  ctor NekoClicker.Core.Events.GameEventBus()
+  method System.Boolean HasSubscribers<T>()
+  method System.IDisposable! Subscribe<T>(System.Action<T>! handler)
+  method System.Void Clear()
+  method System.Void Publish<T>(T evt)
+  method System.Void Unsubscribe<T>(System.Action<T>! handler)
+  prop System.Exception? LastHandlerError { get; }
+
+public sealed class NekoClicker.Core.Events.GameLoadedEvent : NekoClicker.Core.Events.IGameEvent, System.IEquatable<NekoClicker.Core.Events.GameLoadedEvent>
+  ctor NekoClicker.Core.Events.GameLoadedEvent(System.Double OfflineSeconds, System.Double OfflineCookies)
+  method System.Boolean Equals(NekoClicker.Core.Events.GameLoadedEvent? other)
+  method System.Void Deconstruct(out System.Double OfflineSeconds, out System.Double OfflineCookies)
+  method static System.Boolean op_Equality(NekoClicker.Core.Events.GameLoadedEvent? left, NekoClicker.Core.Events.GameLoadedEvent? right)
+  method static System.Boolean op_Inequality(NekoClicker.Core.Events.GameLoadedEvent? left, NekoClicker.Core.Events.GameLoadedEvent? right)
+  method virtual System.Boolean Equals(System.Object? obj)
+  method virtual System.Int32 GetHashCode()
+  method virtual System.String! ToString()
+  prop System.Double OfflineCookies { get; init; }
+  prop System.Double OfflineSeconds { get; init; }
+
+public sealed class NekoClicker.Core.Events.GameSavedEvent : NekoClicker.Core.Events.IGameEvent, System.IEquatable<NekoClicker.Core.Events.GameSavedEvent>
+  ctor NekoClicker.Core.Events.GameSavedEvent(System.String! Key)
+  method System.Boolean Equals(NekoClicker.Core.Events.GameSavedEvent? other)
+  method System.Void Deconstruct(out System.String Key)
+  method static System.Boolean op_Equality(NekoClicker.Core.Events.GameSavedEvent? left, NekoClicker.Core.Events.GameSavedEvent? right)
+  method static System.Boolean op_Inequality(NekoClicker.Core.Events.GameSavedEvent? left, NekoClicker.Core.Events.GameSavedEvent? right)
+  method virtual System.Boolean Equals(System.Object? obj)
+  method virtual System.Int32 GetHashCode()
+  method virtual System.String! ToString()
+  prop System.String! Key { get; init; }
+
+public sealed class NekoClicker.Core.Events.GoldenCookieClickedEvent : NekoClicker.Core.Events.IGameEvent, System.IEquatable<NekoClicker.Core.Events.GoldenCookieClickedEvent>
+  ctor NekoClicker.Core.Events.GoldenCookieClickedEvent(System.String! InstanceId, System.String! OutcomeId, System.String! OutcomeName, System.Double CookiesGained, System.String? BuffId)
+  method System.Boolean Equals(NekoClicker.Core.Events.GoldenCookieClickedEvent? other)
+  method System.Void Deconstruct(out System.String InstanceId, out System.String OutcomeId, out System.String OutcomeName, out System.Double CookiesGained, out System.String BuffId)
+  method static System.Boolean op_Equality(NekoClicker.Core.Events.GoldenCookieClickedEvent? left, NekoClicker.Core.Events.GoldenCookieClickedEvent? right)
+  method static System.Boolean op_Inequality(NekoClicker.Core.Events.GoldenCookieClickedEvent? left, NekoClicker.Core.Events.GoldenCookieClickedEvent? right)
+  method virtual System.Boolean Equals(System.Object? obj)
+  method virtual System.Int32 GetHashCode()
+  method virtual System.String! ToString()
+  prop System.Double CookiesGained { get; init; }
+  prop System.String! InstanceId { get; init; }
+  prop System.String! OutcomeId { get; init; }
+  prop System.String! OutcomeName { get; init; }
+  prop System.String? BuffId { get; init; }
+
+public sealed class NekoClicker.Core.Events.GoldenCookieExpiredEvent : NekoClicker.Core.Events.IGameEvent, System.IEquatable<NekoClicker.Core.Events.GoldenCookieExpiredEvent>
+  ctor NekoClicker.Core.Events.GoldenCookieExpiredEvent(System.String! InstanceId)
+  method System.Boolean Equals(NekoClicker.Core.Events.GoldenCookieExpiredEvent? other)
+  method System.Void Deconstruct(out System.String InstanceId)
+  method static System.Boolean op_Equality(NekoClicker.Core.Events.GoldenCookieExpiredEvent? left, NekoClicker.Core.Events.GoldenCookieExpiredEvent? right)
+  method static System.Boolean op_Inequality(NekoClicker.Core.Events.GoldenCookieExpiredEvent? left, NekoClicker.Core.Events.GoldenCookieExpiredEvent? right)
+  method virtual System.Boolean Equals(System.Object? obj)
+  method virtual System.Int32 GetHashCode()
+  method virtual System.String! ToString()
+  prop System.String! InstanceId { get; init; }
+
+public sealed class NekoClicker.Core.Events.GoldenCookieSpawnedEvent : NekoClicker.Core.Events.IGameEvent, System.IEquatable<NekoClicker.Core.Events.GoldenCookieSpawnedEvent>
+  ctor NekoClicker.Core.Events.GoldenCookieSpawnedEvent(System.String! InstanceId, System.Double X, System.Double Y, System.Double LifetimeSeconds)
+  method System.Boolean Equals(NekoClicker.Core.Events.GoldenCookieSpawnedEvent? other)
+  method System.Void Deconstruct(out System.String InstanceId, out System.Double X, out System.Double Y, out System.Double LifetimeSeconds)
+  method static System.Boolean op_Equality(NekoClicker.Core.Events.GoldenCookieSpawnedEvent? left, NekoClicker.Core.Events.GoldenCookieSpawnedEvent? right)
+  method static System.Boolean op_Inequality(NekoClicker.Core.Events.GoldenCookieSpawnedEvent? left, NekoClicker.Core.Events.GoldenCookieSpawnedEvent? right)
+  method virtual System.Boolean Equals(System.Object? obj)
+  method virtual System.Int32 GetHashCode()
+  method virtual System.String! ToString()
+  prop System.Double LifetimeSeconds { get; init; }
+  prop System.Double X { get; init; }
+  prop System.Double Y { get; init; }
+  prop System.String! InstanceId { get; init; }
+
+public interface NekoClicker.Core.Events.IGameEvent
+
+public sealed class NekoClicker.Core.Events.LoreRevealedEvent : NekoClicker.Core.Events.IGameEvent, System.IEquatable<NekoClicker.Core.Events.LoreRevealedEvent>
+  ctor NekoClicker.Core.Events.LoreRevealedEvent(System.String! Id, System.String! Title, System.String! Icon, System.String! StorylineId, NekoClicker.Core.Content.LoreChannel Channel)
+  method System.Boolean Equals(NekoClicker.Core.Events.LoreRevealedEvent? other)
+  method System.Void Deconstruct(out System.String Id, out System.String Title, out System.String Icon, out System.String StorylineId, out NekoClicker.Core.Content.LoreChannel Channel)
+  method static System.Boolean op_Equality(NekoClicker.Core.Events.LoreRevealedEvent? left, NekoClicker.Core.Events.LoreRevealedEvent? right)
+  method static System.Boolean op_Inequality(NekoClicker.Core.Events.LoreRevealedEvent? left, NekoClicker.Core.Events.LoreRevealedEvent? right)
+  method virtual System.Boolean Equals(System.Object? obj)
+  method virtual System.Int32 GetHashCode()
+  method virtual System.String! ToString()
+  prop NekoClicker.Core.Content.LoreChannel Channel { get; init; }
+  prop System.String! Icon { get; init; }
+  prop System.String! Id { get; init; }
+  prop System.String! StorylineId { get; init; }
+  prop System.String! Title { get; init; }
+
+public sealed class NekoClicker.Core.Events.NotificationEvent : NekoClicker.Core.Events.IGameEvent, System.IEquatable<NekoClicker.Core.Events.NotificationEvent>
+  ctor NekoClicker.Core.Events.NotificationEvent(NekoClicker.Core.GameNotification! Notification)
+  method System.Boolean Equals(NekoClicker.Core.Events.NotificationEvent? other)
+  method System.Void Deconstruct(out NekoClicker.Core.GameNotification Notification)
+  method static System.Boolean op_Equality(NekoClicker.Core.Events.NotificationEvent? left, NekoClicker.Core.Events.NotificationEvent? right)
+  method static System.Boolean op_Inequality(NekoClicker.Core.Events.NotificationEvent? left, NekoClicker.Core.Events.NotificationEvent? right)
+  method virtual System.Boolean Equals(System.Object? obj)
+  method virtual System.Int32 GetHashCode()
+  method virtual System.String! ToString()
+  prop NekoClicker.Core.GameNotification! Notification { get; init; }
+
+public sealed class NekoClicker.Core.Events.ProductionChangedEvent : NekoClicker.Core.Events.IGameEvent, System.IEquatable<NekoClicker.Core.Events.ProductionChangedEvent>
+  ctor NekoClicker.Core.Events.ProductionChangedEvent(System.Double CookiesPerSecond, System.Double ClickPower)
+  method System.Boolean Equals(NekoClicker.Core.Events.ProductionChangedEvent? other)
+  method System.Void Deconstruct(out System.Double CookiesPerSecond, out System.Double ClickPower)
+  method static System.Boolean op_Equality(NekoClicker.Core.Events.ProductionChangedEvent? left, NekoClicker.Core.Events.ProductionChangedEvent? right)
+  method static System.Boolean op_Inequality(NekoClicker.Core.Events.ProductionChangedEvent? left, NekoClicker.Core.Events.ProductionChangedEvent? right)
+  method virtual System.Boolean Equals(System.Object? obj)
+  method virtual System.Int32 GetHashCode()
+  method virtual System.String! ToString()
+  prop System.Double ClickPower { get; init; }
+  prop System.Double CookiesPerSecond { get; init; }
+
+public sealed class NekoClicker.Core.Events.TickEvent : NekoClicker.Core.Events.IGameEvent, System.IEquatable<NekoClicker.Core.Events.TickEvent>
+  ctor NekoClicker.Core.Events.TickEvent(System.Double DeltaSeconds, System.Double TotalSeconds)
+  method System.Boolean Equals(NekoClicker.Core.Events.TickEvent? other)
+  method System.Void Deconstruct(out System.Double DeltaSeconds, out System.Double TotalSeconds)
+  method static System.Boolean op_Equality(NekoClicker.Core.Events.TickEvent? left, NekoClicker.Core.Events.TickEvent? right)
+  method static System.Boolean op_Inequality(NekoClicker.Core.Events.TickEvent? left, NekoClicker.Core.Events.TickEvent? right)
+  method virtual System.Boolean Equals(System.Object? obj)
+  method virtual System.Int32 GetHashCode()
+  method virtual System.String! ToString()
+  prop System.Double DeltaSeconds { get; init; }
+  prop System.Double TotalSeconds { get; init; }
+
+public sealed class NekoClicker.Core.Events.UpgradePurchasedEvent : NekoClicker.Core.Events.IGameEvent, System.IEquatable<NekoClicker.Core.Events.UpgradePurchasedEvent>
+  ctor NekoClicker.Core.Events.UpgradePurchasedEvent(System.String! Id, System.String! Name, System.Double TotalPrice, NekoClicker.Core.Content.UpgradeCurrency Currency, System.Int32 OwnedAfter)
+  method System.Boolean Equals(NekoClicker.Core.Events.UpgradePurchasedEvent? other)
+  method System.Void Deconstruct(out System.String Id, out System.String Name, out System.Double TotalPrice, out NekoClicker.Core.Content.UpgradeCurrency Currency, out System.Int32 OwnedAfter)
+  method static System.Boolean op_Equality(NekoClicker.Core.Events.UpgradePurchasedEvent? left, NekoClicker.Core.Events.UpgradePurchasedEvent? right)
+  method static System.Boolean op_Inequality(NekoClicker.Core.Events.UpgradePurchasedEvent? left, NekoClicker.Core.Events.UpgradePurchasedEvent? right)
+  method virtual System.Boolean Equals(System.Object? obj)
+  method virtual System.Int32 GetHashCode()
+  method virtual System.String! ToString()
+  prop NekoClicker.Core.Content.UpgradeCurrency Currency { get; init; }
+  prop System.Double TotalPrice { get; init; }
+  prop System.Int32 OwnedAfter { get; init; }
+  prop System.String! Id { get; init; }
+  prop System.String! Name { get; init; }
+
+public sealed class NekoClicker.Core.GameEngine
+  ctor NekoClicker.Core.GameEngine(NekoClicker.Core.Content.GameContent! content, NekoClicker.Core.GameEngineOptions? options = null)
+  method NekoClicker.Core.AscensionResult! Ascend()
+  method NekoClicker.Core.ClickResult Click()
+  method NekoClicker.Core.Content.EndingDefinition? CheckEnding()
+  method NekoClicker.Core.GoldenCookieResult! ClickGoldenCookie(System.String! instanceId)
+  method NekoClicker.Core.GoldenCookieSpawn! SpawnGoldenCookie(System.String? forcedOutcomeId = null)
+  method NekoClicker.Core.PurchaseResult! ApplyBuff(System.String! buffId, System.Nullable<System.Double> seconds = null)
+  method NekoClicker.Core.PurchaseResult! BuyBuilding(System.String! id, System.Int32 amount = 1)
+  method NekoClicker.Core.PurchaseResult! BuyUpgrade(System.String! id, System.Int32 amount = 1)
+  method NekoClicker.Core.PurchaseResult! SellBuilding(System.String! id, System.Int32 amount = 1)
+  method NekoClicker.Core.Views.GameSnapshot! Snapshot(NekoClicker.Core.PurchaseMode mode = Buy1)
+  method System.Boolean AnswerChoice(System.String! choiceId, System.String! optionId)
+  method System.Boolean DismissLorePopup(System.String! entryId)
+  method System.Boolean IsUnlocked(NekoClicker.Core.Content.UnlockCondition! condition)
+  method System.Collections.Generic.IReadOnlyList<NekoClicker.Core.Content.AchievementDefinition>! CheckAchievements()
+  method System.Collections.Generic.IReadOnlyList<NekoClicker.Core.Content.ChoiceDefinition>! CheckChoices()
+  method System.Collections.Generic.IReadOnlyList<NekoClicker.Core.Content.LoreEntry>! CheckLore()
+  method System.Double GetPriceMultiplier(System.String! buildingId)
+  method System.Double Update(System.Double deltaSeconds)
+  method System.Int32 DismissAllLorePopups()
+  method System.Nullable<NekoClicker.Core.OfflineProgress> ApplyOfflineProgress(System.TimeSpan elapsed)
+  method System.Nullable<NekoClicker.Core.OfflineProgress> Load(System.String! json)
+  method System.String! Save()
+  method System.Void ClearNotifications()
+  method System.Void HardReset()
+  method System.Void MarkDirty()
+  method System.Void Notify(System.String! message, NekoClicker.Core.NotificationKind kind = Info, System.String! icon = "")
+  method System.Void Simulate(System.Double seconds)
+  prop NekoClicker.Core.Content.EndingDefinition? ReachedEnding { get; }
+  prop NekoClicker.Core.Content.EraGate EraGate { get; }
+  prop NekoClicker.Core.Content.GameBalance! Balance { get; }
+  prop NekoClicker.Core.Content.GameContent! Content { get; }
+  prop NekoClicker.Core.Events.GameEventBus! Events { get; }
+  prop NekoClicker.Core.GameEngineOptions! Options { get; }
+  prop NekoClicker.Core.GameState! State { get; }
+  prop NekoClicker.Core.IClock! Clock { get; }
+  prop NekoClicker.Core.IGameMetrics! Metrics { get; }
+  prop NekoClicker.Core.ModifierSet! Modifiers { get; }
+  prop NekoClicker.Core.ProductionBreakdown! Production { get; }
+  prop NekoClicker.Core.Randomness.DeterministicRandom! RandomSource { get; }
+  prop System.Collections.Generic.IReadOnlyList<NekoClicker.Core.GameNotification>! Notifications { get; }
+  prop System.Collections.Generic.IReadOnlyList<NekoClicker.Core.IGameModule>! Modules { get; }
+  prop System.Double ClickPower { get; }
+  prop System.Double CookiesPerSecond { get; }
+  prop System.Double PlayTimeSeconds { get; }
+  prop System.String? DominantStance { get; }
+
+public sealed class NekoClicker.Core.GameEngineOptions
+  ctor NekoClicker.Core.GameEngineOptions()
+  prop NekoClicker.Core.GameState? InitialState { get; init; }
+  prop NekoClicker.Core.IClock! Clock { get; init; }
+  prop System.Boolean AutoCheckAchievements { get; init; }
+  prop System.Boolean GrantOfflineProgress { get; init; }
+  prop System.Int32 MaxNotifications { get; init; }
+  prop System.UInt64 Seed { get; init; }
+
+public sealed class NekoClicker.Core.GameNotification : System.IEquatable<NekoClicker.Core.GameNotification>
+  ctor NekoClicker.Core.GameNotification(System.String! Message, System.String! Icon, NekoClicker.Core.NotificationKind Kind, System.Double Timestamp)
+  method System.Boolean Equals(NekoClicker.Core.GameNotification? other)
+  method System.Void Deconstruct(out System.String Message, out System.String Icon, out NekoClicker.Core.NotificationKind Kind, out System.Double Timestamp)
+  method static System.Boolean op_Equality(NekoClicker.Core.GameNotification? left, NekoClicker.Core.GameNotification? right)
+  method static System.Boolean op_Inequality(NekoClicker.Core.GameNotification? left, NekoClicker.Core.GameNotification? right)
+  method virtual System.Boolean Equals(System.Object? obj)
+  method virtual System.Int32 GetHashCode()
+  method virtual System.String! ToString()
+  prop NekoClicker.Core.NotificationKind Kind { get; init; }
+  prop System.Double Timestamp { get; init; }
+  prop System.String! Icon { get; init; }
+  prop System.String! Message { get; init; }
+
+public sealed class NekoClicker.Core.GameState
+  ctor NekoClicker.Core.GameState()
+  method System.Boolean HasChoice(System.String! choiceId)
+  method System.Double GetCounter(System.String! key)
+  method System.Double TotalBuildings()
+  method System.Int32 BuildingCount(System.String! id)
+  method System.Int32 StanceWeight(System.String! stanceId)
+  method System.Int32 UpgradeCount(System.String! id)
+  method System.String? AnswerOf(System.String! choiceId)
+  method System.Void AddCounter(System.String! key, System.Double delta)
+  method System.Void SetCounter(System.String! key, System.Double value)
+  prop System.Boolean GoldenCookieIntroduced { get; set; }
+  prop System.Collections.Generic.Dictionary<System.Int32, NekoClicker.Core.EraRecord>! EraHistory { get; }
+  prop System.Collections.Generic.Dictionary<System.String, System.Double>! Counters { get; }
+  prop System.Collections.Generic.Dictionary<System.String, System.Int32>! BuildingCounts { get; }
+  prop System.Collections.Generic.Dictionary<System.String, System.Int32>! StanceWeights { get; }
+  prop System.Collections.Generic.Dictionary<System.String, System.Int32>! UpgradeCounts { get; }
+  prop System.Collections.Generic.Dictionary<System.String, System.String>! ChoiceAnswers { get; }
+  prop System.Collections.Generic.Dictionary<System.String, System.String>! Metadata { get; }
+  prop System.Collections.Generic.HashSet<System.Int32>! EraCompleted { get; }
+  prop System.Collections.Generic.HashSet<System.String>! Achievements { get; }
+  prop System.Collections.Generic.HashSet<System.String>! EndingsReached { get; }
+  prop System.Collections.Generic.HashSet<System.String>! LoreUnlocked { get; }
+  prop System.Collections.Generic.List<NekoClicker.Core.ActiveBuff>! Buffs { get; }
+  prop System.Collections.Generic.List<NekoClicker.Core.GoldenCookieSpawn>! GoldenCookies { get; }
+  prop System.Collections.Generic.List<System.String>! PendingChoices { get; }
+  prop System.Collections.Generic.List<System.String>! PendingLorePopups { get; }
+  prop System.DateTimeOffset CreatedAt { get; set; }
+  prop System.DateTimeOffset LastSavedAt { get; set; }
+  prop System.Double Cookies { get; set; }
+  prop System.Double CookiesEarnedAllTime { get; set; }
+  prop System.Double CookiesEarnedThisRun { get; set; }
+  prop System.Double EraEnteredPlayTimeSeconds { get; set; }
+  prop System.Double GoldenCookieCountdown { get; set; }
+  prop System.Double GoldenCookiesClicked { get; set; }
+  prop System.Double HandMadeCookies { get; set; }
+  prop System.Double PlayTimeSeconds { get; set; }
+  prop System.Double PrestigeChips { get; set; }
+  prop System.Double PrestigeChipsSpent { get; set; }
+  prop System.Double TotalClicks { get; set; }
+  prop System.Int32 Ascensions { get; set; }
+  prop System.Int32 Era { get; set; }
+  prop System.Int32 PrestigeLevel { get; set; }
+  prop System.Int64 TickCount { get; set; }
+  prop System.UInt64 RandomState0 { get; set; }
+  prop System.UInt64 RandomState1 { get; set; }
+
+public sealed class NekoClicker.Core.GoldenCookieResult : System.IEquatable<NekoClicker.Core.GoldenCookieResult>
+  ctor NekoClicker.Core.GoldenCookieResult()
+  method System.Boolean Equals(NekoClicker.Core.GoldenCookieResult? other)
+  method static NekoClicker.Core.GoldenCookieResult! Fail(System.String! message)
+  method static System.Boolean op_Equality(NekoClicker.Core.GoldenCookieResult? left, NekoClicker.Core.GoldenCookieResult? right)
+  method static System.Boolean op_Inequality(NekoClicker.Core.GoldenCookieResult? left, NekoClicker.Core.GoldenCookieResult? right)
+  method virtual System.Boolean Equals(System.Object? obj)
+  method virtual System.Int32 GetHashCode()
+  method virtual System.String! ToString()
+  prop System.Boolean Success { get; init; }
+  prop System.Double BuffSeconds { get; init; }
+  prop System.Double CookiesGained { get; init; }
+  prop System.String! Icon { get; init; }
+  prop System.String! Message { get; init; }
+  prop System.String! OutcomeName { get; init; }
+  prop System.String? BuffId { get; init; }
+  prop System.String? OutcomeId { get; init; }
+
+public sealed class NekoClicker.Core.GoldenCookieSpawn
+  ctor NekoClicker.Core.GoldenCookieSpawn()
+  prop System.Double LifetimeSeconds { get; set; }
+  prop System.Double RemainingSeconds { get; set; }
+  prop System.Double X { get; set; }
+  prop System.Double Y { get; set; }
+  prop System.String! InstanceId { get; set; }
+  prop System.String? ForcedOutcomeId { get; set; }
+
+public static class NekoClicker.Core.GoldenCookieSystem
+  method static NekoClicker.Core.GoldenCookieResult! Click(NekoClicker.Core.GameEngine! engine, System.String! instanceId)
+  method static NekoClicker.Core.GoldenCookieSpawn! Spawn(NekoClicker.Core.GameEngine! engine, System.String? forcedOutcomeId = null)
+  method static System.Double NextDelay(NekoClicker.Core.GameEngine! engine)
+  method static System.Void ResetSchedule(NekoClicker.Core.GameEngine! engine)
+  method static System.Void Tick(NekoClicker.Core.GameEngine! engine, System.Double deltaSeconds)
+
+public interface NekoClicker.Core.IClock
+  prop abstract System.DateTimeOffset UtcNow { get; }
+  prop abstract System.Double MonotonicSeconds { get; }
+
+public interface NekoClicker.Core.IGameMetrics
+  method abstract System.Boolean HasAchievement(System.String! achievementId)
+  method abstract System.Boolean HasChoice(System.String! choiceId)
+  method abstract System.Boolean HasEnding(System.String! endingId)
+  method abstract System.Boolean HasUpgrade(System.String! upgradeId)
+  method abstract System.Double GetCounter(System.String! key)
+  method abstract System.Int32 BuildingCount(System.String! buildingId)
+  method abstract System.Int32 StanceWeight(System.String! stanceId)
+  method abstract System.Int32 TaggedBuildingCount(System.String! tag)
+  method abstract System.Int32 TaggedUpgradeCount(System.String! tag)
+  method abstract System.Int32 UpgradeCount(System.String! upgradeId)
+  prop abstract System.Double ClickPower { get; }
+  prop abstract System.Double Cookies { get; }
+  prop abstract System.Double CookiesEarnedAllTime { get; }
+  prop abstract System.Double CookiesEarnedThisRun { get; }
+  prop abstract System.Double CookiesPerSecond { get; }
+  prop abstract System.Double GoldenCookiesClicked { get; }
+  prop abstract System.Double HandMadeCookies { get; }
+  prop abstract System.Double PlayTimeSeconds { get; }
+  prop abstract System.Double PrestigeChips { get; }
+  prop abstract System.Double TotalBuildings { get; }
+  prop abstract System.Double TotalClicks { get; }
+  prop abstract System.Int32 AchievementCount { get; }
+  prop abstract System.Int32 Ascensions { get; }
+  prop abstract System.Int32 Era { get; }
+  prop abstract System.Int32 LoreCount { get; }
+  prop abstract System.Int32 PrestigeLevel { get; }
+  prop abstract System.Int32 PurchasedUpgradeCount { get; }
+
+public interface NekoClicker.Core.IGameModule
+  method virtual System.Void Configure(NekoClicker.Core.Content.GameContentBuilder! builder)
+  method virtual System.Void OnAscend(NekoClicker.Core.GameEngine! engine)
+  method virtual System.Void OnAttach(NekoClicker.Core.GameEngine! engine)
+  method virtual System.Void OnOffline(NekoClicker.Core.GameEngine! engine, NekoClicker.Core.OfflineProgress progress)
+  method virtual System.Void OnTick(NekoClicker.Core.GameEngine! engine, System.Double deltaSeconds)
+  prop abstract System.String! Name { get; }
+
+public static class NekoClicker.Core.LoreSystem
+  method static System.Boolean DismissPopup(NekoClicker.Core.GameEngine! engine, System.String! entryId)
+  method static System.Collections.Generic.List<NekoClicker.Core.Content.LoreEntry>! Check(NekoClicker.Core.GameEngine! engine)
+  method static System.Int32 CountUnlocked(NekoClicker.Core.Content.GameContent! content, NekoClicker.Core.GameState! state, System.String! storylineId)
+  method static System.Int32 DismissAllPopups(NekoClicker.Core.GameEngine! engine)
+
+public sealed class NekoClicker.Core.ManualClock : NekoClicker.Core.IClock
+  ctor NekoClicker.Core.ManualClock(System.Nullable<System.DateTimeOffset> start = null)
+  method System.Void Advance(System.Double seconds)
+  method System.Void JumpUtc(System.TimeSpan delta)
+  method System.Void SetUtcNow(System.DateTimeOffset value)
+  prop System.DateTimeOffset UtcNow { get; }
+  prop System.Double MonotonicSeconds { get; }
+
+public struct NekoClicker.Core.ModifierAccumulator
+  field System.Boolean Any
+  field System.Double AdditivePercent
+  field System.Double Flat
+  field System.Double Multiplicative
+  field System.Double Power
+  method System.Double Apply(System.Double baseValue)
+  prop static NekoClicker.Core.ModifierAccumulator Identity { get; }
+
+public static class NekoClicker.Core.ModifierResolver
+  method static NekoClicker.Core.ModifierSet! Build(NekoClicker.Core.Content.GameContent! content, NekoClicker.Core.GameState! state, NekoClicker.Core.IGameMetrics! metrics, System.Boolean includeBuffs = true)
+
+public sealed class NekoClicker.Core.ModifierSet
+  ctor NekoClicker.Core.ModifierSet()
+  method NekoClicker.Core.ModifierAccumulator Get(NekoClicker.Core.Content.ModifierTarget! target)
+  method System.Double Apply(System.Double baseValue, NekoClicker.Core.Content.ModifierTarget! target)
+  method System.Double CombinedMultiplier(params NekoClicker.Core.Content.ModifierTarget[]! targets)
+  method System.Double FlatOf(NekoClicker.Core.Content.ModifierTarget! target)
+  method System.Double Multiplier(NekoClicker.Core.Content.ModifierTarget! target)
+  method System.Double PowerOf(NekoClicker.Core.Content.ModifierTarget! target)
+  method System.Void Add(NekoClicker.Core.Content.Modifier! modifier, NekoClicker.Core.IGameMetrics! metrics)
+  method System.Void Add(NekoClicker.Core.Content.ModifierTarget! target, NekoClicker.Core.Content.ModifierOperation operation, System.Double value)
+  prop System.Boolean IsEmpty { get; }
+  prop System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<NekoClicker.Core.Content.ModifierTarget, NekoClicker.Core.ModifierAccumulator>>! Entries { get; }
+  prop System.Int32 TargetCount { get; }
+
+public enum NekoClicker.Core.NotificationKind : System.Int32
+  field Info = Info
+  field Rare = Rare
+  field Success = Success
+  field Warning = Warning
+
+public static class NekoClicker.Core.Numbers.Num
+  field const System.Double Max = 1.7976931348623157E+308
+  method static System.Boolean Approximately(System.Double a, System.Double b, System.Double epsilon = 1E-09)
+  method static System.Boolean IsFinite(System.Double value)
+  method static System.Boolean RelativeEquals(System.Double a, System.Double b, System.Double tolerance = 1E-06)
+  method static System.Double Clamp(System.Double value, System.Double min, System.Double max)
+  method static System.Double NonNegative(System.Double value)
+  method static System.Double SafeAdd(System.Double a, System.Double b)
+  method static System.Double SafeMul(System.Double a, System.Double b)
+  method static System.Double SafePow(System.Double a, System.Double b)
+  method static System.Double SafeSum(System.Collections.Generic.IEnumerable<System.Double>! values)
+
+public static class NekoClicker.Core.Numbers.NumFormat
+  field static readonly System.String[]! LongScaleNames
+  field static readonly System.String[]! ShortScaleNames
+  method static System.String! Duration(System.Double seconds)
+  method static System.String! Duration(System.TimeSpan span)
+  method static System.String! Format(System.Double value, NekoClicker.Core.Numbers.NumberStyle style = Long)
+  method static System.String! Format(System.Double value, System.Collections.Generic.IReadOnlyList<System.String>! scaleNames, System.Boolean space = true)
+  method static System.String! FormatLong(System.Double value)
+  method static System.String! FormatPlain(System.Double value)
+  method static System.String! FormatScientific(System.Double value)
+  method static System.String! FormatShort(System.Double value)
+  method static System.String! Multiplier(System.Double value)
+  method static System.String! Percent(System.Double fraction, System.Int32 decimals = 1)
+  method static System.String! Signed(System.Double value)
+
+public enum NekoClicker.Core.Numbers.NumberStyle : System.Int32
+  field Long = Long
+  field Plain = Plain
+  field Scientific = Scientific
+  field Short = Short
+
+public struct NekoClicker.Core.OfflineProgress : System.IEquatable<NekoClicker.Core.OfflineProgress>
+  ctor NekoClicker.Core.OfflineProgress(System.Double ElapsedSeconds, System.Double CreditedSeconds, System.Double CookiesGained, System.Boolean WasCapped)
+  method System.Boolean Equals(NekoClicker.Core.OfflineProgress other)
+  method System.Void Deconstruct(out System.Double ElapsedSeconds, out System.Double CreditedSeconds, out System.Double CookiesGained, out System.Boolean WasCapped)
+  method static System.Boolean op_Equality(NekoClicker.Core.OfflineProgress left, NekoClicker.Core.OfflineProgress right)
+  method static System.Boolean op_Inequality(NekoClicker.Core.OfflineProgress left, NekoClicker.Core.OfflineProgress right)
+  method virtual System.Boolean Equals(System.Object obj)
+  method virtual System.Int32 GetHashCode()
+  method virtual System.String ToString()
+  prop System.Boolean WasCapped { get; init; }
+  prop System.Double CookiesGained { get; init; }
+  prop System.Double CreditedSeconds { get; init; }
+  prop System.Double ElapsedSeconds { get; init; }
+
+public sealed class NekoClicker.Core.Persistence.BuffSave
+  ctor NekoClicker.Core.Persistence.BuffSave()
+  prop System.Double RemainingSeconds { get; set; }
+  prop System.Double TotalSeconds { get; set; }
+  prop System.Int32 Stacks { get; set; }
+  prop System.String! Id { get; set; }
+
+public sealed class NekoClicker.Core.Persistence.FileStorage : NekoClicker.Core.Persistence.IStorage
+  ctor NekoClicker.Core.Persistence.FileStorage(System.String! rootDirectory)
+  method System.Boolean Exists(System.String! key)
+  method System.Collections.Generic.IReadOnlyList<System.String>! ListKeys()
+  method System.String? Read(System.String! key)
+  method System.Void Delete(System.String! key)
+  method System.Void Write(System.String! key, System.String! content)
+  prop System.String! RootDirectory { get; }
+
+public sealed class NekoClicker.Core.Persistence.GoldenCookieSave
+  ctor NekoClicker.Core.Persistence.GoldenCookieSave()
+  prop System.Double LifetimeSeconds { get; set; }
+  prop System.Double RemainingSeconds { get; set; }
+  prop System.Double X { get; set; }
+  prop System.Double Y { get; set; }
+  prop System.String! InstanceId { get; set; }
+  prop System.String? ForcedOutcomeId { get; set; }
+
+public interface NekoClicker.Core.Persistence.ISaveMigration
+  method abstract System.Void Apply(System.Text.Json.Nodes.JsonObject! save)
+  prop abstract System.Int32 FromVersion { get; }
+  prop abstract System.String! Description { get; }
+
+public interface NekoClicker.Core.Persistence.IStorage
+  method abstract System.Boolean Exists(System.String! key)
+  method abstract System.Collections.Generic.IReadOnlyList<System.String>! ListKeys()
+  method abstract System.String? Read(System.String! key)
+  method abstract System.Void Delete(System.String! key)
+  method abstract System.Void Write(System.String! key, System.String! content)
+
+public sealed class NekoClicker.Core.Persistence.MemoryStorage : NekoClicker.Core.Persistence.IStorage
+  ctor NekoClicker.Core.Persistence.MemoryStorage()
+  method System.Boolean Exists(System.String! key)
+  method System.Collections.Generic.IReadOnlyList<System.String>! ListKeys()
+  method System.String? Read(System.String! key)
+  method System.Void Delete(System.String! key)
+  method System.Void Write(System.String! key, System.String! content)
+
+public sealed class NekoClicker.Core.Persistence.SaveData
+  ctor NekoClicker.Core.Persistence.SaveData()
+  prop System.Boolean GoldenCookieIntroduced { get; set; }
+  prop System.Collections.Generic.Dictionary<System.Int32, NekoClicker.Core.EraRecord>! EraHistory { get; set; }
+  prop System.Collections.Generic.Dictionary<System.String, System.Double>! Counters { get; set; }
+  prop System.Collections.Generic.Dictionary<System.String, System.Int32>! Buildings { get; set; }
+  prop System.Collections.Generic.Dictionary<System.String, System.Int32>! StanceWeights { get; set; }
+  prop System.Collections.Generic.Dictionary<System.String, System.Int32>! Upgrades { get; set; }
+  prop System.Collections.Generic.Dictionary<System.String, System.String>! ChoiceAnswers { get; set; }
+  prop System.Collections.Generic.Dictionary<System.String, System.String>! Metadata { get; set; }
+  prop System.Collections.Generic.List<NekoClicker.Core.Persistence.BuffSave>! Buffs { get; set; }
+  prop System.Collections.Generic.List<NekoClicker.Core.Persistence.GoldenCookieSave>! GoldenCookies { get; set; }
+  prop System.Collections.Generic.List<System.Int32>! EraCompleted { get; set; }
+  prop System.Collections.Generic.List<System.String>! Achievements { get; set; }
+  prop System.Collections.Generic.List<System.String>! EndingsReached { get; set; }
+  prop System.Collections.Generic.List<System.String>! LoreUnlocked { get; set; }
+  prop System.Collections.Generic.List<System.String>! PendingChoices { get; set; }
+  prop System.Collections.Generic.List<System.String>! PendingLorePopups { get; set; }
+  prop System.DateTimeOffset CreatedAt { get; set; }
+  prop System.DateTimeOffset LastSavedAt { get; set; }
+  prop System.Double Cookies { get; set; }
+  prop System.Double CookiesEarnedAllTime { get; set; }
+  prop System.Double CookiesEarnedThisRun { get; set; }
+  prop System.Double EraEnteredPlayTimeSeconds { get; set; }
+  prop System.Double GoldenCookieCountdown { get; set; }
+  prop System.Double GoldenCookiesClicked { get; set; }
+  prop System.Double HandMadeCookies { get; set; }
+  prop System.Double PlayTimeSeconds { get; set; }
+  prop System.Double PrestigeChips { get; set; }
+  prop System.Double PrestigeChipsSpent { get; set; }
+  prop System.Double TotalClicks { get; set; }
+  prop System.Int32 Ascensions { get; set; }
+  prop System.Int32 Era { get; set; }
+  prop System.Int32 PrestigeLevel { get; set; }
+  prop System.Int32 Version { get; set; }
+  prop System.Int64 TickCount { get; set; }
+  prop System.UInt64 RandomState0 { get; set; }
+  prop System.UInt64 RandomState1 { get; set; }
+
+public sealed class NekoClicker.Core.Persistence.SaveManager : System.IDisposable
+  ctor NekoClicker.Core.Persistence.SaveManager(NekoClicker.Core.GameEngine! engine, NekoClicker.Core.Persistence.IStorage! storage, System.String! slot = "neko-save.json", System.Nullable<System.Double> autoSaveIntervalSeconds = null)
+  method System.Boolean HasSave()
+  method System.Boolean Load()
+  method System.Boolean Save()
+  method System.Boolean WriteRaw(System.String! json)
+  method System.String! DescribeStorage()
+  method System.String! ExportShareCode()
+  method System.String? ReadRaw()
+  method System.Void Delete()
+  method System.Void Dispose()
+  method System.Void Tick(System.Double deltaSeconds)
+  prop System.Boolean AutoSaveEnabled { get; set; }
+  prop System.Double AutoSaveInterval { get; }
+  prop System.Double SecondsSinceSave { get; }
+  prop System.Exception? LastError { get; }
+  prop System.Nullable<NekoClicker.Core.OfflineProgress> LastOfflineProgress { get; }
+  prop System.Nullable<System.DateTimeOffset> LastSaveAt { get; }
+  prop System.String! Slot { get; }
+
+public static class NekoClicker.Core.Persistence.SaveSerializer
+  field const System.Int32 CurrentVersion = 1
+  method static NekoClicker.Core.Persistence.SaveData! Capture(NekoClicker.Core.GameEngine! engine)
+  method static NekoClicker.Core.Persistence.SaveData! Parse(System.String! json, System.Collections.Generic.IReadOnlyList<NekoClicker.Core.Persistence.ISaveMigration>? migrations = null)
+  method static System.Nullable<NekoClicker.Core.OfflineProgress> DeserializeInto(NekoClicker.Core.GameEngine! engine, System.String! json, System.Collections.Generic.IReadOnlyList<NekoClicker.Core.Persistence.ISaveMigration>? migrations = null)
+  method static System.String! Serialize(NekoClicker.Core.GameEngine! engine)
+  method static System.String! SerializeToShareCode(NekoClicker.Core.GameEngine! engine)
+  method static System.Void Apply(NekoClicker.Core.GameEngine! engine, NekoClicker.Core.Persistence.SaveData! data)
+  prop static System.Collections.Generic.List<NekoClicker.Core.Persistence.ISaveMigration>! Migrations { get; }
+
+public struct NekoClicker.Core.PrestigePreview : System.IEquatable<NekoClicker.Core.PrestigePreview>
+  ctor NekoClicker.Core.PrestigePreview(System.Int32 CurrentLevel, System.Int32 NextLevel, System.Double ChipsOnAscend, System.Double CookiesForNextLevel, System.Double Progress, System.Boolean CanAscend)
+  method System.Boolean Equals(NekoClicker.Core.PrestigePreview other)
+  method System.Void Deconstruct(out System.Int32 CurrentLevel, out System.Int32 NextLevel, out System.Double ChipsOnAscend, out System.Double CookiesForNextLevel, out System.Double Progress, out System.Boolean CanAscend)
+  method static System.Boolean op_Equality(NekoClicker.Core.PrestigePreview left, NekoClicker.Core.PrestigePreview right)
+  method static System.Boolean op_Inequality(NekoClicker.Core.PrestigePreview left, NekoClicker.Core.PrestigePreview right)
+  method virtual System.Boolean Equals(System.Object obj)
+  method virtual System.Int32 GetHashCode()
+  method virtual System.String ToString()
+  prop System.Boolean CanAscend { get; init; }
+  prop System.Double ChipsOnAscend { get; init; }
+  prop System.Double CookiesForNextLevel { get; init; }
+  prop System.Double Progress { get; init; }
+  prop System.Int32 CurrentLevel { get; init; }
+  prop System.Int32 NextLevel { get; init; }
+
+public static class NekoClicker.Core.PrestigeSystem
+  method static NekoClicker.Core.AscensionResult! Ascend(NekoClicker.Core.GameEngine! engine)
+  method static NekoClicker.Core.PrestigePreview Preview(NekoClicker.Core.GameEngine! engine)
+  method static System.Double CookiesForLevel(System.Int32 level, NekoClicker.Core.Content.GameBalance! balance)
+  method static System.Int32 LevelFor(System.Double allTimeEarned, NekoClicker.Core.Content.GameBalance! balance)
+  method static System.Int32 ResetRun(NekoClicker.Core.GameEngine! engine, System.Boolean keepAchievements, NekoClicker.Core.Content.EraDefinition? enteringEra = null)
+
+public static class NekoClicker.Core.Pricing
+  method static System.Double BulkPrice(NekoClicker.Core.Content.BuildingDefinition! definition, System.Int32 owned, System.Int32 count, System.Double priceMultiplier)
+  method static System.Double SellValue(NekoClicker.Core.Content.BuildingDefinition! definition, System.Int32 owned, System.Int32 count, System.Double refundRate)
+  method static System.Double UnitPrice(NekoClicker.Core.Content.BuildingDefinition! definition, System.Int32 owned, System.Double priceMultiplier)
+  method static System.Double UpgradePrice(NekoClicker.Core.Content.UpgradeDefinition! definition, System.Int32 owned, System.Int32 count)
+  method static System.Int32 MaxAffordable(NekoClicker.Core.Content.BuildingDefinition! definition, System.Int32 owned, System.Double budget, System.Double priceMultiplier, System.Int32 cap)
+
+public sealed class NekoClicker.Core.ProductionBreakdown : System.IEquatable<NekoClicker.Core.ProductionBreakdown>
+  ctor NekoClicker.Core.ProductionBreakdown()
+  field static readonly NekoClicker.Core.ProductionBreakdown! Empty
+  method NekoClicker.Core.BuildingProduction For(System.String! buildingId)
+  method System.Boolean Equals(NekoClicker.Core.ProductionBreakdown? other)
+  method static System.Boolean op_Equality(NekoClicker.Core.ProductionBreakdown? left, NekoClicker.Core.ProductionBreakdown? right)
+  method static System.Boolean op_Inequality(NekoClicker.Core.ProductionBreakdown? left, NekoClicker.Core.ProductionBreakdown? right)
+  method virtual System.Boolean Equals(System.Object? obj)
+  method virtual System.Int32 GetHashCode()
+  method virtual System.String! ToString()
+  prop System.Collections.Generic.IReadOnlyDictionary<System.String, NekoClicker.Core.BuildingProduction>! Buildings { get; init; }
+  prop System.Double ClickBase { get; init; }
+  prop System.Double ClickPower { get; init; }
+  prop System.Double CookiesPerSecond { get; init; }
+  prop System.Double GlobalMultiplier { get; init; }
+
+public static class NekoClicker.Core.ProductionCalculator
+  method static NekoClicker.Core.ProductionBreakdown! Compute(NekoClicker.Core.Content.GameContent! content, NekoClicker.Core.GameState! state, NekoClicker.Core.ModifierSet! modifiers, NekoClicker.Core.Content.GameBalance! balance)
+
+public enum NekoClicker.Core.PurchaseMode : System.Int32
+  field Buy1 = Buy1
+  field Buy10 = Buy10
+  field Buy100 = Buy100
+  field BuyMax = BuyMax
+  field Sell1 = Sell1
+  field Sell10 = Sell10
+  field SellMax = SellMax
+
+public static class NekoClicker.Core.PurchaseModes
+  method static NekoClicker.Core.PurchaseMode NextBuy(NekoClicker.Core.PurchaseMode mode)
+  method static NekoClicker.Core.PurchaseMode ToggleSell(NekoClicker.Core.PurchaseMode mode)
+  method static System.Boolean IsSell(NekoClicker.Core.PurchaseMode mode)
+  method static System.Int32 RequestedAmount(NekoClicker.Core.PurchaseMode mode)
+  method static System.String! Label(NekoClicker.Core.PurchaseMode mode)
+
+public sealed class NekoClicker.Core.PurchaseResult : System.IEquatable<NekoClicker.Core.PurchaseResult>
+  ctor NekoClicker.Core.PurchaseResult()
+  method System.Boolean Equals(NekoClicker.Core.PurchaseResult? other)
+  method static NekoClicker.Core.PurchaseResult! Fail(System.String! message, System.String? id = null)
+  method static NekoClicker.Core.PurchaseResult! Ok(System.String! message, System.String! id, System.Int32 amount, System.Double totalPrice, System.Int32 ownedAfter)
+  method static System.Boolean op_Equality(NekoClicker.Core.PurchaseResult? left, NekoClicker.Core.PurchaseResult? right)
+  method static System.Boolean op_Inequality(NekoClicker.Core.PurchaseResult? left, NekoClicker.Core.PurchaseResult? right)
+  method virtual System.Boolean Equals(System.Object? obj)
+  method virtual System.Int32 GetHashCode()
+  method virtual System.String! ToString()
+  prop System.Boolean Success { get; init; }
+  prop System.Double TotalPrice { get; init; }
+  prop System.Int32 Amount { get; init; }
+  prop System.Int32 OwnedAfter { get; init; }
+  prop System.String! Message { get; init; }
+  prop System.String? Id { get; init; }
+
+public sealed class NekoClicker.Core.Randomness.DeterministicRandom
+  ctor NekoClicker.Core.Randomness.DeterministicRandom(System.UInt64 seed)
+  ctor NekoClicker.Core.Randomness.DeterministicRandom(System.UInt64 state0, System.UInt64 state1)
+  method System.Double NextDouble()
+  method System.Double NextDouble(System.Double min, System.Double max)
+  method System.Int32 NextInt(System.Int32 minInclusive, System.Int32 maxExclusive)
+  method System.UInt64 NextUInt64()
+  method System.Void Shuffle<T>(System.Collections.Generic.IList<T>! items)
+  method T PickWeighted<T>(System.Collections.Generic.IReadOnlyList<T>! items, System.Func<T, System.Double>! weightSelector)
+  prop System.UInt64 State0 { get; }
+  prop System.UInt64 State1 { get; }
+
+public sealed class NekoClicker.Core.SystemClock : NekoClicker.Core.IClock
+  ctor NekoClicker.Core.SystemClock()
+  field static readonly NekoClicker.Core.SystemClock! Instance
+  prop System.DateTimeOffset UtcNow { get; }
+  prop System.Double MonotonicSeconds { get; }
+
+public sealed class NekoClicker.Core.Views.AchievementView : System.IEquatable<NekoClicker.Core.Views.AchievementView>
+  ctor NekoClicker.Core.Views.AchievementView()
+  method System.Boolean Equals(NekoClicker.Core.Views.AchievementView? other)
+  method static System.Boolean op_Equality(NekoClicker.Core.Views.AchievementView? left, NekoClicker.Core.Views.AchievementView? right)
+  method static System.Boolean op_Inequality(NekoClicker.Core.Views.AchievementView? left, NekoClicker.Core.Views.AchievementView? right)
+  method virtual System.Boolean Equals(System.Object? obj)
+  method virtual System.Int32 GetHashCode()
+  method virtual System.String! ToString()
+  prop System.Boolean Hidden { get; init; }
+  prop System.Boolean Unlocked { get; init; }
+  prop System.Double Progress { get; init; }
+  prop System.String! Category { get; init; }
+  prop System.String! Description { get; init; }
+  prop System.String! Icon { get; init; }
+  prop System.String! Id { get; init; }
+  prop System.String! Name { get; init; }
+  prop System.String! ProgressText { get; init; }
+
+public sealed class NekoClicker.Core.Views.BuffView : System.IEquatable<NekoClicker.Core.Views.BuffView>
+  ctor NekoClicker.Core.Views.BuffView()
+  method System.Boolean Equals(NekoClicker.Core.Views.BuffView? other)
+  method static System.Boolean op_Equality(NekoClicker.Core.Views.BuffView? left, NekoClicker.Core.Views.BuffView? right)
+  method static System.Boolean op_Inequality(NekoClicker.Core.Views.BuffView? left, NekoClicker.Core.Views.BuffView? right)
+  method virtual System.Boolean Equals(System.Object? obj)
+  method virtual System.Int32 GetHashCode()
+  method virtual System.String! ToString()
+  prop System.Boolean IsDebuff { get; init; }
+  prop System.Double Progress { get; init; }
+  prop System.Double RemainingSeconds { get; init; }
+  prop System.Double TotalSeconds { get; init; }
+  prop System.Int32 Stacks { get; init; }
+  prop System.String! Description { get; init; }
+  prop System.String! Icon { get; init; }
+  prop System.String! Id { get; init; }
+  prop System.String! Name { get; init; }
+
+public sealed class NekoClicker.Core.Views.BuildingView : System.IEquatable<NekoClicker.Core.Views.BuildingView>
+  ctor NekoClicker.Core.Views.BuildingView()
+  method System.Boolean Equals(NekoClicker.Core.Views.BuildingView? other)
+  method static System.Boolean op_Equality(NekoClicker.Core.Views.BuildingView? left, NekoClicker.Core.Views.BuildingView? right)
+  method static System.Boolean op_Inequality(NekoClicker.Core.Views.BuildingView? left, NekoClicker.Core.Views.BuildingView? right)
+  method virtual System.Boolean Equals(System.Object? obj)
+  method virtual System.Int32 GetHashCode()
+  method virtual System.String! ToString()
+  prop System.Boolean CanAfford { get; init; }
+  prop System.Boolean HiddenUntilUnlocked { get; init; }
+  prop System.Boolean IsUnlocked { get; init; }
+  prop System.Boolean IsVisible { get; }
+  prop System.Double BatchPrice { get; init; }
+  prop System.Double CpsContribution { get; init; }
+  prop System.Double CpsEach { get; init; }
+  prop System.Double CpsShare { get; init; }
+  prop System.Double SellRefundRate { get; init; }
+  prop System.Double UnitPrice { get; init; }
+  prop System.Double UnlockProgress { get; init; }
+  prop System.Int32 BatchAmount { get; init; }
+  prop System.Int32 Owned { get; init; }
+  prop System.Nullable<System.Int32> NextMilestoneAt { get; init; }
+  prop System.String! Category { get; init; }
+  prop System.String! Description { get; init; }
+  prop System.String! Icon { get; init; }
+  prop System.String! Id { get; init; }
+  prop System.String! Name { get; init; }
+  prop System.String! UnlockHint { get; init; }
+  prop System.String? NextMilestoneName { get; init; }
+
+public sealed class NekoClicker.Core.Views.ChoiceOptionView : System.IEquatable<NekoClicker.Core.Views.ChoiceOptionView>
+  ctor NekoClicker.Core.Views.ChoiceOptionView()
+  method System.Boolean Equals(NekoClicker.Core.Views.ChoiceOptionView? other)
+  method static System.Boolean op_Equality(NekoClicker.Core.Views.ChoiceOptionView? left, NekoClicker.Core.Views.ChoiceOptionView? right)
+  method static System.Boolean op_Inequality(NekoClicker.Core.Views.ChoiceOptionView? left, NekoClicker.Core.Views.ChoiceOptionView? right)
+  method virtual System.Boolean Equals(System.Object? obj)
+  method virtual System.Int32 GetHashCode()
+  method virtual System.String! ToString()
+  prop System.Int32 Weight { get; init; }
+  prop System.String! EffectSummary { get; init; }
+  prop System.String! Id { get; init; }
+  prop System.String! Label { get; init; }
+  prop System.String! StanceIcon { get; init; }
+  prop System.String! StanceName { get; init; }
+
+public sealed class NekoClicker.Core.Views.ChoiceView : System.IEquatable<NekoClicker.Core.Views.ChoiceView>
+  ctor NekoClicker.Core.Views.ChoiceView()
+  method System.Boolean Equals(NekoClicker.Core.Views.ChoiceView? other)
+  method static System.Boolean op_Equality(NekoClicker.Core.Views.ChoiceView? left, NekoClicker.Core.Views.ChoiceView? right)
+  method static System.Boolean op_Inequality(NekoClicker.Core.Views.ChoiceView? left, NekoClicker.Core.Views.ChoiceView? right)
+  method virtual System.Boolean Equals(System.Object? obj)
+  method virtual System.Int32 GetHashCode()
+  method virtual System.String! ToString()
+  prop System.Collections.Generic.IReadOnlyList<NekoClicker.Core.Views.ChoiceOptionView>! Options { get; init; }
+  prop System.String! Id { get; init; }
+  prop System.String! Prompt { get; init; }
+  prop System.String! Speaker { get; init; }
+
+public sealed class NekoClicker.Core.Views.CodexView : System.IEquatable<NekoClicker.Core.Views.CodexView>
+  ctor NekoClicker.Core.Views.CodexView()
+  method System.Boolean Equals(NekoClicker.Core.Views.CodexView? other)
+  method static System.Boolean op_Equality(NekoClicker.Core.Views.CodexView? left, NekoClicker.Core.Views.CodexView? right)
+  method static System.Boolean op_Inequality(NekoClicker.Core.Views.CodexView? left, NekoClicker.Core.Views.CodexView? right)
+  method virtual System.Boolean Equals(System.Object? obj)
+  method virtual System.Int32 GetHashCode()
+  method virtual System.String! ToString()
+  prop System.Collections.Generic.IReadOnlyList<NekoClicker.Core.Views.StorylineView>! Storylines { get; init; }
+  prop System.Double Progress { get; init; }
+  prop System.Int32 TotalEntries { get; init; }
+  prop System.Int32 TotalUnlocked { get; init; }
+
+public sealed class NekoClicker.Core.Views.EndingView : System.IEquatable<NekoClicker.Core.Views.EndingView>
+  ctor NekoClicker.Core.Views.EndingView()
+  method System.Boolean Equals(NekoClicker.Core.Views.EndingView? other)
+  method static System.Boolean op_Equality(NekoClicker.Core.Views.EndingView? left, NekoClicker.Core.Views.EndingView? right)
+  method static System.Boolean op_Inequality(NekoClicker.Core.Views.EndingView? left, NekoClicker.Core.Views.EndingView? right)
+  method virtual System.Boolean Equals(System.Object? obj)
+  method virtual System.Int32 GetHashCode()
+  method virtual System.String! ToString()
+  prop System.String! Icon { get; init; }
+  prop System.String! Id { get; init; }
+  prop System.String! Name { get; init; }
+  prop System.String! Text { get; init; }
+
+public sealed class NekoClicker.Core.Views.EraSummary : System.IEquatable<NekoClicker.Core.Views.EraSummary>
+  ctor NekoClicker.Core.Views.EraSummary(System.Int32 Index, System.String! Name, System.String! Icon, System.String! Theme, System.Boolean Completed, System.Boolean Current)
+  method System.Boolean Equals(NekoClicker.Core.Views.EraSummary? other)
+  method System.Void Deconstruct(out System.Int32 Index, out System.String Name, out System.String Icon, out System.String Theme, out System.Boolean Completed, out System.Boolean Current)
+  method static System.Boolean op_Equality(NekoClicker.Core.Views.EraSummary? left, NekoClicker.Core.Views.EraSummary? right)
+  method static System.Boolean op_Inequality(NekoClicker.Core.Views.EraSummary? left, NekoClicker.Core.Views.EraSummary? right)
+  method virtual System.Boolean Equals(System.Object? obj)
+  method virtual System.Int32 GetHashCode()
+  method virtual System.String! ToString()
+  prop System.Boolean Completed { get; init; }
+  prop System.Boolean Current { get; init; }
+  prop System.Int32 Index { get; init; }
+  prop System.String! Icon { get; init; }
+  prop System.String! Name { get; init; }
+  prop System.String! Theme { get; init; }
+
+public sealed class NekoClicker.Core.Views.EraView : System.IEquatable<NekoClicker.Core.Views.EraView>
+  ctor NekoClicker.Core.Views.EraView()
+  method System.Boolean Equals(NekoClicker.Core.Views.EraView? other)
+  method static System.Boolean op_Equality(NekoClicker.Core.Views.EraView? left, NekoClicker.Core.Views.EraView? right)
+  method static System.Boolean op_Inequality(NekoClicker.Core.Views.EraView? left, NekoClicker.Core.Views.EraView? right)
+  method virtual System.Boolean Equals(System.Object? obj)
+  method virtual System.Int32 GetHashCode()
+  method virtual System.String! ToString()
+  prop System.Boolean CanAdvance { get; init; }
+  prop System.Boolean IsFinalEra { get; init; }
+  prop System.Collections.Generic.IReadOnlyList<NekoClicker.Core.Views.EraSummary>! All { get; init; }
+  prop System.Double ChipsOnAdvance { get; init; }
+  prop System.Double Progress { get; init; }
+  prop System.Int32 Index { get; init; }
+  prop System.Int32 Total { get; init; }
+  prop System.Nullable<System.Int32> NextIndex { get; init; }
+  prop System.String! EntryText { get; init; }
+  prop System.String! Icon { get; init; }
+  prop System.String! Id { get; init; }
+  prop System.String! ModifierSummary { get; init; }
+  prop System.String! Name { get; init; }
+  prop System.String! ProgressText { get; init; }
+  prop System.String! Theme { get; init; }
+  prop System.String? BlockedReason { get; init; }
+  prop System.String? NextName { get; init; }
+
+public sealed class NekoClicker.Core.Views.GameSnapshot : System.IEquatable<NekoClicker.Core.Views.GameSnapshot>
+  ctor NekoClicker.Core.Views.GameSnapshot()
+  method System.Boolean Equals(NekoClicker.Core.Views.GameSnapshot? other)
+  method static System.Boolean op_Equality(NekoClicker.Core.Views.GameSnapshot? left, NekoClicker.Core.Views.GameSnapshot? right)
+  method static System.Boolean op_Inequality(NekoClicker.Core.Views.GameSnapshot? left, NekoClicker.Core.Views.GameSnapshot? right)
+  method virtual System.Boolean Equals(System.Object? obj)
+  method virtual System.Int32 GetHashCode()
+  method virtual System.String! ToString()
+  prop NekoClicker.Core.PrestigePreview Prestige { get; init; }
+  prop NekoClicker.Core.PurchaseMode Mode { get; init; }
+  prop NekoClicker.Core.Views.CodexView? Codex { get; init; }
+  prop NekoClicker.Core.Views.EndingView? Ending { get; init; }
+  prop NekoClicker.Core.Views.EraView? Era { get; init; }
+  prop System.Collections.Generic.IReadOnlyList<NekoClicker.Core.GameNotification>! Notifications { get; init; }
+  prop System.Collections.Generic.IReadOnlyList<NekoClicker.Core.Views.AchievementView>! Achievements { get; init; }
+  prop System.Collections.Generic.IReadOnlyList<NekoClicker.Core.Views.BuffView>! Buffs { get; init; }
+  prop System.Collections.Generic.IReadOnlyList<NekoClicker.Core.Views.BuildingView>! Buildings { get; init; }
+  prop System.Collections.Generic.IReadOnlyList<NekoClicker.Core.Views.ChoiceView>! PendingChoices { get; init; }
+  prop System.Collections.Generic.IReadOnlyList<NekoClicker.Core.Views.GoldenCookieView>! GoldenCookies { get; init; }
+  prop System.Collections.Generic.IReadOnlyList<NekoClicker.Core.Views.LoreView>! PendingLore { get; init; }
+  prop System.Collections.Generic.IReadOnlyList<NekoClicker.Core.Views.StanceView>? Stances { get; init; }
+  prop System.Collections.Generic.IReadOnlyList<NekoClicker.Core.Views.UpgradeView>! Upgrades { get; init; }
+  prop System.Double ClickPower { get; init; }
+  prop System.Double Cookies { get; init; }
+  prop System.Double CookiesEarnedAllTime { get; init; }
+  prop System.Double CookiesEarnedThisRun { get; init; }
+  prop System.Double CookiesPerSecond { get; init; }
+  prop System.Double GoldenCookieCountdown { get; init; }
+  prop System.Double GoldenCookiesClicked { get; init; }
+  prop System.Double HandMadeCookies { get; init; }
+  prop System.Double PlayTimeSeconds { get; init; }
+  prop System.Double PrestigeChips { get; init; }
+  prop System.Double TotalBuildings { get; init; }
+  prop System.Double TotalClicks { get; init; }
+  prop System.Int32 AchievementCount { get; init; }
+  prop System.Int32 AchievementTotal { get; init; }
+  prop System.Int32 Ascensions { get; init; }
+  prop System.Int32 PrestigeLevel { get; init; }
+  prop System.Int32 PurchasedUpgrades { get; init; }
+  prop System.String! ClickActionName { get; init; }
+  prop System.String! ClickPowerText { get; init; }
+  prop System.String! CookiesText { get; init; }
+  prop System.String! CpsText { get; init; }
+  prop System.String! CurrencyIcon { get; init; }
+  prop System.String! CurrencyName { get; init; }
+  prop System.String! PrestigeCurrencyIcon { get; init; }
+  prop System.String! PrestigeCurrencyName { get; init; }
+  prop System.String! Title { get; init; }
+  prop System.String? DominantStanceId { get; init; }
+
+public static class NekoClicker.Core.Views.GameViewFactory
+  method static NekoClicker.Core.Views.GameSnapshot! Create(NekoClicker.Core.GameEngine! engine, NekoClicker.Core.PurchaseMode mode)
+  method static System.String! Summarize(System.Collections.Generic.IReadOnlyList<NekoClicker.Core.Content.Modifier>! modifiers, NekoClicker.Core.Content.GameContent? content = null)
+
+public sealed class NekoClicker.Core.Views.GoldenCookieView : System.IEquatable<NekoClicker.Core.Views.GoldenCookieView>
+  ctor NekoClicker.Core.Views.GoldenCookieView()
+  method System.Boolean Equals(NekoClicker.Core.Views.GoldenCookieView? other)
+  method static System.Boolean op_Equality(NekoClicker.Core.Views.GoldenCookieView? left, NekoClicker.Core.Views.GoldenCookieView? right)
+  method static System.Boolean op_Inequality(NekoClicker.Core.Views.GoldenCookieView? left, NekoClicker.Core.Views.GoldenCookieView? right)
+  method virtual System.Boolean Equals(System.Object? obj)
+  method virtual System.Int32 GetHashCode()
+  method virtual System.String! ToString()
+  prop System.Double LifetimeSeconds { get; init; }
+  prop System.Double Progress { get; init; }
+  prop System.Double RemainingSeconds { get; init; }
+  prop System.Double X { get; init; }
+  prop System.Double Y { get; init; }
+  prop System.String! InstanceId { get; init; }
+
+public sealed class NekoClicker.Core.Views.LoreView : System.IEquatable<NekoClicker.Core.Views.LoreView>
+  ctor NekoClicker.Core.Views.LoreView()
+  method System.Boolean Equals(NekoClicker.Core.Views.LoreView? other)
+  method static System.Boolean op_Equality(NekoClicker.Core.Views.LoreView? left, NekoClicker.Core.Views.LoreView? right)
+  method static System.Boolean op_Inequality(NekoClicker.Core.Views.LoreView? left, NekoClicker.Core.Views.LoreView? right)
+  method virtual System.Boolean Equals(System.Object? obj)
+  method virtual System.Int32 GetHashCode()
+  method virtual System.String! ToString()
+  prop NekoClicker.Core.Content.LoreChannel Channel { get; init; }
+  prop System.Boolean Unlocked { get; init; }
+  prop System.Double Progress { get; init; }
+  prop System.Int32 Order { get; init; }
+  prop System.String! Body { get; init; }
+  prop System.String! Icon { get; init; }
+  prop System.String! Id { get; init; }
+  prop System.String! ProgressText { get; init; }
+  prop System.String! RevealHint { get; init; }
+  prop System.String! StorylineId { get; init; }
+  prop System.String! StorylineName { get; init; }
+  prop System.String! Title { get; init; }
+
+public sealed class NekoClicker.Core.Views.StanceView : System.IEquatable<NekoClicker.Core.Views.StanceView>
+  ctor NekoClicker.Core.Views.StanceView()
+  method System.Boolean Equals(NekoClicker.Core.Views.StanceView? other)
+  method static System.Boolean op_Equality(NekoClicker.Core.Views.StanceView? left, NekoClicker.Core.Views.StanceView? right)
+  method static System.Boolean op_Inequality(NekoClicker.Core.Views.StanceView? left, NekoClicker.Core.Views.StanceView? right)
+  method virtual System.Boolean Equals(System.Object? obj)
+  method virtual System.Int32 GetHashCode()
+  method virtual System.String! ToString()
+  prop System.Boolean IsDominant { get; init; }
+  prop System.Double Share { get; init; }
+  prop System.Int32 Weight { get; init; }
+  prop System.String! CostText { get; init; }
+  prop System.String! Icon { get; init; }
+  prop System.String! Id { get; init; }
+  prop System.String! Name { get; init; }
+  prop System.String! Theme { get; init; }
+
+public sealed class NekoClicker.Core.Views.StorylineView : System.IEquatable<NekoClicker.Core.Views.StorylineView>
+  ctor NekoClicker.Core.Views.StorylineView()
+  method System.Boolean Equals(NekoClicker.Core.Views.StorylineView? other)
+  method static System.Boolean op_Equality(NekoClicker.Core.Views.StorylineView? left, NekoClicker.Core.Views.StorylineView? right)
+  method static System.Boolean op_Inequality(NekoClicker.Core.Views.StorylineView? left, NekoClicker.Core.Views.StorylineView? right)
+  method virtual System.Boolean Equals(System.Object? obj)
+  method virtual System.Int32 GetHashCode()
+  method virtual System.String! ToString()
+  prop System.Collections.Generic.IReadOnlyList<NekoClicker.Core.Views.LoreView>! Entries { get; init; }
+  prop System.Double Progress { get; init; }
+  prop System.Int32 Total { get; init; }
+  prop System.Int32 Unlocked { get; init; }
+  prop System.String! Icon { get; init; }
+  prop System.String! Id { get; init; }
+  prop System.String! Name { get; init; }
+  prop System.String! Theme { get; init; }
+
+public sealed class NekoClicker.Core.Views.UpgradeView : System.IEquatable<NekoClicker.Core.Views.UpgradeView>
+  ctor NekoClicker.Core.Views.UpgradeView()
+  method System.Boolean Equals(NekoClicker.Core.Views.UpgradeView? other)
+  method static System.Boolean op_Equality(NekoClicker.Core.Views.UpgradeView? left, NekoClicker.Core.Views.UpgradeView? right)
+  method static System.Boolean op_Inequality(NekoClicker.Core.Views.UpgradeView? left, NekoClicker.Core.Views.UpgradeView? right)
+  method virtual System.Boolean Equals(System.Object? obj)
+  method virtual System.Int32 GetHashCode()
+  method virtual System.String! ToString()
+  prop NekoClicker.Core.Content.UpgradeCurrency Currency { get; init; }
+  prop System.Boolean CanAfford { get; init; }
+  prop System.Boolean HiddenUntilUnlocked { get; init; }
+  prop System.Boolean IsAvailable { get; }
+  prop System.Boolean IsMaxed { get; }
+  prop System.Boolean IsPermanent { get; init; }
+  prop System.Boolean IsUnlocked { get; init; }
+  prop System.Boolean IsVisible { get; }
+  prop System.Double Price { get; init; }
+  prop System.Double UnlockProgress { get; init; }
+  prop System.Int32 MaxPurchases { get; init; }
+  prop System.Int32 Owned { get; init; }
+  prop System.Int32 Tier { get; init; }
+  prop System.String! Category { get; init; }
+  prop System.String! Description { get; init; }
+  prop System.String! EffectSummary { get; init; }
+  prop System.String! Icon { get; init; }
+  prop System.String! Id { get; init; }
+  prop System.String! Name { get; init; }
+  prop System.String! UnlockHint { get; init; }
