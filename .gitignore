@@ -12,8 +12,17 @@ obj/
 saves/
 .probe/
 
-# ��ʱ�ļ�
+# 临时文件
 *.tmp
+.tmp/
 
 # crash log (CrashLog.cs)
 neko-clicker-crash.log
+
+# Web 前端（分支 feature/web-frontend-ui）
+# 注意：pnpm 的 store 会建在仓库根（实测 `pnpm store path` 返回 <repo>\.pnpm-store\v11），
+# 体积很大且与本仓库无关，必须忽略。而 wwwroot / web\dist 是签进仓库的构建产物，不忽略。
+.pnpm-store/
+web/node_modules/
+web/.vite/
+node_modules/
