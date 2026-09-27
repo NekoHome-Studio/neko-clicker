@@ -12,7 +12,7 @@
 #
 # 用法:
 #   pwsh -File tools/dnet.ps1 build
-#   pwsh -File tools/dnet.ps1 run --project src/NekoClicker.Demo.Cli
+#   pwsh -File tools/dnet.ps1 run --project games/hosts/Demo.Cli
 #   pwsh -File tools/dnet.ps1 test
 
 # 注意：这里刻意不使用 param() 块。声明参数会让脚本变成 advanced script，

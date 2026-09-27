@@ -1,4 +1,4 @@
-﻿# NekoClicker — 增量游戏框架（C# / .NET 8）
+# NekoClicker — 增量游戏框架（C# / .NET 8）
 
 参考 **Cookie Clicker** 的机制设计的一套**增量（放置 / 点击）游戏框架**，纯 C# 实现，
 **零第三方依赖**，附带十一个内容包（示例包「猫咖物语」+ #1《猫娘咖啡馆》+ #2《九命轮回》
@@ -140,34 +140,52 @@
 ### 目录结构
 
 ```
-src/NekoClicker.Core/            框架核心：内容定义、模拟引擎、存档、事件、UI 视图
-src/NekoClicker.Content.Neko/    示例内容包「猫咖物语」（纯数据，无逻辑；框架回归基线）
-src/NekoClicker.Content.Cafe/    内容包 #1《猫娘咖啡馆》（含幸福感模块，核心零改动）
-src/NekoClicker.Content.NineLives/ 内容包 #2《九命轮回》（九层纪元，第一个用分层转生的包）
-src/NekoClicker.Content.Lab/     内容包 #3《猫娘实验室》（七批纪元，第一个同时用 Era+Lore+Choice 的包）
-src/NekoClicker.Content.Company/ 内容包 #10《猫娘公司》（三轮重组，第二个用 Choice + 自己的劳资立场轴）
-src/NekoClicker.Content.Apocalypse/ 内容包 #6《猫娘末世》（五次重启，第一个用跨转生继承的包）
-src/NekoClicker.Content.Library/ 内容包 #9《猫娘图书馆》（五本书，「虚无化」唯一的用武之地）
-src/NekoClicker.Content.God/     内容包 #7《猫娘神明》（五套神话体系，换皮批产的形态样板）
-src/NekoClicker.Content.Civ/     内容包 #4《猫娘文明》（五个时代，从猫窝走到星港）
-src/NekoClicker.Content.Cyber/   内容包 #5《赛博猫娘》（五层数字层，迁服务器）
-src/NekoClicker.Content.Dream/   内容包 #8《猫娘梦境》（五层梦，越睡越浓的梦境能量）
-src/NekoClicker.Demo.Cli/        终端 UI 适配层（ANSI 全屏 + 键盘 + 无头模式 + --package）
-tests/NekoClicker.Core.Tests/    404 个测试 + 自研迷你测试运行器（含架构不变量与全程可达测试）
-docs/ARCHITECTURE.md             架构与设计决策
-docs/CONTENT_AUTHORING.md        如何写内容（数值节奏、校验规则、常见坑）
-docs/VERSIONING.md               版本与兼容性承诺：什么改动升哪一位、公开 API 快照怎么用
-docs/ROADMAP.md                  实施规划与决策记录：11 项已定决策、4 条架构不变量、5 个阶段
-docs/NINE_LIVES_DESIGN.md        《九命猫娘》设计映射：1 个共享核心 + 10 个内容包（10 个已落地）
-docs/PACK_01_CAT_CAFE.md         #1《猫娘咖啡馆》完整内容规格（已落代码，也是其余九个包的模板）
-docs/STAGE_5_RESKINS.md           阶段 5 换皮批产手册：#4/#5/#7/#8 四个包的交接件（规则清单 + 验收命令 + 已知坑）
+engine/core/            框架核心：内容定义、模拟引擎、存档、事件、UI 视图
+engine/content/Neko/    示例内容包「猫咖物语」（纯数据，无逻辑；框架回归基线）
+engine/content/Cafe/    内容包 #1《猫娘咖啡馆》（含幸福感模块，核心零改动）
+engine/content/NineLives/ 内容包 #2《九命轮回》（九层纪元，第一个用分层转生的包）
+engine/content/Lab/     内容包 #3《猫娘实验室》（七批纪元，第一个同时用 Era+Lore+Choice 的包）
+engine/content/Company/ 内容包 #10《猫娘公司》（三轮重组，第二个用 Choice + 自己的劳资立场轴）
+engine/content/Apocalypse/ 内容包 #6《猫娘末世》（五次重启，第一个用跨转生继承的包）
+engine/content/Library/ 内容包 #9《猫娘图书馆》（五本书，「虚无化」唯一的用武之地）
+engine/content/God/     内容包 #7《猫娘神明》（五套神话体系，换皮批产的形态样板）
+engine/content/Civ/     内容包 #4《猫娘文明》（五个时代，从猫窝走到星港）
+engine/content/Cyber/   内容包 #5《赛博猫娘》（五层数字层，迁服务器）
+engine/content/Dream/   内容包 #8《猫娘梦境》（五层梦，越睡越浓的梦境能量）
+games/hosts/Demo.Cli/        终端 UI 适配层（ANSI 全屏 + 键盘 + 无头模式 + --package）
+games/hosts/Web/         Web 前端宿主（本地 HTTP + wwwroot；骨架阶段，见下）
+engine/tests/    404 个测试 + 自研迷你测试运行器（含架构不变量与全程可达测试）
+engine/docs/ARCHITECTURE.md             架构与设计决策
+engine/docs/CONTENT_AUTHORING.md        如何写内容（数值节奏、校验规则、常见坑）
+engine/docs/VERSIONING.md               版本与兼容性承诺：什么改动升哪一位、公开 API 快照怎么用
+games/docs/ROADMAP.md                  实施规划与决策记录：11 项已定决策、4 条架构不变量、5 个阶段
+games/docs/NINE_LIVES_DESIGN.md        《九命猫娘》设计映射：1 个共享核心 + 10 个内容包（10 个已落地）
+games/docs/PACK_01_CAT_CAFE.md         #1《猫娘咖啡馆》完整内容规格（已落代码，也是其余九个包的模板）
+games/docs/STAGE_5_RESKINS.md           阶段 5 换皮批产手册：#4/#5/#7/#8 四个包的交接件（规则清单 + 验收命令 + 已知坑）
 CHANGELOG.md                     变更日志（按版本记录，含兼容性影响）
 tools/build.ps1                  一键构建 + 测试
 tools/play.ps1                   构建并运行终端 Demo（参数转发给程序）
+tools/web.ps1                    构建 / 运行 Web 宿主（自带单项目 sln，见「环境说明」）
 tools/dnet.ps1                   在受限环境里运行 dotnet CLI 的包装脚本
 tools/public-api.ps1             重新生成公开 API 快照（有意改动 API 后的最后一步）
 tools/seed-packages.ps1          把全局 NuGet 缓存里的 net8.0 targeting pack 播种进仓库（离线构建）
 ```
+
+顶层只有两个目录表达"这是什么"，而不是靠文件名猜：
+
+| 目录 | 是什么 | 提取性 |
+|---|---|---|
+| `engine/` | **引擎**：`core/` + `content/`（十一个内容包）+ `tests/` + `docs/` | **自包含**。把 `engine/` 整个搬走，配合仓库根的 `Directory.Build.props` 就是一个能独立构建的引擎仓库 |
+| `games/` | **旗舰示例作品**：`hosts/`（两个前端宿主）+ `docs/`（世界观与路线图） | 依赖 `engine/`，反向不依赖 |
+
+**为什么内容包放在 `engine/` 而不在 `games/`**：它们不是"某一部作品的资产"，而是**引擎的集成测试探针**。
+`ArchitectureTests` 要拿它们证明"核心不认识内容"，`EraTests` / `LoreTests` / `PrestigeTests` 的通用守卫
+要横扫每一个包才抓得出沉默失败（阶段 4B 的两条真缺陷就是这么发现的）。
+所以 `engine/tests` 与内容包同属引擎侧，一起被提取——这也是 `engine/` 能自包含的原因。
+
+> **`games/hosts/Web/` 的状态**：骨架已可运行（`/api/ping`、`/api/packs`、一个骨架首页），
+> 但**还没有游戏界面**。它刻意不挂进 `NekoClicker.sln`——见 [环境说明](#环境说明为什么有-toolsdnetps1)。
+
 
 ---
 
@@ -302,7 +320,7 @@ Console.WriteLine(ApiVersion.AssemblyVersion);  // 1.0.0.0
 
 不是靠自觉，是靠一份**快照**加四条守卫：
 
-- `src/NekoClicker.Core/PublicApi.txt` —— 1897 行的公开表面逐项清单，
+- `engine/core/PublicApi.txt` —— 1897 行的公开表面逐项清单，
   **嵌进 `NekoClicker.Core.dll`**，随 dll 一起走。任何拿到这个 dll 的宿主都能自己断言
   "这份二进制的公开 API 与我预期的一致"，不需要把本仓库的测试代码也带走。
 - `PublicApiTests` —— 快照必须逐项一致；快照必须真的覆盖每个公开成员（防止守卫自己瞎掉）；
@@ -314,7 +332,7 @@ Console.WriteLine(ApiVersion.AssemblyVersion);  // 1.0.0.0
 所以 `tools/public-api.ps1` 只是流程的**最后一步**，不是第一步。
 
 完整规矩、发布检查清单，以及这套机制**保证不了**什么（语义变化、存档兼容、数值一致性），
-见 **[docs/VERSIONING.md](docs/VERSIONING.md)**；逐版本记录见 [CHANGELOG.md](CHANGELOG.md)。
+见 **[engine/docs/VERSIONING.md](engine/docs/VERSIONING.md)**；逐版本记录见 [CHANGELOG.md](CHANGELOG.md)。
 
 ---
 
@@ -341,6 +359,24 @@ Console.WriteLine(ApiVersion.AssemblyVersion);  // 1.0.0.0
 > 也可以用 `-Version` 强制指定版本（跳过 SDK 声明解析）。
 
 在其他环境下（普通开发机、CI）可以直接用 `dotnet build` / `dotnet run`，不需要这个脚本。
+
+### 为什么 Web 宿主不在 `NekoClicker.sln` 里
+
+`games/hosts/Web/` 自带一个单项目解决方案，用 `.\tools\web.ps1` 构建与运行。两条理由：
+
+1. **它必须覆盖 `Directory.Build.props` 的 `net8.0`。** Web SDK 需要 ASP.NET Core 共享框架，
+   而开发机上装的可能是 10.x（仓库的 `seed-packages.ps1` 只保证 net8.0 的 **targeting pack**
+   可供编译，运行时要另一回事）。挂进主 sln 会让那条守 404 条基线的构建路径多出一条跨框架引用边。
+2. **它的构建前提与引擎不同。** `.\tools\build.ps1 -Strict` 守住的是"引擎 + 内容 + 404 条用例"，
+   而 Web 宿主是一次性的示例作品宿主。把两者分开，"改前端不会动到引擎基线"这句话才是结构性的，
+   而不是靠自觉。
+
+代价是 `-Strict` 一次跑不完整个仓库，需要**两条命令都跑**：
+
+```powershell
+.\tools\build.ps1 -Strict   # 引擎 + 内容 + 404 条用例（0 警告）
+.\tools\web.ps1   build -Strict   # Web 宿主（0 警告）
+```
 
 ---
 
@@ -389,7 +425,7 @@ Console.WriteLine(ApiVersion.AssemblyVersion);  // 1.0.0.0
   （末世包有四处文案与数值不符），以及"挂了纪元门槛的叙事，层内门槛必须低于本层完成门槛"
   这条纪律以前只写在文档里——现在它是通用守卫，对全部内容包生效。
   两个包的天花板也都按**实测包络**重设过一遍（重设后图鉴均为 40/40）。
-- **阶段 5 已全部交付**（四个「换皮」包，**核心一行都没动**——逐包 `git diff src/NekoClicker.Core/` 为空）：
+- **阶段 5 已全部交付**（四个「换皮」包，**核心一行都没动**——逐包 `git diff engine/core/` 为空）：
   #7《猫娘神明》（五套神话体系 + 信仰 + 在线人数峰值）、#4《猫娘文明》（五个时代 + 文化）、
   #5《赛博猫娘》（迁服务器 + 算力）、#8《猫娘梦境》（五层梦 + 梦境能量）。
   四个包各 9 建筑 / ≥48 升级 / ≥65 成就 / 40 条叙事（4 条线）/ 5 层 / 2~3 结局，
@@ -417,7 +453,7 @@ Console.WriteLine(ApiVersion.AssemblyVersion);  // 1.0.0.0
   它要求「引用到的每个计数器都登记过」，而且**真的去渲染一遍**，断言输出里既含显示名、又不含内部键。
 - **v1.0.0：框架已被产品化**——规划范围内的功能早已全部交付，缺的是"别人能安全依赖它"
   这件事。这一版补齐的就是它：版本号单一事实来源、`ApiVersion`、1897 行公开 API 快照、
-  五条版本守卫（含故障注入证明守卫会红）、`docs/VERSIONING.md` 与 `CHANGELOG.md`。
+  五条版本守卫（含故障注入证明守卫会红）、`engine/docs/VERSIONING.md` 与 `CHANGELOG.md`。
   **没有改任何游戏行为**——十一个内容包与 396 条既有用例的行为完全不变，用例 396 → 404。
   这一步也把"核心零内容知识"这条主张补上了它的另一半：**公开 API 只增不改**。
 - **未包含**：图形前端、本地化资源系统、账号/云存档、排行榜、反作弊。

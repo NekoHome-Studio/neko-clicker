@@ -1,9 +1,42 @@
-﻿# 变更日志
+# 变更日志
 
 本项目的版本号遵循[语义化版本](https://semver.org/lang/zh-CN/)。
 **版本号指的是 `NekoClicker.Core` 对外承诺的公开 API 版本**，不是内容包或 Demo 的版本。
 
-什么改动升哪一位、破坏性变更要走什么流程，见 [docs/VERSIONING.md](docs/VERSIONING.md)。
+什么改动升哪一位、破坏性变更要走什么流程，见 [engine/docs/VERSIONING.md](engine/docs/VERSIONING.md)。
+
+---
+
+## [未发布]
+
+分支 `feature/web-frontend-ui`。**公开 API 一行未改**，用例数仍为 404——所以还没到发版本的时候。
+
+### 新增
+
+- **Web 前端宿主骨架** `games/hosts/Web/`：把引擎暴露给浏览器。
+  - `/api/ping`——宿主自证：报出 `ApiVersion.Current` 与运行时版本（阶段 6 的 `ApiVersion`
+    第一个真实消费者）。
+  - `/api/packs`——运行时扫描输出目录里的 `NekoClicker.Content.*.dll` 发现内容包，
+    宿主代码里没有任何包名字面量。
+  - `wwwroot/index.html`——骨架页，证明"引擎 → 浏览器"这条线是通的。
+  - **尚无游戏界面**：快照推送方式（轮询 / SSE）与存档槽位接线是两个未定决策，
+    写在骨架页与 `Program.cs` 注释里，不替使用者决定。
+- **`tools/web.ps1`**：`build` / `run` / `clean`，环境重定向与 `tools/dnet.ps1` 一致。
+
+### 变更
+
+- **仓库重构成两层**：`engine/`（引擎：`core/` + `content/` 十一个内容包 + `tests/` + `docs/`）
+  与 `games/`（旗舰示例作品：`hosts/` 两个前端宿主 + `docs/` 世界观与路线图）。
+  这只是移动文件，**引擎行为零改动**。
+  - `engine/` 是**自包含**的：整个目录搬走，配合仓库根的 `Directory.Build.props`
+    就是一个能独立构建的引擎仓库。内容包之所以放在引擎侧而不是作品侧，是因为它们是
+    引擎的集成测试探针（`ArchitectureTests` 靠它们证明"核心不认识内容"，
+    `EraTests` / `LoreTests` / `PrestigeTests` 的通用守卫靠横扫它们抓沉默失败）。
+  - 文档按同一把刀切开：`engine/docs/`（架构、内容作者指南、版本承诺）与
+    `games/docs/`（路线图、世界观、包规格、换皮手册）。`README.md` 与 `CHANGELOG.md`
+    刻意留在仓库根——版本守卫直接读它们。
+  - `NekoClicker.sln` 的解决方案文件夹同步为 `engine` / `games` / `tests`。
+- `.gitignore` 增补 web 前端相关（`.pnpm-store/`、`node_modules/`、`.tmp/`）。
 
 ---
 
@@ -19,7 +52,7 @@
 - **`ApiVersion`**（`NekoClicker.Core`）：宿主可以在运行时读到框架版本，
   用于"关于"面板、写进日志或存档，不必再靠猜用户报的 bug 出在哪个版本上。
 - **公开 API 快照守卫**：
-  - `src/NekoClicker.Core/PublicApi.txt`——1897 行的公开表面快照，嵌进 `NekoClicker.Core.dll`，
+  - `engine/core/PublicApi.txt`——1897 行的公开表面快照，嵌进 `NekoClicker.Core.dll`，
     随 dll 一起走（任何宿主都能拿它校验自己手上的二进制）。
   - `PublicApiTests`——三条用例：快照必须逐项一致、快照必须覆盖每个公开类型与成员
     （防止守卫自己瞎掉）、快照记录的版本必须等于当前版本。
@@ -28,14 +61,14 @@
     证明这条守卫真的会红，而不是永远绿。
   - `VersionTests`——版本号与程序集元数据、API 快照、CHANGELOG 三方对齐。
 - **`tools/public-api.ps1`**：有意改动公开 API 后重新生成快照（流程的最后一步）。
-- **`docs/VERSIONING.md`**：版本语义、破坏性变更定义、发布检查清单、快照怎么用。
+- **`engine/docs/VERSIONING.md`**：版本语义、破坏性变更定义、发布检查清单、快照怎么用。
 - **`.gitattributes`**：快照强制 LF，保证跨平台生成的快照逐字节一致。
 
 ### 变更
 
-- `docs/CONTENT_AUTHORING.md` 增补一节：内容包作者何时会碰到公开 API 的变化。
+- `engine/docs/CONTENT_AUTHORING.md` 增补一节：内容包作者何时会碰到公开 API 的变化。
 - `README.md` 增补版本与兼容性承诺一节；用例数 396 → 404。
-- `docs/ROADMAP.md` 增补"阶段 6：产品化"交付记录。
+- `games/docs/ROADMAP.md` 增补"阶段 6：产品化"交付记录。
 
 ### 兼容性
 
@@ -51,7 +84,7 @@
 ## 历史版本（1.0.0 之前）
 
 1.0.0 之前的开发没有版本号，用阶段（stage）记录。
-完整交付历史见 [docs/ROADMAP.md](docs/ROADMAP.md) 与 git 历史，摘要如下：
+完整交付历史见 [games/docs/ROADMAP.md](games/docs/ROADMAP.md) 与 git 历史，摘要如下：
 
 | 阶段 | 交付 |
 |---|---|

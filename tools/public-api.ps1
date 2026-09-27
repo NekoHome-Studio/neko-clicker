@@ -4,7 +4,7 @@
 #   pwsh -File tools/public-api.ps1
 #
 # 什么时候用它（这是流程的**最后一步**，不是第一步）：
-#   你确实有意改动公开 API 时，按 docs/VERSIONING.md 的顺序做完：
+#   你确实有意改动公开 API 时，按 engine\docs\VERSIONING.md 的顺序做完：
 #     ① 改代码  ② 决定升 minor 还是 major  ③ 改 Directory.Build.props 的 Version
 #     ④ 补 CHANGELOG.md  ⑤ 才跑这个脚本更新快照
 #   反过来（先跑脚本再补版本号）会让快照守卫退化成橡皮图章——守卫红的时候，
@@ -17,8 +17,8 @@
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
 
-$testDll = Join-Path $root 'tests\NekoClicker.Core.Tests\bin\Debug\net8.0\NekoClicker.Core.Tests.dll'
-$target = Join-Path $root 'src\NekoClicker.Core\PublicApi.txt'
+$testDll = Join-Path $root 'engine\tests\bin\Debug\net8.0\NekoClicker.Core.Tests.dll'
+$target = Join-Path $root 'engine\core\PublicApi.txt'
 
 if (-not (Test-Path $testDll)) {
     Write-Host '先构建一次（快照由测试程序集打印）：' -ForegroundColor Yellow

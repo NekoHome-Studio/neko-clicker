@@ -6,7 +6,7 @@
 #    不可写），MSBuild 必须 -m:1（命名管道被禁时多节点构建会静默失败）。这两条与
 #    dnet.ps1 完全一致，直接复用它的做法。
 #
-# 2) **Web 宿主刻意不在 NekoClicker.sln 里。** 它在 src/NekoClicker.Web/ 下自带一个
+# 2) **Web 宿主刻意不在 NekoClicker.sln 里。** 它在 games\hosts\Web/ 下自带一个
 #    单项目 sln。理由是它必须覆盖 Directory.Build.props 的 net8.0（本机只有
 #    Microsoft.AspNetCore.App 10.x 共享框架），把它挂进主 sln 会让 `tools/build.ps1`
 #    那条"引擎 + 内容 + 404 条基线"的路径多出一个跨 TFM 的引用边。
@@ -21,7 +21,7 @@
 
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
-$webDir = Join-Path $root 'src\NekoClicker.Web'
+$webDir = Join-Path $root 'games\hosts\Web'
 $webSln = Join-Path $webDir 'NekoClicker.Web.sln'
 $url = 'http://127.0.0.1:5273'
 

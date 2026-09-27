@@ -1,39 +1,41 @@
-
+﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{0FEE24DC-5291-4FE1-B7AB-005490FC51FD}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "engine", "engine", "{0FEE24DC-5291-4FE1-B7AB-005490FC51FD}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NekoClicker.Core", "src\NekoClicker.Core\NekoClicker.Core.csproj", "{AF52C313-0331-42F0-BBF9-978A2C2279BD}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NekoClicker.Core", "engine\core\NekoClicker.Core.csproj", "{AF52C313-0331-42F0-BBF9-978A2C2279BD}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NekoClicker.Content.Neko", "src\NekoClicker.Content.Neko\NekoClicker.Content.Neko.csproj", "{9BC4409D-B4FA-4629-A98D-5C87A16E11A1}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NekoClicker.Content.Neko", "engine\content\Neko\NekoClicker.Content.Neko.csproj", "{9BC4409D-B4FA-4629-A98D-5C87A16E11A1}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NekoClicker.Content.Cafe", "src\NekoClicker.Content.Cafe\NekoClicker.Content.Cafe.csproj", "{3B2F6E1A-7C4D-4A58-9E0B-1F2C3D4E5A6B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NekoClicker.Content.Cafe", "engine\content\Cafe\NekoClicker.Content.Cafe.csproj", "{3B2F6E1A-7C4D-4A58-9E0B-1F2C3D4E5A6B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NekoClicker.Demo.Cli", "src\NekoClicker.Demo.Cli\NekoClicker.Demo.Cli.csproj", "{1F8603DD-84F6-4624-A0C5-7DDD64276497}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NekoClicker.Demo.Cli", "games\hosts\Demo.Cli\NekoClicker.Demo.Cli.csproj", "{1F8603DD-84F6-4624-A0C5-7DDD64276497}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{B9FAACE6-63A4-4695-8DE0-FF68D7C28A8B}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "games", "games", "{3C8A5E21-7D46-4B90-A2F1-6E5D9C0B8347}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NekoClicker.Core.Tests", "tests\NekoClicker.Core.Tests\NekoClicker.Core.Tests.csproj", "{CC5DF4CC-7A9F-4BCF-ABED-A2526A318940}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "engine\tests", "{B9FAACE6-63A4-4695-8DE0-FF68D7C28A8B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NekoClicker.Content.NineLives", "src\NekoClicker.Content.NineLives\NekoClicker.Content.NineLives.csproj", "{5B4DEA9F-F952-45AF-941F-62AB023C3945}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NekoClicker.Core.Tests", "engine\tests\NekoClicker.Core.Tests.csproj", "{CC5DF4CC-7A9F-4BCF-ABED-A2526A318940}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NekoClicker.Content.Lab", "src\NekoClicker.Content.Lab\NekoClicker.Content.Lab.csproj", "{3BB6B47C-7B26-43B6-9489-6968E5D0012B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NekoClicker.Content.NineLives", "engine\content\NineLives\NekoClicker.Content.NineLives.csproj", "{5B4DEA9F-F952-45AF-941F-62AB023C3945}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NekoClicker.Content.Company", "src\NekoClicker.Content.Company\NekoClicker.Content.Company.csproj", "{6A1D4E2B-9C3F-4B7A-8E52-1F0D3C6B9A47}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NekoClicker.Content.Lab", "engine\content\Lab\NekoClicker.Content.Lab.csproj", "{3BB6B47C-7B26-43B6-9489-6968E5D0012B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NekoClicker.Content.Apocalypse", "src\NekoClicker.Content.Apocalypse\NekoClicker.Content.Apocalypse.csproj", "{5563A113-7369-406B-9AB3-2457FC0D35B4}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NekoClicker.Content.Company", "engine\content\Company\NekoClicker.Content.Company.csproj", "{6A1D4E2B-9C3F-4B7A-8E52-1F0D3C6B9A47}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NekoClicker.Content.Library", "src\NekoClicker.Content.Library\NekoClicker.Content.Library.csproj", "{7C4E9A21-5D3B-4F8E-A1C6-2B8D4E7F9A13}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NekoClicker.Content.Apocalypse", "engine\content\Apocalypse\NekoClicker.Content.Apocalypse.csproj", "{5563A113-7369-406B-9AB3-2457FC0D35B4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NekoClicker.Content.God", "src\NekoClicker.Content.God\NekoClicker.Content.God.csproj", "{4D8B1C63-9F2A-4E75-B3D8-6A1F7C20E594}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NekoClicker.Content.Library", "engine\content\Library\NekoClicker.Content.Library.csproj", "{7C4E9A21-5D3B-4F8E-A1C6-2B8D4E7F9A13}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NekoClicker.Content.Civ", "src\NekoClicker.Content.Civ\NekoClicker.Content.Civ.csproj", "{2DD8AE92-E20E-4298-B52D-D722C3C2D303}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NekoClicker.Content.God", "engine\content\God\NekoClicker.Content.God.csproj", "{4D8B1C63-9F2A-4E75-B3D8-6A1F7C20E594}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NekoClicker.Content.Cyber", "src\NekoClicker.Content.Cyber\NekoClicker.Content.Cyber.csproj", "{6052764D-FCB4-4057-9450-54BACA48D62A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NekoClicker.Content.Civ", "engine\content\Civ\NekoClicker.Content.Civ.csproj", "{2DD8AE92-E20E-4298-B52D-D722C3C2D303}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NekoClicker.Content.Dream", "src\NekoClicker.Content.Dream\NekoClicker.Content.Dream.csproj", "{5A112025-335F-470F-8901-4F0611D990FB}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NekoClicker.Content.Cyber", "engine\content\Cyber\NekoClicker.Content.Cyber.csproj", "{6052764D-FCB4-4057-9450-54BACA48D62A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NekoClicker.Content.Dream", "engine\content\Dream\NekoClicker.Content.Dream.csproj", "{5A112025-335F-470F-8901-4F0611D990FB}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -105,7 +107,7 @@ Global
 		{AF52C313-0331-42F0-BBF9-978A2C2279BD} = {0FEE24DC-5291-4FE1-B7AB-005490FC51FD}
 		{9BC4409D-B4FA-4629-A98D-5C87A16E11A1} = {0FEE24DC-5291-4FE1-B7AB-005490FC51FD}
 		{3B2F6E1A-7C4D-4A58-9E0B-1F2C3D4E5A6B} = {0FEE24DC-5291-4FE1-B7AB-005490FC51FD}
-		{1F8603DD-84F6-4624-A0C5-7DDD64276497} = {0FEE24DC-5291-4FE1-B7AB-005490FC51FD}
+		{1F8603DD-84F6-4624-A0C5-7DDD64276497} = {3C8A5E21-7D46-4B90-A2F1-6E5D9C0B8347}
 		{CC5DF4CC-7A9F-4BCF-ABED-A2526A318940} = {B9FAACE6-63A4-4695-8DE0-FF68D7C28A8B}
 		{5B4DEA9F-F952-45AF-941F-62AB023C3945} = {0FEE24DC-5291-4FE1-B7AB-005490FC51FD}
 		{3BB6B47C-7B26-43B6-9489-6968E5D0012B} = {0FEE24DC-5291-4FE1-B7AB-005490FC51FD}
