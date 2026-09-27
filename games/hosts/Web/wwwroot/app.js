@@ -27,10 +27,19 @@ let state = null;
 let seq = 0;
 let connected = false;
 
-/** 数字平滑：服务端 4 Hz 推，这里每帧插值，否则数字会一跳一跳。 */
+/**
+ * 显示用的数字。<b>刻意不做"追赶式插值"</b>，而是按当前每秒产量持续累加。
+ *
+ * 为什么不能"追目标"：服务端每 250ms 才推一帧，追到之后剩下的 150ms 完全静止，
+ * 观感就是一跳一跳——而挂机游戏的核心体验恰恰是"看着数字在涨"。
+ * 所以这里改成**每帧按 cps 累加**，服务端来帧时只做一次对账。
+ *
+ * 不做瞬时吸附的理由：吸附会在"服务端比本地略慢"时让数字倒退一格，那比不精确更难看。
+ * 只在本地明显领先时收敛一下（说明有买入之类的状态变化），于是显示值永远不会倒退，
+ * 而且最迟 250ms 内会被服务端的真实速率纠正。
+ */
 let shownCookies = 0;
-let targetCookies = 0;
-let lastFrameAt = performance.now();
+let lastTickAt = performance.now();
 
 // ---------------------------------------------------------------- 传输
 
@@ -57,11 +66,12 @@ function connect() {
 
     if (frame.kind === "full") {
       state = frame.snapshot;
-      shownCookies = state.cookies; // 全量帧直接对齐，不做插值
-      targetCookies = state.cookies;
+      shownCookies = state.cookies; // 全量帧直接对齐：新连接 / 每 30 秒对账一次，从这里重新起算
     } else if (frame.kind === "delta") {
+      if (typeof frame.changed.cookies === "number" && shownCookies > frame.changed.cookies) {
+        shownCookies = frame.changed.cookies; // 只收敛、不吸附（吸附会看到倒退）
+      }
       Object.assign(state, frame.changed);
-      targetCookies = state.cookies;
     } else if (frame.kind === "event") {
       toast(frame.payload?.message ?? frame.name);
       return;
@@ -374,36 +384,57 @@ function renderAchievements() {
   }
 }
 
-/** 数字平滑：每帧朝目标值靠。挂机时数字在动，才有"它自己在跑"的感觉。 */
-function animate() {
+/**
+ * 每帧把显示值按当前每秒产量往前推，然后重画。
+ *
+ * 与"追一个每 250ms 才动的目标"相比，这样每个帧都有变化，数字是**连续在跑**的；
+ * 服务端来帧只负责纠正速率，不负责制造位移。
+ */
+function animate(now) {
+  const elapsed = Math.min(0.25, Math.max(0, (now - lastTickAt) / 1000));
+  lastTickAt = now;
+
   if (state) {
-    const gap = targetCookies - shownCookies;
-    if (Math.abs(gap) > Math.max(1, Math.abs(targetCookies) * 1e-9)) {
-      shownCookies += gap * 0.25;
-      $("#cookies").textContent = formatLike(state.cookiesText, shownCookies, targetCookies);
-    } else if (shownCookies !== targetCookies) {
-      shownCookies = targetCookies;
-      $("#cookies").textContent = state.cookiesText;
+    const rate = state.cookiesPerSecond ?? 0;
+    if (rate > 0) shownCookies += rate * elapsed;
+
+    // 本地不能比服务端领先太多（可能刚买了东西 / 切了包）。
+    // 超过"两帧的量"就按比例收敛，避免长时间虚高；正常挂机时这个分支不会触发。
+    const server = state.cookies ?? 0;
+    const tolerance = Math.max(1e-6, rate * 0.5);
+    if (shownCookies > server + tolerance) {
+      shownCookies = server + (shownCookies - server) * 0.5;
+    } else if (shownCookies < server) {
+      shownCookies = server; // 服务端更靠前（点击、离线补发）：直接跟上，不倒退
     }
+
+    $("#cookies").textContent = formatCookies(shownCookies);
   }
+
   requestAnimationFrame(animate);
 }
 
 /**
- * 用服务端给的格式化文本作模板，把插值中的数字塞回去。
- * 服务端的 NumFormat 用的是 short scale（万亿/兆…），前端不重造一套——
- * 只在"数量级没变"时沿用它的后缀，变了就直接等下一条推送。
+ * 大数格式化。与服务端 <c>NumFormat</c> 的口径一致（short scale + 中文单位），
+ * 但**不用服务端文本当模板**——那正是上一版跳动的根因：模板只在"数量级没变"时可用，
+ * 而数字每跨一个数量级（999 → 1000）就会卡住一拍再跳一下。
+ *
+ * 精度按量级递减：观感上"12.34 千"和"12.3 千"没有区别，但少一位就少一次无意义的重绘。
  */
-function formatLike(reference, value, target) {
-  const match = /^([\d.,]+)\s*(.*)$/.exec(reference ?? "");
-  if (!match) return reference ?? "";
+function formatCookies(value) {
+  const units = ["", "千", "百万", "十亿", "万亿", "千万亿", "百京", "千京"];
+  let index = 0;
+  let scaled = Math.abs(value);
 
-  const targetMagnitude = Math.floor(Math.log10(Math.max(1, Math.abs(target))));
-  const valueMagnitude = Math.floor(Math.log10(Math.max(1, Math.abs(value))));
-  if (targetMagnitude !== valueMagnitude) return reference; // 数量级跨了，别硬凑
+  while (scaled >= 1000 && index < units.length - 1) {
+    scaled /= 1000;
+    index++;
+  }
 
-  const digits = match[1].includes(".") ? 2 : 0;
-  return `${value.toFixed(digits)}${match[2] ? ` ${match[2]}` : ""}`;
+  if (index === 0) return Math.floor(value).toLocaleString("zh-CN");
+
+  const digits = scaled < 10 ? 3 : scaled < 100 ? 2 : 1;
+  return `${value < 0 ? "-" : ""}${scaled.toFixed(digits)} ${units[index]}`;
 }
 
 function renderGoldenCookie() {
