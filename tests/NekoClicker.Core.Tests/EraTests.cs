@@ -12,6 +12,8 @@ namespace NekoClicker.Core.Tests;
 ///   <item>灰按钮：未完成时 <c>CanAdvance=false</c> 且原因非空、内容正确。</item>
 ///   <item>A2 架构不变量：核心内不出现层号特判（在 ArchitectureTests 里）。</item>
 ///   <item>G4 全程可达：机器人从第 1 层走到第 9 层，证明内容不会卡死。</item>
+///   <item>R3 的运行期侧：真实游玩中**每层进度只进不退**、舍命按钮不闪
+///     （构建期只守得住 <c>Cps</c> 那类明禁指标，计数器要靠这条兜底）。</item>
 /// </list>
 /// </para>
 /// </summary>
@@ -471,6 +473,182 @@ public static class EraTests
         Check.Equal(9, engine.State.Era, $"机器人只走到第 {engine.State.Era} 命——某层的完成条件可能不可达。");
         Check.Equal(8, timeline.Count, "应当正好舍命 8 次。");
         Check.True(engine.EraGate is { CanAdvance: false, NextIndex: null }, "最后一层不该再有下一层。");
+    }
+
+    // ------------------------------------------------- 进度单调（R3 的运行期守卫）
+
+    /// <summary>
+    /// 纪元进度**只进不退**——R3（完成条件必须单调）在运行期的可观测形式，
+    /// 也是"灰按钮不会闪烁"那件事的可测形式。<para>
+    /// <b>为什么必须有这条守卫</b>：构建期只拦得住 <c>Cps</c> / 建筑数 / 当前货币那几类
+    /// <b>明令禁止</b>的指标，而计数器（<c>UnlockCondition.Counter</c>）在白名单里——
+    /// 它单调与否取决于内容怎么用它。阶段 5 之后有四个包的纪元门槛挂在计数器上
+    /// （信仰 / 文化 / 算力 / 梦境能量），而"用了一个会掉的计数器"在运行期只表现为
+    /// "进度条偶尔往回走一点"，没有任何报错。#9 的「被阅读度」正是那种会掉的计数器：
+    /// 它没被写进完成条件，靠的是内容自觉——这条守卫就是替那份自觉兜底。
+    /// </para>
+    /// <summary>
+    /// 它只检查单调性，不检查可达性（后者是各包 <c>RobotWalksAll…</c> 的职责）：
+    /// 每个包跑一段真实游玩，**同一层之内**进度不得下降、灰按钮不得"亮了又灭"；
+    /// 跨层时基线重置——新一层的主线当然从 0 开始。
+    /// </para>
+    /// <para>
+    /// <b>只观测"完成条件里引用了计数器"的包</b>（这一步是内容派生的，不是手写清单）：
+    /// 其余包的完成条件只用量级 / 成就数 / 时长那几类，构建期白名单已经替它们守住了。
+    /// 这样这条守卫的代价与"真正的风险面"成正比，而不是与包的总数成正比。
+    /// </para>
+    /// </summary>
+    [Test]
+    public static void EraGate_ProgressNeverGoesBackwards()
+    {
+        int covered = 0;
+        int skipped = 0;
+
+        foreach ((string name, GameEngine engine) in TestGame.AllEraPacks())
+        {
+            if (!UsesContentCounterInCompletion(engine.Content))
+            {
+                skipped++;
+                continue;
+            }
+
+            covered++;
+            int layers = AssertProgressNeverGoesBackwards(name, engine, rounds: 1_200);
+
+            Console.WriteLine(
+                $"      {name}：{engine.State.PlayTimeSeconds / 3600:F1} 游戏小时内走过 {layers} 层，"
+                + $"每层进度单调不减（末态 {engine.EraGate.Progress:P0}）");
+        }
+
+        Console.WriteLine(
+            $"      观测了 {covered} 个「完成条件引用内容计数器」的包；"
+            + $"跳过 {skipped} 个（只用量级 / 成就 / 时长，或只用引擎维护的峰值产量）。");
+
+        Check.AtLeast(covered, 1, "没有任何包用计数器做完成条件——那样这条守卫就没有观测对象，它的前提需要重新审视。");
+    }
+
+    /// <summary>
+    /// 该内容包的纪元完成条件里是否引用了**内容自己维护的**计数器
+    /// （即决定要不要用真实游玩去观测它）。<para>
+    /// <c>peak_cps</c> 被排除在外：它是引擎每个逻辑步取 <c>max</c> 维护的，
+    /// 单调性由引擎保证（见 <see cref="EraSystem.PeakCpsCounterKey"/> 的注释），
+    /// 观测它没有信息量。有信息量的是信仰 / 文化 / 算力 / 梦境能量 / 被阅读度这类
+    /// **内容侧**计数器——它们的单调性只能靠内容自觉，而这条守卫就是那份自觉的兜底。
+    /// </para>
+    /// </summary>
+    private static bool UsesContentCounterInCompletion(GameContent content)
+        => content.Eras.Any(era => era.Completion.NumericLeaves().Any(
+            leaf => leaf.Metric == NumericMetric.Counter
+                    && !string.Equals(leaf.Id, EraSystem.PeakCpsCounterKey, StringComparison.Ordinal)));
+
+    /// <summary>
+    /// 故障注入：**证明上面那条守卫真的会拦**。<para>
+    /// 合成一个"完成条件挂在一个会掉的计数器上"的内容包——那正是 #9「被阅读度」的形态
+    /// （没人读就往下掉）。没有这条用例，上面那条守卫的判别力只是"看起来有"：
+    /// 它完全可能因为取样太稀、基线记错而永远不报警——本项目对守卫的一贯要求是
+    /// 拿故障注入证明它真的会红（见 <c>LoreTests.RevealConditions_AreUniqueWithinEachPack</c>）。
+    /// </para>
+    /// </summary>
+    [Test]
+    public static void MonotonicGuard_RejectsADecayingCounterInCompletion()
+    {
+        GameEngine engine = TestGame.Create(new GameContentBuilder("合成：会掉的计数器")
+            .Add(new DrainingCounterModule())
+            .Add(new BuildingDefinition { Id = "b", Name = "B", BasePrice = 10, BaseCps = 1 })
+            .AddEras(new EraDefinition
+            {
+                Index = 1,
+                Id = "e1",
+                Name = "一",
+                Completion = UnlockCondition.Counter(DrainingCounterModule.CounterKey, 5_000),
+                CompletionHint = "把「会被抽干的计数」攒到 5,000——可它是会掉的。",
+            })
+            .Build());
+
+        Check.Throws<AssertionException>(
+            () => AssertProgressNeverGoesBackwards("合成包（完成条件挂在会掉的计数器上）", engine, rounds: 200),
+            "守卫应当拦下「完成条件引用了会下降的计数器」——它没报警，说明这条守卫没有判别力。");
+    }
+
+    /// <summary>
+    /// 一段真实游玩，逐轮检查"同层之内进度不下降、舍命按钮不闪"。<para>
+    /// 采买每 3 轮做一次：<c>BuyGreedily</c> 内部会取一次完整快照，是这条循环里最贵的一步
+    /// （实测每轮约 5ms，其中绝大部分是它）。进度观测仍然逐轮做——那才是这条守卫要看的。
+    /// </para>
+    /// </summary>
+    /// <param name="name">内容包显示名（报错信息用）。</param>
+    /// <param name="engine">待观测的引擎。</param>
+    /// <param name="rounds">轮数（每轮 30 游戏秒）。</param>
+    /// <returns>走过的层数（跨层时基线重置，所以它只用于报告）。</returns>
+    private static int AssertProgressNeverGoesBackwards(string name, GameEngine engine, int rounds)
+    {
+        int era = engine.State.Era;
+        int layers = 1;
+        double baseline = engine.EraGate.Progress;
+        bool wasOpen = engine.EraGate.CanAdvance;
+
+        for (int round = 0; round < rounds; round++)
+        {
+            for (int i = 0; i < 8; i++) engine.Click();
+
+            if (round % 3 == 0) TestGame.BuyGreedily(engine);
+
+            for (int i = engine.State.GoldenCookies.Count - 1; i >= 0; i--)
+                engine.ClickGoldenCookie(engine.State.GoldenCookies[i].InstanceId);
+
+            if (engine.EraGate.CanAdvance) engine.Ascend();
+            engine.Simulate(30);
+
+            EraGate gate = engine.EraGate;
+
+            if (engine.State.Era != era)
+            {
+                era = engine.State.Era;
+                layers++;
+                baseline = gate.Progress;
+                wasOpen = gate.CanAdvance;
+                continue;
+            }
+
+            Check.AtLeast(
+                gate.Progress,
+                baseline - 1e-9,
+                $"{name}：第 {era} 层的主线进度倒退了（{baseline:P2} → {gate.Progress:P2}）"
+                + "——该层的完成条件里混进了会下降的指标（R3 明令禁止这件事）。");
+
+            // 一亮一灭 = 玩家看到的"灰按钮闪烁"。进度单调时它不可能发生，所以这条是顺带守住的。
+            if (wasOpen)
+                Check.True(gate.CanAdvance, $"{name}：第 {era} 层的舍命按钮亮了又灭——完成条件在达成之后又变得不成立。");
+
+            baseline = Math.Max(baseline, gate.Progress);
+            wasOpen = gate.CanAdvance;
+        }
+
+        return layers;
+    }
+
+    /// <summary>
+    /// 一条**只会掉**的计数器：创建时给一笔初始值，之后每秒被抽干 10 点。<para>
+    /// 它是 #9「被阅读度」那种形态的最小复刻——只用于故障注入，不是内容。
+    /// </para>
+    /// </summary>
+    private sealed class DrainingCounterModule : IGameModule
+    {
+        /// <summary>计数器键。</summary>
+        public const string CounterKey = "draining";
+
+        /// <inheritdoc />
+        public string Name => "draining";
+
+        /// <inheritdoc />
+        public void Configure(GameContentBuilder builder) => builder.AddCounterName(CounterKey, "会被抽干的计数");
+
+        /// <inheritdoc />
+        public void OnAttach(GameEngine engine) => engine.State.SetCounter(CounterKey, 5_000);
+
+        /// <inheritdoc />
+        public void OnTick(GameEngine engine, double deltaSeconds)
+            => engine.State.SetCounter(CounterKey, Math.Max(0, engine.State.GetCounter(CounterKey) - (10 * deltaSeconds)));
     }
 
     // ---------------------------------------------------------------- 辅助

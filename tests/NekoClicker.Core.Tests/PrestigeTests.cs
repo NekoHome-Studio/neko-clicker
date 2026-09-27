@@ -24,7 +24,7 @@ public static class PrestigeTests
     [Test]
     public static void EraPacks_PermanentUpgradesAreAffordableWithinOneRun()
     {
-        foreach ((string name, GameEngine engine) in EraPacks())
+        foreach ((string name, GameEngine engine) in TestGame.AllEraPacks())
         {
             for (int round = 0; round < 60_000 && engine.ReachedEnding is null; round++)
             {
@@ -58,22 +58,10 @@ public static class PrestigeTests
         }
     }
 
-    private static (string Name, GameEngine Engine)[] EraPacks()
-    {
-        ManualClock _;
-        return
-        [
-            ("#2 九命", TestGame.CreateNineLives(out _)),
-            ("#3 实验室", TestGame.CreateLab(out _)),
-            ("#10 公司", TestGame.CreateCompany(out _)),
-            ("#6 末世", TestGame.CreateApocalypse(out _)),
-            ("#9 图书馆", TestGame.CreateLibrary(out _)),
-            ("#7 神明", TestGame.CreateGod(out _)),
-            ("#4 文明", TestGame.CreateCiv(out _)),
-            ("#5 赛博", TestGame.CreateCyber(out _)),
-            ("#8 梦境", TestGame.CreateDream(out _)),
-        ];
-    }
+    // 纪元包的清单从 TestGame.AllEraPacks() 派生，不在这里硬编码。
+    // 原因是一个真实踩过的坑：这份清单原本是手写的，而"通用守卫会自动覆盖新包"这个假设
+    // 对它并不成立——阶段 5 的三个包各自独立发现"自己的永久线没人守"，然后各自补了一行。
+    // 派生之后，新包只要进了 AllContentPacks() 就自动被这条守卫扫到。
 
     [Test]
     public static void LevelFormula_MatchesCookieClicker()

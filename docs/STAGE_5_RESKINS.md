@@ -24,7 +24,7 @@
 | 3 | **核心零改动** | 本阶段的 diff 里 `src/NekoClicker.Core/` 一行都不动；K1 架构测试全绿 |
 | 4 | 图鉴读得完 | `--panel codex` 或机器人跑图，**40/40** |
 | 5 | 结局可达且互斥、有兜底 | 包内结局用例 + 构建期 `ValidateEndings` |
-| 6 | 既有 320 个用例全绿 | `.\tools\build.ps1 -Strict` 退出码 0（阶段 5 交付后共 **394** 个） |
+| 6 | 既有 320 个用例全绿 | `.\tools\build.ps1 -Strict` 退出码 0（阶段 5 交付后共 **396** 个，含事后补的两条守卫） |
 
 **如果某个包逼你动核心，先停下来**：那说明抽象不成立，而这件事本身比多做一个包重要——
 写进 ROADMAP 的交付记录，别硬塞。
@@ -98,7 +98,7 @@ ReadershipModule.cs                  81   第二资源（IGameModule）
 | # | 规则 | 出处 / 守卫 |
 |---|---|---|
 | 1 | **数值曲线照抄配方**：相邻价格 ×6.7~16.5、产量 ×5.4~10，且第 3 座起价格倍率 > 产量倍率。换包换的是叙事，不是手感 | `ContentTests.NekoContent_BuildingCurveIsSane` |
-| 2 | **纪元完成条件必须单调**：只用累计赚取 / 成就数 / 点击数 / 金猫数 / 已购升级 / 时长 / **单调的**计数器 / 标签升级 / 图鉴数 | 构建期白名单校验 |
+| 2 | **纪元完成条件必须单调**：只用累计赚取 / 成就数 / 点击数 / 金猫数 / 已购升级 / 时长 / **单调的**计数器 / 标签升级 / 图鉴数 | 构建期白名单校验 + 运行期守卫 `EraTests.EraGate_ProgressNeverGoesBackwards`（真实游玩观测进度只进不退，故障注入用例证明它会红） |
 | 3 | **每层门槛要摊平**：别把产量爬坡全压在某一层（#2 曾出现"第 5 命 19.2 小时、邻居 1.8 小时"） | ROADMAP §7 阶段 2.7 |
 | 4 | **叙事四条纪律**：任意两条 `Reveal` 不同；线内顺序单调；转生类条目放线尾；**层内门槛 < 本层完成门槛** | 前三条是 `LoreTests` 的通用守卫，第四条 `EraGatedLore_StaysBelowItsEraCompletion` 也是通用的；「线内顺序」另需**包内**那条真跑用例（抄 `LibraryContentTests.Storylines_ReadInOrderDuringARealPlaythrough`） |
 | 5 | **开局 10 分钟 ≤3 条**：三条线各用一个不同的点击小门槛开篇（1 / 25 / 100），第四条放到 240 次之后 | `G5_FirstTenMinutesRevealAtMostThreeEntries` |
@@ -107,7 +107,7 @@ ReadershipModule.cs                  81   第二资源（IGameModule）
 | 8 | **计数器必须在 `Configure` 里登记显示名**，否则玩家看到 `每点「readership」` | `ContentTests.CounterNames_AreRegisteredForEveryReferencedCounter`（会真渲染一遍） |
 | 9 | **计数器驱动产量不需要新来源**：`Scaling(ScalingSource.CustomCounter, …, Id: 键)` 就够 | ARCHITECTURE「扩展点」 |
 | 10 | **会掉的计数器要按量子 `MarkDirty()`**（`Step()` 是先重算再 tick，模块改计数器不会自动让产量变脏），而且**不能进完成条件** | `CONTENT_AUTHORING` §10 |
-| 11 | **转生除数按自己包的阶梯标定**（目标"最后一次结算落在 ~100 级"），**永久线总价 ≤ 一次游玩结算出的货币**。⚠️ **光加进 `AllContentPacks()` 还不够**：`PrestigeTests.EraPacks()` 是一份**硬编码的包清单**，不手动加一行，这个包的永久线就没人守（阶段 5 有 3 个包各自踩到） | `CONTENT_AUTHORING` §7.1；`PrestigeTests.EraPacks_PermanentUpgradesAreAffordableWithinOneRun` |
+| 11 | **转生除数按自己包的阶梯标定**（目标"最后一次结算落在 ~100 级"），**永久线总价 ≤ 一次游玩结算出的货币**。✅ **清单已不再需要手工维护**：`PrestigeTests` 现在从 `TestGame.AllEraPacks()`（由 `AllContentPacks()` 派生）取纪元包，"新包自动被扫到"这条现在是**真的** | `CONTENT_AUTHORING` §7.1；`PrestigeTests.EraPacks_PermanentUpgradesAreAffordableWithinOneRun` |
 | 12 | **结局必须有兜底**，且所有结局都要 `EraAtLeast(末层) + 末层完成条件`（否则一进末层兜底结局就抢答了） | `ValidateEndings` + `LabEndingTests` 的教训 |
 | 13 | **建筑解锁**：不做继承的包用 `EarnedThisRunAtLeast` 是**有意的**（每层重新揭示）；**只有做继承的包**才必须换成 `EarnedAllTimeAtLeast`，否则"拥有但未解锁" | `CONTENT_AUTHORING` §11.1 |
 | 14 | **永久升级必须用转生货币计价**，否则构建期直接报错 | `GameContentBuilder` 校验 |
@@ -188,7 +188,7 @@ ASCII 双引号会截断 C# 字符串字面量，只能在编译期发现。`doc
       （实际：神明 49/71/8/10、文明 51/65/9/11、赛博 48/74/8/10、梦境 52/68/10/10）
 - [x] 每个包的专项用例：结构 / 叙事唯一 / 真跑顺序 / G5 / 第二资源 / 机器人可达 / 结局互斥
       （神明 18 条 / 文明 19 条 / 赛博 19 条 / 梦境 17 条）
-- [x] `tools/build.ps1 -Strict` 全绿、**0 警告**（**394 个用例**，阶段 5 前是 320）
+- [x] `tools/build.ps1 -Strict` 全绿、**0 警告**（**396 个用例** = 阶段 5 前的 320 + 四包 73 条 + 曲线守卫 1 + 事后补的 2 条）
 - [x] `src/NekoClicker.Core/` **零改动**（四个包逐个 `git diff --stat src/NekoClicker.Core/` 为空）
 - [x] 四个包各跑一次 `--simulate 43200 --auto --save .tmp/<包>.json`，图鉴全部 **40/40**，
       分别落到 成为主神 / 星际文明 / 找到主人的数据残影 / 叫醒梦者

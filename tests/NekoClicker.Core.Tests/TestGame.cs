@@ -238,6 +238,33 @@ public static class TestGame
         ("#8 梦境", Dream),
     ];
 
+    /// <summary>
+    /// 全部**分层转生**的内容包（含显示名与一个现成引擎）。<para>
+    /// 给"横扫每一个纪元包"的守卫用。存在的理由是一个真实踩过的坑：这类守卫原本各自维护一份
+    /// <b>硬编码清单</b>，于是"通用守卫会自动覆盖新包"这个假设悄悄不成立——阶段 5 的三个包
+    /// 各自独立发现"自己的永久线没人守"，然后各自补了一行。从 <see cref="AllContentPacks"/>
+    /// 派生之后，新包只要进了那张表就自动被扫到。
+    /// </para>
+    /// </summary>
+    public static (string Name, GameEngine Engine)[] AllEraPacks() =>
+    [
+        .. AllContentPacks()
+            .Where(pack => pack.Content.HasEras)
+            .Select(pack => (pack.Name, Create(pack.Content))),
+    ];
+
+    /// <summary>按任意内容创建一个引擎（时间由 <see cref="ManualClock"/> 控制）。</summary>
+    public static GameEngine Create(GameContent content, ulong seed = 12345)
+    {
+        return new GameEngine(content, new GameEngineOptions
+        {
+            Clock = new ManualClock(),
+            Seed = seed,
+            GrantOfflineProgress = true,
+            MaxNotifications = 64,
+        });
+    }
+
     /// <summary>创建使用示例内容包的引擎，时间由 <see cref="ManualClock"/> 控制。</summary>
     public static GameEngine CreateNeko(out ManualClock clock, ulong seed = 12345, bool grantOffline = true)
     {
