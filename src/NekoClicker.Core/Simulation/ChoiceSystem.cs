@@ -52,7 +52,13 @@ public static class ChoiceSystem
 
     /// <summary>
     /// 作答一次选择。<para>
-    /// 一次性语义：答过就不能再答（<see cref="GameState.ChoiceAnswers"/> 里已有记录时返回 <c>false</c>）。
+    /// 三条前置条件缺一不可：选择存在、<b>已经触发过</b>（在待答队列里）、且尚未作答。
+    /// </para>
+    /// <para>
+    /// <b>为什么要校验"已经触发过"</b>：触发条件里带着 <c>EraId</c> 这类硬门，而作答本身
+    /// 不重新判条件。这里一旦放行，调用方就能答一个从未出现过的选择——等于绕过那道门，
+    /// 造出一条真实玩家走不出来的路径。测试里图省事直接遍历 <c>Content.Choices</c> 作答时
+    /// 最容易踩到，所以门要设在引擎这边，而不是指望每个调用方都自觉。
     /// </para>
     /// </summary>
     /// <param name="engine">宿主引擎。</param>
@@ -65,7 +71,8 @@ public static class ChoiceSystem
         if (!content.ChoiceById.TryGetValue(choiceId, out ChoiceDefinition? choice)) return false;
 
         GameState state = engine.State;
-        if (state.HasChoice(choiceId)) return false; // 一次性
+        if (state.HasChoice(choiceId)) return false;                // 一次性
+        if (!state.PendingChoices.Contains(choiceId)) return false; // 还没触发过（含 EraId 硬门）
 
         ChoiceOption? option = null;
         foreach (ChoiceOption candidate in choice.Options)

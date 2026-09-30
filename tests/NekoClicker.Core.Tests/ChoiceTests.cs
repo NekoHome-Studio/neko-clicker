@@ -421,10 +421,17 @@ public static class ChoiceTests
         engine.CheckChoices();
         Check.False(engine.State.PendingChoices.Contains("only_in_e2"), "第 1 层不该触发只属于第 2 层的选择。");
 
+        // 硬门必须由引擎守：EraId 是触发条件的一部分，而作答不再重判条件，
+        // 所以"从未触发过"的选择必须作答失败——否则调用方可以绕过这道门，
+        // 造出一条真实玩家走不出来的路径（测试里遍历 Content.Choices 作答最容易踩到）。
+        Check.False(engine.AnswerChoice("only_in_e2", "a"), "还没触发过的选择不该能作答。");
+        Check.Equal(0, engine.State.ChoiceAnswers.Count);
+
         engine.Ascend();
         Check.Equal(2, engine.State.Era);
         engine.CheckChoices();
         Check.True(engine.State.PendingChoices.Contains("only_in_e2"), "到了第 2 层就应当触发。");
+        Check.True(engine.AnswerChoice("only_in_e2", "a"), "触发之后才能作答。");
     }
 
     [Test]
