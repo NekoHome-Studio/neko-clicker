@@ -263,7 +263,77 @@ public static class EndingTests
         Check.Contains(string.Join("\n", ex.Errors), "缺少终局文本");
     }
 
+    [Test]
+    public static void Validator_RejectsEndingThatPreemptsLastEraChoices()
+    {
+        // 复刻《猫娘实验室》那个真实缺陷：末层绑定了表态机会，而结局只要求"进入末层"。
+        // 运行期看不出来（结局只是"总是落到兜底那个"），必须在构建期拦下。
+        GameContentValidationException ex = Check.Throws<GameContentValidationException>(() =>
+            BuildWithLastEraChoice(endingCondition: UnlockCondition.EraAtLeast(2)));
+
+        string all = string.Join("\n", ex.Errors);
+        Check.Contains(all, "表态机会", "应当指出它抢掉了末层的表态机会。");
+        Check.Contains(all, "一样苛", "应当说明结局至少要和生产末层主线一样苛。");
+    }
+
+    [Test]
+    public static void Validator_AcceptsEndingAsStrictAsTheLastEraMainline()
+    {
+        // 正确写法：直接复用末层完成条件（或更强）。
+        // 这条同时保证上一条不是"永远都红"。
+        GameContent content = BuildWithLastEraChoice(
+            endingCondition: UnlockCondition.All(
+                UnlockCondition.EraAtLeast(2),
+                UnlockCondition.EarnedThisRunAtLeast(1e6)));
+
+        Check.Equal(1, content.Endings.Count);
+    }
+
     // ---------------------------------------------------------------- 辅助
+
+    /// <summary>
+    /// 造一份"末层绑定了表态"的最小内容，用来验证那条构建期规则。<para>
+    /// 第 2 层（末层）完成条件是累计赚取 1e6，而绑在该层的表态门槛只有 1e5——
+    /// 于是"结局只要进入第 2 层"就会抢在那次表态之前成立。
+    /// </para>
+    /// </summary>
+    private static GameContent BuildWithLastEraChoice(UnlockCondition endingCondition) =>
+        new GameContentBuilder("X")
+            .AddStances(new StanceDefinition { Id = "s", Name = "S" })
+            .AddEras(
+                new EraDefinition
+                {
+                    Index = 1,
+                    Id = "e1",
+                    Name = "一",
+                    Completion = UnlockCondition.Always,
+                },
+                new EraDefinition
+                {
+                    Index = 2,
+                    Id = "e2",
+                    Name = "二",
+                    Completion = UnlockCondition.EarnedThisRunAtLeast(1e6),
+                })
+            .Add(new ChoiceDefinition
+            {
+                Id = "c",
+                Speaker = "她",
+                Prompt = "？",
+                EraId = "e2",
+                Trigger = UnlockCondition.All(
+                    UnlockCondition.EraAtLeast(2),
+                    UnlockCondition.EarnedThisRunAtLeast(1e5)),
+                Options = [Option("a", stance: "s", weight: 1), Option("b")],
+            })
+            .AddEndings(new EndingDefinition
+            {
+                Id = "e",
+                Name = "E",
+                Text = "T",
+                Condition = endingCondition,
+            })
+            .Build();
 
     private static string? ReachedBy(string? answer)
     {

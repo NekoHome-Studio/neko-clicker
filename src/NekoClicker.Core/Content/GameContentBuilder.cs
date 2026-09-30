@@ -366,7 +366,7 @@ public sealed class GameContentBuilder
         Index(_storylines, s => s.Id, storylineById, "剧情线", errors);
         ValidateLore(loreById, storylineById, buildingById, upgradeById, achievementById, choiceById, endingById, errors);
         ValidateChoices(choiceById, stanceById, eraByIndex, buildingById, upgradeById, achievementById, buffById, endingById, errors);
-        ValidateEndings(endingById, buildingById, upgradeById, achievementById, choiceById, errors);
+        ValidateEndings(endingById, eraByIndex, buildingById, upgradeById, achievementById, choiceById, errors);
 
         // 最后做一次全局可达性分析：前两步只能发现"引用不存在"，
         // 发现不了"互相引用导致谁也解不开"。
@@ -740,6 +740,7 @@ public sealed class GameContentBuilder
     /// </summary>
     private static void ValidateEndings(
         Dictionary<string, EndingDefinition> endings,
+        Dictionary<int, EraDefinition> eras,
         Dictionary<string, BuildingDefinition> buildings,
         Dictionary<string, UpgradeDefinition> upgrades,
         Dictionary<string, AchievementDefinition> achievements,
@@ -770,6 +771,81 @@ public sealed class GameContentBuilder
                 "缺少兜底结局：所有结局的条件都可能对某些玩家永远不成立——"
                 + "回避表态、或进度不足的玩家会走完主线却没有结局。至少留一个条件“只依赖单调前进的指标、"
                 + "且不含选择/立场/取反”的结局。");
+
+        ValidateEndingsCannotPreemptLastEraChoices(endings, eras, choices, errors);
+    }
+
+    /// <summary>
+    /// 结局不得抢在"末层的表态机会"之前成立。<para>
+    /// <b>这条规则来自一个真实缺陷</b>：《猫娘实验室》的结局曾经只写 <c>EraAtLeast(7)</c>，
+    /// 于是玩家一进入第 7 批，兜底结局就立刻成立并被永久记下；可乌托邦 / 共存这两条立场的
+    /// 第三次表态机会<b>就在第 7 批里</b>——那两个结局在真实游玩中永远拿不到。
+    /// 运行期完全看不出来（结局只是"总是落到兜底那个"），而测试若用 30 秒粗步长也没反应
+    /// （那个窗口只有几秒，一步就跨过去了）。所以必须在构建期拦。
+    /// </para>
+    /// <para>
+    /// <b>规则</b>：如果某个包把选择绑在了最后一层（<c>EraId</c> = 末层 id），
+    /// 那么每个结局的条件都必须<b>蕴含"末层主线已完成"</b>——
+    /// 即同时具备 (a) <c>EraAtLeast(末层)</c> 与 (b) 覆盖末层完成条件的每一项指标（阈值不低于它）。
+    /// </para>
+    /// <para>
+    /// 之所以这样就够：层内表态的里程碑一律 ≤ 该层完成门槛（那一条另有校验），
+    /// 所以"末层完成"必然晚于末层最后一次表态；而 (a) 保证它不会在更早的层里提前成立。
+    /// 这条规则是<b>充分但保守</b>的：可能存在安全但形状不同的写法被它拦下，
+    /// 但代价（一句构建期报错）远小于放过一个死结局。
+    /// </para>
+    /// </summary>
+    private static void ValidateEndingsCannotPreemptLastEraChoices(
+        Dictionary<string, EndingDefinition> endings,
+        Dictionary<int, EraDefinition> eras,
+        Dictionary<string, ChoiceDefinition> choices,
+        List<string> errors)
+    {
+        if (eras.Count == 0 || choices.Count == 0) return;
+
+        int lastIndex = 0;
+        foreach (int index in eras.Keys) lastIndex = Math.Max(lastIndex, index);
+        if (!eras.TryGetValue(lastIndex, out EraDefinition? lastEra)) return;
+
+        // 末层没有绑定选择 → 没有"被抢掉"的风险，规则不触发。
+        bool anyChoiceInLastEra = choices.Values.Any(
+            c => string.Equals(c.EraId, lastEra.Id, StringComparison.Ordinal));
+        if (!anyChoiceInLastEra) return;
+
+        // 末层完成条件要求了哪些指标。
+        List<NumericCondition> required = [.. lastEra.Completion.NumericLeaves()];
+
+        foreach (EndingDefinition ending in endings.Values)
+        {
+            string owner = $"结局 「{ending.Id}」";
+
+            bool hasEraGate = ending.Condition.NumericLeaves().Any(
+                n => n.Metric == NumericMetric.Era && n.Target >= lastIndex);
+            if (!hasEraGate)
+            {
+                errors.Add(
+                    $"{owner} 没有要求进入第 {lastIndex} 层，但它可能在更早的层里就成立——"
+                    + $"那样会抢掉第 {lastIndex} 层的表态机会。请加上 UnlockCondition.EraAtLeast({lastIndex})。");
+            }
+
+            List<NumericCondition> have = [.. ending.Condition.NumericLeaves()];
+            foreach (NumericCondition need in required)
+            {
+                bool covered = have.Any(
+                    h => h.Metric == need.Metric
+                         && string.Equals(h.Id, need.Id, StringComparison.Ordinal)
+                         && h.Target >= need.Target);
+
+                if (covered) continue;
+
+                errors.Add(
+                    $"{owner} 比第 {lastIndex} 层的主线更宽松（缺 {need.Metric}"
+                    + $"{(need.Id is null ? string.Empty : $"「{need.Id}」")} ≥ {need.Target}）——"
+                    + $"而这一层绑定了表态机会。结局必须至少和末层主线一样苛，"
+                    + $"否则它会在最后一次表态之前成立并锁死其它结局。"
+                    + $"建议直接复用该层的完成条件。");
+            }
+        }
     }
 
     /// <summary>
