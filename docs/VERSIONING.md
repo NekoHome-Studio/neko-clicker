@@ -1,9 +1,12 @@
-﻿# 版本与兼容性承诺
+# 版本与兼容性承诺
 
 > 这份文档回答一个问题：**我能不能依赖 `NekoClicker.Core`，以及升级时会不会突然编不过。**
 >
 > 一句话版本：**从 1.0.0 起，公开 API 只增不改。** 删改任何公开成员都必须升主版本号，
 > 而且这条规矩不是靠自觉——有测试守着。
+>
+> 当前版本 **2.0.0**：语义层面的破坏性变更只有一处——结局条件成立后会给玩家一段作答宽限期
+> （`EndingSystem.GraceSeconds`），期间 `CheckEnding()` 返回 `null`。详见 [CHANGELOG](../CHANGELOG.md)。
 
 ---
 
@@ -16,9 +19,9 @@
 单一事实来源是 **`Directory.Build.props` 里的 `<Version>`**：
 
 ```xml
-<Version>1.0.0</Version>
-<AssemblyVersion>1.0.0.0</AssemblyVersion>
-<FileVersion>1.0.0.0</FileVersion>
+<Version>2.0.0</Version>
+<AssemblyVersion>2.0.0.0</AssemblyVersion>
+<FileVersion>2.0.0.0</FileVersion>
 ```
 
 这个值会同时成为程序集版本、文件版本，以及 `ApiVersion.Current` 报告的版本。
@@ -34,8 +37,8 @@
 ```csharp
 using NekoClicker.Core;
 
-Console.WriteLine(ApiVersion.Current);        // "1.0.0"
-Console.WriteLine(ApiVersion.AssemblyVersion); // 1.0.0.0
+Console.WriteLine(ApiVersion.Current);        // "2.0.0"
+Console.WriteLine(ApiVersion.AssemblyVersion); // 2.0.0.0
 Console.WriteLine(ApiVersion.Major);           // 1
 ```
 
@@ -150,7 +153,7 @@ git tag -a v1.0.0 -m "NekoClicker.Core 1.0.0"
 ## 5. 发布检查清单
 
 - [ ] `pwsh -File tools/build.ps1 -Strict` 退出码 0，0 警告
-- [ ] 全部用例通过（当前 **404** 个）
+- [ ] 全部用例通过（当前 **410** 个）
 - [ ] `Directory.Build.props` 的 `Version` / `AssemblyVersion` / `FileVersion` 三处一致
 - [ ] `CHANGELOG.md` 有当前版本的带日期条目，写清了兼容性影响
 - [ ] 若公开 API 有变动：快照已更新，且**确实**是有意为之

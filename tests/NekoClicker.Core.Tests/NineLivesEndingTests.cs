@@ -74,7 +74,17 @@ public static class NineLivesEndingTests
         engine.State.Era = 9;
         engine.MarkDirty();
 
-        Check.Equal("end_blank", engine.CheckEnding()?.Id);
+        // 结局条件成立时还有未作答的表态 → 判定先给一个宽限期，而不是立刻锁死。
+        // 这正是"回避表态"这条路的玩家该得到的待遇：他手上有六次没答的表态，
+        // 想改主意还来得及。
+        Check.AtLeast(engine.State.PendingChoices.Count, 1, "前提：这份存档里挂着没答的表态。");
+        Check.Null(engine.CheckEnding(), "还有表态没答，判定应当先等宽限期，而不是立刻锁死。");
+        Check.True(EndingSystem.IsReady(engine.Content, engine.State), "兜底结局的条件已经成立。");
+
+        // 一直不答 → 宽限期一到，兜底结局照常到达（宽限是推迟，不是阻止）。
+        engine.Simulate(EndingSystem.GraceSeconds + 1);
+
+        Check.Equal("end_blank", engine.ReachedEnding?.Id, "一次都不表态也必须有一个收场。");
     }
 
     // ---------------------------------------------------------------- 选项修饰符真的生效

@@ -1,12 +1,13 @@
-﻿# NekoClicker — 增量游戏框架（C# / .NET 8）
+# NekoClicker — 增量游戏框架（C# / .NET 8）
 
 参考 **Cookie Clicker** 的机制设计的一套**增量（放置 / 点击）游戏框架**，纯 C# 实现，
 **零第三方依赖**，附带十一个内容包（示例包「猫咖物语」+ #1《猫娘咖啡馆》+ #2《九命轮回》
 + #3《猫娘实验室》+ #10《猫娘公司》+ #6《猫娘末世》+ #9《猫娘图书馆》
 + #7《猫娘神明》+ #4《猫娘文明》+ #5《赛博猫娘》+ #8《猫娘梦境》）和一个可玩的终端 Demo。
 
-**当前版本 `1.0.0`**（`NekoClicker.Core` 的公开 API 版本）。从这一版起
+**当前版本 `2.0.0`**（`NekoClicker.Core` 的公开 API 版本）。从 `1.0.0` 起
 **公开 API 只增不改**，而且有测试守着——见 [版本与兼容性承诺](#版本与兼容性承诺)。
+2.0.0 的破坏性变更只有一处语义改动：结局条件成立后会给玩家一段作答宽限期（见 [CHANGELOG](CHANGELOG.md)）。
 
 框架的核心目标是**把"引擎"和"内容"彻底分开**：引擎负责时间推进、数值管线、存档与事件；
 内容只描述"这个世界有什么"。换掉内容包就能做出完全不同的游戏，引擎代码一行都不用改。
@@ -55,7 +56,7 @@
 > 代价是画面右侧与底部各有一格空白——这是换「拖横向不崩」付出的代价。
 
 ```powershell
-# 构建 + 跑测试（404 个用例，零依赖迷你运行器）
+# 构建 + 跑测试（410 个用例，零依赖迷你运行器）
 .\tools\build.ps1
 
 # 只构建全部项目
@@ -153,7 +154,7 @@ src/NekoClicker.Content.Civ/     内容包 #4《猫娘文明》（五个时代�
 src/NekoClicker.Content.Cyber/   内容包 #5《赛博猫娘》（五层数字层，迁服务器）
 src/NekoClicker.Content.Dream/   内容包 #8《猫娘梦境》（五层梦，越睡越浓的梦境能量）
 src/NekoClicker.Demo.Cli/        终端 UI 适配层（ANSI 全屏 + 键盘 + 无头模式 + --package）
-tests/NekoClicker.Core.Tests/    404 个测试 + 自研迷你测试运行器（含架构不变量与全程可达测试）
+tests/NekoClicker.Core.Tests/    410 个测试 + 自研迷你测试运行器（含架构不变量与全程可达测试）
 docs/ARCHITECTURE.md             架构与设计决策
 docs/CONTENT_AUTHORING.md        如何写内容（数值节奏、校验规则、常见坑）
 docs/VERSIONING.md               版本与兼容性承诺：什么改动升哪一位、公开 API 快照怎么用
@@ -281,7 +282,7 @@ Console.WriteLine(engine.Save());           // JSON 存档
 
 ## 版本与兼容性承诺
 
-**当前版本 `1.0.0`。从这一版起，`NekoClicker.Core` 的公开 API 只增不改。**
+**当前版本 `2.0.0`。从 `1.0.0` 起，`NekoClicker.Core` 的公开 API 只增不改。**
 
 | 改动 | 升哪一位 |
 |---|---|
@@ -294,8 +295,8 @@ Console.WriteLine(engine.Save());           // JSON 存档
 ```csharp
 using NekoClicker.Core;
 
-Console.WriteLine(ApiVersion.Current);         // "1.0.0"
-Console.WriteLine(ApiVersion.AssemblyVersion);  // 1.0.0.0
+Console.WriteLine(ApiVersion.Current);         // "2.0.0"
+Console.WriteLine(ApiVersion.AssemblyVersion);  // 2.0.0.0
 ```
 
 ### 这条承诺是怎么被守住的
@@ -347,7 +348,7 @@ Console.WriteLine(ApiVersion.AssemblyVersion);  // 1.0.0.0
 ## 状态
 
 - 核心引擎、十一个内容包（猫咖物语 / 猫娘咖啡馆 / 九命轮回 / 猫娘实验室 / 猫娘公司 / 猫娘末世 /
-  猫娘图书馆 / 猫娘神明 / 猫娘文明 / 赛博猫娘 / 猫娘梦境）、终端 Demo，**404 个测试**全部通过。
+  猫娘图书馆 / 猫娘神明 / 猫娘文明 / 赛博猫娘 / 猫娘梦境）、终端 Demo，**410 个测试**全部通过。
 - **分层转生（`Era`）已落地**：逐级推进的转生按钮、每层换规则的平衡覆盖、
   跨层继承、构建期的完成条件单调性校验。九命（9 层）、实验室（7 批）、公司（3 轮）、
   末世（5 次重启）、图书馆（5 本书）、神明（5 套神话）、文明（5 个时代）、赛博（5 层）、

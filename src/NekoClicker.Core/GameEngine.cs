@@ -227,12 +227,21 @@ public sealed class GameEngine
         if (_achievementTimer < Math.Max(0.05, Balance.AchievementCheckInterval)) return;
         _achievementTimer = 0;
 
-        // 顺序有讲究：终局判定排在最前，这样同一拍里"依赖结局"的成就 / 剧情
-        // （Unlock = EndingReached(...)）就能立刻结算，而不用再等一个检查周期。
+        // 顺序有讲究，两条理由各不相同：
+        //
+        // ① 表态的触发排在终局判定<b>之前</b>。终局判定要读"还有没有未作答的表态"
+        //    来决定是否给玩家留宽限期（EndingSystem.GraceSeconds）；若它先跑，同一拍里
+        //    刚够条件的表态就还不在待答队列里，判定会误以为"没人要答"而立刻落定。
+        //    这不是杞人忧天：表态门槛允许<b>等于</b>本层完成门槛（见 ValidateChoiceFitsItsEra
+        //    只拦 >），此时表态与结局条件会在同一拍首次成立，顺序就是唯一的区别。
+        //    提前一拍对内容没有副作用——没有任何选择的触发条件依赖结局（只有成才会）。
+        //
+        // ② 终局判定排在成就 / 剧情<b>之前</b>。这样同一拍里"依赖结局"的内容
+        //    （Unlock = EndingReached(...)）就能立刻结算，而不用再等一个检查周期。
+        CheckChoices();
         CheckEnding();
         CheckAchievements();
         CheckLore();
-        CheckChoices();
     }
 
     // ---------------------------------------------------------------- 玩家动作
@@ -460,6 +469,10 @@ public sealed class GameEngine
     /// 检查终局判定。达成第一个满足条件的结局就记下，之后不再判（一份存档一个结局）。<para>
     /// 与其它检查同频执行。判定完全由条件树驱动，引擎不认识"哪一层是最后一层"——
     /// 想表达"走完主线"就在内容里写 <c>EraAtLeast(9)</c>。
+    /// </para>
+    /// <para>
+    /// 条件成立时若还有未作答的表态，落定会推迟 <see cref="EndingSystem.GraceSeconds"/>
+    /// 模拟秒（或直到玩家作答），给玩家留出反应时间；这是唯一会推迟落定的机制。
     /// </para>
     /// </summary>
     public EndingDefinition? CheckEnding() => EndingSystem.Check(this);
