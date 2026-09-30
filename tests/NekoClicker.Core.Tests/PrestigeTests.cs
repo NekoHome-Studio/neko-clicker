@@ -24,9 +24,22 @@ public static class PrestigeTests
     [Test]
     public static void EraPacks_PermanentUpgradesAreAffordableWithinOneRun()
     {
+        // 一局的上限用「游戏小时」而不是轮数：成本才与内容规模挂钩，也才说得清"多久算走完"。
+        // 实测九包走完主线在 1.4~11.8 游戏小时（每次运行都会打印），取 30 小时留足余量。
+        //
+        // 为什么必须去掉轮数上限：原来的 `round < 60_000` 在 0.25 秒细步下只覆盖
+        // 约 4.2 模拟小时，而九命要 11.8 小时才到结局——循环被截断，ReachedEnding 是 null，
+        // 断言却拿"跑到一半"的状态去算"一次游玩能结算多少转生货币"。
+        // 它恰好仍然通过，于是没人发现：**代价变成了看不见，而不是红色**。
+        const double deadlineHours = 30;
+
         foreach ((string name, GameEngine engine) in TestGame.AllEraPacks())
         {
-            for (int round = 0; round < 60_000 && engine.ReachedEnding is null; round++)
+            double deadlineSeconds = deadlineHours * 3600;
+
+            // 后期用 0.25 秒细步：末层表态门槛与完成门槛之间只隔几秒，30 秒一步会跨过去，
+            // 机器人"来不及答"最后一次表态，结局就永远不来——那样测的是步长，不是内容。
+            while (engine.ReachedEnding is null && engine.State.PlayTimeSeconds < deadlineSeconds)
             {
                 for (int i = 0; i < 8; i++) engine.Click();
                 TestGame.BuyGreedily(engine);   // 只买普通升级，转生升级留给这条断言去算
@@ -38,6 +51,16 @@ public static class PrestigeTests
                 engine.Simulate(engine.State.Era >= 5 ? 0.25 : 30);
             }
 
+            // 到不了结局必须**明确失败**，而不是默默把预算烧完。
+            // 这是这条用例最贵的一环：细步长下跑满预算要一万五千模拟秒，
+            // 而原来的 `round < 60_000` 会让"永远走不到终局"表现为**变慢而不是变红**——
+            // 代价从红色变成了时间，等于没有守卫。
+            Check.NotNull(
+                engine.ReachedEnding,
+                $"{name} 在 {deadlineHours:F0} 游戏小时内没走到结局"
+                + $"（当前 {engine.State.PlayTimeSeconds / 3600:F1} 小时）——"
+                + $"要么它的终局条件不可达，要么末层表态窗口被步长跨过去了。");
+
             List<UpgradeDefinition> line =
             [
                 .. engine.Content.Upgrades.Where(u => u.Persistence == UpgradePersistence.Permanent),
@@ -46,7 +69,8 @@ public static class PrestigeTests
             double chips = engine.State.PrestigeChips;
 
             Console.WriteLine(
-                $"      {name}：一次游玩结算 {chips:F0} 点转生货币，永久线总价 {total:F0}"
+                $"      {name}：{engine.State.PlayTimeSeconds / 3600:F1} 游戏小时走到结局，"
+                + $"结算 {chips:F0} 点转生货币，永久线总价 {total:F0}"
                 + $"（{string.Join(" / ", line.Select(u => u.Price.ToString("F0")))}）");
 
             Check.True(line.Count > 0, $"{name} 没有任何永久升级。");
