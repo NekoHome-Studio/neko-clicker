@@ -1,6 +1,6 @@
 # 现状
 
-> 记录时间：**2026-10-01** ｜ 分支 `main` ｜ 当前版本 **1.2.0**
+> 记录时间：**2026-10-01** ｜ 分支 `main` ｜ 当前版本 **1.2.1**
 >
 > 这份文档只回答一个问题：**现在是什么状况**。它不重复别处已有的内容——
 > 架构看 [ARCHITECTURE](engine/docs/ARCHITECTURE.md)，规划与决策看 [ROADMAP](games/docs/ROADMAP.md)，
@@ -16,17 +16,20 @@
 | 分支 / tag | 内容 | 状态 |
 |---|---|---|
 | `main` | **唯一的开发线** | 可发布 |
-| `v1.2.0` | 1.1.0 + Web 前端 + 两层重构 + 剧情外部化试点 | 当前版本 |
+| `v1.2.1` | 1.2.0 + 421 条散文铺满十个包 + `ContentText` 并发修复 | **当前版本** |
+| `v1.2.0` | 1.1.0 + Web 前端 + 两层重构 + 剧情外部化试点 | 已发布（已知含一个并发缺陷） |
 | `v1.1.0` | 结局作答宽限期 + 套件并行化 | 已发布 |
 | `v1.0.0` | 首个承诺公开 API 稳定的版本 | 已发布 |
 | `feature/web-frontend-ui` | 旧分支，已并入 `main` | **作废**（远端还在，可删） |
 
-**当前版本 `1.2.0`**（`NekoClicker.Core` 的公开 API 版本）。相对 1.1.0 **只新增了
-`ContentText`**（剧情散文的外部化载体），没有不兼容改动 → 按
-[VERSIONING](engine/docs/VERSIONING.md) 是 **minor**。
+**当前版本 `1.2.1`**（`NekoClicker.Core` 的公开 API 版本）：**patch**——公开 API
+一行没动，改的是剧情散文的存放位置（421 条铺满十个包）与 `ContentText` 里那个并发缺陷。
+上一版 1.2.0 相对 1.1.0 只新增了 `ContentText`（剧情散文的外部化载体），没有不兼容改动
+→ 按 [VERSIONING](engine/docs/VERSIONING.md) 是 **minor**。
 
-> **`[未发布]` 里还挂着两组改动**（421 条散文外部化、`ContentText` 的并发修复）：都不动公开 API，
-> 发布时是 **patch（1.2.1）**。**2026-10-01 有意停在这里，没有升版本**——逐步清单见 §8.1。
+> **为什么补发 1.2.1**：`v1.2.0` 的 tag 里没有那个并发修复——拿到 1.2.0 的人手里的
+> `ContentText` 是"多线程用了就可能炸"的类型（实测 1200 次构建里 522 次抛异常）。
+> 发布流程与这次的执行记录见 [RELEASING](engine/docs/RELEASING.md)。
 
 > **一条已作废的策略**，写在这里免得再被引用：原定"`main` 停在 v1.0.0、加前端一律走
 > `feature/web-frontend-ui` 分支"。2026-10-01 协作者把该分支合并进 main 并在主线继续，
@@ -43,7 +46,7 @@ engine/            自包含：搬走它 + 仓库根的 Directory.Build.props = 
   core/            引擎本体（平台中立，可在 Linux/macOS 直接构建）
   content/<包名>/  十一个内容包，一个包一个 csproj
   engine/tests/    435 个用例 + 自研迷你运行器
-  docs/            架构 / 内容作者指南 / 版本承诺
+  docs/            架构 / 内容作者指南 / 版本承诺 / 发布流程（RELEASING）
 games/             旗舰示例作品。依赖 engine/，反向不依赖
   hosts/Demo.Cli/  终端前端，同时是框架回归基线（FrameRenderTests 引用它）
   hosts/Web/       Web 前端（可玩；自带独立 sln，build.ps1 会一起编）
@@ -233,19 +236,21 @@ Web 宿主不在 `NekoClicker.sln` 里（它是独立的单项目 sln），但 `
 
 ## 8. 下一步与交接（给下一个接手的人）
 
-> **停在哪里**：HEAD `c84c478`（已推送）。引擎 435 用例全绿、Web 宿主 22 项端到端全过、
-> CI 刚配好（**还没在远端见过一次运行结果**，见 §6）。下面每一条**都还没开工**，按建议顺序排。
+> **停在哪里**：**1.2.1 已发布**（tag `v1.2.1`，提交与 tag 都已用 SSH 推到远端），
+> HEAD 见 `git log -1`。引擎 435 用例全绿、Web 宿主 22 项端到端全过、CI 已在远端跑过
+> （结果见 §6）。**§8.1 已交付**（留在这里当记录），**§8.2 起都还没开工**，按建议顺序排。
 > 想知道"现在到底什么状况"，跑 §4 那三条命令——这份文档刻意不写 HEAD，别再让它跟着提交跑。
 
-### 8.1 先发布 1.2.1：把 `[未发布]` 收掉（最独立、最小）
+### 8.1 ✅ 已交付：1.2.1（2026-10-01）
 
 **为什么先做它**：`[未发布]` 里那两件事——421 条散文外部化、`ContentText` 的并发修复——
 **都不动公开 API**，按 [VERSIONING](engine/docs/VERSIONING.md) 是 patch。但它们在 main 上
 已经躺了一段时间，而 **`v1.2.0` 的 tag 里没有那个并发修复**：拿到 1.2.0 的人手里的
 `ContentText` 是个"多线程用了就可能炸"的类型（实测 1200 次构建里 522 次抛异常）。
 所以这不是"顺手发个版"，是补一个**已经发出去的**缺陷。
+完整执行记录（含这次唯一一处清单外的改动）见 [RELEASING](engine/docs/RELEASING.md) §3。
 
-要改的地方（机械活，但**少一处，`PublicApiTests` / `VersionTests` 就会红**）：
+改动清单（已按此执行；**少一处，`PublicApiTests` / `VersionTests` 就会红**）：
 
 | 文件 | 改什么 |
 |---|---|
@@ -253,19 +258,22 @@ Web 宿主不在 `NekoClicker.sln` 里（它是独立的单项目 sln），但 `
 | `engine/core/PublicApi.txt` | **不要手改**：跑 `tools/public-api.ps1` 重生成（它会把第一行的 `version=` 一并换掉；公开表面本身不变） |
 | `CHANGELOG.md` | `## [未发布]` → `## [1.2.1] - YYYY-MM-DD`，并把开头"承接 1.2.0…发布时的升位"那段改成已发布口径 |
 | `README.md` | 两处「当前版本 `1.2.0`」。**第一处必须是全文第一个反引号版本号**——`VersionTests` 就是锚在它上面的 |
+| `README.md`（清单外） | 代码示例的输出注释（`"1.2.0"` / `1.2.0.0`）与一句陈旧的「1897 行快照」（实际已是 1909 行）——不在守卫射程内，但留着就是错信息 |
 | `engine/README.md` | 那句「当前 `1.2.0`」 |
 | `engine/docs/VERSIONING.md` | §1 的当前版本 + §2 示例里的版本号与输出（`ApiVersion.Current` 会打印成 `1.2.1`） |
 | `STATUS.md` | 本文件 §1 的表格与"当前版本"段 |
 | `engine/docs/TEXT_AS_DATA_PLAN.md` | §8 末尾"发布时按 patch（1.2.1）"改成既成事实 |
+| `engine/docs/RELEASING.md`（新增） | 发布流程 + 这次的实际执行记录：以后发版照它走，不用再从零拼命令 |
 
-验收与收尾：`.\tools\build.ps1 -Strict`（`PublicApiTests` + `VersionTests` 会同时验版本号、
-快照与 CHANGELOG 条目）+ `.\tools\api-test.ps1`；`tools\pack.ps1` 出
-`artifacts\neko-clicker-1.2.1-win-x64.zip`；`git tag -a v1.2.1 -m "..."` 后**用 SSH 推**
-（§7 第 10 条），把 tag 也推上去。
+验收与收尾（实际结果）：`.\tools\build.ps1 -Strict` **435 全绿、0 警告**（它同时验了版本号、
+快照与 CHANGELOG 条目）+ `.\tools\api-test.ps1` **22 项全过**；`tools\pack.ps1` 产出
+`artifacts\neko-clicker-1.2.1-win-x64.zip`；`git tag -a v1.2.1 -m "..."` 后用 SSH 推
+（§7 第 10 条），提交与 tag 都上去了。
 
-**一个留给你判断的取舍**：`[未发布]` 里现在还挂着这次的**工具与 CI**（`tools/api-test.ps1` +
-workflow）。它不改变 API 版本语义。留下的理由：这份文件同时是仓库的改动记录；
-摘出去的理由：changelog 讲的是"这个库对外承诺的变化"。两边都说得通，选一个写清楚就行。
+**那个留给你判断的取舍，这次定的是"收录"**：`[未发布]` 里挂着的工具与 CI
+（`tools/api-test.ps1` + workflow）收进了 1.2.1 条目，理由已经写进 CHANGELOG 那一节的开头——
+本仓库的 CHANGELOG 同时充当改动记录（1.2.0 条目里也记了 Web 前端与启动器），
+版本号本身仍然只描述 `NekoClicker.Core` 的公开 API。
 
 ### 8.2 铺完剩下的 Web 界面（游戏侧，工作量最大）
 

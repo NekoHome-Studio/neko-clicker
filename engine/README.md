@@ -73,7 +73,7 @@ dotnet build NekoClicker.sln     # 或者用仓库根的 .\tools\build.ps1
 
 ## 版本与兼容性
 
-**当前 `1.2.0`。从 `1.0.0` 起，`NekoClicker.Core` 的公开 API 只增不改**，
+**当前 `1.2.1`。从 `1.0.0` 起，`NekoClicker.Core` 的公开 API 只增不改**，
 由 `core/PublicApi.txt`（1909 行快照，**嵌进 dll**）加四条守卫强制执行。
 规矩见 [docs/VERSIONING.md](docs/VERSIONING.md)。
 

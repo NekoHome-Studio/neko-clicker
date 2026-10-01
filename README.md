@@ -5,10 +5,11 @@
 + #3《猫娘实验室》+ #10《猫娘公司》+ #6《猫娘末世》+ #9《猫娘图书馆》
 + #7《猫娘神明》+ #4《猫娘文明》+ #5《赛博猫娘》+ #8《猫娘梦境》）和一个可玩的终端 Demo。
 
-**当前版本 `1.2.0`**（`NekoClicker.Core` 的公开 API 版本）。从 `1.0.0` 起
+**当前版本 `1.2.1`**（`NekoClicker.Core` 的公开 API 版本）。从 `1.0.0` 起
 **公开 API 只增不改**，而且有测试守着——见 [版本与兼容性承诺](#版本与兼容性承诺)。
 1.1.0 的破坏性变更只有一处语义改动：结局条件成立后会给玩家一段作答宽限期（见 [CHANGELOG](CHANGELOG.md)）；
-1.2.0 只新增了 `ContentText`（剧情散文的外部化载体），没有不兼容改动。
+1.2.0 只新增了 `ContentText`（剧情散文的外部化载体），没有不兼容改动；
+1.2.1 是 patch：421 条散文铺满十个包、修掉 `ContentText` 的并发缺陷，公开 API 一行没动。
 
 框架的核心目标是**把"引擎"和"内容"彻底分开**：引擎负责时间推进、数值管线、存档与事件；
 内容只描述"这个世界有什么"。换掉内容包就能做出完全不同的游戏，引擎代码一行都不用改。
@@ -318,7 +319,7 @@ Console.WriteLine(engine.Save());           // JSON 存档
 
 ## 版本与兼容性承诺
 
-**当前版本 `1.2.0`。从 `1.0.0` 起，`NekoClicker.Core` 的公开 API 只增不改。**
+**当前版本 `1.2.1`。从 `1.0.0` 起，`NekoClicker.Core` 的公开 API 只增不改。**
 
 | 改动 | 升哪一位 |
 |---|---|
@@ -331,15 +332,15 @@ Console.WriteLine(engine.Save());           // JSON 存档
 ```csharp
 using NekoClicker.Core;
 
-Console.WriteLine(ApiVersion.Current);         // "1.2.0"
-Console.WriteLine(ApiVersion.AssemblyVersion);  // 1.2.0.0
+Console.WriteLine(ApiVersion.Current);         // "1.2.1"
+Console.WriteLine(ApiVersion.AssemblyVersion);  // 1.2.1.0
 ```
 
 ### 这条承诺是怎么被守住的
 
 不是靠自觉，是靠一份**快照**加四条守卫：
 
-- `engine/core/PublicApi.txt` —— 1897 行的公开表面逐项清单，
+- `engine/core/PublicApi.txt` —— 1909 行的公开表面逐项清单，
   **嵌进 `NekoClicker.Core.dll`**，随 dll 一起走。任何拿到这个 dll 的宿主都能自己断言
   "这份二进制的公开 API 与我预期的一致"，不需要把本仓库的测试代码也带走。
 - `PublicApiTests` —— 快照必须逐项一致；快照必须真的覆盖每个公开成员（防止守卫自己瞎掉）；
@@ -500,5 +501,6 @@ Console.WriteLine(ApiVersion.AssemblyVersion);  // 1.2.0.0
   ROADMAP 规划范围内的**十个内容包至此全部交付**，
   四个引擎能力里只有 S-A / S-B / S-C 动过核心（S-D 一行核心代码都没写）。
 
-**接下来做什么**：见 [STATUS.md 的 §8「下一步与交接」](STATUS.md)——发布 1.2.1 的逐步清单、
-剩下四个 Web 界面的落点与坑、`PackageId` 打包元数据，每条都带了验收命令与已知边界。
+**接下来做什么**：见 [STATUS.md 的 §8「下一步与交接」](STATUS.md)——剩下四个 Web 界面的落点与坑、
+`PackageId` 打包元数据，每条都带了验收命令与已知边界。1.2.1 是怎么发出去的（含发布流程与
+这次的实际执行记录）见 [engine/docs/RELEASING.md](engine/docs/RELEASING.md)。
