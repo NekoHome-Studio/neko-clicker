@@ -200,7 +200,8 @@ tools/seed-packages.ps1          把全局 NuGet 缓存里的 net8.0 targeting p
 要横扫每一个包才抓得出沉默失败（阶段 4B 的两条真缺陷就是这么发现的）。
 所以 `engine/tests` 与内容包同属引擎侧，一起被提取——这也是 `engine/` 能自包含的原因。
 
-> **`games/hosts/Web/` 的状态**：**可玩**——点击、买建筑与升级、推进纪元、表态、看图鉴，
+> **`games/hosts/Web/` 的状态**：**可玩**——点击、买建筑与升级、推进纪元、表态、看图鉴、
+> 日志（引擎的通知列表，`#tab=log`），
 > 与终端 Demo 共用同一份存档（`saves/<包 id>.json`）；零前端依赖（手写 ES 模块 + 一份 CSS，
 > 无 npm、无打包步骤）。调试要用 `NEKO_DEBUG_KEY` 开门，见
 > [WEB_DEBUG_GATE_PLAN](engine/docs/WEB_DEBUG_GATE_PLAN.md)。它刻意不挂进 `NekoClicker.sln`
@@ -406,8 +407,9 @@ Console.WriteLine(ApiVersion.AssemblyVersion);  // 1.2.1.0
 - 核心引擎、十一个内容包（猫咖物语 / 猫娘咖啡馆 / 九命轮回 / 猫娘实验室 / 猫娘公司 / 猫娘末世 /
   猫娘图书馆 / 猫娘神明 / 猫娘文明 / 赛博猫娘 / 猫娘梦境）、**两个前端宿主**（终端 Demo + Web），
   **435 个测试**全部通过。
-- **端到端回归与 CI 已落地**：`tools/api-test.ps1` 起真宿主打一遍全部端点（静态文件 / 元信息 /
-  快照 / 命令 / 负数 / SSE 流，22 项检查），自带临时存档目录、缺省把调试门关着、收尾按端口反查并清掉
+- **端到端回归与 CI 已落地**：`tools/api-test.ps1` 起真宿主打一遍全部端点（静态文件 / 前端面板 /
+  元信息 / 快照 / 命令 / 通知 / 负数 / SSE 流，26 项检查），自带临时存档目录、缺省把调试门关着、
+  收尾按端口反查并清掉
   `dotnet run` 的子进程；`.github/workflows/ci.yml` 在每次 push / PR 上跑 `tools/build.ps1 -Strict`
   与它——"公开 API 只增不改"因此不再只靠纪律。
 - **分层转生（`Era`）已落地**：逐级推进的转生按钮、每层换规则的平衡覆盖、

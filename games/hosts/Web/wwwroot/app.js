@@ -148,6 +148,7 @@ function render() {
   renderChoices();
   renderCodex();
   renderAchievements();
+  renderNotifications();
 }
 
 /**
@@ -382,6 +383,68 @@ function renderAchievements() {
 
     host.append(row);
   }
+}
+
+/**
+ * 日志（`GameSnapshot.notifications`）。
+ *
+ * 引擎把"发生了什么"一路推到这里：买东西、成就解锁、金猫出现、舍命、存档失败……
+ * 在此之前前端**一处都没画过它**，这些消息只活在服务端的列表里。
+ *
+ * 刻意只做到"渲染出来"：**没有未读游标**——那需要新增状态与公开字段，
+ * 是另一件事（见 STATUS §8.2）。排序取新在上：服务端按发生顺序 append，
+ * 玩家想先看到的显然是最近那条。
+ *
+ * `kind` 是**数字**（宿主的 JsonSerializerOptions 没有开枚举字符串转换器，见 SnapshotProtocol.cs），
+ * 顺序与 `NotificationKind` 的声明一致：0=Info / 1=Success / 2=Warning / 3=Rare。
+ */
+const NOTE_KINDS = ["info", "success", "warning", "rare"];
+
+function renderNotifications() {
+  const host = $("#log");
+  const notes = [...(state.notifications ?? [])].reverse();
+
+  $("#log-count").textContent = notes.length > 0 ? `最近 ${notes.length} 条` : "";
+  host.textContent = "";
+
+  if (notes.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "muted";
+    empty.textContent = "还没有消息。买东西、解锁成就、抓到金猫都会记在这里。";
+    host.append(empty);
+    return;
+  }
+
+  for (const item of notes) {
+    const row = document.createElement("div");
+    row.className = `note ${NOTE_KINDS[item.kind] ?? "info"}`;
+
+    const icon = document.createElement("span");
+    icon.className = "note-icon";
+    icon.textContent = item.icon || "•";
+    row.append(icon);
+
+    const text = document.createElement("span");
+    text.className = "note-text";
+    text.textContent = item.message;
+    row.append(text);
+
+    const time = document.createElement("span");
+    time.className = "note-time";
+    time.textContent = relativeGameTime(state.playTimeSeconds - item.timestamp);
+    row.append(time);
+
+    host.append(row);
+  }
+}
+
+/** 把"多少游戏秒之前"说成人话。`playTimeSeconds` 只增不减（舍命也不清零），所以差值不会为负。 */
+function relativeGameTime(seconds) {
+  if (!(seconds >= 1)) return "刚刚";
+  if (seconds < 60) return `${Math.floor(seconds)} 秒前`;
+  if (seconds < 3600) return `${Math.floor(seconds / 60)} 分钟前`;
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)} 小时前`;
+  return `${Math.floor(seconds / 86400)} 天前`;
 }
 
 /**

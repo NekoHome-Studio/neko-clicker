@@ -23,7 +23,7 @@
 | ⑤ | **先构建一次**，再跑 `tools\public-api.ps1` | 快照由测试程序集打印，`ApiVersion.Current` 读程序集元数据——版本号改了没重编，快照会带**旧版本号**且看起来完全正常 |
 | ⑥ | 扫一遍所有"当前版本"字样 | 清单见 §2；判据是 `git grep <旧版本号>`，不是记性 |
 | ⑦ | `tools\build.ps1 -Strict` | 435 用例 + 公开 API 快照 + 版本守卫；**0 警告** |
-| ⑧ | `tools\api-test.ps1` | 22 项端到端（真起宿主、真读 SSE）；动了宿主/前端时必跑 |
+| ⑧ | `tools\api-test.ps1` | 全部端到端检查通过（真起宿主、真读 SSE；当前 26 项）；动了宿主/前端时必跑 |
 | ⑨ | `tools\pack.ps1` | 产出 `artifacts\neko-clicker-<版本>-win-x64.zip` |
 | ⑩ | `git commit` → `git tag -a v<版本>` → 推送 | 本机 HTTPS 不通，走 SSH（见 §4） |
 | ⑪ | 看 CI 的两个作业，把结果写回 `STATUS.md` §6 | "本地全绿"不等于"runner 上全绿" |

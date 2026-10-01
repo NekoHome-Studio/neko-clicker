@@ -65,6 +65,7 @@
         <button data-tab="choices">表态 <b id="choice-badge" class="badge hidden"></b></button>
         <button data-tab="codex">图鉴</button>
         <button data-tab="achievements">成就</button>
+        <button data-tab="log">日志</button>
       </nav>
 
       <div class="panel" data-panel="buildings">
@@ -97,6 +98,13 @@
       <div class="panel hidden" data-panel="achievements">
         <div class="panel-head"><h2>成就</h2><span class="muted" id="achievement-count"></span></div>
         <div id="achievement-list" class="list"></div>
+      </div>
+
+      <!-- 日志：GameSnapshot.notifications 的落点。买过什么、解锁了什么、金猫来过，
+           还有存档失败这类警告——引擎一路推到这里，此前前端一处都没画过。 -->
+      <div class="panel hidden" data-panel="log">
+        <div class="panel-head"><h2>日志</h2><span class="muted" id="log-count"></span></div>
+        <div id="log" class="list"></div>
       </div>
     </section>
   </main>

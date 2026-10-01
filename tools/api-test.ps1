@@ -269,6 +269,17 @@ try {
         Check "GET $($item.Path)" ($r.Success -and $hit) "HTTP $($r.Status)，$bytes 字节，含 <$($item.Needle)>: $hit"
     }
 
+    # 前端面板：浏览器拿到的东西里真的有那个挂载点与渲染函数。
+    # 判据只能是"送到浏览器的那份文本里有它"——本脚本不跑 JS，"好不好看"没有守卫（STATUS §6）。
+    Write-Section '前端面板（挂载点与渲染函数真的送到了浏览器）'
+    $indexPage = Invoke-Get '/'
+    $logMount = [bool]($indexPage.Body -and $indexPage.Body.Contains('data-panel="log"'))
+    Check '首页里有日志面板的挂载点' ($indexPage.Success -and $logMount) "含 <data-panel=`"log`">: $logMount"
+
+    $appScript = Invoke-Get '/app.js'
+    $logRender = [bool]($appScript.Body -and $appScript.Body.Contains('renderNotifications'))
+    Check 'app.js 里有日志渲染函数' ($appScript.Success -and $logRender) "含 <renderNotifications>: $logRender"
+
     # ------------------------------------------------------------ 元信息
     Write-Section '元信息'
     $expectedVersion = $null
@@ -338,6 +349,34 @@ try {
             Check '超大数量被钳到预算内并回报结果' `
                 ($rich.Success -and $message.Length -gt 0 -and ($richResult.ok -eq $true -or $message.Contains('钱'))) `
                 $message
+
+            # 通知面板的数据源：脚本做过的这些动作应该已经让引擎往快照里推过消息了。
+            # 前端只能画它拿到的东西，所以这里守的是"消息真的从引擎走到了 JSON"。
+            # 刻意**不点名某一条文案**：买建筑不发通知（只有买升级 / 成就解锁 / 增益 /
+            # 金猫 / 舍命会发），而这里跑的是"点击 + 买建筑"，产出的多半是成就解锁。
+            Start-Sleep -Milliseconds 400
+            $afterBuy = Convert-FromJsonSafe (Invoke-Get "/api/snapshot?package=$Package").Body
+            $notes = @()
+            if ($null -ne $afterBuy -and $null -ne $afterBuy.notifications) { $notes = @($afterBuy.notifications) }
+            $noteDetail = if ($notes.Count -gt 0) {
+                ($notes | Select-Object -First 2 | ForEach-Object { $_.message }) -join ' ｜ '
+            } else { '（一条都没有）' }
+            Check '动作之后快照的 notifications 里有真消息' ($notes.Count -ge 1) "$($notes.Count) 条：$noteDetail"
+
+            if ($notes.Count -gt 0) {
+                $shaped = $true
+                foreach ($note in $notes) {
+                    $noteFields = @($note.PSObject.Properties.Name)
+                    foreach ($field in @('message', 'icon', 'kind', 'timestamp')) {
+                        if ($noteFields -cnotcontains $field) { $shaped = $false }
+                    }
+                    if ([int]$note.kind -lt 0 -or [int]$note.kind -gt 3) { $shaped = $false }
+                    # 时间戳是"产生时的游戏时间"，不该跑到当前游戏时间之后。
+                    if ([double]$note.timestamp -gt [double]$afterBuy.playTimeSeconds + 1) { $shaped = $false }
+                }
+                Check '每条通知字段齐全、kind ∈ 0..3、时间戳不超过当前游戏时间' $shaped `
+                    "$($notes.Count) 条；第一条 kind=$($notes[0].kind)（数字枚举，前端按序数上色），timestamp=$($notes[0].timestamp)"
+            }
         }
 
         $bad = Invoke-PostJson "/api/command?package=$Package" @{ type = '不存在的命令' }

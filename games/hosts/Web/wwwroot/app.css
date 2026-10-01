@@ -452,6 +452,36 @@ footer {
 }
 footer code { background: #00000055; padding: .05rem .3rem; border-radius: 4px; }
 
+/* ---------------------------------------------------------------- 日志 */
+
+.note {
+  display: grid;
+  grid-template-columns: 1.3rem 1fr auto;
+  align-items: baseline;
+  gap: .5rem;
+  padding: .45rem .6rem;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--dim);
+  border-radius: 9px;
+  font-size: .86rem;
+}
+
+.note-icon { text-align: center; }
+.note-text { color: #cdc7e4; }
+
+.note-time {
+  color: var(--dim);
+  font-size: .74rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* kind 的四种颜色与卡片同一套语义：绿=成功、红=警告、金=稀有。 */
+.note.success { border-left-color: var(--ok); }
+.note.warning { border-left-color: var(--bad); }
+.note.rare { border-left-color: var(--gold); }
+
 /* ---------------------------------------------------------------- 键盘焦点
    这个页面是可以用键盘玩的：`app.js` 绑了 keydown，大猫按钮上还印着「空格」。
    但全文件此前**一处 :focus 都没有**（只有 :hover），于是键盘玩家按 Tab 走一圈，
@@ -488,6 +518,10 @@ footer code { background: #00000055; padding: .05rem .3rem; border-radius: 4px; 
   /* 触屏目标下限：卡片整行可点，太矮就容易点错。44px 是常见的可点最小值。 */
   .card { min-height: 44px; }
   .tabs button { min-height: 40px; padding: .45rem .7rem; }
+
+  /* 日志行：三列在窄屏会把正文挤成一条，时间挪到正文下面。 */
+  .note { grid-template-columns: 1.2rem 1fr; }
+  .note-time { grid-column: 2; }
 
   /* 大数字在小屏上要收一点，否则会把自己挤出容器。 */
   .counter { font-size: clamp(1.4rem, 7vw, 2rem); }
