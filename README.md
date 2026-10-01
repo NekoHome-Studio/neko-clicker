@@ -499,3 +499,6 @@ Console.WriteLine(ApiVersion.AssemblyVersion);  // 1.2.0.0
   > 但对"美术资源"这条仍然成立：Web 前端目前用的是 emoji 与 CSS，没有立绘、没有音效。
   ROADMAP 规划范围内的**十个内容包至此全部交付**，
   四个引擎能力里只有 S-A / S-B / S-C 动过核心（S-D 一行核心代码都没写）。
+
+**接下来做什么**：见 [STATUS.md 的 §8「下一步与交接」](STATUS.md)——发布 1.2.1 的逐步清单、
+剩下四个 Web 界面的落点与坑、`PackageId` 打包元数据，每条都带了验收命令与已知边界。

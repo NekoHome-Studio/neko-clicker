@@ -25,6 +25,9 @@
 `ContentText`**（剧情散文的外部化载体），没有不兼容改动 → 按
 [VERSIONING](engine/docs/VERSIONING.md) 是 **minor**。
 
+> **`[未发布]` 里还挂着两组改动**（421 条散文外部化、`ContentText` 的并发修复）：都不动公开 API，
+> 发布时是 **patch（1.2.1）**。**2026-10-01 有意停在这里，没有升版本**——逐步清单见 §8.1。
+
 > **一条已作废的策略**，写在这里免得再被引用：原定"`main` 停在 v1.0.0、加前端一律走
 > `feature/web-frontend-ui` 分支"。2026-10-01 协作者把该分支合并进 main 并在主线继续，
 > 用户也在 main 上做，所以**现在 main 就是开发线**。仍然有效的两条长期约束是：
@@ -145,9 +148,9 @@ Web 宿主不在 `NekoClicker.sln` 里（它是独立的单项目 sln），但 `
 | 项 | 现状 | 为什么 |
 |---|---|---|
 | **剧情外部化的收尾** | 十个有剧情的包全部搬完（421 条）；`tools/extract-lore-text.ps1` 只支持工厂写法，作为"迁移过程可复核"的存档保留 | 迁移已完成，这个脚本不再有运行期职责；真要再用它抽新包，得先扩展对象初始化器写法 |
-| **永久升级线 / 二周目界面** | 引擎支持，Web 未铺 | 先做能玩的最小闭环 |
+| **永久升级线 / 二周目界面** | 引擎支持，Web 未铺（**具体缺什么要先定义**，见 §8.2） | 先做能玩的最小闭环 |
 | **离线收益弹窗** | 只在宿主控制台打印一行 | 还没定呈现方式 |
-| **通知日志的"未读"游标** | 前端直接渲染 `notifications` | 关页面期间攒的会一次性显示 |
+| **通知日志** | `GameSnapshot.Notifications` 一直在推，但 **`wwwroot/` 里一处都没用到**（"未读游标"更是还不存在——这里原来写"前端直接渲染 notifications"是错的，2026-10-01 实测更正） | 关页面期间攒的会一次性显示 |
 | **`npm` 工具链** | 不用 | 保持"clone 下来只要有 dotnet 就能跑" |
 | **`PackageId` / `IsPackable`** | 没有 | 引擎目前没有 NuGet 分发形态；补它是纯元数据改动，随时可做 |
 | **多玩家 / 分槽位存档** | 一个包一个槽位 | 现在只监听回环地址、单机单人 |
@@ -165,6 +168,10 @@ Web 宿主不在 `NekoClicker.sln` 里（它是独立的单项目 sln），但 `
 - **CI 只跑在 Windows 上**：`.github/workflows/ci.yml` 是两个 `windows-latest` 作业。没有加
   Linux 作业——`engine/core/` 平台中立这条主张仍然只由"全仓库只有两处平台相关代码"这个
   事实支撑，没有一个远端作业在守着它（想守就得先确认 Demo 与测试项目在 Linux 上也能编）。
+- **CI 还没在远端跑过一次**：workflow 与 `tools/api-test.ps1` 是 2026-10-01 才推上去的
+  （`c84c478`）。本地跑的两条命令全绿，但**没人看过 GitHub Actions 上的第一次运行**——
+  runner 镜像里的 .NET 版本、`Get-CimInstance` 的行为、端口占用，都可能和本机不一样。
+  下一次推提交时第一件事就是去看那两次运行的结果。
 - **`engine/tests/ArchitectureTests.cs` 直接枚举内容包**：A1 守卫以内容包为探针，
   搬走内容包就失去判别力。将来真要分离引擎仓库，补救方向是改用极小的合成测试包
   （沿用阶段 3A"全部用合成内容测试"的既有做法）。
@@ -224,9 +231,82 @@ Web 宿主不在 `NekoClicker.sln` 里（它是独立的单项目 sln），但 `
 
 ---
 
-## 8. 下一步的候选（按我的建议排序）
+## 8. 下一步与交接（给下一个接手的人）
 
-1. **铺完剩下的界面**：永久升级线、二周目、离线收益弹窗、通知未读游标。
-2. **补 `PackageId` / `IsPackable`** —— 给引擎留一条真正的分发路径（纯元数据，不动公开 API）。
-3. **给 `[未发布]` 收尾**：剧情外部化 + 并发修复都不动公开 API，发布时是 patch（1.2.1），
-   清单见 [VERSIONING](engine/docs/VERSIONING.md) §5。
+> **停在哪里**：HEAD `c84c478`（已推送）。引擎 435 用例全绿、Web 宿主 22 项端到端全过、
+> CI 刚配好（**还没在远端见过一次运行结果**，见 §6）。下面每一条**都还没开工**，按建议顺序排。
+> 想知道"现在到底什么状况"，跑 §4 那三条命令——这份文档刻意不写 HEAD，别再让它跟着提交跑。
+
+### 8.1 先发布 1.2.1：把 `[未发布]` 收掉（最独立、最小）
+
+**为什么先做它**：`[未发布]` 里那两件事——421 条散文外部化、`ContentText` 的并发修复——
+**都不动公开 API**，按 [VERSIONING](engine/docs/VERSIONING.md) 是 patch。但它们在 main 上
+已经躺了一段时间，而 **`v1.2.0` 的 tag 里没有那个并发修复**：拿到 1.2.0 的人手里的
+`ContentText` 是个"多线程用了就可能炸"的类型（实测 1200 次构建里 522 次抛异常）。
+所以这不是"顺手发个版"，是补一个**已经发出去的**缺陷。
+
+要改的地方（机械活，但**少一处，`PublicApiTests` / `VersionTests` 就会红**）：
+
+| 文件 | 改什么 |
+|---|---|
+| `Directory.Build.props` | `Version` / `AssemblyVersion` / `FileVersion` 三处一起（`1.2.0` → `1.2.1`、`1.2.0.0` → `1.2.1.0`） |
+| `engine/core/PublicApi.txt` | **不要手改**：跑 `tools/public-api.ps1` 重生成（它会把第一行的 `version=` 一并换掉；公开表面本身不变） |
+| `CHANGELOG.md` | `## [未发布]` → `## [1.2.1] - YYYY-MM-DD`，并把开头"承接 1.2.0…发布时的升位"那段改成已发布口径 |
+| `README.md` | 两处「当前版本 `1.2.0`」。**第一处必须是全文第一个反引号版本号**——`VersionTests` 就是锚在它上面的 |
+| `engine/README.md` | 那句「当前 `1.2.0`」 |
+| `engine/docs/VERSIONING.md` | §1 的当前版本 + §2 示例里的版本号与输出（`ApiVersion.Current` 会打印成 `1.2.1`） |
+| `STATUS.md` | 本文件 §1 的表格与"当前版本"段 |
+| `engine/docs/TEXT_AS_DATA_PLAN.md` | §8 末尾"发布时按 patch（1.2.1）"改成既成事实 |
+
+验收与收尾：`.\tools\build.ps1 -Strict`（`PublicApiTests` + `VersionTests` 会同时验版本号、
+快照与 CHANGELOG 条目）+ `.\tools\api-test.ps1`；`tools\pack.ps1` 出
+`artifacts\neko-clicker-1.2.1-win-x64.zip`；`git tag -a v1.2.1 -m "..."` 后**用 SSH 推**
+（§7 第 10 条），把 tag 也推上去。
+
+**一个留给你判断的取舍**：`[未发布]` 里现在还挂着这次的**工具与 CI**（`tools/api-test.ps1` +
+workflow）。它不改变 API 版本语义。留下的理由：这份文件同时是仓库的改动记录；
+摘出去的理由：changelog 讲的是"这个库对外承诺的变化"。两边都说得通，选一个写清楚就行。
+
+### 8.2 铺完剩下的 Web 界面（游戏侧，工作量最大）
+
+四个条目里 **只有两个是"接着做"，另外两个得先把语义定下来**——照 §5 那行字直接开工会走偏：
+
+- **通知面板：是从零开始，不是"加未读游标"。** 实测 `GameSnapshot.Notifications` 从引擎一路
+  推到快照、增量里也真的出现过，而 `games/hosts/Web/wwwroot/` 里**一处都没用到它**。
+  所以这条最简单也最见效：先把通知渲染出来，再谈"未读"（游标本身要新增状态 + 公开字段）。
+- **离线收益弹窗：先解决"它现在有多隐蔽"。** 宿主已经有 `GameHost.OfflineOnLoad`
+  （`OfflineProgress`），但只在控制台打一行（`Program.cs` 的 `Sessions.TryGet`）。
+  要弹窗就得让它进快照——**那是 `GameSnapshot` 的新字段 = 公开 API 新增 = minor**，
+  别和 8.1 的 patch 混在一个提交里。另有一条语义坑：离线补发只在**会话首次创建**时发生
+  （一个包一个会话，刷新页面不会重来），"弹一次"的边界要跟"刷新页面不该重复弹"一起定。
+- **永久升级线：先回答"到底缺什么"。** 素材其实都在快照里（`prestigeChips` /
+  `prestigeCurrencyName` / `prestigeCurrencyIcon` / `upgrades[].currency` / `Prestige`），
+  前端也已经在升级列表里用 `row.currency === 1` 区分转生货币——但那是**硬编码的枚举序数**
+  （`UpgradeCurrency` 的成员顺序一变就静默错位）。要做的是独立面板还是分组先定下来；
+  顺手该把那个魔法数字换成视图里的语义字段（同样是公开 API 新增）。
+- **二周目：先跟用户确认语义再动手。** 引擎侧现在只有 `hardReset`（清空、不带继承）与
+  纪元 / 转生的"舍一命"。"看完结局带继承重开"还是别的，**现在没有答案**。
+
+验收：`tools\api-test.ps1` 能给新端点 / 新字段兜住 404 与 camelCase；界面好不好看没有守卫（§6）。
+
+### 8.3 补 `PackageId` / `IsPackable`
+
+纯元数据、不动公开 API——`engine/core/NekoClicker.Core.csproj` 现在只有 `Description`。
+两条注意：① 版本号来自 `Directory.Build.props`，打包会自动跟上，**不要再写一份**；
+② 本机零第三方依赖，`dotnet pack` 应该能离线跑，但"没有网络也能 pack"这条**最好实测一次**
+再写进文档——这个仓库的既有教训是：没实测过的环境结论迟早会变成错的。
+
+### 8.4 可选（都不是必须，但都是"已知没人守"的地方）
+
+- **给 CI 加一个 Linux 作业**：能替"`engine/core` 平台中立"这条主张当守卫，
+  前提是先确认 `games/hosts/Demo.Cli` 与测试项目在 Linux 上编得过（本机验不了）。
+- **看一次 CI 的远端运行**：见 §6——本地全绿不等于 runner 上全绿。
+- **观感**：Web 的"好不好看"仍然只能靠人看。
+
+### 8.5 动手前的环境清单（这台机器）
+
+- 构建与跑宿主：§7 第 3 / 7 / 8 条（`-m:1`；SDK 10 编 net8.0；缺 ASP.NET 8 运行时，
+  `tools/api-test.ps1` 会自动设 `DOTNET_ROLL_FORWARD=Major` 并打印出来）。
+- 写 `tools/*.ps1`：UTF-8 **with BOM**（§7 第 1 条）——`edit` 一类的工具会吃掉 BOM，改完要补。
+- 推远端：SSH 一次性重写（§7 第 10 条），fetch / push 都要带重试。
+- 任何提交前：`.\tools\build.ps1 -Strict` + `.\tools\api-test.ps1`——CI 跑的就是这两条。

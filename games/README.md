@@ -36,8 +36,10 @@
 - 调试用「跳层门」：默认关闭，只有设了环境变量 `NEKO_DEBUG_KEY` 才存在，
   且跳层会话**不写存档**。方案见 [../engine/docs/WEB_DEBUG_GATE_PLAN.md](../engine/docs/WEB_DEBUG_GATE_PLAN.md)。
 
-**还没做**（都是决策，不是遗漏）：永久升级线 / 二周目界面、离线收益弹窗、
-通知日志的"未读"游标。
+**还没做**（都是决策，不是遗漏）：永久升级线 / 二周目界面、离线收益弹窗、通知面板。
+最后一条要特别说明：`GameSnapshot.Notifications` 引擎一直在推（增量里也真的出现过），
+而 `wwwroot/` 里**一处都没用到它**——所以它不是"加个未读游标"，是从零铺一个面板。
+四项各自的落点、坑，以及"哪两项得先定语义再动手"，见[根目录 STATUS.md 的 §8](../STATUS.md)。
 
 `hosts/Web/` 自带一个单项目解决方案，**刻意不挂进 `NekoClicker.sln`**——理由写在根 README
 的「环境说明」里。代价是主 sln 编不到它，所以 `tools/build.ps1` 两条都编，
