@@ -146,8 +146,9 @@ Web 宿主不在 `NekoClicker.sln` 里（它是独立的单项目 sln），但 `
 - **`engine/tests/ArchitectureTests.cs` 直接枚举内容包**：A1 守卫以内容包为探针，
   搬走内容包就失去判别力。将来真要分离引擎仓库，补救方向是改用极小的合成测试包
   （沿用阶段 3A"全部用合成内容测试"的既有做法）。
-- **远端连通性不稳定**：`push` / `ls-remote` / `fetch` 都可能失败（实测要重试到第 4 次）。
-  **不要用单次成功或失败判断远端状态**，要带重试。
+- **远端：HTTPS 结构性不通，要走 SSH**。`github.com` 解析到 `140.82.116.4`，而该 IP 的 443
+  **连续 8 轮都是** `Failed to connect ... after 21s`——那不是抖动，是路由。SSH 则是通的
+  （`github.com:22` 与 `ssh.github.com:443` 均可达，密钥认证通过）。细节与命令见 §7 第 9 条。
 - **这份文档自己曾经是错的**：上一版写于分支上、合并后没跟着改，于是长期宣称
   "main 还在 v1.0.0、前端未合并"。这次刻意不写 HEAD，就是为了别再犯同一个错。
 
@@ -175,6 +176,19 @@ Web 宿主不在 `NekoClicker.sln` 里（它是独立的单项目 sln），但 `
    已撤销（本机只有 SDK 8.0.303，net10 既编不过也没必要），`LangVersion` 也一并对齐。
 8. **`git` 报 "dubious ownership"**，用
    `$env:GIT_CONFIG_COUNT=1; GIT_CONFIG_KEY_0="safe.directory"; GIT_CONFIG_VALUE_0="D:/githb/neko-clicker"` 绕过。
+9. **推送走 SSH，别跟 HTTPS 死磕**（2026-10-01 实测）：`github.com` 解析到 `140.82.116.4`，
+   该 IP 的 443 **连续 8 轮**都是 `Failed to connect ... after 21s`，重试不会变好；
+   而 SSH 正常（`github.com:22`、`ssh.github.com:443` 都可达，`git@github.com` 密钥认证通过）。
+   不想改 `origin` 就用一次性 URL 重写：
+
+   ```powershell
+   git -c url.ssh://git@github.com/.insteadOf=https://github.com/ push origin main
+   git -c url.ssh://git@github.com/.insteadOf=https://github.com/ push origin v1.2.0
+   ```
+
+   想永久改：`git remote set-url origin git@github.com:NekoHome-Studio/neko-clicker.git`。
+   顺带一条判据：另外几个 GitHub IP（`140.82.112/113/114/116.3`、`20.205.243.166`）的 443
+   是通的——所以历史上"重试几次就成功"很可能是解析到了别的 IP，而不是同一 IP 时好时坏。
 
 ---
 
