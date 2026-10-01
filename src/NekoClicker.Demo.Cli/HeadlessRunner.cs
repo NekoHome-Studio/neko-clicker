@@ -89,6 +89,15 @@ internal static class HeadlessRunner
             for (int i = engine.State.GoldenCookies.Count - 1; i >= 0; i--)
                 engine.ClickGoldenCookie(engine.State.GoldenCookies[i].InstanceId);
 
+            // 表态：此前无头模式从不应答，于是六次表态全部挂着、结局永远落到兜底那个——
+            // 立场轴、选项修饰符、承诺结局这三样整段没被跑到过。取第一个选项，
+            // 确定性地作答（也因此能顺带跑通"作答延迟"埋点，虽然机器人几乎不花时间）。
+            foreach (ChoiceDefinition choice in engine.Content.Choices)
+            {
+                if (!engine.State.PendingChoices.Contains(choice.Id)) continue;
+                engine.AnswerChoice(choice.Id, choice.Options[0].Id);
+            }
+
             if (sincePurchase >= 10)
             {
                 sincePurchase = 0;
@@ -260,6 +269,8 @@ internal static class HeadlessRunner
                 Field(counterKey, NumFormat.FormatPlain(state.Counters[counterKey]));
         }
 
+        Console.WriteLine();
+        Console.WriteLine($"  📏 {session.LatencySummary()}");
         Console.WriteLine();
         Console.WriteLine(session.Package.ReportTip);
     }

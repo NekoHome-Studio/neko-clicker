@@ -48,6 +48,7 @@ internal sealed class GameSession : IDisposable
     private readonly IDisposable _choiceSubscription;
     private readonly IDisposable _stanceSubscription;
     private readonly IDisposable _endingSubscription;
+    private readonly ChoiceLatencyLog _latency;
     private GameSnapshot _snapshot = null!;
     private BuildingView[] _buildingCache = [];
     private UpgradeView[] _upgradeCache = [];
@@ -77,6 +78,11 @@ internal sealed class GameSession : IDisposable
         _choiceSubscription = Engine.Events.Subscribe<ChoiceTriggeredEvent>(OnChoiceTriggered);
         _stanceSubscription = Engine.Events.Subscribe<DominantStanceChangedEvent>(OnDominantStanceChanged);
         _endingSubscription = Engine.Events.Subscribe<EndingReachedEvent>(OnEndingReached);
+
+        // 作答延迟的量测：宽限期该定多少秒，只能由真人的实测数据回答。
+        _latency = new ChoiceLatencyLog(Engine);
+        _latency.Answered += (choiceId, seconds) =>
+            Log($"⏱ 表态「{choiceId}」你想了 {NumFormat.Duration(seconds)}才答。", "⏱");
 
         if (savePath is not null)
         {
@@ -453,6 +459,7 @@ internal sealed class GameSession : IDisposable
         _choiceSubscription.Dispose();
         _stanceSubscription.Dispose();
         _endingSubscription.Dispose();
+        _latency.Dispose();
         Saves?.Dispose();
     }
 
@@ -462,8 +469,19 @@ internal sealed class GameSession : IDisposable
         while (_log.Count > MaxLogLines) _log.RemoveAt(0);
     }
 
+    /// <summary>作答延迟的汇总（宽限期该定多少秒的实测输入）。</summary>
+    public string LatencySummary() => _latency.Summary();
+
     private void OnChoiceTriggered(ChoiceTriggeredEvent evt)
         => Log($"{evt.Speaker}问你：「{evt.Prompt}」 —— 按 Tab 切到「表态」作答。", "🗣");
+
+    private void OnEndingReached(EndingReachedEvent evt)
+    {
+        Log($"结局「{evt.Name}」：{evt.Text}", evt.Icon);
+
+        // 终局是这次游玩唯一的"自然收尾"，把测量埋点攒到的样本在这儿交出来。
+        Log(_latency.Summary(), "📏");
+    }
 
     private void OnDominantStanceChanged(DominantStanceChangedEvent evt)
     {
@@ -471,9 +489,6 @@ internal sealed class GameSession : IDisposable
         if (Engine.Content.FindStance(id) is not { } stance) return;
         Log($"{stance.Name}开始主导。{stance.CostText}", stance.Icon);
     }
-
-    private void OnEndingReached(EndingReachedEvent evt)
-        => Log($"结局「{evt.Name}」：{evt.Text}", evt.Icon);
 
     private void RefreshCache()
     {
