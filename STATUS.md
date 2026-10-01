@@ -3,8 +3,8 @@
 > 记录时间：**2026-09-27** ｜ 分支 `feature/web-frontend-ui` ｜ HEAD `d2c2e5a`
 >
 > 这份文档只回答一个问题：**现在是什么状况**。它不重复别处已有的内容——
-> 架构看 [ARCHITECTURE](../engine/engine/docs/ARCHITECTURE.md)，规划与决策看 [ROADMAP](../games/games/docs/ROADMAP.md)，
-> 逐版本改动看 [CHANGELOG](../CHANGELOG.md)。文档之间冲突时，以本文的"事实"部分为准。
+> 架构看 [ARCHITECTURE](engine/docs/ARCHITECTURE.md)，规划与决策看 [ROADMAP](games/docs/ROADMAP.md)，
+> 逐版本改动看 [CHANGELOG](CHANGELOG.md)。文档之间冲突时，以本文的"事实"部分为准。
 
 ---
 
@@ -25,7 +25,7 @@ b9a99d9  Web 前端骨架：宿主 + 独立 sln + tools/web.ps1
 ```
 
 **公开 API 一行未改**，所以还没到发版本的时候（`CHANGELOG.md` 里挂的是 `[未发布]`）。
-按 [VERSIONING.md](../engine/engine/docs/VERSIONING.md) 的规矩，合进 main 时应当是 **minor**
+按 [VERSIONING.md](engine/docs/VERSIONING.md) 的规矩，合进 main 时应当是 **minor**
 （新增了宿主与内容发现能力，没有不兼容改动）。
 
 ---
@@ -36,7 +36,7 @@ b9a99d9  Web 前端骨架：宿主 + 独立 sln + tools/web.ps1
 engine/            自包含：搬走它 + 仓库根的 Directory.Build.props = 独立引擎仓库
   core/            引擎本体（平台中立，可在 Linux/macOS 直接构建）
   content/<包名>/  十一个内容包，一个包一个 csproj
-  tests/           414 个用例 + 自研迷你运行器
+  engine/tests/    421 个用例 + 自研迷你运行器
   docs/            架构 / 内容作者指南 / 版本承诺
 games/             旗舰示例作品。依赖 engine/，反向不依赖
   hosts/Demo.Cli/  终端前端，同时是框架回归基线（FrameRenderTests 引用它）
@@ -74,7 +74,7 @@ Web 前端 `?package=<id>` 换包（缺省用扫描到的第一个）。界面�
 
 | 命令 | 期望 |
 |---|---|
-| `.\tools\build.ps1 -Strict` | **414 个用例全绿**、0 警告 |
+| `.\tools\build.ps1 -Strict` | **421 个用例全绿**、0 警告 |
 | `.\tools\web.ps1 build -Strict` | 0 警告 |
 
 404 条是 `main` 上的基线（阶段 6 交付时定的），10 条是 Web 推送协议的契约测试。

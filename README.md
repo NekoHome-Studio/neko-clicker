@@ -56,7 +56,7 @@
 > 代价是画面右侧与底部各有一格空白——这是换「拖横向不崩」付出的代价。
 
 ```powershell
-# 构建 + 跑测试（411 个用例，零依赖迷你运行器）
+# 构建 + 跑测试（421 个用例，零依赖迷你运行器）
 .\tools\build.ps1
 
 # 逐条计时：打印最慢的一批与分档占比（想知道"什么变慢了"就用它）
@@ -165,16 +165,16 @@ engine/content/Dream/   内容包 #8《猫娘梦境》（五层梦，越睡越�
 games/hosts/Demo.Cli/        终端 UI 适配层（ANSI 全屏 + 键盘 + 无头模式 + --package）
 games/hosts/Web/         Web 前端宿主（本地 HTTP + wwwroot；骨架阶段，见下）
 engine/tests/    421 个测试 + 自研迷你测试运行器（含架构不变量与全程可达测试）
-engine/engine/docs/ARCHITECTURE.md             架构与设计决策
-engine/engine/docs/CONTENT_AUTHORING.md        如何写内容（数值节奏、校验规则、常见坑）
-engine/engine/docs/VERSIONING.md               版本与兼容性承诺：什么改动升哪一位、公开 API 快照怎么用
-games/games/docs/ROADMAP.md                  实施规划与决策记录：11 项已定决策、4 条架构不变量、5 个阶段
-games/games/docs/NINE_LIVES_DESIGN.md        《九命猫娘》设计映射：1 个共享核心 + 10 个内容包（10 个已落地）
-games/games/docs/PACK_01_CAT_CAFE.md         #1《猫娘咖啡馆》完整内容规格（已落代码，也是其余九个包的模板）
-engine/engine/docs/ENDING_GRACE_PLAN.md        终局判定的作答宽限：方案、实测与取舍
-engine/engine/docs/MERGE_WEB_FRONTEND_PLAN.md   feature/web-frontend-ui 的合并方案
+engine/docs/ARCHITECTURE.md             架构与设计决策
+engine/docs/CONTENT_AUTHORING.md        如何写内容（数值节奏、校验规则、常见坑）
+engine/docs/VERSIONING.md               版本与兼容性承诺：什么改动升哪一位、公开 API 快照怎么用
+games/docs/ROADMAP.md                  实施规划与决策记录：11 项已定决策、4 条架构不变量、5 个阶段
+games/docs/NINE_LIVES_DESIGN.md        《九命猫娘》设计映射：1 个共享核心 + 10 个内容包（10 个已落地）
+games/docs/PACK_01_CAT_CAFE.md         #1《猫娘咖啡馆》完整内容规格（已落代码，也是其余九个包的模板）
+engine/docs/ENDING_GRACE_PLAN.md        终局判定的作答宽限：方案、实测与取舍
+engine/docs/MERGE_WEB_FRONTEND_PLAN.md   feature/web-frontend-ui 的合并方案
 STATUS.md                        项目现状（跨层，所以放在根目录）
-games/games/docs/STAGE_5_RESKINS.md           阶段 5 换皮批产手册：#4/#5/#7/#8 四个包的交接件（规则清单 + 验收命令 + 已知坑）
+games/docs/STAGE_5_RESKINS.md           阶段 5 换皮批产手册：#4/#5/#7/#8 四个包的交接件（规则清单 + 验收命令 + 已知坑）
 CHANGELOG.md                     变更日志（按版本记录，含兼容性影响）
 tools/build.ps1                  一键构建 + 测试
 tools/play.ps1                   构建并运行终端 Demo（参数转发给程序）
@@ -345,7 +345,7 @@ Console.WriteLine(ApiVersion.AssemblyVersion);  // 1.1.0.0
 所以 `tools/public-api.ps1` 只是流程的**最后一步**，不是第一步。
 
 完整规矩、发布检查清单，以及这套机制**保证不了**什么（语义变化、存档兼容、数值一致性），
-见 **[engine/engine/docs/VERSIONING.md](engine/engine/docs/VERSIONING.md)**；逐版本记录见 [CHANGELOG.md](CHANGELOG.md)。
+见 **[engine/docs/VERSIONING.md](engine/docs/VERSIONING.md)**；逐版本记录见 [CHANGELOG.md](CHANGELOG.md)。
 
 ---
 
@@ -467,13 +467,13 @@ Console.WriteLine(ApiVersion.AssemblyVersion);  // 1.1.0.0
   它要求「引用到的每个计数器都登记过」，而且**真的去渲染一遍**，断言输出里既含显示名、又不含内部键。
 - **v1.0.0：框架已被产品化**——规划范围内的功能早已全部交付，缺的是"别人能安全依赖它"
   这件事。这一版补齐的就是它：版本号单一事实来源、`ApiVersion`、1897 行公开 API 快照、
-  五条版本守卫（含故障注入证明守卫会红）、`engine/engine/docs/VERSIONING.md` 与 `CHANGELOG.md`。
+  五条版本守卫（含故障注入证明守卫会红）、`engine/docs/VERSIONING.md` 与 `CHANGELOG.md`。
   **没有改任何游戏行为**——十一个内容包与 396 条既有用例的行为完全不变，用例 396 → 404。
   这一步也把"核心零内容知识"这条主张补上了它的另一半：**公开 API 只增不改**。
 - **Web 前端已可玩**（分支 `feature/web-frontend-ui`，尚未并入 `main`）：浏览器里能点击、
   买建筑与升级、推进纪元、表态、看图鉴，挂机不掉线，与终端 Demo **共用同一份存档**。
   零前端依赖（手写 ES 模块 + 一份 CSS，无 npm、无打包步骤）。
-  详见 [docs/STATUS.md](docs/STATUS.md)。
+  详见 [STATUS.md](STATUS.md)。
 - **未包含**：**美术与音效资源**、本地化资源系统、账号 / 云存档、排行榜、反作弊。
   这些都被设计为引擎外部的宿主职责。
   > 这里原本还列着「图形前端」——它已经不再是非目标：`games/hosts/Web/` 就是。

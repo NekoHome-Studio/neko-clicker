@@ -7,7 +7,7 @@
 >
 > 当前版本 **1.1.0**：语义层面的破坏性变更只有一处——结局条件成立后会给玩家一段作答宽限期
 > （`GameEngineOptions.EndingGraceSeconds`，默认 30 模拟秒），期间 `CheckEnding()` 返回 `null`。
-> 详见 [CHANGELOG](../CHANGELOG.md)。
+> 详见 [CHANGELOG](../../CHANGELOG.md)。
 
 ---
 
@@ -66,7 +66,7 @@ Console.WriteLine(ApiVersion.Major);           // 1
 这是**有意**的判断：判定结果不变（仍是按 `Priority` 取第一个条件成立者），
 受影响的只是结果出现的时刻，而且延迟上限可控。写在这里**不是给它开先例，而是相反**——
 例外要被记录；否则下次就分不清"决定"和"疏忽"，而一旦分不清，这张表就退化成橡皮图章。
-理由与影响面同时记在 [CHANGELOG](../CHANGELOG.md)。
+理由与影响面同时记在 [CHANGELOG](../../CHANGELOG.md)。
 
 ### 容易漏掉的两类"不兼容"
 

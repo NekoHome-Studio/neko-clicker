@@ -3,7 +3,7 @@
 本项目的版本号遵循[语义化版本](https://semver.org/lang/zh-CN/)。
 **版本号指的是 `NekoClicker.Core` 对外承诺的公开 API 版本**，不是内容包或 Demo 的版本。
 
-什么改动升哪一位、破坏性变更要走什么流程，见 [engine/engine/docs/VERSIONING.md](engine/engine/docs/VERSIONING.md)。
+什么改动升哪一位、破坏性变更要走什么流程，见 [engine/docs/VERSIONING.md](engine/docs/VERSIONING.md)。
 
 ---
 
@@ -154,14 +154,14 @@
     证明这条守卫真的会红，而不是永远绿。
   - `VersionTests`——版本号与程序集元数据、API 快照、CHANGELOG 三方对齐。
 - **`tools/public-api.ps1`**：有意改动公开 API 后重新生成快照（流程的最后一步）。
-- **`engine/engine/docs/VERSIONING.md`**：版本语义、破坏性变更定义、发布检查清单、快照怎么用。
+- **`engine/docs/VERSIONING.md`**：版本语义、破坏性变更定义、发布检查清单、快照怎么用。
 - **`.gitattributes`**：快照强制 LF，保证跨平台生成的快照逐字节一致。
 
 ### 变更
 
-- `engine/engine/docs/CONTENT_AUTHORING.md` 增补一节：内容包作者何时会碰到公开 API 的变化。
+- `engine/docs/CONTENT_AUTHORING.md` 增补一节：内容包作者何时会碰到公开 API 的变化。
 - `README.md` 增补版本与兼容性承诺一节；用例数 396 → 404。
-- `games/games/docs/ROADMAP.md` 增补"阶段 6：产品化"交付记录。
+- `games/docs/ROADMAP.md` 增补"阶段 6：产品化"交付记录。
 
 ### 兼容性
 
@@ -177,7 +177,7 @@
 ## 历史版本（1.0.0 之前）
 
 1.0.0 之前的开发没有版本号，用阶段（stage）记录。
-完整交付历史见 [games/games/docs/ROADMAP.md](games/games/docs/ROADMAP.md) 与 git 历史，摘要如下：
+完整交付历史见 [games/docs/ROADMAP.md](games/docs/ROADMAP.md) 与 git 历史，摘要如下：
 
 | 阶段 | 交付 |
 |---|---|
