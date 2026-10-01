@@ -73,7 +73,8 @@ public static class CyberContent
 
     /// <summary>构建内容定义（含算力模块）。</summary>
     public static GameContent Build()
-        => new GameContentBuilder(GameTitle)
+    {
+        GameContent content = new GameContentBuilder(GameTitle)
             .WithCurrency("比特", "▫", "敲一行")
             .WithPrestigeCurrency("根权限", "🔑")
             .WithBalance(BuildBalance())
@@ -88,6 +89,13 @@ public static class CyberContent
             .AddLore(Lore.Entries)
             .AddEndings(Endings.All)
             .Build();
+
+        // 剧情线与全部图鉴条目到这里都已经从 text.json 读过一遍了，
+        // 正是查孤儿的时候：文件里若有代码从不取用的条目，在这里当场抛。
+        Lore.VerifyAllTextUsed();
+
+        return content;
+    }
 
     /// <summary>
     /// 平衡参数：赛博猫娘的手感是"手快、事多、云端不关机"。<para>

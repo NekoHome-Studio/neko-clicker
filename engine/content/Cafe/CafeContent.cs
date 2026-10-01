@@ -31,7 +31,8 @@ public static class CafeContent
 
     /// <summary>构建内容定义（含幸福感模块）。</summary>
     public static GameContent Build()
-        => new GameContentBuilder(GameTitle)
+    {
+        GameContent content = new GameContentBuilder(GameTitle)
             .WithCurrency("小鱼干", "🐟", "做咖啡")
             .WithPrestigeCurrency("常客的信", "💌")
             .WithBalance(BuildBalance())
@@ -44,6 +45,13 @@ public static class CafeContent
             .AddStorylines(Lore.Storylines)
             .AddLore(Lore.Entries)
             .Build();
+
+        // 剧情线与全部图鉴条目到这里都已经从 text.json 读过一遍了，
+        // 正是查孤儿的时候：文件里若有代码从不取用的条目，在这里当场抛。
+        Lore.VerifyAllTextUsed();
+
+        return content;
+    }
 
     /// <summary>
     /// 平衡参数：在框架默认值上做四处调整，体现"治愈系"手感——

@@ -65,7 +65,8 @@ public static class GodContent
 
     /// <summary>构建内容定义（含信仰模块）。</summary>
     public static GameContent Build()
-        => new GameContentBuilder(GameTitle)
+    {
+        GameContent content = new GameContentBuilder(GameTitle)
             .WithCurrency("香火", "🕯️", "显灵")
             .WithPrestigeCurrency("神格", "👑")
             .WithBalance(BuildBalance())
@@ -80,6 +81,13 @@ public static class GodContent
             .AddLore(Lore.Entries)
             .AddEndings(Endings.All)
             .Build();
+
+        // 剧情线与全部图鉴条目到这里都已经从 text.json 读过一遍了，
+        // 正是查孤儿的时候：文件里若有代码从不取用的条目，在这里当场抛。
+        Lore.VerifyAllTextUsed();
+
+        return content;
+    }
 
     /// <summary>
     /// 平衡参数：神明的手感是"事件来得勤、香火收得慢"。<para>

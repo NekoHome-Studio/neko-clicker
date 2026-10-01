@@ -29,7 +29,8 @@ public static class CompanyContent
 
     /// <summary>构建内容定义（含士气模块）。</summary>
     public static GameContent Build()
-        => new GameContentBuilder(GameTitle)
+    {
+        GameContent content = new GameContentBuilder(GameTitle)
             .WithCurrency("营收", "💰", "谈单")
             .WithPrestigeCurrency("期权", "🎫")
             .WithBalance(BuildBalance())
@@ -46,6 +47,13 @@ public static class CompanyContent
             .AddChoices(Choices.All)
             .AddEndings(Endings.All)
             .Build();
+
+        // 剧情线与全部图鉴条目到这里都已经从 text.json 读过一遍了，
+        // 正是查孤儿的时候：文件里若有代码从不取用的条目，在这里当场抛。
+        Lore.VerifyAllTextUsed();
+
+        return content;
+    }
 
     /// <summary>
     /// 平衡参数：公司的手感是"前期靠手，后期靠人"——点击比实验室有用（创业者自己也得干活），

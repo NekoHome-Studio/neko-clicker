@@ -19,7 +19,7 @@ public static class NineLivesContent
     {
         GameBalance balance = BuildBalance();
 
-        return new GameContentBuilder(GameTitle)
+        GameContent content = new GameContentBuilder(GameTitle)
             .WithCurrency("小鱼干", "🐟", "摸头")
             .WithPrestigeCurrency("情感能量", "💠")
             .WithBalance(balance)
@@ -36,6 +36,12 @@ public static class NineLivesContent
             .AddEndings(Endings.All)
             .Add(new FaithModule())
             .Build();
+
+        // 剧情线与全部图鉴条目到这里都已经从 text.json 读过一遍了，
+        // 正是查孤儿的时候：文件里若有代码从不取用的条目，在这里当场抛。
+        Lore.VerifyAllTextUsed();
+
+        return content;
     }
 
     /// <summary>基准平衡参数；各纪元用 <c>with</c> 在它之上做局部覆盖。</summary>

@@ -57,4 +57,27 @@
     <Product>NekoClicker</Product>
   </PropertyGroup>
 
+  <!--
+    剧情文本随包发布。
+    ============================================================================
+    内容包目录下若有 text.json，就把它复制到输出目录的 content/<包目录名>/text.json
+    —— ContentText.Load("<包目录名>") 正是从那里读（与 dll 同目录，于是 dotnet run、
+    测试、publish 三种情形走同一条路）。
+
+    规则写在共享 props 里、而不是十个 csproj 各写一份：它是一条**通用能力**，
+    新增内容包只要放一个 text.json 就自动生效；引用该包的项目（Demo / Web / 测试）
+    会传递地拿到它，publish 也会带上。路径里的包名从项目所在目录名推出，
+    与内容包"一个目录一个 csproj"的约定一致。
+  -->
+  <PropertyGroup>
+    <ContentPackDir>$([System.IO.Path]::GetFileName('$(MSBuildProjectDirectory)'))</ContentPackDir>
+  </PropertyGroup>
+
+  <ItemGroup Condition="Exists('$(MSBuildProjectDirectory)\text.json')">
+    <None Include="text.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>content/$(ContentPackDir)/text.json</Link>
+    </None>
+  </ItemGroup>
+
 </Project>

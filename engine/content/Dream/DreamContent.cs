@@ -44,7 +44,8 @@ public static class DreamContent
 
     /// <summary>构建内容定义（含梦境能量模块）。</summary>
     public static GameContent Build()
-        => new GameContentBuilder(GameTitle)
+    {
+        GameContent content = new GameContentBuilder(GameTitle)
             .WithCurrency("点", "🌙", "闭眼")
             .WithPrestigeCurrency("梦屑", "✨")
             .WithBalance(BuildBalance())
@@ -59,6 +60,13 @@ public static class DreamContent
             .AddLore(Lore.Entries)
             .AddEndings(Endings.All)
             .Build();
+
+        // 剧情线与全部图鉴条目到这里都已经从 text.json 读过一遍了，
+        // 正是查孤儿的时候：文件里若有代码从不取用的条目，在这里当场抛。
+        Lore.VerifyAllTextUsed();
+
+        return content;
+    }
 
     /// <summary>
     /// 平衡参数：梦境的手感是"入睡快、醒得慢"。<para>
