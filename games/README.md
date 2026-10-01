@@ -29,6 +29,10 @@
 挂机不掉线，与终端 Demo **共用同一份存档**（`saves/<包 id>.json`）。
 
 - 零前端依赖：手写 ES 模块 + 一份 CSS，`wwwroot/` 直接签进仓库，没有 npm、没有打包步骤。
+- **想看某个面板长什么样、又不想手点**：把 `index.html` / `app.css` / `app.js` 内联成一张
+  静态页，用桩替换 `EventSource`（构造时立刻 `onmessage` 推一帧**假快照**），再用无头浏览器
+  截图即可。2026-10-01 的日志面板就是这么验的（真 CSS + 真渲染函数 + 假数据）。
+  它只看得到**布局与配色**；"和真宿主配合得对不对"归 `tools/api-test.ps1`。
 - 推送用 SSE 推「信封 + 变化字段」：全量 56.9 KB，增量均 1.99 KB（省 97%）。
   契约测试在 `engine/tests/WebSnapshotProtocolTests.cs`（10 条，**按字节数**守，不是按字段数）。
 - 状态所有权：一条专用线程独占 `GameEngine`（引擎是单线程可变对象，ASP.NET Core 用的是线程池），
