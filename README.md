@@ -59,6 +59,10 @@
 # 构建 + 跑测试（411 个用例，零依赖迷你运行器）
 .\tools\build.ps1
 
+# 逐条计时：打印最慢的一批与分档占比（想知道"什么变慢了"就用它）
+.\tools\build.ps1 --timing
+.\tools\build.ps1 --timing Prestige      # 也可以只计时某一批
+
 # 只构建全部项目
 .\tools\dnet.ps1 build NekoClicker.sln
 
