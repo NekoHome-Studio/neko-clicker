@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Reflection;
+using System.Text;
 
 namespace NekoClicker.Core.Tests;
 
@@ -171,11 +172,13 @@ public static class TestRunner
     /// <param name="filter">可选的名称过滤（包含匹配）。</param>
     /// <param name="verbose">是否打印每个通过用例。</param>
     /// <param name="timing">是否逐条计时并打印最慢的一批（见 <c>--timing</c>）。</param>
+    /// <param name="jobs">并发度；<c>1</c> 为串行（见 <c>--serial</c> / <c>--jobs</c>）。</param>
     public static TestSummary RunAll(
         Assembly? assembly = null,
         string? filter = null,
         bool verbose = true,
-        bool timing = false)
+        bool timing = false,
+        int jobs = 0)
     {
         assembly ??= Assembly.GetExecutingAssembly();
 
@@ -196,41 +199,68 @@ public static class TestRunner
             }
         }
 
-        int passed = 0;
-        List<string> failures = [];
-        List<(string Display, double Seconds, bool Passed)> timings = [];
+        if (jobs <= 0) jobs = Environment.ProcessorCount;
+        jobs = Math.Clamp(jobs, 1, Math.Max(1, tests.Count));
+
+        var slots = new TestOutcome[tests.Count];
         var total = Stopwatch.StartNew();
 
-        foreach ((Type type, MethodInfo method) in tests)
+        if (jobs == 1)
         {
-            string display = $"{type.Name}.{method.Name}";
-            var watch = Stopwatch.StartNew();
-            bool ok = true;
+            for (int i = 0; i < tests.Count; i++) slots[i] = RunOne(tests[i]);
+        }
+        else
+        {
+            // 输出必须缓冲后按原顺序回放：422 条用例里有一批会打印诊断
+            // （最慢的那条一次打九行），并行直写会把它们搅成一团乱码，
+            // 而"读得懂的输出"正是这个自研运行器存在的理由之一。
+            var capture = new CapturingWriter(Console.Out, tests.Count);
+            TextWriter original = Console.Out;
+            Console.SetOut(capture);
 
             try
             {
-                object? target = method.IsStatic ? null : Activator.CreateInstance(type);
-                method.Invoke(target, null);
-                passed++;
-                if (verbose) Console.WriteLine($"  \u001b[32m✓\u001b[0m {display}");
-            }
-            catch (Exception ex)
-            {
-                ok = false;
-                Exception actual = ex;
-                if (ex is TargetInvocationException { InnerException: { } inner }) actual = inner;
-                failures.Add($"{display}\n      {actual.GetType().Name}: {actual.Message}");
-                Console.WriteLine($"  \u001b[31m✗\u001b[0m {display}");
-                Console.WriteLine($"      \u001b[31m{actual.GetType().Name}\u001b[0m: {actual.Message}");
+                Parallel.For(
+                    0,
+                    tests.Count,
+                    new ParallelOptions { MaxDegreeOfParallelism = jobs },
+                    i =>
+                    {
+                        CapturingWriter.BeginSlot(i);
+                        slots[i] = RunOne(tests[i]);
+                    });
             }
             finally
             {
-                watch.Stop();
-                if (timing) timings.Add((display, watch.Elapsed.TotalSeconds, ok));
+                Console.SetOut(original);
             }
+
+            for (int i = 0; i < tests.Count; i++) capture.Replay(i);
         }
 
         total.Stop();
+
+        int passed = 0;
+        List<string> failures = [];
+        List<(string Display, double Seconds, bool Passed)> timings = [];
+
+        for (int i = 0; i < tests.Count; i++)
+        {
+            TestOutcome outcome = slots[i];
+            string display = $"{tests[i].Type.Name}.{tests[i].Method.Name}";
+
+            if (outcome.Passed) passed++;
+            else failures.Add($"{display}\n      {outcome.Error}");
+
+            if (verbose || !outcome.Passed)
+            {
+                Console.WriteLine(outcome.Passed
+                    ? $"  \u001b[32m✓\u001b[0m {display}"
+                    : $"  \u001b[31m✗\u001b[0m {display}\n      \u001b[31m{outcome.Error}\u001b[0m");
+            }
+
+            if (timing) timings.Add((display, outcome.Seconds, outcome.Passed));
+        }
 
         Console.WriteLine();
         if (failures.Count == 0)
@@ -243,33 +273,132 @@ public static class TestRunner
         return new TestSummary(passed, failures.Count, failures);
     }
 
+    /// <summary>跑一条用例，把它打印的东西留给调用方决定什么时候放出来。</summary>
+    private static TestOutcome RunOne((Type Type, MethodInfo Method) test)
+    {
+        var watch = Stopwatch.StartNew();
+
+        try
+        {
+            object? target = test.Method.IsStatic ? null : Activator.CreateInstance(test.Type);
+            test.Method.Invoke(target, null);
+            return new TestOutcome(true, null, watch.Elapsed.TotalSeconds);
+        }
+        catch (Exception ex)
+        {
+            Exception actual = ex;
+            if (ex is TargetInvocationException { InnerException: { } inner }) actual = inner;
+            return new TestOutcome(false, $"{actual.GetType().Name}: {actual.Message}", watch.Elapsed.TotalSeconds);
+        }
+        finally
+        {
+            watch.Stop();
+        }
+    }
+
+    /// <summary>一条用例的结果。</summary>
+    private readonly record struct TestOutcome(bool Passed, string? Error, double Seconds);
+
+    /// <summary>
+    /// 按"用例"分桶的 <see cref="TextWriter"/>：每个线程写自己那一桶，跑完再按原顺序倒出来。<para>
+    /// 为什么必须这么做：并行直写 stdout 会把各用例的诊断行交错在一起。这个运行器是自研的，
+    /// 它唯一比现成框架强的地方就是输出可读——为了并行把这点丢掉不划算。
+    /// </para>
+    /// <para>
+    /// 分桶靠 <see cref="ThreadStaticAttribute"/>：<see cref="Parallel.For(int, int, ParallelOptions, Action{int})"/>
+    /// 的一次迭代在同一个线程上跑到底，所以槽位在一次用例内是稳定的。用例自己起的线程
+    /// 没有槽位，直接落到原始输出上（不缓冲也不阻塞）。
+    /// </para>
+    /// </summary>
+    private sealed class CapturingWriter : TextWriter
+    {
+        private readonly TextWriter _sink;
+        private readonly StringBuilder[] _buckets;
+
+        [ThreadStatic]
+        private static int _slot;
+
+        public CapturingWriter(TextWriter sink, int count)
+        {
+            _sink = sink;
+            _buckets = new StringBuilder[count];
+            for (int i = 0; i < count; i++) _buckets[i] = new StringBuilder();
+        }
+
+        /// <inheritdoc />
+        public override Encoding Encoding => _sink.Encoding;
+
+        /// <summary>把当前线程的写入指向第 <paramref name="slot"/> 条用例。</summary>
+        public static void BeginSlot(int slot) => _slot = slot;
+
+        /// <summary>把某条用例缓冲的输出倒到原始输出上（按顺序调用即为原顺序）。</summary>
+        public void Replay(int slot)
+        {
+            StringBuilder bucket = _buckets[slot];
+            if (bucket.Length == 0) return;
+
+            _sink.Write(bucket.ToString());
+            bucket.Clear();
+        }
+
+        /// <inheritdoc />
+        public override void Write(char value)
+        {
+            StringBuilder? bucket = Bucket();
+            if (bucket is null) _sink.Write(value);
+            else bucket.Append(value);
+        }
+
+        /// <inheritdoc />
+        public override void Write(string? value)
+        {
+            if (value is null) return;
+
+            StringBuilder? bucket = Bucket();
+            if (bucket is null) _sink.Write(value);
+            else bucket.Append(value);
+        }
+
+        private StringBuilder? Bucket()
+        {
+            int slot = _slot;
+            return slot >= 0 && slot < _buckets.Length ? _buckets[slot] : null;
+        }
+    }
+
     /// <summary>最慢的一批</summary>
     private const int TimingHead = 40;
 
     /// <summary>
-    /// 打印逐条计时。存在的理由：按类名做子串过滤去估耗时**已经错过一次**——
+    /// 打印逐条计时。存在的理由：按类名做子串过滤去估耗时**已经错过两次**——
     /// 过滤器 `ContentTests` 会把 8 个 <c>*ContentTests</c> 类一起吞掉，
     /// 于是那张"按类耗时表"里的数字根本不是那个类的时间。
     /// 要砍耗时就只能看逐条的真实数字，而运行器是唯一拿得到它的地方。
+    /// <para>
+    /// <b>占比的分母是"逐条之和"，不是总墙钟</b>：并行时各用例互相抢 CPU，逐条墙钟之和
+    /// 会大于总墙钟，拿它去除总时间会算出"占 452%"这种胡话（真出现过）。用逐条之和，
+    /// 回答的就是"这条占全部计算量的多少"，与并发度无关。
+    /// </para>
     /// </summary>
-    private static void PrintTimings(List<(string Display, double Seconds, bool Passed)> timings, double totalSeconds)
+    private static void PrintTimings(List<(string Display, double Seconds, bool Passed)> timings, double wallSeconds)
     {
+        double work = timings.Sum(t => t.Seconds);
+
         Console.WriteLine();
-        Console.WriteLine($"\u001b[36m=== 逐条计时：{timings.Count} 条，总计 {totalSeconds:0.0}s ===\u001b[0m");
+        Console.WriteLine($"\u001b[36m=== 逐条计时：{timings.Count} 条，墙钟 {wallSeconds:0.0}s，"
+                          + $"逐条合计 {work:0.0}s（{work / Math.Max(0.001, wallSeconds):0.0}x 并发）===\u001b[0m");
+        Console.WriteLine("  占比按计算量算；并行下逐条墙钟含 CPU 竞争放大，判断真实代价请跑 --serial。");
 
         List<(string Display, double Seconds, bool Passed)> sorted =
             [.. timings.OrderByDescending(t => t.Seconds)];
 
-        double sum = 0;
         int shown = 0;
-
         foreach ((string display, double seconds, bool ok) in sorted)
         {
-            sum += seconds;
             shown++;
             if (shown > TimingHead) continue;
 
-            string share = totalSeconds <= 0 ? "  -  " : $"{seconds / totalSeconds * 100,5:0.0}%";
+            string share = work <= 0 ? "  -  " : $"{seconds / work * 100,5:0.0}%";
             string mark = ok ? " " : "\u001b[31m✗\u001b[0m";
             Console.WriteLine($"  {seconds,8:0.00}s {share}{mark} {display}");
         }
@@ -278,7 +407,7 @@ public static class TestRunner
 
         Console.WriteLine();
         Console.WriteLine($"  最慢 {Math.Min(TimingHead, sorted.Count)} 条合计 {headSum:0.0}s"
-                          + $"（占 {(totalSeconds <= 0 ? 0 : headSum / totalSeconds * 100):0.0}%）");
+                          + $"（占计算量 {(work <= 0 ? 0 : headSum / work * 100):0.0}%）");
 
         // 分布比"最慢一条"更有用：砍一个 100s 的用例和砍一百个 1s 的用例，
         // 对作者心智的代价完全不同。
@@ -288,7 +417,7 @@ public static class TestRunner
                 [.. timings.Where(t => t.Seconds >= threshold)];
             double bucketSum = bucket.Sum(t => t.Seconds);
             Console.WriteLine($"  ≥{threshold,5:0}s：{bucket.Count,4} 条，合计 {bucketSum,7:0.0}s"
-                              + $"（占 {(totalSeconds <= 0 ? 0 : bucketSum / totalSeconds * 100):0.0}%）");
+                              + $"（占计算量 {(work <= 0 ? 0 : bucketSum / work * 100):0.0}%）");
         }
     }
 }

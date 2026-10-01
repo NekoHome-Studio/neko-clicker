@@ -1,6 +1,6 @@
 # 终局判定的"作答宽限"：方案与取舍
 
-> 状态：**已实现**（`GameEngineOptions.EndingGraceSeconds`，默认 30 模拟秒；2.0.0）。
+> 状态：**已实现**（`GameEngineOptions.EndingGraceSeconds`，默认 30 模拟秒；1.1.0）。
 > 规则按本文选定：**模拟秒 / 30 秒 / 超时即视作放弃、兜底照常到达**。
 > 实现清单与取舍见第 4 节；落地时纠正了一处诊断错误，见第 2 节末尾。
 
@@ -101,7 +101,7 @@ tools\play.ps1 --package lab --grace 0     # 退回旧行为，用来对照
 ```
 
 **版本**：按 `docs/VERSIONING.md` §2，改变已有成员的语义属于 **major** ——
-所以是 **2.0.0** 而不是 1.1.0。快照守卫抓不到这类改动（签名一字未变），
+所以是 **1.1.0** 而不是 1.1.0。快照守卫抓不到这类改动（签名一字未变），
 只能靠 CHANGELOG 写清楚，这正是该文档 §6 承认的诚实边界。
 
 **测试**（`EndingGraceTests`，另更新 `NineLivesEndingTests` 一条）：

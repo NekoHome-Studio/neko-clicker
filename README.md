@@ -5,9 +5,9 @@
 + #3《猫娘实验室》+ #10《猫娘公司》+ #6《猫娘末世》+ #9《猫娘图书馆》
 + #7《猫娘神明》+ #4《猫娘文明》+ #5《赛博猫娘》+ #8《猫娘梦境》）和一个可玩的终端 Demo。
 
-**当前版本 `2.0.0`**（`NekoClicker.Core` 的公开 API 版本）。从 `1.0.0` 起
+**当前版本 `1.1.0`**（`NekoClicker.Core` 的公开 API 版本）。从 `1.0.0` 起
 **公开 API 只增不改**，而且有测试守着——见 [版本与兼容性承诺](#版本与兼容性承诺)。
-2.0.0 的破坏性变更只有一处语义改动：结局条件成立后会给玩家一段作答宽限期（见 [CHANGELOG](CHANGELOG.md)）。
+1.1.0 的破坏性变更只有一处语义改动：结局条件成立后会给玩家一段作答宽限期（见 [CHANGELOG](CHANGELOG.md)）。
 
 框架的核心目标是**把"引擎"和"内容"彻底分开**：引擎负责时间推进、数值管线、存档与事件；
 内容只描述"这个世界有什么"。换掉内容包就能做出完全不同的游戏，引擎代码一行都不用改。
@@ -61,7 +61,12 @@
 
 # 逐条计时：打印最慢的一批与分档占比（想知道"什么变慢了"就用它）
 .\tools\build.ps1 --timing
+.\tools\build.ps1 --timing --serial      # 看真实代价请关并行（并行下单条墙钟含 CPU 竞争）
 .\tools\build.ps1 --timing Prestige      # 也可以只计时某一批
+
+# 用例之间互不依赖，所以默认并行跑（实测 261s → 150s）
+.\tools\build.ps1 --serial               # 串行：某条用例"只在并行下红"时用它定位
+.\tools\build.ps1 --jobs 4               # 指定并发度
 
 # 只构建全部项目
 .\tools\dnet.ps1 build NekoClicker.sln
@@ -286,7 +291,7 @@ Console.WriteLine(engine.Save());           // JSON 存档
 
 ## 版本与兼容性承诺
 
-**当前版本 `2.0.0`。从 `1.0.0` 起，`NekoClicker.Core` 的公开 API 只增不改。**
+**当前版本 `1.1.0`。从 `1.0.0` 起，`NekoClicker.Core` 的公开 API 只增不改。**
 
 | 改动 | 升哪一位 |
 |---|---|
@@ -299,8 +304,8 @@ Console.WriteLine(engine.Save());           // JSON 存档
 ```csharp
 using NekoClicker.Core;
 
-Console.WriteLine(ApiVersion.Current);         // "2.0.0"
-Console.WriteLine(ApiVersion.AssemblyVersion);  // 2.0.0.0
+Console.WriteLine(ApiVersion.Current);         // "1.1.0"
+Console.WriteLine(ApiVersion.AssemblyVersion);  // 1.1.0.0
 ```
 
 ### 这条承诺是怎么被守住的
