@@ -165,7 +165,7 @@ git tag -a v1.0.0 -m "NekoClicker.Core 1.0.0"
 ## 5. 发布检查清单
 
 - [ ] `pwsh -File tools/build.ps1 -Strict` 退出码 0，0 警告
-- [ ] 全部用例通过（当前 **433** 个）
+- [ ] 全部用例通过（当前 **435** 个）
 - [ ] `Directory.Build.props` 的 `Version` / `AssemblyVersion` / `FileVersion` 三处一致
 - [ ] `CHANGELOG.md` 有当前版本的带日期条目，写清了兼容性影响
 - [ ] 若公开 API 有变动：快照已更新，且**确实**是有意为之

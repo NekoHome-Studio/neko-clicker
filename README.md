@@ -57,7 +57,7 @@
 > 代价是画面右侧与底部各有一格空白——这是换「拖横向不崩」付出的代价。
 
 ```powershell
-# 构建 + 跑测试（433 个用例，零依赖迷你运行器）
+# 构建 + 跑测试（435 个用例，零依赖迷你运行器）
 .\tools\build.ps1
 
 # 逐条计时：打印最慢的一批与分档占比（想知道"什么变慢了"就用它）
@@ -165,7 +165,7 @@ engine/content/Cyber/   内容包 #5《赛博猫娘》（五层数字层，迁�
 engine/content/Dream/   内容包 #8《猫娘梦境》（五层梦，越睡越浓的梦境能量）
 games/hosts/Demo.Cli/        终端 UI 适配层（ANSI 全屏 + 键盘 + 无头模式 + --package）
 games/hosts/Web/         Web 前端宿主（本地 HTTP + wwwroot，浏览器里可玩）
-engine/tests/    433 个测试 + 自研迷你测试运行器（含架构不变量与全程可达测试）
+engine/tests/    435 个测试 + 自研迷你测试运行器（含架构不变量与全程可达测试）
 engine/docs/ARCHITECTURE.md             架构与设计决策
 engine/docs/CONTENT_AUTHORING.md        如何写内容（数值节奏、校验规则、常见坑）
 engine/docs/VERSIONING.md               版本与兼容性承诺：什么改动升哪一位、公开 API 快照怎么用
@@ -388,7 +388,7 @@ Console.WriteLine(ApiVersion.AssemblyVersion);  // 1.2.0.0
 一条命令就是全仓库的验收：
 
 ```powershell
-.\tools\build.ps1 -Strict   # 引擎 + 内容 + 433 条用例 + Web 宿主（0 警告）
+.\tools\build.ps1 -Strict   # 引擎 + 内容 + 435 条用例 + Web 宿主（0 警告）
 .\tools\web.ps1   build -Strict   # 只编 Web 宿主时用它
 ```
 
@@ -398,7 +398,7 @@ Console.WriteLine(ApiVersion.AssemblyVersion);  // 1.2.0.0
 
 - 核心引擎、十一个内容包（猫咖物语 / 猫娘咖啡馆 / 九命轮回 / 猫娘实验室 / 猫娘公司 / 猫娘末世 /
   猫娘图书馆 / 猫娘神明 / 猫娘文明 / 赛博猫娘 / 猫娘梦境）、**两个前端宿主**（终端 Demo + Web），
-  **433 个测试**全部通过。
+  **435 个测试**全部通过。
 - **分层转生（`Era`）已落地**：逐级推进的转生按钮、每层换规则的平衡覆盖、
   跨层继承、构建期的完成条件单调性校验。九命（9 层）、实验室（7 批）、公司（3 轮）、
   末世（5 次重启）、图书馆（5 本书）、神明（5 套神话）、文明（5 个时代）、赛博（5 层）、
@@ -476,11 +476,13 @@ Console.WriteLine(ApiVersion.AssemblyVersion);  // 1.2.0.0
   零前端依赖（手写 ES 模块 + 一份 CSS，无 npm、无打包步骤）。
   跳层的调试门默认关闭，要用环境变量 `NEKO_DEBUG_KEY` 临时开门；
   详见 [STATUS.md](STATUS.md) 与 [WEB_DEBUG_GATE_PLAN](engine/docs/WEB_DEBUG_GATE_PLAN.md)。
-- **剧情可以当文件读了**（v1.2.0 起）：内容包 #3《猫娘实验室》的 40 条图鉴散文搬进了
-  `engine/content/Lab/text.json`，改一个错字不再需要重编。散文在文件里、条件与序号在代码里，
-  两边靠 id 关联；id 打错、文件里多一条 / 少一条都会在启动时当场抛，而不是变成一本空白图鉴
-  或一段永远没人读的死文本（守卫：`LabTextFileTests`）。承载它的 `ContentText` 是公开 API。
-  其余 9 个包的迁移是机械劳动，尚未进行。
+- **剧情可以当文件读了**：十个有剧情的包（咖啡馆 / 九命 / 实验室 / 公司 / 末世 / 图书馆 /
+  神明 / 文明 / 赛博 / 梦境）的**全部 421 条图鉴散文**都搬进了各自目录下的 `text.json`
+  （1.2.0 先在实验室试点，随后铺满全部包），改一个错字不再需要重编。
+  散文在文件里、条件与序号在代码里，两边靠 id 关联；id 打错、文件里多一条 / 少一条都会在
+  启动时当场抛，而不是变成一本空白图鉴或一段永远没人读的死文本
+  （守卫：`ContentTextFileTests`，含一条"有 text.json 的包必须都在守卫表里"的覆盖度用例）。
+  承载它的 `ContentText` 是公开 API。
 - **未包含**：**美术与音效资源**、本地化资源系统、账号 / 云存档、排行榜、反作弊。
   这些都被设计为引擎外部的宿主职责。
   > 这里原本还列着「图形前端」——它已经不再是非目标：`games/hosts/Web/` 就是。

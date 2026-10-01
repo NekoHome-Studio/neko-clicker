@@ -1,4 +1,10 @@
-# extract-lore-text.ps1 -- pull lore prose out of a pack's Lore.cs into text.json.
+﻿# extract-lore-text.ps1 -- pull lore prose out of a pack's Lore.cs into text.json.
+#
+# STATUS (2026-10-01): MISSION ACCOMPLISHED -- kept for the record, not for routine use.
+#   All ten packs with lore are externalized now. This script only understands the
+#   factory style (Popup/Log/Codex(...)); the six packs written with object initializers
+#   were migrated by a one-off scanner, and the fidelity proof for the whole migration
+#   was a before/after runtime dump compared byte for byte (see CHANGELOG, [unreleased]).
 #
 # Usage:
 #   powershell -File tools/extract-lore-text.ps1 -Pack lab
@@ -6,8 +12,7 @@
 # Why this exists: moving ~40 entries of Chinese prose by hand invites transcription
 # errors, and hand-editing Chinese through the shell has already corrupted a file once
 # in this repo (a script literal got mis-decoded and rewrote 298 lines). So: extract by
-# machine, then PROVE the extraction is faithful with a test that compares the JSON back
-# against the C# literals (engine/tests/LoreTextFixtureTests.cs).
+# machine, then PROVE the extraction is faithful.
 #
 # ASCII-only on purpose: every Chinese character here comes from reading the source file
 # through .NET, never from a literal in this script. That keeps the whole encoding class
