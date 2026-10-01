@@ -1,3 +1,4 @@
+using System.Text;
 using NekoClicker.Core.Content;
 
 namespace NekoClicker.Core.Tests;
@@ -135,6 +136,75 @@ public static class ContentTextTests
         using var fixture = new Fixture("{ \"lore\": ");
         InvalidOperationException ex = Check.Throws<InvalidOperationException>(() => fixture.Load());
         Check.Contains(ex.Message, "text.json");
+    }
+
+    /// <summary>
+    /// 同一份文本被多个线程同时读，不能把"已读过哪些 id"那张表弄坏。<para>
+    /// <b>这不是假想的并发</b>：一个内容包只持有<b>一份</b> <see cref="ContentText"/>
+    /// （静态懒加载），而 <c>Build()</c> 在同一个进程里有多个入口——测试里
+    /// <c>ArchitectureTests</c> 与 <c>TestGame</c> 的缓存各建一次、Demo 的包目录也会直接建一次，
+    /// 而测试是并行跑的。1.2.0 发布时这里没有锁：实测 40 线程 × 30 轮稳定复现
+    /// 「集合在并发更新下损坏」（522 次失败），在并行测试里表现为 17 条用例同时变红，
+    /// 而单条跑全绿——正是最难查的那种失败。
+    /// </para>
+    /// </summary>
+    [Test]
+    public static void ConcurrentReaders_DoNotCorruptTheUsedSet()
+    {
+        // 条数要够多：`HashSet` 的损坏发生在并发扩容上，两三个键是撞不出来的
+        // （第一版守卫就只用了两个键，结果在"去掉锁"的故障注入下照样绿——它自己先成了橡皮图章）。
+        const int entries = 200;
+        const int threadsCount = 16;
+        const int rounds = 30;
+
+        StringBuilder json = new("{ \"lore\": {");
+        for (int i = 0; i < entries; i++)
+        {
+            if (i > 0) json.Append(',');
+            json.Append($"\"e{i:D3}\": {{ \"title\": \"t{i}\", \"body\": \"b{i}\" }}");
+        }
+
+        json.Append("} }");
+        using var fixture = new Fixture(json.ToString());
+
+        // 关键：所有线程共用**同一个**实例（每个线程各 Load 一次就复现不出来了）。
+        ContentText text = fixture.Load();
+        Exception?[] failures = new Exception?[threadsCount];
+        var start = new Barrier(threadsCount);
+
+        Thread[] threads = new Thread[threadsCount];
+        for (int i = 0; i < threadsCount; i++)
+        {
+            int slot = i;
+            threads[i] = new Thread(() =>
+            {
+                start.SignalAndWait();
+                try
+                {
+                    for (int round = 0; round < rounds; round++)
+                    {
+                        // 每个线程都把这 200 条完整读一遍——真实包在 Build() 里就是这么读的。
+                        // 谁先读完，集合就完整了；因此任何线程随后的孤儿检查都不该报孤儿。
+                        for (int n = 0; n < entries; n++)
+                            text.Text("lore", $"e{n:D3}", "title");
+
+                        text.EnsureNoOrphans();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    failures[slot] = ex;
+                }
+            });
+        }
+
+        foreach (Thread thread in threads) thread.Start();
+        foreach (Thread thread in threads) thread.Join();
+
+        Exception? first = failures.FirstOrDefault(f => f is not null);
+        Check.Null(
+            first,
+            $"并发读同一份文本时抛了异常：{first?.GetType().Name}: {first?.Message}");
     }
 
     /// <summary>临时的 content/&lt;包名&gt;/text.json 夹具，用完删掉。</summary>

@@ -30,7 +30,21 @@ public sealed class ContentText
     private readonly string _packId;
     private readonly string _path;
     private readonly JsonObject _root;
+
+    /// <summary>
+    /// "哪些 id 已经被取过"这张表——它是本类唯一的可变状态。
+    /// <para>
+    /// <b>必须并发安全</b>：一个内容包通常只持有<b>一份</b> <see cref="ContentText"/>（静态懒加载），
+    /// 但 <c>Build()</c> 在同一个进程里可能有多个入口——测试里 <c>ArchitectureTests</c> 与
+    /// <c>TestGame</c> 的缓存各建一次，Demo 的包目录也会直接建一次，而测试是并行跑的。
+    /// 最初的实现直接改 <see cref="HashSet{T}"/>，实测能稳定复现
+    /// 「集合在并发更新下损坏」（40 线程 × 30 轮 → 522 次失败），
+    /// 所以这里所有读写都在 <c>_gate</c> 下进行。
+    /// </para>
+    /// </summary>
     private readonly HashSet<string> _used = new(StringComparer.Ordinal);
+
+    private readonly object _gate = new();
 
     private ContentText(string packId, string path, JsonObject root)
     {
@@ -90,7 +104,7 @@ public sealed class ContentText
     public string Text(string kind, string id, string field)
     {
         string key = kind + "\u0000" + id + "\u0000" + field;
-        _used.Add(key);
+        lock (_gate) _used.Add(key);
 
         JsonNode? section = _root[kind];
         if (section is not JsonObject sectionObj)
@@ -147,7 +161,7 @@ public sealed class ContentText
         }
         catch (InvalidOperationException)
         {
-            _used.Remove(kind + "\u0000" + id + "\u0000" + field);
+            lock (_gate) _used.Remove(kind + "\u0000" + id + "\u0000" + field);
             return fallback;
         }
     }
@@ -202,8 +216,11 @@ public sealed class ContentText
     private bool IsUsed(string kind, string id)
     {
         string prefix = kind + "\u0000" + id + "\u0000";
-        foreach (string key in _used)
-            if (key.StartsWith(prefix, StringComparison.Ordinal)) return true;
+        lock (_gate)
+        {
+            foreach (string key in _used)
+                if (key.StartsWith(prefix, StringComparison.Ordinal)) return true;
+        }
 
         return false;
     }
