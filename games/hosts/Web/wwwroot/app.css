@@ -451,3 +451,56 @@ footer {
   max-width: 60rem;
 }
 footer code { background: #00000055; padding: .05rem .3rem; border-radius: 4px; }
+
+/* ---------------------------------------------------------------- 键盘焦点
+   这个页面是可以用键盘玩的：`app.js` 绑了 keydown，大猫按钮上还印着「空格」。
+   但全文件此前**一处 :focus 都没有**（只有 :hover），于是键盘玩家按 Tab 走一圈，
+   屏幕上没有任何东西告诉他焦点在哪——鼠标用户有反馈，键盘用户没有。
+   用 :focus-visible 而不是 :focus：鼠标点击不会留下难看的框，键盘才会出现。 */
+:where(button, a, [tabindex]):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* 焦点落在卡片上时要能看出来是哪一张：整行描边 + 抬起一点。 */
+.card:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+  background: var(--card-hi);
+}
+
+/* ---------------------------------------------------------------- 窄屏
+   原先全文件只有一条断点（62rem），而它的全部内容是
+   `main { grid-template-columns: 1fr }` —— 两栏叠一栏，仅此而已。
+   内边距、间距、以及 `position: sticky` 的 hero 都没跟着变，手机（<480px）
+   完全没有适配。这里补的是手机上真正会咬人的那几处。 */
+@media (max-width: 34rem) {
+  /* sticky 的 hero 在单栏布局里会一直粘在顶上，往下翻列表时可能占掉整屏。 */
+  .hero {
+    position: static;
+    padding: 1rem;
+    gap: .75rem;
+  }
+
+  main { padding: 0 .6rem; }
+
+  /* 触屏目标下限：卡片整行可点，太矮就容易点错。44px 是常见的可点最小值。 */
+  .card { min-height: 44px; }
+  .tabs button { min-height: 40px; padding: .45rem .7rem; }
+
+  /* 大数字在小屏上要收一点，否则会把自己挤出容器。 */
+  .counter { font-size: clamp(1.4rem, 7vw, 2rem); }
+
+  footer { font-size: .78rem; }
+}
+
+/* ---------------------------------------------------------------- 动效偏好
+   页面有 6 处 transition/animation，此前无条件常开：系统里关掉动效的人照样被晃。
+   只关"位移与缩放"这类会引起不适的，保留颜色变化（它不引起前庭反应）。 */
+@media (prefers-reduced-motion: reduce) {
+  .big-cat:active { transform: none; }
+  .toast { transition: opacity .15s linear; transform: translate(-50%, 0); }
+  * { animation-duration: .001ms !important; animation-iteration-count: 1 !important; }
+}
+
