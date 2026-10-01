@@ -58,13 +58,34 @@ if ($LASTEXITCODE -ne 0) { Fail '构建失败（上面红色的 error 行就是�
 # ---- 3. 分派 ----------------------------------------------------------------
 switch ($Mode.ToLowerInvariant()) {
     'web' {
+        # 端口与包名都由这里决定，然后**拼进 URL** —— Web 端的包选择走查询串
+        # `?package=<id>`，不是命令行参数。原先把 --package 传给 web.ps1 是个静默失败：
+        # 那个脚本不解析它，于是包选择被悄悄丢掉，玩家只会看到默认包。
+        $port = if ($env:NEKO_PORT) { $env:NEKO_PORT } else { '5273' }
+        $base = "http://127.0.0.1:$port/"
+        $url = if ($Pack) { $base + "?package=$Pack" } else { $base }
+
         Write-Host ''
-        Say '=== 启动 Web 宿主（会自动开浏览器）===' -ForegroundColor Cyan
-        Say '按 Ctrl+C 退出。'
+        Write-Host '=== 启动 Web 宿主 ===' -ForegroundColor Cyan
+        Write-Host "浏览器地址：$url" -ForegroundColor Yellow
+        Write-Host '宿主起来后会自动打开它；没自动开就把上面这个地址粘到浏览器。'
+        Write-Host '按 Ctrl+C 停止服务。'
         Write-Host ''
 
-        if ($Pack) { & "$PSScriptRoot\web.ps1" run "--package" $Pack }
-        else { & "$PSScriptRoot\web.ps1" run }
+        & "$PSScriptRoot\dnet.ps1" build "$root\games\hosts\Web\NekoClicker.Web.sln" -v q --nologo -warnaserror
+        if ($LASTEXITCODE -ne 0) { Fail 'Web 宿主构建失败（上面红色的 error 行就是原因）。' }
+
+        # 自己等端口通了再开浏览器，而不是交给 web.ps1：它写死了不带参数的首页地址，
+        # 那样 ?package= 就带不进去，而且会与本脚本各开一次浏览器。
+        Start-Process -FilePath 'powershell' -WindowStyle Hidden -ArgumentList @(
+            '-NoProfile', '-Command',
+            "for (`$i = 0; `$i -lt 90; `$i++) { Start-Sleep -Milliseconds 500; try { Invoke-WebRequest -Uri 'http://127.0.0.1:$port/api/ping' -UseBasicParsing -TimeoutSec 2 | Out-Null; Start-Process '$url'; break } catch { } }"
+        ) | Out-Null
+
+        # 用 dotnet run（而不是直接起 exe）：开发期静态文件靠 bin 里的
+        # *.staticwebassets.endpoints.json 清单解析到源码目录，直接起 exe 会让
+        # 首页 404 而 /api/* 正常。web.ps1 的注释里记了这个坑，这里照它的做法。
+        & dotnet run '-m:1' --no-build --project "$root\games\hosts\Web" -- '--urls' "http://127.0.0.1:$port"
     }
 
     'list' {
