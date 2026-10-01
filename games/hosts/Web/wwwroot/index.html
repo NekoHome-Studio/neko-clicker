@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NekoClicker</title>
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+  <!-- 金猫是浮层：它冒出来时页面别的地方不该重排 -->
+  <div id="golden" class="golden-layer hidden"></div>
+  <div id="toast" class="toast"></div>
+
+  <header>
+    <h1 id="title">载入中…</h1>
+    <div class="status">
+      <span id="status-dot" class="dot"></span>
+      <span id="status-text">连接中…</span>
+      <a id="switch" href="./">换一个包</a>
+    </div>
+  </header>
+
+  <main>
+    <!-- 左栏：大数字 + 点击 + 纪元推进 -->
+    <section class="hero">
+      <div class="counter">
+        <span id="cookies">0</span>
+        <span id="currency-name" class="unit"></span>
+      </div>
+      <div class="rates">
+        <span id="cps">0/s</span>
+        <span id="per-click">每次 +0</span>
+      </div>
+
+      <button id="big-cat" class="big-cat" title="点它，或者按空格">
+        <span id="click-icon">🐱</span>
+        <span class="hint"><span id="click-action">点击</span><kbd>空格</kbd></span>
+      </button>
+
+      <div id="buffs" class="buffs hidden"></div>
+
+      <!-- 纪元：只有一个主按钮（决策 R1），未完成时置灰并说明卡在哪 -->
+      <div id="era" class="era hidden">
+        <div class="era-head">
+          <span id="era-name" class="era-name"></span>
+          <span id="era-index" class="muted"></span>
+        </div>
+        <p id="era-theme" class="era-theme"></p>
+        <div class="bar"><i id="era-bar"></i></div>
+        <p id="era-reason" class="era-reason"></p>
+        <button id="ascend" class="ascend">舍一命</button>
+      </div>
+
+      <div class="meta">
+        <span>成就 <b id="achievements">0 / 0</b></span>
+        <button id="save" class="ghost">存档</button>
+      </div>
+    </section>
+
+    <!-- 右栏：面板切换 -->
+    <section class="panels">
+      <nav class="tabs" id="tabs">
+        <button data-tab="buildings" class="active">建筑</button>
+        <button data-tab="upgrades">升级</button>
+        <button data-tab="choices">表态 <b id="choice-badge" class="badge hidden"></b></button>
+        <button data-tab="codex">图鉴</button>
+        <button data-tab="achievements">成就</button>
+      </nav>
+
+      <div class="panel" data-panel="buildings">
+        <div class="panel-head">
+          <h2>建筑</h2>
+          <div id="batch" class="batch"></div>
+        </div>
+        <div id="buildings" class="list"></div>
+      </div>
+
+      <div class="panel hidden" data-panel="upgrades">
+        <div class="panel-head">
+          <h2>升级</h2>
+          <span id="upgrade-count" class="muted"></span>
+        </div>
+        <div id="upgrades" class="list"></div>
+      </div>
+
+      <div class="panel hidden" data-panel="choices">
+        <div class="panel-head"><h2>表态</h2><span id="stance-summary" class="muted"></span></div>
+        <div id="choices" class="list"></div>
+        <div id="stances" class="stances"></div>
+      </div>
+
+      <div class="panel hidden" data-panel="codex">
+        <div class="panel-head"><h2>图鉴</h2><span id="codex-count" class="muted"></span></div>
+        <div id="codex" class="list"></div>
+      </div>
+
+      <div class="panel hidden" data-panel="achievements">
+        <div class="panel-head"><h2>成就</h2><span class="muted" id="achievement-count"></span></div>
+        <div id="achievement-list" class="list"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>
+      这个页面不做任何游戏计算——数字、价格、能不能买得起、进度百分比，全是服务端在
+      <code>GameSnapshot</code> 里算好后推过来的。关掉页面游戏照常在跑，
+      回来时还会结算离线收益。
+    </p>
+  </footer>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

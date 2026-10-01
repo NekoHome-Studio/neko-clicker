@@ -36,5 +36,5 @@ if ($LASTEXITCODE -ne 0) {
 
 Write-Host ''
 Write-Host '=== 测试 ===' -ForegroundColor Cyan
-& "$PSScriptRoot\dnet.ps1" exec "$root\tests\NekoClicker.Core.Tests\bin\Debug\net8.0\NekoClicker.Core.Tests.dll" @forward
+& "$PSScriptRoot\dnet.ps1" exec "$root\engine\tests\bin\Debug\net8.0\NekoClicker.Core.Tests.dll" @forward
 exit $LASTEXITCODE

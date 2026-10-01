@@ -1,0 +1,53 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <RootNamespace>NekoClicker.Web</RootNamespace>
+    <AssemblyName>neko-clicker-web</AssemblyName>
+    <!-- Web 宿主：只读 GameSnapshot + 发命令，不碰任何游戏规则。 -->
+    <Description>Web 前端宿主：把游戏引擎暴露给浏览器（本地 HTTP + 静态 wwwroot）。</Description>
+
+    <!--
+      刻意覆盖 Directory.Build.props 的 net8.0。
+      原因不是偏好，是这台机器上唯一能跑的形态：
+        · 机器只装了 Microsoft.AspNetCore.App 10.0.7 / 10.0.11，没有 8.0.x；
+          net8.0 的 Web 项目编译得过（.packages 里 seed 了 aspnetcore.app.ref/8.0.30），
+          但 dotnet run 时找不到 8.0 的共享框架。
+        · 引擎项目（Core 与十一个内容包）**保持 net8.0 不变**——
+          net10.0 的宿主引用 net8.0 的库是完全合法的，所以公开 API 与快照守卫一律不受影响。
+    -->
+    <TargetFramework>net10.0</TargetFramework>
+
+    <!--
+      语言版本也要跟着放开。Directory.Build.props 把它钉在 12.0，而 net10.0 上的
+      System.Threading.Lock（C# 13 起 lock 语句对它走专用代码路径）用不了——实测报
+      CS9202「Feature 'Lock object' is not available in C# 12.0」。
+      与 TargetFramework 是同一类处置：**只有这个宿主项目**跟着它自己的框架走，
+      引擎与内容包一律留在 C# 12.0 / net8.0，公开 API 与快照守卫不受影响。
+    -->
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!--
+      与 Demo.Cli 同样的接线方式：引用 Core + 全部内容包，用命令行/URL 参数选择要玩的游戏。
+      只有一个包能"选择"时，前端才不会被焊死在某一个作品上。
+
+      注意这里的引用是**枚举的**（每个包一行），但宿主代码里没有任何包名是硬编码的：
+      /api/packs 是扫描输出目录里的 NekoClicker.Content.*.dll 发现的（见 Program.cs）。
+      所以新增一个包要在这个列表补一行，但不需要改宿主逻辑。
+    -->
+    <ProjectReference Include="..\..\..\engine\core\NekoClicker.Core.csproj" />
+    <ProjectReference Include="..\..\..\engine\content\Neko\NekoClicker.Content.Neko.csproj" />
+    <ProjectReference Include="..\..\..\engine\content\Cafe\NekoClicker.Content.Cafe.csproj" />
+    <ProjectReference Include="..\..\..\engine\content\NineLives\NekoClicker.Content.NineLives.csproj" />
+    <ProjectReference Include="..\..\..\engine\content\Lab\NekoClicker.Content.Lab.csproj" />
+    <ProjectReference Include="..\..\..\engine\content\Company\NekoClicker.Content.Company.csproj" />
+    <ProjectReference Include="..\..\..\engine\content\Apocalypse\NekoClicker.Content.Apocalypse.csproj" />
+    <ProjectReference Include="..\..\..\engine\content\Library\NekoClicker.Content.Library.csproj" />
+    <ProjectReference Include="..\..\..\engine\content\God\NekoClicker.Content.God.csproj" />
+    <ProjectReference Include="..\..\..\engine\content\Civ\NekoClicker.Content.Civ.csproj" />
+    <ProjectReference Include="..\..\..\engine\content\Cyber\NekoClicker.Content.Cyber.csproj" />
+    <ProjectReference Include="..\..\..\engine\content\Dream\NekoClicker.Content.Dream.csproj" />
+  </ItemGroup>
+
+</Project>

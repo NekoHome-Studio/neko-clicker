@@ -1,0 +1,44 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>NekoClicker.Core.Tests</RootNamespace>
+    <AssemblyName>NekoClicker.Core.Tests</AssemblyName>
+    <!--
+      刻意不使用 xunit/NUnit：本机 NuGet 不可达，且框架本身零依赖。
+      这里用一个反射驱动的迷你测试运行器（MiniTest），退出码非 0 表示有用例失败。
+    -->
+    <Description>核心引擎测试（零依赖迷你测试运行器）。</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\engine\core\NekoClicker.Core.csproj" />
+    <ProjectReference Include="..\..\engine\content\Neko\NekoClicker.Content.Neko.csproj" />
+    <ProjectReference Include="..\..\engine\content\Cafe\NekoClicker.Content.Cafe.csproj" />
+    <ProjectReference Include="..\..\engine\content\NineLives\NekoClicker.Content.NineLives.csproj" />
+    <ProjectReference Include="..\..\engine\content\Lab\NekoClicker.Content.Lab.csproj" />
+    <ProjectReference Include="..\..\engine\content\Company\NekoClicker.Content.Company.csproj" />
+    <ProjectReference Include="..\..\engine\content\Apocalypse\NekoClicker.Content.Apocalypse.csproj" />
+    <ProjectReference Include="..\..\engine\content\Library\NekoClicker.Content.Library.csproj" />
+    <ProjectReference Include="..\..\engine\content\God\NekoClicker.Content.God.csproj" />
+    <ProjectReference Include="..\..\engine\content\Civ\NekoClicker.Content.Civ.csproj" />
+    <ProjectReference Include="..\..\engine\content\Cyber\NekoClicker.Content.Cyber.csproj" />
+    <ProjectReference Include="..\..\engine\content\Dream\NekoClicker.Content.Dream.csproj" />
+    <!-- 帧渲染的尺寸不变量（FrameRenderTests）：测的是 Demo 的 TerminalUi.Render。 -->
+    <ProjectReference Include="..\..\games\hosts\Demo.Cli\NekoClicker.Demo.Cli.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      Web 前端的线上协议（SnapshotProtocol）以**共享源码**的形式参与编译，而不是加一个
+      ProjectReference。原因是两层框架不匹配：Web 宿主是 net10.0（本机只有 ASP.NET Core 10.x
+      共享框架），测试项目是 net8.0，直接引用编不过；而给宿主加 TargetFrameworks 会把
+      "这个宿主只跑在一个框架上"这件事复杂化。
+
+      共享源码的好处是**只有一份实现**：协议改了，两端编到的是同一份代码，
+      不存在"测试测的是一份副本、线上跑的是另一份"这种最坏的形态。
+    -->
+    <Compile Include="..\..\games\hosts\Web\SnapshotProtocol.cs" Link="Web\SnapshotProtocol.cs" />
+  </ItemGroup>
+
+</Project>

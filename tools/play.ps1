@@ -10,8 +10,8 @@
 
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
-$project = Join-Path $root 'src\NekoClicker.Demo.Cli\NekoClicker.Demo.Cli.csproj'
-$assembly = Join-Path $root 'src\NekoClicker.Demo.Cli\bin\Debug\net8.0\neko-clicker.dll'
+$project = Join-Path $root 'games\hosts\Demo.Cli\NekoClicker.Demo.Cli.csproj'
+$assembly = Join-Path $root 'games\hosts\Demo.Cli\bin\Debug\net8.0\neko-clicker.dll'
 
 & "$PSScriptRoot\dnet.ps1" build $project -v q --nologo
 if ($LASTEXITCODE -ne 0) {
