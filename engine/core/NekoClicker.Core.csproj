@@ -19,4 +19,8 @@
     <EmbeddedResource Include="PublicApi.txt" LogicalName="NekoClicker.Core.PublicApi.txt" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- internal until a content pack consumes it; flip to public + bump minor in the pilot commit. -->
+    <InternalsVisibleTo Include="NekoClicker.Core.Tests" />
+  </ItemGroup>
 </Project>
