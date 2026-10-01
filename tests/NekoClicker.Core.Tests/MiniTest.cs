@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Reflection;
 
 namespace NekoClicker.Core.Tests;
@@ -169,9 +170,17 @@ public static class TestRunner
     /// <param name="assembly">目标程序集；默认当前程序集。</param>
     /// <param name="filter">可选的名称过滤（包含匹配）。</param>
     /// <param name="verbose">是否打印每个通过用例。</param>
-    public static TestSummary RunAll(Assembly? assembly = null, string? filter = null, bool verbose = true)
+    /// <param name="timing">是否逐条计时并打印最慢的一批（见 <c>--timing</c>）。</param>
+    public static TestSummary RunAll(
+        Assembly? assembly = null,
+        string? filter = null,
+        bool verbose = true,
+        bool timing = false)
     {
         assembly ??= Assembly.GetExecutingAssembly();
+
+        // 计时模式下不逐条打勾：411 行 ✓ 会把真正要看的表顶出屏幕。
+        if (timing) verbose = false;
 
         List<(Type Type, MethodInfo Method)> tests = [];
         foreach (Type type in assembly.GetTypes().OrderBy(t => t.FullName, StringComparer.Ordinal))
@@ -189,10 +198,15 @@ public static class TestRunner
 
         int passed = 0;
         List<string> failures = [];
+        List<(string Display, double Seconds, bool Passed)> timings = [];
+        var total = Stopwatch.StartNew();
 
         foreach ((Type type, MethodInfo method) in tests)
         {
             string display = $"{type.Name}.{method.Name}";
+            var watch = Stopwatch.StartNew();
+            bool ok = true;
+
             try
             {
                 object? target = method.IsStatic ? null : Activator.CreateInstance(type);
@@ -202,13 +216,21 @@ public static class TestRunner
             }
             catch (Exception ex)
             {
+                ok = false;
                 Exception actual = ex;
                 if (ex is TargetInvocationException { InnerException: { } inner }) actual = inner;
                 failures.Add($"{display}\n      {actual.GetType().Name}: {actual.Message}");
                 Console.WriteLine($"  \u001b[31m✗\u001b[0m {display}");
                 Console.WriteLine($"      \u001b[31m{actual.GetType().Name}\u001b[0m: {actual.Message}");
             }
+            finally
+            {
+                watch.Stop();
+                if (timing) timings.Add((display, watch.Elapsed.TotalSeconds, ok));
+            }
         }
+
+        total.Stop();
 
         Console.WriteLine();
         if (failures.Count == 0)
@@ -216,6 +238,57 @@ public static class TestRunner
         else
             Console.WriteLine($"\u001b[31m{passed} 通过 / {failures.Count} 失败（共 {tests.Count}）。\u001b[0m");
 
+        if (timing) PrintTimings(timings, total.Elapsed.TotalSeconds);
+
         return new TestSummary(passed, failures.Count, failures);
+    }
+
+    /// <summary>最慢的一批</summary>
+    private const int TimingHead = 40;
+
+    /// <summary>
+    /// 打印逐条计时。存在的理由：按类名做子串过滤去估耗时**已经错过一次**——
+    /// 过滤器 `ContentTests` 会把 8 个 <c>*ContentTests</c> 类一起吞掉，
+    /// 于是那张"按类耗时表"里的数字根本不是那个类的时间。
+    /// 要砍耗时就只能看逐条的真实数字，而运行器是唯一拿得到它的地方。
+    /// </summary>
+    private static void PrintTimings(List<(string Display, double Seconds, bool Passed)> timings, double totalSeconds)
+    {
+        Console.WriteLine();
+        Console.WriteLine($"\u001b[36m=== 逐条计时：{timings.Count} 条，总计 {totalSeconds:0.0}s ===\u001b[0m");
+
+        List<(string Display, double Seconds, bool Passed)> sorted =
+            [.. timings.OrderByDescending(t => t.Seconds)];
+
+        double sum = 0;
+        int shown = 0;
+
+        foreach ((string display, double seconds, bool ok) in sorted)
+        {
+            sum += seconds;
+            shown++;
+            if (shown > TimingHead) continue;
+
+            string share = totalSeconds <= 0 ? "  -  " : $"{seconds / totalSeconds * 100,5:0.0}%";
+            string mark = ok ? " " : "\u001b[31m✗\u001b[0m";
+            Console.WriteLine($"  {seconds,8:0.00}s {share}{mark} {display}");
+        }
+
+        double headSum = sorted.Take(TimingHead).Sum(t => t.Seconds);
+
+        Console.WriteLine();
+        Console.WriteLine($"  最慢 {Math.Min(TimingHead, sorted.Count)} 条合计 {headSum:0.0}s"
+                          + $"（占 {(totalSeconds <= 0 ? 0 : headSum / totalSeconds * 100):0.0}%）");
+
+        // 分布比"最慢一条"更有用：砍一个 100s 的用例和砍一百个 1s 的用例，
+        // 对作者心智的代价完全不同。
+        foreach (double threshold in new[] { 60.0, 30.0, 10.0, 5.0, 1.0 })
+        {
+            List<(string Display, double Seconds, bool Passed)> bucket =
+                [.. timings.Where(t => t.Seconds >= threshold)];
+            double bucketSum = bucket.Sum(t => t.Seconds);
+            Console.WriteLine($"  ≥{threshold,5:0}s：{bucket.Count,4} 条，合计 {bucketSum,7:0.0}s"
+                              + $"（占 {(totalSeconds <= 0 ? 0 : bucketSum / totalSeconds * 100):0.0}%）");
+        }
     }
 }

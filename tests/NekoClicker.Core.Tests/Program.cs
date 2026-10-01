@@ -11,6 +11,12 @@ if (args.Length > 0 && args[0] == "--public-api")
 }
 
 // 支持 `dotnet run -- [过滤词]`，便于只跑某个主题的用例。
-string? filter = args.Length > 0 ? args[0] : null;
-TestSummary summary = TestRunner.RunAll(filter: filter);
+// `--timing [过滤词]` 额外逐条计时并打印最慢的一批——测试套件跑一遍要十分钟，
+// 想砍耗时就只能看逐条的真实数字（按类名子串过滤估耗时已经错过一次）。
+bool timing = args.Length > 0 && args[0] == "--timing";
+string? filter = timing
+    ? (args.Length > 1 ? args[1] : null)
+    : (args.Length > 0 ? args[0] : null);
+
+TestSummary summary = TestRunner.RunAll(filter: filter, timing: timing);
 return summary.AllPassed ? 0 : 1;
