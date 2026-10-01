@@ -34,6 +34,21 @@ if ($LASTEXITCODE -ne 0) {
     exit $LASTEXITCODE
 }
 
+# Web 宿主有自己独立的单项目 sln（故意的：它不跟引擎一起发布），所以主 sln 编不到它。
+# 而"编不到"的后果是**静默**的：实测它曾经长时间停在 net10.0，而本机只有 SDK 8.0.303，
+# 也就是**根本编不过**——却没有任何一条命令会红，直到有人真的去编它。
+# 所以这一条必须由 build.ps1 兜住：一条命令验证全部，才有资格叫"一键"。
+$webSln = Join-Path $root 'games\hosts\Web\NekoClicker.Web.sln'
+if (Test-Path $webSln) {
+    Write-Host ''
+    Write-Host '=== 构建 Web 宿主（独立 sln）===' -ForegroundColor Cyan
+    & "$PSScriptRoot\dnet.ps1" build $webSln -v q --nologo -warnaserror
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host 'Web 宿主构建失败。它有自己的 sln，主 sln 编不到它——这正是这一步存在的理由。' -ForegroundColor Red
+        exit $LASTEXITCODE
+    }
+}
+
 Write-Host ''
 Write-Host '=== 测试 ===' -ForegroundColor Cyan
 & "$PSScriptRoot\dnet.ps1" exec "$root\engine\tests\bin\Debug\net8.0\NekoClicker.Core.Tests.dll" @forward

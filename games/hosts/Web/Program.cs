@@ -271,7 +271,7 @@ public sealed record HostOptions(string SaveRoot);
 /// </summary>
 internal static class Sessions
 {
-    private static readonly Lock Gate = new();
+    private static readonly object Gate = new();
     private static readonly Dictionary<string, GameHost> Started = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>取（必要时创建）某个内容包的会话；包 id 不认识时返回 <c>null</c>。</summary>

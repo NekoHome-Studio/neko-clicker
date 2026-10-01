@@ -51,7 +51,7 @@ public sealed class GameHost : IAsyncDisposable
     private readonly Channel<Func<Task>> _work = Channel.CreateUnbounded<Func<Task>>(
         new UnboundedChannelOptions { SingleReader = true, SingleWriter = false });
 
-    private readonly Lock _viewGate = new();
+    private readonly object _viewGate = new();
     private string _viewJson = "{}";
     private JsonObject _viewObject = new();
     private long _seq;

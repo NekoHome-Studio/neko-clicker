@@ -7,24 +7,26 @@
     <Description>Web 前端宿主：把游戏引擎暴露给浏览器（本地 HTTP + 静态 wwwroot）。</Description>
 
     <!--
-      刻意覆盖 Directory.Build.props 的 net8.0。
-      原因不是偏好，是这台机器上唯一能跑的形态：
-        · 机器只装了 Microsoft.AspNetCore.App 10.0.7 / 10.0.11，没有 8.0.x；
-          net8.0 的 Web 项目编译得过（.packages 里 seed 了 aspnetcore.app.ref/8.0.30），
-          但 dotnet run 时找不到 8.0 的共享框架。
-        · 引擎项目（Core 与十一个内容包）**保持 net8.0 不变**——
-          net10.0 的宿主引用 net8.0 的库是完全合法的，所以公开 API 与快照守卫一律不受影响。
+      与整个仓库同一个目标框架（Directory.Build.props 的 net8.0），不再单独覆盖。
+
+      **这里原本是 net10.0**，理由写的是"本机只有 Microsoft.AspNetCore.App 10.x、
+      没有 8.0.x，所以 net8 编得过但 dotnet run 起不来"。合并时实测发现这条与事实不符：
+        · 本机 SDK 列表里只有 8.0.303（dotnet 的 list-sdks 子命令）—— 连 **编译** net10.0
+          都做不到（NETSDK1045: The current .NET SDK does not support targeting .NET 10.0）；
+        · 运行时 `Microsoft.AspNetCore.App 8.0.7` **是装了的**，net8 起得来。
+      所以 net10.0 在这台机器上是"既编不过、又没必要"。
+
+      改成 net8.0 的代价只有一处：`System.Threading.Lock`（.NET 9 起才有）换回 `object`
+      —— 它本来就只出现在 `lock (...)` 里，是等价替换。收益是**一个 SDK 编全部**，
+      以及 Web 宿主不再是一个只在别人机器上成立的例外。
     -->
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
 
     <!--
-      语言版本也要跟着放开。Directory.Build.props 把它钉在 12.0，而 net10.0 上的
-      System.Threading.Lock（C# 13 起 lock 语句对它走专用代码路径）用不了——实测报
-      CS9202「Feature 'Lock object' is not available in C# 12.0」。
-      与 TargetFramework 是同一类处置：**只有这个宿主项目**跟着它自己的框架走，
-      引擎与内容包一律留在 C# 12.0 / net8.0，公开 API 与快照守卫不受影响。
+      语言版本跟随 Directory.Build.props 的 12.0。原先为了配合 net10.0 单独放成 latest，
+      而那只是因为 `System.Threading.Lock` 在 C# 12 下报 CS9202——改用 object 之后
+      这个理由也一并消失，于是回归与引擎同级。
     -->
-    <LangVersion>latest</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>
