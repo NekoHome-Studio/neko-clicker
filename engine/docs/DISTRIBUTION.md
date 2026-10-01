@@ -54,7 +54,21 @@ error NU1301: Unable to load the service index for source https://api.nuget.org/
 不是门槛。B 的价值在"发给完全不装开发环境的人"，那是有网机器上的一条命令的事，
 不该为它把仓库的结构改了。
 
-## 4. 还没量的（不要在没量之前写进发布说明）
+## 4. 已补验（原先"还没量"的三条）
+
+> 三条在本轮补验完毕，原始待验清单存档在下面，不再改动（保留当时的判断过程）。
+>
+> - **① wwwroot 会不会漏 → 不会。** `publish` 产物里有 `wwwroot/app.css`、`app.js`、
+>   `index.html`；而且**直接起发布产物**（`web\neko-clicker-web.exe --urls ...`，不经
+>   `dotnet run`）：`/api/ping` 正确、`/` **HTTP 200**、`/app.js` **HTTP 200**。
+>   那条"直接起 exe 首页会 404"的警告只适用于 `bin` 构建产物，不适用于 publish。
+> - **② `tools/pack.ps1` → 已补。** 它读 `Directory.Build.props` 的 `<Version>` 作为
+>   版本号唯一来源，发布两个宿主、把 `engine/docs/PACK_README.md` 作为 `说明.md` 拷进去、
+>   压成一个 zip。实测产物：**87 个文件、压缩后 1.6 MB**（未压缩 4.3 MB）。
+>   说明书里写清了"需要 .NET 8 运行时"以及"要自包含包就在有网机器上跑那条命令"。
+> - **③ 逐个包加载 → 仍未逐个验。** 只抽查过 `cafe`。这条不影响发布，但别写成"已验证"。
+
+原始待验清单（当时写的，保留）：
 
 1. **Web 宿主的 publish 是否带上 `wwwroot`。**
    `tools/web.ps1` 的注释说开发期静态文件由 `bin` 里的 `*.staticwebassets.endpoints.json`
