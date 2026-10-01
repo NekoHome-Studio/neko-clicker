@@ -6,12 +6,14 @@
 #    不可写），MSBuild 必须 -m:1（命名管道被禁时多节点构建会静默失败）。这两条与
 #    dnet.ps1 完全一致，直接复用它的做法。
 #
-# 2) **Web 宿主刻意不在 NekoClicker.sln 里。** 它在 games\hosts\Web/ 下自带一个
-#    单项目 sln。理由是它必须覆盖 Directory.Build.props 的 net8.0（本机只有
-#    Microsoft.AspNetCore.App 10.x 共享框架），把它挂进主 sln 会让 `tools/build.ps1`
-#    那条"引擎 + 内容 + 404 条基线"的路径多出一个跨 TFM 的引用边。
-#    这个脚本因此负责它自己的 build / run，而**引擎那一侧的回归仍然由
-#    tools/build.ps1 单独守**（两者互不影响，改动 Web 不会动到 404 基线）。
+# 2) **Web 宿主有自己的单项目 sln**，刻意不挂进 NekoClicker.sln：它是"游戏宿主"，
+#    跟引擎的发布节奏无关，挂进去只会让主 sln 多出一条与引擎无关的项目边。
+#    但注意：它**不再单独覆盖目标框架**了。原先它是 net10.0，理由是"本机只有
+#    Microsoft.AspNetCore.App 10.x 共享框架"——合并时实测那条不成立（本机有
+#    AspNetCore.App 8.0.7，缺的是 .NET 10 的 SDK，导致它连编都编不过）。
+#    现在它与整个仓库同为 net8.0，所以 tools/build.ps1 也会顺手编它一遍；
+#    这个脚本仍然负责它自己的 run / clean，而**引擎那一侧的回归由
+#    tools/build.ps1 单独守**（两者互不影响，改动 Web 不会动到引擎基线）。
 #
 # 用法:
 #   powershell -File tools/web.ps1 build          构建（含全部内容包）
