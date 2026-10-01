@@ -90,6 +90,8 @@ start.cmd list               # 列出全部内容包
 代码里只剩条件、序号、频道与条数——改一个错字不用重编，丢一条 / 多一条 / id 对不上
 都会在启动时当场抛。示例包「猫咖物语」没有图鉴，所以没有文本文件。
 搬迁的保真判据：迁移前后各把全部包的图鉴文字 dump 一次，**176,708 字节逐字节相同**。
+完整过程（含路上抓到的那个并发缺陷）见 [TEXT_AS_DATA_PLAN](engine/docs/TEXT_AS_DATA_PLAN.md) §8；
+写新包的形态见 [CONTENT_AUTHORING](engine/docs/CONTENT_AUTHORING.md) §12.0。
 
 ---
 

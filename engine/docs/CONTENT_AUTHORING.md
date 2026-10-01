@@ -551,22 +551,64 @@ Unlock = UnlockCondition.EarnedAllTimeAtLeast(500_000)
 世界观一次讲完就浪费了。做法是把剧情切成几十条小条目，每条挂一个释放条件，
 于是故事随进度自然渗出——`UnlockCondition` 在这里不是门控工具，而是**节奏编排工具**。
 
-```csharp
-builder.AddStorylines(new StorylineDefinition
-{
-    Id = "door", Name = "两界之门", Theme = "它一直开着", Icon = "🚪",
-    TotalEntries = 20,          // 声明总数，图鉴显示 3/20
-});
+### 12.0 散文住在 `text.json` 里，代码只留结构（2026-10-01 起）
 
-builder.AddLore(new LoreEntry
+`Title` / `Body`（以及剧情线的 `Name` / `Theme` / `Icon`）**不写在 C# 里**，
+写在内容包目录下的 `text.json`；代码里只留 id、条件、序号与通道。
+十个包已经全部迁完，随便挑一个现成样板：
+`engine/content/Cafe/Lore.cs` + `engine/content/Cafe/text.json`（51 条，真实规模）。
+
+```csharp
+// Lore.cs —— 散文从文件取，条件、序号、通道留在代码里
+private static readonly Lazy<ContentText> ProseCache = new(() => ContentText.Load("Cafe"));
+private static ContentText Prose => ProseCache.Value;
+
+public static StorylineDefinition[] Storylines => [Line("door", 20)];
+
+private static StorylineDefinition Line(string id, int totalEntries) => new()
 {
-    Id = "door_01", Title = "门在厨房后面", StorylineId = "door", Order = 1,
-    Icon = "🚪",
-    Body = "你以为是储藏间。推开门的时候，风是从另一边吹来的。",
-    Reveal = UnlockCondition.ClicksAtLeast(1),
-    Channel = LoreChannel.Popup,     // 转折点才用弹窗
-});
+    Id = id,
+    Name = Prose.Text("storylines", id, "name"),
+    Theme = Prose.Text("storylines", id, "theme"),
+    Icon = Prose.Text("storylines", id, "icon"),
+    TotalEntries = totalEntries,      // 声明总数，图鉴显示 3/20
+};
+
+private static LoreEntry Popup(string id, int order, UnlockCondition reveal)
+    => Make(id, order, reveal, LoreChannel.Popup);
+
+private static LoreEntry Make(string id, int order, UnlockCondition reveal, LoreChannel channel)
+    => new()
+    {
+        Id = id,
+        Title = Prose.Text("lore", id, "title"),
+        Body = Prose.Text("lore", id, "body"),
+        StorylineId = "door",
+        Order = order,
+        Reveal = reveal,
+        Channel = channel,
+    };
 ```
+
+```jsonc
+// engine/content/Cafe/text.json —— 同一份 id 空间
+{
+  "storylines": { "door": { "name": "两界之门", "theme": "它一直开着", "icon": "🚪" } },
+  "lore": {
+    "door_01": { "title": "门在厨房后面",
+                 "body": "你以为是储藏间。推开门的时候，风是从另一边吹来的。" }
+  }
+}
+```
+
+- **复制是自动的**：内容包目录里有 `text.json`，仓库根的 `Directory.Build.props` 就会把它
+  复制到 `content/<目录名>/text.json`——引用这个包的项目（Demo / Web / 测试）都会拿到，
+  publish 也带上。目录名就是 `ContentText.Load` 的参数。
+- **三种沉默失败都会当场抛**，而不是变成一本空白图鉴：id 对不上（取文本时抛）、
+  文件少一条（同上）、文件多一条（包在 `Build()` 末尾调 `Lore.VerifyAllTextUsed()` 时抛）。
+- **改文案只改 `text.json`，不用重编**；改条件只改 `Lore.cs`。两边靠 id 关联。
+- 守卫是横扫全部已外部化包的 `ContentTextFileTests`，其中一条专门盯着
+  "有 `text.json` 的包必须都在守卫表里"（加了包忘加守卫是沉默的）。
 
 **投放通道**（`LoreChannel`）：
 
