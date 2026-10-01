@@ -18,6 +18,20 @@ public static class Program
 {
     private const string DefaultUrl = "http://127.0.0.1:5273";
 
+    /// <summary>
+    /// 调试门密钥所在的<b>环境变量名</b>。<para>
+    /// 这里只有名字，没有值：仓库与发布产物里<b>不存在任何密钥</b>，所以"没设"时这道门根本不存在
+    /// （见 <c>engine/docs/WEB_DEBUG_GATE_PLAN.md</c> §2）。想调试的人自己临时设一个：
+    /// <c>$env:NEKO_DEBUG_KEY = '...'; start.cmd web</c>——用 <b>环境变量</b>而不是代码常量或配置文件，
+    /// 是因为常量等于把密钥公开、配置文件会被提交也会被打进 zip。
+    /// </para>
+    /// </summary>
+    private const string DebugKeyVariable = "NEKO_DEBUG_KEY";
+
+    /// <summary>跳层会跳过的账（响应正文必须说出来，见 plan §3）。</summary>
+    private static readonly string[] DebugSkippedBookkeeping =
+        ["era_inheritance", "era_history", "prestige_settlement"];
+
     /// <summary>启动宿主。</summary>
     /// <param name="args">
     /// <c>--urls &lt;地址&gt;</c> 换监听地址；<c>--save-root &lt;目录&gt;</c> 换存档根目录。
@@ -33,6 +47,16 @@ public static class Program
         builder.Services.AddSingleton(new HostOptions(saveRoot));
 
         WebApplication app = builder.Build();
+
+        // ---- Web 调试门（仅宿主功能，见 engine/docs/WEB_DEBUG_GATE_PLAN.md）。
+        // **必须排在静态文件之前**：'/' 会被 UseDefaultFiles 改写成 index.html、再由 UseStaticFiles
+        // 直接端出去（实测日志就是这个顺序），排在后面的话带 epoch 的请求永远到不了这里。
+        app.Use(async (context, next) =>
+        {
+            if (await TryHandleDebugGateAsync(context).ConfigureAwait(false)) return;
+            await next(context).ConfigureAwait(false);
+        });
+
         app.UseDefaultFiles();
         app.UseStaticFiles();
 
@@ -45,6 +69,13 @@ public static class Program
 
         Console.WriteLine($"NekoClicker Web 宿主已启动：{url}");
         Console.WriteLine($"框架版本 {ApiVersion.Current}｜内容包 {PackageCatalog.All.Count} 个｜存档目录 {saveRoot}");
+
+        // 调试门的状态必须在启动时说清楚：变量设在了别的 shell 里的话，否则要等到 403 才知道
+        // ——那正是"沉默的坑"。（这里只说变量设没设，永远不会打印密钥本身。）
+        Console.WriteLine(string.IsNullOrEmpty(Environment.GetEnvironmentVariable(DebugKeyVariable))
+            ? $"调试门：未启用（没有设置 {DebugKeyVariable}，带 epoch 的请求一律 403）。"
+            : $"调试门：已启用（{DebugKeyVariable} 已设置）；用法 {url}/?package=<id>&password=<密钥>&epoch=<层号>。");
+
         Console.WriteLine($"打开 {url}/ 开始玩；换包用 {url}/?package=<id>。Ctrl+C 退出。");
 
         app.Run();
@@ -210,12 +241,19 @@ public static class Program
                 return await host.SaveAsync().ConfigureAwait(false);
 
             case "hardReset":
-                await host.SaveAsync().ConfigureAwait(false);
+            {
+                // 先存一次（正常玩法下这是"重置前把当前进度落盘"），再重置。
+                // 调试跳层的会话里 SaveAsync 会明确拒绝，所以这里的文案必须跟着变——
+                // 不能一边没覆盖存档、一边告诉玩家"存档也已覆盖"。
+                CommandOutcome overwritten = await host.SaveAsync().ConfigureAwait(false);
                 return await host.ExecuteAsync(engine =>
                 {
                     engine.HardReset();
-                    return new CommandOutcome(true, "已重置，存档也已覆盖。", host.Seq);
+                    return new CommandOutcome(true, overwritten.Ok
+                        ? "已重置，存档也已覆盖。"
+                        : $"已重置（只在内存里）；{overwritten.Message}", host.Seq);
                 }).ConfigureAwait(false);
+            }
 
             default:
                 return new CommandOutcome(false, $"不认识的命令：{type}", host.Seq);
@@ -223,6 +261,113 @@ public static class Program
 
         static CommandOutcome Missing(string what) => new(false, $"这条命令缺少参数 {what}。", 0);
     }
+
+    /// <summary>
+    /// Web 调试门：<c>/?package=lab&amp;password=&lt;密钥&gt;&amp;epoch=7</c> 把这一局直接置到第 7 层。<para>
+    /// <b>密钥只从环境变量来</b>（<see cref="DebugKeyVariable"/>），仓库里不存在任何密钥，
+    /// 所以没设变量时这道门根本不存在——带了 <c>epoch</c> 也只会得到一句"门未启用"。
+    /// </para>
+    /// <para>
+    /// <b>拒绝一律明确报错，绝不静默忽略</b>（plan §5）：静默忽略正是这个项目一路在消灭的失败形态
+    /// ——玩家会以为自己参数名写错或版本不对，然后去查一个根本不存在的问题。
+    /// </para>
+    /// </summary>
+    /// <param name="context">当前请求。</param>
+    /// <returns>已经写过响应时返回 <c>true</c>（调用方不要再往下走）。</returns>
+    private static async Task<bool> TryHandleDebugGateAsync(HttpContext context)
+    {
+        // 只认首页：这道门是"用 URL 跳层"，不是给 API 加的旁路
+        if (!HttpMethods.IsGet(context.Request.Method)) return false;
+
+        string? path = context.Request.Path.Value;
+        if (!string.IsNullOrEmpty(path)
+            && path != "/"
+            && !path.Equals("/index.html", StringComparison.OrdinalIgnoreCase)) return false;
+
+        IQueryCollection query = context.Request.Query;
+
+        // 没有 epoch 就是普通请求：一字不改地走原来的路径（这是回归的底线，plan §7.5）
+        if (!query.ContainsKey("epoch")) return false;
+
+        context.Response.Headers.CacheControl = "no-store";
+
+        // ① 密钥装置本身在不在
+        string? key = Environment.GetEnvironmentVariable(DebugKeyVariable);
+        if (string.IsNullOrEmpty(key))
+        {
+            await WriteJsonAsync(context, StatusCodes.Status403Forbidden, new
+            {
+                ok = false,
+                debug = true,
+                message = $"调试门未启用：本机没有设置环境变量 {DebugKeyVariable}。",
+            }).ConfigureAwait(false);
+            return true;
+        }
+
+        // ② 密钥对不对（只区分"没配"与"配错"，不回显正确值）
+        if (!string.Equals(query["password"].ToString(), key, StringComparison.Ordinal))
+        {
+            await WriteJsonAsync(context, StatusCodes.Status403Forbidden, new
+            {
+                ok = false,
+                debug = true,
+                message = "调试密钥不对。",
+            }).ConfigureAwait(false);
+            return true;
+        }
+
+        // ③ 密钥已经对了，这时才允许碰会话：被拒的请求不该顺手把内容包加载进内存
+        string packageId = query["package"].ToString();
+        HostOptions options = context.RequestServices.GetRequiredService<HostOptions>();
+        GameHost? host = Sessions.TryGet(packageId.Length == 0 ? null : packageId, options);
+        if (host is null)
+        {
+            await WriteJsonAsync(context, StatusCodes.Status404NotFound, new
+            {
+                ok = false,
+                debug = true,
+                package = packageId,
+                message = $"没有内容包 <{packageId}>。",
+            }).ConfigureAwait(false);
+            return true;
+        }
+
+        // ④ 解析与范围校验都在游戏线程上做，于是 400 里带的范围一定是这个包真实的那个
+        DebugEraJump jump = await host.JumpToEraAsync(query["epoch"].ToString()).ConfigureAwait(false);
+
+        if (!jump.Applied)
+        {
+            await WriteJsonAsync(context, StatusCodes.Status400BadRequest, new
+            {
+                ok = false,
+                debug = true,
+                package = host.Package.Id,
+                from = jump.From,
+                validRange = new { min = jump.Min, max = jump.Max },
+                message = jump.Message,
+            }).ConfigureAwait(false);
+            return true;
+        }
+
+        // ⑤ 成功：说清楚跳到了哪、跳过了哪些账、以及本次不落盘
+        await WriteJsonAsync(context, StatusCodes.Status200OK, new
+        {
+            ok = true,
+            debug = true,
+            package = host.Package.Id,
+            from = jump.From,
+            to = jump.To,
+            validRange = new { min = jump.Min, max = jump.Max },
+            skipped = DebugSkippedBookkeeping,
+            autosave = "disabled",
+            message = jump.Message,
+        }).ConfigureAwait(false);
+        return true;
+    }
+
+    /// <summary>按线上协议的序列化选项写一份 JSON 响应。</summary>
+    private static Task WriteJsonAsync(HttpContext context, int statusCode, object body)
+        => Results.Json(body, SnapshotProtocol.Options, statusCode: statusCode).ExecuteAsync(context);
 
     /// <summary>
     /// 存档根目录：从程序集所在目录往上找仓库根（有 <c>NekoClicker.sln</c> 的那一层）。<para>

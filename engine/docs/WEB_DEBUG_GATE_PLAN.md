@@ -1,6 +1,9 @@
 # Web 调试门：带密码才能跳层
 
-> 状态：**待实现**。设计已定，代码未动。实现是 `Program.cs` 里约 30 行的改动。
+> 状态：**已实现**（宿主侧）。门在 `games/hosts/Web/Program.cs`（中间件，必须排在静态文件之前，
+> 否则 `/` 会先被 `UseDefaultFiles` 改成 `index.html` 端出去），跳层与"调试不落盘"在
+> `games/hosts/Web/GameHost.cs`（`JumpToEraAsync`）。**引擎一行未改**：没有新公开成员、没有升版本、
+> 没有重生成快照。密钥仍然只来自环境变量 `NEKO_DEBUG_KEY`。
 
 ---
 

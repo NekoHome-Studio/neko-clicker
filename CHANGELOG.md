@@ -30,6 +30,18 @@
   - **存档**：复用引擎自带的 `FileStorage`（已是"先写 .tmp 再原子替换"）与 `SaveManager`，
     槽位与终端 Demo 同构（`saves/<包 id>.json`），于是**同一份存档两个前端都能接着玩**。
     关停时经 `ApplicationStopping` 强制存档一次。
+- **Web 调试门**（`/?package=<id>&password=<密钥>&epoch=<层号>`）：把这一局直接置到第 N 层，
+  不用先玩几小时才看得到某一层的表态与结局。方案见
+  [WEB_DEBUG_GATE_PLAN](engine/docs/WEB_DEBUG_GATE_PLAN.md)。
+  - **默认不存在**：密钥只来自环境变量 `NEKO_DEBUG_KEY`，仓库与发布产物里没有任何密钥，
+    所以没设变量时这道门根本不存在。带 `epoch` 的请求：没设变量 → **403**（正文说明门未启用）；
+    密钥不对 → **403**；`epoch` 越界或不是整数 → **400**，正文带上**这个包真实的**合法范围。
+  - **跳层是直接改数据**（引擎没有"强行推进到第 N 层"的公开接口，`Ascend()` 要过层级门），
+    所以响应正文明确回报"跳过了跨层继承、层历史、转生货币结算"，不让人误以为这是正常推进。
+  - **调试不落盘**：跳层之后这个会话的自动存档与手动存档一起关掉，关停时也不写
+    ——玩家的真实存档不会被写进一个他没玩过的层号（`saves/` 的哈希与时间戳实测不变）。
+  - **不带调试参数的请求一字未改**：用改动前后的两份构建逐字节比对过 `/`、`/api/ping`、
+    `/api/packs`、`POST /api/command`、`/api/snapshot` 的响应。
 - **`tools/web.ps1`**：`build` / `run` / `clean`，环境重定向与 `tools/dnet.ps1` 一致。
 - **协议契约测试** `engine/tests/WebSnapshotProtocolTests.cs`（**10 条**，用例 404 → 414）：
   增量累积必须与全量在协议口径下逐字节相同、字段名必须是 camelCase、
