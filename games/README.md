@@ -40,11 +40,12 @@
 通知日志的"未读"游标。
 
 `hosts/Web/` 自带一个单项目解决方案，**刻意不挂进 `NekoClicker.sln`**——理由写在根 README
-的「环境说明」里。所以完整验证要跑两条命令：
+的「环境说明」里。代价是主 sln 编不到它，所以 `tools/build.ps1` 两条都编，
+一条命令即可验收全仓库：
 
 ```powershell
-.\tools\build.ps1 -Strict      # 引擎 + 内容 + 433 条用例
-.\tools\web.ps1   build -Strict  # Web 宿主
+.\tools\build.ps1 -Strict      # 引擎 + 内容 + 433 条用例 + Web 宿主
+.\tools\web.ps1   build -Strict  # 只编 Web 宿主时用它
 ```
 
 ---

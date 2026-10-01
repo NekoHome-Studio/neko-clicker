@@ -379,20 +379,17 @@ Console.WriteLine(ApiVersion.AssemblyVersion);  // 1.2.0.0
 
 ### 为什么 Web 宿主不在 `NekoClicker.sln` 里
 
-`games/hosts/Web/` 自带一个单项目解决方案，用 `.\tools\web.ps1` 构建与运行。两条理由：
+`games/hosts/Web/` 自带一个单项目解决方案，用 `.\tools\web.ps1` 构建与运行。理由不是框架差异
+——它现在跟全仓库一样是 net8.0（合并期间曾单独覆盖成 net10.0，已撤销）——而是**把
+"改前端"与"动引擎基线"在结构上分开**：它是一次性的示例作品宿主，构建前提与发布产物
+都和引擎不同。分开之后，"改前端不会动到引擎基线"这句话不是靠自觉，而是靠 sln 边界。
 
-1. **它必须覆盖 `Directory.Build.props` 的 `net8.0`。** Web SDK 需要 ASP.NET Core 共享框架，
-   而开发机上装的可能是 10.x（仓库的 `seed-packages.ps1` 只保证 net8.0 的 **targeting pack**
-   可供编译，运行时要另一回事）。挂进主 sln 会让那条守 433 条基线的构建路径多出一条跨框架引用边。
-2. **它的构建前提与引擎不同。** `.\tools\build.ps1 -Strict` 守住的是"引擎 + 内容 + 433 条用例"，
-   而 Web 宿主是一次性的示例作品宿主。把两者分开，"改前端不会动到引擎基线"这句话才是结构性的，
-   而不是靠自觉。
-
-代价是 `-Strict` 一次跑不完整个仓库，需要**两条命令都跑**：
+代价只有一处：主 sln 编不到它。所以 `tools/build.ps1` **两条都编**——
+一条命令就是全仓库的验收：
 
 ```powershell
-.\tools\build.ps1 -Strict   # 引擎 + 内容 + 433 条用例（0 警告）
-.\tools\web.ps1   build -Strict   # Web 宿主（0 警告）
+.\tools\build.ps1 -Strict   # 引擎 + 内容 + 433 条用例 + Web 宿主（0 警告）
+.\tools\web.ps1   build -Strict   # 只编 Web 宿主时用它
 ```
 
 ---
