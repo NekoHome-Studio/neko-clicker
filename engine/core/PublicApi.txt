@@ -1,4 +1,4 @@
-# NekoClicker 公开 API 快照 format=1 assembly=NekoClicker.Core version=1.1.0
+# NekoClicker 公开 API 快照 format=1 assembly=NekoClicker.Core version=1.2.0
 
 public static class NekoClicker.Core.AchievementSystem
   method static System.Collections.Generic.List<NekoClicker.Core.Content.AchievementDefinition>! Check(NekoClicker.Core.Content.GameContent! content, NekoClicker.Core.GameState! state, NekoClicker.Core.IGameMetrics! metrics, NekoClicker.Core.Events.GameEventBus! events)
@@ -225,6 +225,13 @@ public sealed class NekoClicker.Core.Content.ConstantCondition : NekoClicker.Cor
   method virtual System.String! ToString()
   prop System.Boolean Value { get; init; }
   prop virtual System.Type! EqualityContract { get; }
+
+public sealed class NekoClicker.Core.Content.ContentText
+  method System.String! Text(System.String! kind, System.String! id, System.String! field)
+  method System.String! TextOr(System.String! kind, System.String! id, System.String! field, System.String! fallback)
+  method System.Void EnsureNoOrphans(System.Func<System.String, System.String, System.Boolean>? onEntry = null)
+  method static NekoClicker.Core.Content.ContentText! Load(System.String! packId, System.String? directory = null)
+  prop System.String! Path { get; }
 
 public sealed class NekoClicker.Core.Content.CustomCondition : NekoClicker.Core.Content.UnlockCondition, System.IEquatable<NekoClicker.Core.Content.CustomCondition>, System.IEquatable<NekoClicker.Core.Content.UnlockCondition>
   ctor NekoClicker.Core.Content.CustomCondition(System.String! Description, System.Func<NekoClicker.Core.IGameMetrics, System.Boolean>! Predicate)

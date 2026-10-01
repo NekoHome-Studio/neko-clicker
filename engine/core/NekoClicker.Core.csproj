@@ -19,8 +19,9 @@
     <EmbeddedResource Include="PublicApi.txt" LogicalName="NekoClicker.Core.PublicApi.txt" />
   </ItemGroup>
 
-  <ItemGroup>
-    <!-- internal until a content pack consumes it; flip to public + bump minor in the pilot commit. -->
-    <InternalsVisibleTo Include="NekoClicker.Core.Tests" />
-  </ItemGroup>
+  <!--
+    这里没有 InternalsVisibleTo：核心对测试也只暴露公开 API。
+    （ContentText 试点期间曾给测试开过一个，1.2.0 它转公开之后就撤掉了——
+    测试能用公开 API 说清楚的事，不该靠开放内部来换。）
+  -->
 </Project>

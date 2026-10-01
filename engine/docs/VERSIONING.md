@@ -5,9 +5,10 @@
 > 一句话版本：**从 1.0.0 起，公开 API 只增不改。** 删改任何公开成员都必须升主版本号，
 > 而且这条规矩不是靠自觉——有测试守着。
 >
-> 当前版本 **1.1.0**：语义层面的破坏性变更只有一处——结局条件成立后会给玩家一段作答宽限期
-> （`GameEngineOptions.EndingGraceSeconds`，默认 30 模拟秒），期间 `CheckEnding()` 返回 `null`。
-> 详见 [CHANGELOG](../../CHANGELOG.md)。
+> 当前版本 **1.2.0**：这一版只新增了 `ContentText`（剧情散文的外部化载体），
+> 没有不兼容改动。语义层面的破坏性变更至今只有一处——1.1.0 让结局条件成立后先等一段
+> 作答宽限期（`GameEngineOptions.EndingGraceSeconds`，默认 30 模拟秒），
+> 期间 `CheckEnding()` 返回 `null`。详见 [CHANGELOG](../../CHANGELOG.md)。
 
 ---
 
@@ -20,9 +21,9 @@
 单一事实来源是 **`Directory.Build.props` 里的 `<Version>`**：
 
 ```xml
-<Version>1.1.0</Version>
-<AssemblyVersion>1.1.0.0</AssemblyVersion>
-<FileVersion>1.1.0.0</FileVersion>
+<Version>1.2.0</Version>
+<AssemblyVersion>1.2.0.0</AssemblyVersion>
+<FileVersion>1.2.0.0</FileVersion>
 ```
 
 这个值会同时成为程序集版本、文件版本，以及 `ApiVersion.Current` 报告的版本。
@@ -38,8 +39,8 @@
 ```csharp
 using NekoClicker.Core;
 
-Console.WriteLine(ApiVersion.Current);        // "1.1.0"
-Console.WriteLine(ApiVersion.AssemblyVersion); // 1.1.0.0
+Console.WriteLine(ApiVersion.Current);        // "1.2.0"
+Console.WriteLine(ApiVersion.AssemblyVersion); // 1.2.0.0
 Console.WriteLine(ApiVersion.Major);           // 1
 ```
 
@@ -90,7 +91,7 @@ Console.WriteLine(ApiVersion.Major);           // 1
 光有规矩没有守卫，规矩会在第一次赶工时失效。所以有一份**快照**：
 
 ```
-engine/core/PublicApi.txt     ← 1897 行，公开表面的逐项清单
+engine/core/PublicApi.txt     ← 1909 行，公开表面的逐项清单
 ```
 
 它被**嵌进 `NekoClicker.Core.dll`**，随 dll 一起走。任何拿到这个 dll 的宿主都能断言
@@ -164,7 +165,7 @@ git tag -a v1.0.0 -m "NekoClicker.Core 1.0.0"
 ## 5. 发布检查清单
 
 - [ ] `pwsh -File tools/build.ps1 -Strict` 退出码 0，0 警告
-- [ ] 全部用例通过（当前 **411** 个）
+- [ ] 全部用例通过（当前 **433** 个）
 - [ ] `Directory.Build.props` 的 `Version` / `AssemblyVersion` / `FileVersion` 三处一致
 - [ ] `CHANGELOG.md` 有当前版本的带日期条目，写清了兼容性影响
 - [ ] 若公开 API 有变动：快照已更新，且**确实**是有意为之

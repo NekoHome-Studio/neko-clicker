@@ -24,22 +24,26 @@
 
 ### `hosts/Web/` 的当前状态（诚实边界）
 
-**骨架阶段：还没有游戏界面。**
+**可玩**：点击、买建筑与升级、推进纪元、表态、看图鉴、金猫浮层、增益条、批量档位，
+挂机不掉线，与终端 Demo **共用同一份存档**（`saves/<包 id>.json`）。
 
-已做的：`/api/ping`（宿主自报框架版本——阶段 6 的 `ApiVersion` 第一个真实消费者）、
-`/api/packs`（运行时扫描 `NekoClicker.Content.*.dll` 发现内容包，宿主里没有包名字面量）、
-一个证明"引擎 → 浏览器"这条线通了的骨架首页。
+- 零前端依赖：手写 ES 模块 + 一份 CSS，`wwwroot/` 直接签进仓库，没有 npm、没有打包步骤。
+- 推送用 SSE 推「信封 + 变化字段」：全量 56.9 KB，增量均 1.99 KB（省 97%）。
+  契约测试在 `engine/tests/WebSnapshotProtocolTests.cs`（10 条，**按字节数**守，不是按字段数）。
+- 状态所有权：一条专用线程独占 `GameEngine`（引擎是单线程可变对象，ASP.NET Core 用的是线程池），
+  HTTP 命令走 `Channel` 投递。
+- 换包走 URL（`?package=<id>`），包是运行时扫描输出目录发现的，宿主里没有包名字面量。
+- 调试用「跳层门」：默认关闭，只有设了环境变量 `NEKO_DEBUG_KEY` 才存在，
+  且跳层会话**不写存档**。方案见 [../engine/docs/WEB_DEBUG_GATE_PLAN.md](../engine/docs/WEB_DEBUG_GATE_PLAN.md)。
 
-**刻意没做的**（两个未定决策，写在骨架页与 `Program.cs` 注释里，不替使用者决定）：
-
-1. **快照怎么推**：轮询还是 SSE？引擎 tick（30Hz）与推送频率是什么关系？
-2. **存档槽位与离线补算怎么接线**：用哪个槽位、`AutoSaveInterval` 走默认 60 秒还是另设。
+**还没做**（都是决策，不是遗漏）：永久升级线 / 二周目界面、离线收益弹窗、
+通知日志的"未读"游标。
 
 `hosts/Web/` 自带一个单项目解决方案，**刻意不挂进 `NekoClicker.sln`**——理由写在根 README
 的「环境说明」里。所以完整验证要跑两条命令：
 
 ```powershell
-.\tools\build.ps1 -Strict      # 引擎 + 内容 + 404 条用例
+.\tools\build.ps1 -Strict      # 引擎 + 内容 + 433 条用例
 .\tools\web.ps1   build -Strict  # Web 宿主
 ```
 

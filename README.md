@@ -5,9 +5,10 @@
 + #3《猫娘实验室》+ #10《猫娘公司》+ #6《猫娘末世》+ #9《猫娘图书馆》
 + #7《猫娘神明》+ #4《猫娘文明》+ #5《赛博猫娘》+ #8《猫娘梦境》）和一个可玩的终端 Demo。
 
-**当前版本 `1.1.0`**（`NekoClicker.Core` 的公开 API 版本）。从 `1.0.0` 起
+**当前版本 `1.2.0`**（`NekoClicker.Core` 的公开 API 版本）。从 `1.0.0` 起
 **公开 API 只增不改**，而且有测试守着——见 [版本与兼容性承诺](#版本与兼容性承诺)。
-1.1.0 的破坏性变更只有一处语义改动：结局条件成立后会给玩家一段作答宽限期（见 [CHANGELOG](CHANGELOG.md)）。
+1.1.0 的破坏性变更只有一处语义改动：结局条件成立后会给玩家一段作答宽限期（见 [CHANGELOG](CHANGELOG.md)）；
+1.2.0 只新增了 `ContentText`（剧情散文的外部化载体），没有不兼容改动。
 
 框架的核心目标是**把"引擎"和"内容"彻底分开**：引擎负责时间推进、数值管线、存档与事件；
 内容只描述"这个世界有什么"。换掉内容包就能做出完全不同的游戏，引擎代码一行都不用改。
@@ -56,7 +57,7 @@
 > 代价是画面右侧与底部各有一格空白——这是换「拖横向不崩」付出的代价。
 
 ```powershell
-# 构建 + 跑测试（421 个用例，零依赖迷你运行器）
+# 构建 + 跑测试（433 个用例，零依赖迷你运行器）
 .\tools\build.ps1
 
 # 逐条计时：打印最慢的一批与分档占比（想知道"什么变慢了"就用它）
@@ -163,8 +164,8 @@ engine/content/Civ/     内容包 #4《猫娘文明》（五个时代，从猫�
 engine/content/Cyber/   内容包 #5《赛博猫娘》（五层数字层，迁服务器）
 engine/content/Dream/   内容包 #8《猫娘梦境》（五层梦，越睡越浓的梦境能量）
 games/hosts/Demo.Cli/        终端 UI 适配层（ANSI 全屏 + 键盘 + 无头模式 + --package）
-games/hosts/Web/         Web 前端宿主（本地 HTTP + wwwroot；骨架阶段，见下）
-engine/tests/    421 个测试 + 自研迷你测试运行器（含架构不变量与全程可达测试）
+games/hosts/Web/         Web 前端宿主（本地 HTTP + wwwroot，浏览器里可玩）
+engine/tests/    433 个测试 + 自研迷你测试运行器（含架构不变量与全程可达测试）
 engine/docs/ARCHITECTURE.md             架构与设计决策
 engine/docs/CONTENT_AUTHORING.md        如何写内容（数值节奏、校验规则、常见坑）
 engine/docs/VERSIONING.md               版本与兼容性承诺：什么改动升哪一位、公开 API 快照怎么用
@@ -196,8 +197,11 @@ tools/seed-packages.ps1          把全局 NuGet 缓存里的 net8.0 targeting p
 要横扫每一个包才抓得出沉默失败（阶段 4B 的两条真缺陷就是这么发现的）。
 所以 `engine/tests` 与内容包同属引擎侧，一起被提取——这也是 `engine/` 能自包含的原因。
 
-> **`games/hosts/Web/` 的状态**：骨架已可运行（`/api/ping`、`/api/packs`、一个骨架首页），
-> 但**还没有游戏界面**。它刻意不挂进 `NekoClicker.sln`——见 [环境说明](#环境说明为什么有-toolsdnetps1)。
+> **`games/hosts/Web/` 的状态**：**可玩**——点击、买建筑与升级、推进纪元、表态、看图鉴，
+> 与终端 Demo 共用同一份存档（`saves/<包 id>.json`）；零前端依赖（手写 ES 模块 + 一份 CSS，
+> 无 npm、无打包步骤）。调试要用 `NEKO_DEBUG_KEY` 开门，见
+> [WEB_DEBUG_GATE_PLAN](engine/docs/WEB_DEBUG_GATE_PLAN.md)。它刻意不挂进 `NekoClicker.sln`
+> ——见 [环境说明](#环境说明为什么有-toolsdnetps1)。
 
 
 ---
@@ -312,7 +316,7 @@ Console.WriteLine(engine.Save());           // JSON 存档
 
 ## 版本与兼容性承诺
 
-**当前版本 `1.1.0`。从 `1.0.0` 起，`NekoClicker.Core` 的公开 API 只增不改。**
+**当前版本 `1.2.0`。从 `1.0.0` 起，`NekoClicker.Core` 的公开 API 只增不改。**
 
 | 改动 | 升哪一位 |
 |---|---|
@@ -325,8 +329,8 @@ Console.WriteLine(engine.Save());           // JSON 存档
 ```csharp
 using NekoClicker.Core;
 
-Console.WriteLine(ApiVersion.Current);         // "1.1.0"
-Console.WriteLine(ApiVersion.AssemblyVersion);  // 1.1.0.0
+Console.WriteLine(ApiVersion.Current);         // "1.2.0"
+Console.WriteLine(ApiVersion.AssemblyVersion);  // 1.2.0.0
 ```
 
 ### 这条承诺是怎么被守住的
@@ -379,15 +383,15 @@ Console.WriteLine(ApiVersion.AssemblyVersion);  // 1.1.0.0
 
 1. **它必须覆盖 `Directory.Build.props` 的 `net8.0`。** Web SDK 需要 ASP.NET Core 共享框架，
    而开发机上装的可能是 10.x（仓库的 `seed-packages.ps1` 只保证 net8.0 的 **targeting pack**
-   可供编译，运行时要另一回事）。挂进主 sln 会让那条守 404 条基线的构建路径多出一条跨框架引用边。
-2. **它的构建前提与引擎不同。** `.\tools\build.ps1 -Strict` 守住的是"引擎 + 内容 + 404 条用例"，
+   可供编译，运行时要另一回事）。挂进主 sln 会让那条守 433 条基线的构建路径多出一条跨框架引用边。
+2. **它的构建前提与引擎不同。** `.\tools\build.ps1 -Strict` 守住的是"引擎 + 内容 + 433 条用例"，
    而 Web 宿主是一次性的示例作品宿主。把两者分开，"改前端不会动到引擎基线"这句话才是结构性的，
    而不是靠自觉。
 
 代价是 `-Strict` 一次跑不完整个仓库，需要**两条命令都跑**：
 
 ```powershell
-.\tools\build.ps1 -Strict   # 引擎 + 内容 + 404 条用例（0 警告）
+.\tools\build.ps1 -Strict   # 引擎 + 内容 + 433 条用例（0 警告）
 .\tools\web.ps1   build -Strict   # Web 宿主（0 警告）
 ```
 
@@ -397,7 +401,7 @@ Console.WriteLine(ApiVersion.AssemblyVersion);  // 1.1.0.0
 
 - 核心引擎、十一个内容包（猫咖物语 / 猫娘咖啡馆 / 九命轮回 / 猫娘实验室 / 猫娘公司 / 猫娘末世 /
   猫娘图书馆 / 猫娘神明 / 猫娘文明 / 赛博猫娘 / 猫娘梦境）、**两个前端宿主**（终端 Demo + Web），
-  **421 个测试**全部通过。
+  **433 个测试**全部通过。
 - **分层转生（`Era`）已落地**：逐级推进的转生按钮、每层换规则的平衡覆盖、
   跨层继承、构建期的完成条件单调性校验。九命（9 层）、实验室（7 批）、公司（3 轮）、
   末世（5 次重启）、图书馆（5 本书）、神明（5 套神话）、文明（5 个时代）、赛博（5 层）、
@@ -470,10 +474,16 @@ Console.WriteLine(ApiVersion.AssemblyVersion);  // 1.1.0.0
   五条版本守卫（含故障注入证明守卫会红）、`engine/docs/VERSIONING.md` 与 `CHANGELOG.md`。
   **没有改任何游戏行为**——十一个内容包与 396 条既有用例的行为完全不变，用例 396 → 404。
   这一步也把"核心零内容知识"这条主张补上了它的另一半：**公开 API 只增不改**。
-- **Web 前端已可玩**（分支 `feature/web-frontend-ui`，尚未并入 `main`）：浏览器里能点击、
+- **Web 前端已可玩**（已并入 `main`）：浏览器里能点击、
   买建筑与升级、推进纪元、表态、看图鉴，挂机不掉线，与终端 Demo **共用同一份存档**。
   零前端依赖（手写 ES 模块 + 一份 CSS，无 npm、无打包步骤）。
-  详见 [STATUS.md](STATUS.md)。
+  跳层的调试门默认关闭，要用环境变量 `NEKO_DEBUG_KEY` 临时开门；
+  详见 [STATUS.md](STATUS.md) 与 [WEB_DEBUG_GATE_PLAN](engine/docs/WEB_DEBUG_GATE_PLAN.md)。
+- **剧情可以当文件读了**（v1.2.0 起）：内容包 #3《猫娘实验室》的 40 条图鉴散文搬进了
+  `engine/content/Lab/text.json`，改一个错字不再需要重编。散文在文件里、条件与序号在代码里，
+  两边靠 id 关联；id 打错、文件里多一条 / 少一条都会在启动时当场抛，而不是变成一本空白图鉴
+  或一段永远没人读的死文本（守卫：`LabTextFileTests`）。承载它的 `ContentText` 是公开 API。
+  其余 9 个包的迁移是机械劳动，尚未进行。
 - **未包含**：**美术与音效资源**、本地化资源系统、账号 / 云存档、排行榜、反作弊。
   这些都被设计为引擎外部的宿主职责。
   > 这里原本还列着「图形前端」——它已经不再是非目标：`games/hosts/Web/` 就是。

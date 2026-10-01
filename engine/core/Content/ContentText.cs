@@ -4,6 +4,11 @@ namespace NekoClicker.Core.Content;
 
 /// <summary>
 /// 剧情文本的外部化载体：把"给玩家读的散文"从 C# 字面量搬到随包发布的 JSON 文件。<para>
+/// <b>内容包用它读自己那份文案</b>（1.2.0 起是公开 API）。包的用法是：在内容代码里
+/// <c>ContentText.Load("&lt;包名&gt;")</c> 取到它，再用 <see cref="Text"/> 按 id 拿标题与正文；
+/// 条件树、序号、权重这些<b>逻辑</b>仍然留在代码里，两边靠 id 关联。
+/// </para>
+/// <para>
 /// <b>为什么要有这个类</b>：文本编译进 dll 时，<c>Id</c> 与 <c>Title</c>/<c>Body</c> 在同一个
 /// 对象上，<b>编译器保证它们同生共死</b>。搬到文件之后，两者只剩"字符串相等"这层关系，
 /// 于是冒出三种<b>不会让任何测试变红</b>的失败：id 打错（界面空白）、代码删了文件没删
@@ -20,7 +25,7 @@ namespace NekoClicker.Core.Content;
 /// 每个条目是 <c>id → { 字段: 文本 }</c>。选项那类是两层：<c>choices → id → options → 选项 id</c>。
 /// </para>
 /// </summary>
-internal sealed class ContentText
+public sealed class ContentText
 {
     private readonly string _packId;
     private readonly string _path;

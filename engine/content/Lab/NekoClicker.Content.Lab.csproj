@@ -16,4 +16,20 @@
     <ProjectReference Include="..\..\core\NekoClicker.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!--
+      剧情散文随包发布。这个文件必须和 dll 一起走到输出目录，否则
+      ContentText.Load("Lab") 会在第一次读文案时抛「文件不存在」——
+      也就是说"丢文件"会当场炸，而不是悄悄变成一本空白图鉴。
+
+      Link 决定复制过去之后的相对路径：content/Lab/text.json。
+      引用本包的项目（Demo / Web / 测试）会**传递地**拿到这个文件，
+      与 wwwroot 走的是同一条机制；publish 也会带上。
+    -->
+    <None Include="text.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>content/Lab/text.json</Link>
+    </None>
+  </ItemGroup>
+
 </Project>

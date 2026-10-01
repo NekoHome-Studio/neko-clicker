@@ -27,7 +27,8 @@ public static class LabContent
 
     /// <summary>构建内容定义（含伦理值模块）。</summary>
     public static GameContent Build()
-        => new GameContentBuilder(GameTitle)
+    {
+        GameContent content = new GameContentBuilder(GameTitle)
             .WithCurrency("数据", "📊", "记录")
             .WithPrestigeCurrency("残留记忆", "🧬")
             .WithBalance(BuildBalance())
@@ -44,6 +45,13 @@ public static class LabContent
             .AddChoices(Choices.All)
             .AddEndings(Endings.All)
             .Build();
+
+        // 到这里剧情线与 40 条条目都已经从 text.json 读过一遍了，正是查孤儿的时候：
+        // 文件里若有代码从不取用的条目，在这里当场抛，而不是让它静静躺在文件里。
+        Lore.VerifyAllTextUsed();
+
+        return content;
+    }
 
     /// <summary>
     /// 平衡参数：体现"实验室"的手感差异——<b>点击近乎无用</b>（这里是仪器在干活，

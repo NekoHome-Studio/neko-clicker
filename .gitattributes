@@ -10,7 +10,9 @@
 
 # 公开 API 快照：强制 LF，让 Windows / Linux 生成的快照逐字节一致
 # （否则同一份 API 会在两边各生成一份，diff 全是行尾噪音）。
-src/NekoClicker.Core/PublicApi.txt text eol=lf
+# 注意：这条路径必须跟着 core 的搬家一起改——写成不存在的路径时它不会报错，
+# 只会静静地不再生效（本仓库 2026-10-01 的 engine/games 两层重构就踩过一次）。
+engine/core/PublicApi.txt text eol=lf
 
 # 评测/二进制
 *.png binary
