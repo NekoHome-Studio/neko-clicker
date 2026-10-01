@@ -171,10 +171,11 @@ Web 宿主不在 `NekoClicker.sln` 里（它是独立的单项目 sln），但 `
 - **CI 只跑在 Windows 上**：`.github/workflows/ci.yml` 是两个 `windows-latest` 作业。没有加
   Linux 作业——`engine/core/` 平台中立这条主张仍然只由"全仓库只有两处平台相关代码"这个
   事实支撑，没有一个远端作业在守着它（想守就得先确认 Demo 与测试项目在 Linux 上也能编）。
-- **CI 还没在远端跑过一次**：workflow 与 `tools/api-test.ps1` 是 2026-10-01 才推上去的
-  （`c84c478`）。本地跑的两条命令全绿，但**没人看过 GitHub Actions 上的第一次运行**——
-  runner 镜像里的 .NET 版本、`Get-CimInstance` 的行为、端口占用，都可能和本机不一样。
-  下一次推提交时第一件事就是去看那两次运行的结果。
+- **CI 的远端表现（2026-10-01 补记）**：三次运行全绿——`c84c478`（workflow 首跑）、`4bb2690`、
+  `67a1f22`（1.2.1 发布），每次都是两个作业各自 success（构建 + 435 用例 / Web 宿主端到端）。
+  原先这条写的是"还没在远端跑过一次"——写下时是事实，但一直没人回填；这次补上，并推翻它。
+  runner 镜像里的 .NET 版本、`Get-CimInstance` 的行为、端口占用都没出问题。
+  观测方式见 §7 第 11 条。
 - **`engine/tests/ArchitectureTests.cs` 直接枚举内容包**：A1 守卫以内容包为探针，
   搬走内容包就失去判别力。将来真要分离引擎仓库，补救方向是改用极小的合成测试包
   （沿用阶段 3A"全部用合成内容测试"的既有做法）。
@@ -221,16 +222,26 @@ Web 宿主不在 `NekoClicker.sln` 里（它是独立的单项目 sln），但 `
 10. **推送走 SSH，别跟 HTTPS 死磕**（2026-10-01 实测）：`github.com` 解析到 `140.82.116.4`，
     该 IP 的 443 **连续 8 轮**都是 `Failed to connect ... after 21s`，重试不会变好；
     而 SSH 正常（`github.com:22`、`ssh.github.com:443` 都可达，`git@github.com` 密钥认证通过）。
-    不想改 `origin` 就用一次性 URL 重写：
+    不想改 `origin` 就用显式 URL（**2026-10-01 实测可用**，第一次就成功）：
 
     ```powershell
-    git -c url.ssh://git@github.com/.insteadOf=https://github.com/ push origin main
-    git -c url.ssh://git@github.com/.insteadOf=https://github.com/ push origin v1.2.0
+    git push git@github.com:NekoHome-Studio/neko-clicker.git main
+    git push git@github.com:NekoHome-Studio/neko-clicker.git v1.2.1
     ```
+
+    > 上一版这里写的是一次性 URL 重写
+    > `git -c url.ssh://git@github.com/.insteadOf=https://github.com/ push origin main`——
+    > **实测不可用**：重写出来的 `ssh://git@github.com/NekoHome-Studio/...` 缺前导斜杠，
+    > GitHub 直接拒收（`/NekoHome-Studio/neko-clicker is not a valid repository name`，
+    > 连试 5 次都一样）。那行命令从没在真推送上验过——发 1.2.1 时才踩到，换成了上面的写法。
 
     想永久改：`git remote set-url origin git@github.com:NekoHome-Studio/neko-clicker.git`。
     顺带一条判据：另外几个 GitHub IP（`140.82.112/113/114/116.3`、`20.205.243.166`）的 443
     是通的——所以历史上"重试几次就成功"很可能是解析到了别的 IP，而不是同一 IP 时好时坏。
+11. **看 CI 走 `api.github.com`，不用碰 `github.com`**（2026-10-01 实测）：`github.com:443`
+    不通不妨碍 `https://api.github.com/repos/NekoHome-Studio/neko-clicker/actions/runs`
+    1.3 秒返回 200（公开仓库只读，不要 token）；本机还装了 `gh`
+    （`C:\Program Files\GitHub CLI\gh`）。最近三次运行的结果见 §6。
 
 ---
 
@@ -248,7 +259,7 @@ Web 宿主不在 `NekoClicker.sln` 里（它是独立的单项目 sln），但 `
 已经躺了一段时间，而 **`v1.2.0` 的 tag 里没有那个并发修复**：拿到 1.2.0 的人手里的
 `ContentText` 是个"多线程用了就可能炸"的类型（实测 1200 次构建里 522 次抛异常）。
 所以这不是"顺手发个版"，是补一个**已经发出去的**缺陷。
-完整执行记录（含这次唯一一处清单外的改动）见 [RELEASING](engine/docs/RELEASING.md) §3。
+完整执行记录（清单外的几处发现也在里面）见 [RELEASING](engine/docs/RELEASING.md) §3。
 
 改动清单（已按此执行；**少一处，`PublicApiTests` / `VersionTests` 就会红**）：
 

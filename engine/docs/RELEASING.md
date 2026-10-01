@@ -26,7 +26,7 @@
 | ⑧ | `tools\api-test.ps1` | 22 项端到端（真起宿主、真读 SSE）；动了宿主/前端时必跑 |
 | ⑨ | `tools\pack.ps1` | 产出 `artifacts\neko-clicker-<版本>-win-x64.zip` |
 | ⑩ | `git commit` → `git tag -a v<版本>` → 推送 | 本机 HTTPS 不通，走 SSH（见 §4） |
-| ⑪ | 看 CI 的两次运行，把结果写回 `STATUS.md` §6 | "本地全绿"不等于"runner 上全绿" |
+| ⑪ | 看 CI 的两个作业，把结果写回 `STATUS.md` §6 | "本地全绿"不等于"runner 上全绿" |
 
 第 ⑤ 步拆成两步是 1.2.1 才写清楚的细节；在此之前它只是 VERSIONING 里的一句
 "跑 `tools/public-api.ps1` 更新快照"，没说什么时候跑。
@@ -80,23 +80,44 @@ git grep -n "1\.2\.0"        # 换成你刚发完的那个版本号
 3. **构建在这台机器上要先解决权限**：受限沙箱下 MSBuild 的 Roslyn 调用会被拒绝
    （`MSB3883 ... 拒绝访问`，0 Warning / 2 Error，看起来像编译器坏了）。这是环境问题，
    不是代码问题——见 [STATUS](../../STATUS.md) §7 第 5 条。
+4. **STATUS 里教的推送命令是错的，这次才踩到**：原先那一版写的是一次性 URL 重写
+   `git -c url.ssh://git@github.com/.insteadOf=https://github.com/ push origin main`，
+   重写出来的 `ssh://git@github.com/NekoHome-Studio/...` **缺前导斜杠**，GitHub 拒收
+   （`... is not a valid repository name`，5 次重试全是这个错——它不是网络抖动，重试没用）。
+   换成**显式 URL** 第一次就成功：`git push git@github.com:NekoHome-Studio/neko-clicker.git main`。
+   STATUS §7 第 10 条与本文 §4 都已改。
+   **教训：文档里的命令如果从没在真操作里跑过，它就不是"已验证"，只是"看起来对"。**
 
 ### 3.3 CI 首跑
 
-（本节在推送后补：这是本仓库的 CI 第一次在远端真正跑起来。）
+本仓库的 CI 其实在 `c84c478`（workflow 刚配好那次）就已经在远端跑过——但 STATUS §6 那条
+"还没在远端跑过一次"一直没人回填。这次一次性拿到三次数据：
+
+| 运行 | 提交 | 结果 |
+|---|---|---|
+| #1 | `c84c478`（workflow 首跑） | 两个作业都 success |
+| #2 | `4bb2690` | 两个作业都 success |
+| #3 | `67a1f22`（1.2.1 发布） | 构建+用例 success；Web 宿主端到端 success |
+
+观测方式：`github.com:443` 不通，但 **`api.github.com:443` 是通的**（1.3 秒返回 200，
+公开仓库只读、不要 token）；`curl` 或本机已装的 `gh` 都能看。
 
 ---
 
 ## 4. 本机特有的坑（一条条都踩过）
 
-- **推送走 SSH**：`github.com:443` 结构性不通，重试不会好；SSH 正常。一次性重写：
+- **推送走 SSH**：`github.com:443` 结构性不通，重试不会好；SSH 正常。**用显式 URL**：
 
   ```powershell
-  git -c url.ssh://git@github.com/.insteadOf=https://github.com/ push origin main
-  git -c url.ssh://git@github.com/.insteadOf=https://github.com/ push origin v1.2.1
+  git push git@github.com:NekoHome-Studio/neko-clicker.git main
+  git push git@github.com:NekoHome-Studio/neko-clicker.git v1.2.1
   ```
 
+  > 不要用 `-c url.ssh://git@github.com/.insteadOf=...` 那种一次性重写：重写出的 URL
+  > 缺前导斜杠，GitHub 拒收（1.2.1 实测，见 §3.2 第 4 条）。
+
   想永久改：`git remote set-url origin git@github.com:NekoHome-Studio/neko-clicker.git`。
+- **看 CI 走 `api.github.com`**：`github.com:443` 不通不妨碍 REST API 返回 200（公开仓库只读）。
 - **`tools/*.ps1` 必须 UTF-8 with BOM**（Windows PowerShell 5.1 会按 GBK 解析无 BOM 的中文）。
   本仓库的编辑器工具会吃掉 BOM——改完要补，`.md` 不受影响。
 - **`git` 报 dubious ownership**：用 `GIT_CONFIG_COUNT=1 / GIT_CONFIG_KEY_0=safe.directory /
