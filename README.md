@@ -180,9 +180,11 @@ CHANGELOG.md                     变更日志（按版本记录，含兼容性�
 tools/build.ps1                  一键构建 + 测试
 tools/play.ps1                   构建并运行终端 Demo（参数转发给程序）
 tools/web.ps1                    构建 / 运行 Web 宿主（自带单项目 sln，见「环境说明」）
+tools/api-test.ps1               端到端回归：起真宿主、打一遍全部端点（含 SSE），收尾时自己清进程
 tools/dnet.ps1                   在受限环境里运行 dotnet CLI 的包装脚本
 tools/public-api.ps1             重新生成公开 API 快照（有意改动 API 后的最后一步）
 tools/seed-packages.ps1          把全局 NuGet 缓存里的 net8.0 targeting pack 播种进仓库（离线构建）
+.github/workflows/ci.yml         CI：windows-latest 上跑 tools/build.ps1 -Strict 与 tools/api-test.ps1
 ```
 
 顶层只有两个目录表达"这是什么"，而不是靠文件名猜：
@@ -390,7 +392,11 @@ Console.WriteLine(ApiVersion.AssemblyVersion);  // 1.2.0.0
 ```powershell
 .\tools\build.ps1 -Strict   # 引擎 + 内容 + 435 条用例 + Web 宿主（0 警告）
 .\tools\web.ps1   build -Strict   # 只编 Web 宿主时用它
+.\tools\api-test.ps1        # 再把宿主真起起来，打一遍端点（含 SSE 流）
 ```
+
+`tools/build.ps1` 与 `tools/api-test.ps1` 也是 CI 在远端跑的两条命令
+（`.github/workflows/ci.yml`）——前者守引擎与公开 API，后者守"宿主 + 浏览器协议"那一段。
 
 ---
 
@@ -399,6 +405,10 @@ Console.WriteLine(ApiVersion.AssemblyVersion);  // 1.2.0.0
 - 核心引擎、十一个内容包（猫咖物语 / 猫娘咖啡馆 / 九命轮回 / 猫娘实验室 / 猫娘公司 / 猫娘末世 /
   猫娘图书馆 / 猫娘神明 / 猫娘文明 / 赛博猫娘 / 猫娘梦境）、**两个前端宿主**（终端 Demo + Web），
   **435 个测试**全部通过。
+- **端到端回归与 CI 已落地**：`tools/api-test.ps1` 起真宿主打一遍全部端点（静态文件 / 元信息 /
+  快照 / 命令 / 负数 / SSE 流，22 项检查），自带临时存档目录、缺省把调试门关着、收尾按端口反查并清掉
+  `dotnet run` 的子进程；`.github/workflows/ci.yml` 在每次 push / PR 上跑 `tools/build.ps1 -Strict`
+  与它——"公开 API 只增不改"因此不再只靠纪律。
 - **分层转生（`Era`）已落地**：逐级推进的转生按钮、每层换规则的平衡覆盖、
   跨层继承、构建期的完成条件单调性校验。九命（9 层）、实验室（7 批）、公司（3 轮）、
   末世（5 次重启）、图书馆（5 本书）、神明（5 套神话）、文明（5 个时代）、赛博（5 层）、

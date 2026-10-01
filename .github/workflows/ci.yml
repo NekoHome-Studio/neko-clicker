@@ -1,0 +1,57 @@
+# CI —— 让"提交前该跑的那两条命令"在远端也有执法点。
+#
+# 为什么值得有它（STATUS §6 记过这条缺口）：仓库的主张是"公开 API 只增不改"，
+# 而执法点是 PublicApiTests / VersionTests 这两条用例；在那之前，它们只在有人
+# **手动**跑 tools/build.ps1 -Strict 时才生效——也就是说，拦住改动的不是守卫，
+# 而是纪律。守卫要真的说话，就得有人在每个提交上跑它。
+#
+# 为什么是 windows + Windows PowerShell（powershell，不是 pwsh）：
+#   tools/*.ps1 是按 Windows PowerShell 5.1 写的（UTF-8 BOM、-Encoding UTF8、
+#   conhost 的坑），宿主这一层也只在这套环境里被真实使用过。用 runner 自带的
+#   powershell 跑，保证"CI 跑的就是开发者本机跑的那条路径"，
+#   而不是再引入一套解释器差异去解释。
+#
+# 两个作业：
+#   build-and-test  引擎侧：tools/build.ps1 -Strict（0 警告 + 435 用例 + 主/Web 两条 sln）
+#   end-to-end      Web 宿主侧：tools/api-test.ps1（起真宿主，打全部端点）
+# 分开跑的理由是失败时的信号不同：前者红了说明引擎或公开 API 有问题，
+# 后者红了说明"宿主 + 浏览器协议"那一段有问题——这两类故障的排查方向完全不一样。
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    name: 构建（0 警告）+ 全部用例
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # 仓库的目标框架是 net8.0。setup-dotnet 会把 8.0.x 的 SDK 与共享运行时一起装上
+      # （后者是端到端那一步起宿主必需的：宿主声明 Microsoft.AspNetCore.App 8.0）。
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: tools/build.ps1 -Strict
+        shell: powershell
+        run: .\tools\build.ps1 -Strict
+
+  end-to-end:
+    name: Web 宿主端到端
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: tools/api-test.ps1
+        shell: powershell
+        run: .\tools\api-test.ps1

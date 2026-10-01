@@ -48,6 +48,25 @@
   就自动复制到 `content/<目录名>/text.json`。规则原来写在 Lab 一个 csproj 里，
   迁移到十个包时才看出它该是**通用能力**——否则"新增一个内容包"要多一个容易忘的手工步骤。
 
+### 工具与 CI
+
+- **`tools/api-test.ps1`：Web 宿主的端到端回归**。它把此前躺在 `.tmp/`（已 gitignore、
+  随时可能被删）的那个探针收进仓库：起真宿主、打一遍全部端点，共 **22 项检查**——
+  静态文件三件、`/api/ping` 报的版本 == `Directory.Build.props` 的版本、`/api/packs` 扫到 11 个包、
+  快照顶层字段 / camelCase / 紧凑 JSON、40 次点击真的涨钱、超大购买数量被钳到预算内、
+  未知命令 `ok=false`、未知包在 `/api/snapshot` 与 `/api/stream` 上都是 404、
+  没有 `NEKO_DEBUG_KEY` 时带 `epoch` 必须 403、SSE 真读 6 秒（第一帧全量 / 之后以增量为主，
+  撞上 30 秒一次的全量对账不算故障 / 增量均值 < 全量 10% / `seq` 单调）。
+  - 三条与旧探针不同的行为，都是踩出来的：自带**临时存档目录**（旧版跑在真实存档上，
+    等于把玩家的进度当测试夹具）、起子进程前**摘掉 `NEKO_DEBUG_KEY`**（让"门是关着的"
+    成为被测事实，而不是取决于跑的人 shell 里有没有那个变量）、收尾**按端口反查进程**
+    （`dotnet run` 会再起一个真宿主子进程，只杀它会留下还在监听的孤儿）。
+  - 本机没有 `Microsoft.AspNetCore.App 8.x`（宿主声明的是 net8.0）时，它显式设
+    `DOTNET_ROLL_FORWARD=Major` 并把这件事打印出来——装了 8.x 的机器不受影响。
+- **`.github/workflows/ci.yml`：CI（此前没有）**。两个 `windows-latest` 作业分别跑
+  `tools/build.ps1 -Strict` 与 `tools/api-test.ps1`——"435 条全绿"与"公开 API 只增不改"
+  从此在远端有执法点，而不是靠有人记得手动跑。
+
 ---
 
 ## [1.2.0] - 2026-10-01

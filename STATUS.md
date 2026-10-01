@@ -47,6 +47,8 @@ games/             旗舰示例作品。依赖 engine/，反向不依赖
   docs/            路线图 / 世界观 / 包规格 / 换皮手册
 README.md          刻意留在仓库根
 CHANGELOG.md       刻意留在仓库根（VersionTests 的两个守卫直接读这两个文件）
+tools/             全部 ps1 工具（含 api-test.ps1：端到端起真宿主打端点）
+.github/workflows/ci.yml  CI：两条命令 = 引擎验收 + 端到端
 ```
 
 **内容包为什么在 `engine/` 而不在 `games/`**：它们是引擎的集成测试探针——
@@ -71,6 +73,7 @@ start.cmd list               # 列出全部内容包
 .\tools\play.ps1             # 终端 Demo；--package <id> 换包
 .\tools\play.ps1 --package lab --simulate 21600 --auto   # 无头跑图 + 数值报告
 .\tools\web.ps1 run          # Web 前端（开发期必须 dotnet run 起，见 §7）
+.\tools\api-test.ps1         # 端到端：起真宿主、打一遍全部端点（含 SSE），约 15 秒
 .\tools\pack.ps1             # 打出 artifacts/neko-clicker-<版本>-win-x64.zip
 ```
 
@@ -100,6 +103,7 @@ start.cmd list               # 列出全部内容包
 | 命令 | 期望 |
 |---|---|
 | `.\tools\build.ps1 -Strict` | **435 个用例全绿**、0 警告（主 sln 与 Web sln 都编） |
+| `.\tools\api-test.ps1` | **22 项端到端检查全通过**——真起宿主（`dotnet run`）、真读 SSE 流，收尾自己清进程 |
 | `.\tools\web.ps1 build -Strict` | 只编 Web 宿主时用（0 警告） |
 
 435 的构成：404（阶段 6 基线）+ 7（合并时的守卫）+ 10（Web 推送协议契约）
@@ -121,7 +125,18 @@ start.cmd list               # 列出全部内容包
   被故障注入抓出来后改成 200 条 × 16 线程 × 30 轮。
 
 Web 宿主不在 `NekoClicker.sln` 里（它是独立的单项目 sln），但 `build.ps1` 会**两条都编**，
-所以上面第一条命令就是全仓库的验收。
+所以上面第一条命令就是全仓库的验收；`api-test.ps1` 再补上"编得过"证明不了的那一半。
+
+**`api-test.ps1` 打的是哪 22 项**（判据只有一条：**真的通**）：静态文件三件（`/`、`/app.js`、
+`/app.css`，含 needle 检查——"首页 404 而 `/api/*` 全正常"是这一层最经典的沉默失败）、
+`/api/ping` 报出的版本 == `Directory.Build.props` 的版本、`/api/packs` 扫到 11 个包、
+快照顶层字段 / camelCase / 紧凑 JSON、40 次点击真的涨钱、超大购买数量被钳到预算内、
+未知命令 `ok=false`、未知包在 `/api/snapshot` 与 `/api/stream` 都是 404、
+**没有 `NEKO_DEBUG_KEY` 时带 `epoch` 必须是 403**、SSE 真读 6 秒（第一帧全量 / 之后以增量为主，
+撞上 30 秒一次的全量对账不算故障 / 按字节数均值 < 全量 10% / `seq` 单调）。三条刻意为之的行为写在脚本头部注释里：
+自带临时存档目录（探针会点击和买入，跑在玩家存档上等于拿进度当夹具）、
+起子进程前把 `NEKO_DEBUG_KEY` 摘掉（让"门是关着的"成为被测事实而不是巧合）、
+收尾按**端口**反查进程（`dotnet run` 会再起一个真宿主子进程，只杀它会留下孤儿）。
 
 ---
 
@@ -147,16 +162,15 @@ Web 宿主不在 `NekoClicker.sln` 里（它是独立的单项目 sln），但 `
 - **观感没有留下验证记录**：Web 界面的数字平滑那一版只做过代码级根因定位 + 端到端冒烟，
   本机浏览器自动化（`bsk`）存在协议版本漂移（扩展 1.3 vs daemon 1.0），非交互升级走不通。
   "好不好看"这件事目前靠人看，仓库里没有守卫。
-- **端到端回归还没进仓库**：端到端探针躺在 `.tmp/`（已 gitignore，随时可能被删），
-  应当收成 `tools/api-test.ps1`。
-- **CI 不存在**：没有 GitHub Actions。上面那条命令目前只能靠人跑，
-  也就意味着"公开 API 只增不改"这条承诺在远端没有自动化执法点。
+- **CI 只跑在 Windows 上**：`.github/workflows/ci.yml` 是两个 `windows-latest` 作业。没有加
+  Linux 作业——`engine/core/` 平台中立这条主张仍然只由"全仓库只有两处平台相关代码"这个
+  事实支撑，没有一个远端作业在守着它（想守就得先确认 Demo 与测试项目在 Linux 上也能编）。
 - **`engine/tests/ArchitectureTests.cs` 直接枚举内容包**：A1 守卫以内容包为探针，
   搬走内容包就失去判别力。将来真要分离引擎仓库，补救方向是改用极小的合成测试包
   （沿用阶段 3A"全部用合成内容测试"的既有做法）。
 - **远端：HTTPS 结构性不通，要走 SSH**。`github.com` 解析到 `140.82.116.4`，而该 IP 的 443
   **连续 8 轮都是** `Failed to connect ... after 21s`——那不是抖动，是路由。SSH 则是通的
-  （`github.com:22` 与 `ssh.github.com:443` 均可达，密钥认证通过）。细节与命令见 §7 第 9 条。
+  （`github.com:22` 与 `ssh.github.com:443` 均可达，密钥认证通过）。细节与命令见 §7 第 10 条。
 - **这份文档自己曾经是错的**：上一版写于分支上、合并后没跟着改，于是长期宣称
   "main 还在 v1.0.0、前端未合并"。这次刻意不写 HEAD，就是为了别再犯同一个错。
 
@@ -182,29 +196,37 @@ Web 宿主不在 `NekoClicker.sln` 里（它是独立的单项目 sln），但 `
    `/api/ping`、`/`、`/app.js` 全 200）。
 7. **Web 宿主与全仓库同一个目标框架（net8.0）**：合并期间它曾单独覆盖成 net10.0，
    已撤销（本机只有 SDK 8.0.303，net10 既编不过也没必要），`LangVersion` 也一并对齐。
-8. **`git` 报 "dubious ownership"**，用
+   **这条记录的机器状态已经变了（2026-10-01 复核）**：本机现在是 SDK **10.0.203 / 10.0.400**，
+   没有 8.0.x 的 SDK——net8.0 照样编得过（`0 Warning(s) / 0 Error(s)`），因为 SDK 10 会带上
+   8.0 的 targeting pack（`C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref`）；
+   仓库内的 `.packages` 里也播了 8.0.30 的 ref pack 兜底。所以"一个 SDK 编全部"仍然成立，
+   只是那个 SDK 现在不是 8.0.303。
+8. **跑宿主需要 `Microsoft.AspNetCore.App 8.x` 运行时，本机没有**（只有 10.0.7 / 10.0.11）。
+   宿主声明的是 net8.0，缺 8.x 时它**拒绝启动**并打印一段英文（"You must install or update
+   .NET"），看起来像"宿主坏了"，其实是环境缺件。`tools/api-test.ps1` 因此在启动前探测一次：
+   没有 8.x 就设 `DOTNET_ROLL_FORWARD=Major`（装了 8.x 的机器不受影响，仍然跑 8.x），
+   并**把这件事打印出来**——实测上滚到 10.0.11 后 22 项检查全过。
+9. **`git` 报 "dubious ownership"**，用
    `$env:GIT_CONFIG_COUNT=1; GIT_CONFIG_KEY_0="safe.directory"; GIT_CONFIG_VALUE_0="D:/githb/neko-clicker"` 绕过。
-9. **推送走 SSH，别跟 HTTPS 死磕**（2026-10-01 实测）：`github.com` 解析到 `140.82.116.4`，
-   该 IP 的 443 **连续 8 轮**都是 `Failed to connect ... after 21s`，重试不会变好；
-   而 SSH 正常（`github.com:22`、`ssh.github.com:443` 都可达，`git@github.com` 密钥认证通过）。
-   不想改 `origin` 就用一次性 URL 重写：
+10. **推送走 SSH，别跟 HTTPS 死磕**（2026-10-01 实测）：`github.com` 解析到 `140.82.116.4`，
+    该 IP 的 443 **连续 8 轮**都是 `Failed to connect ... after 21s`，重试不会变好；
+    而 SSH 正常（`github.com:22`、`ssh.github.com:443` 都可达，`git@github.com` 密钥认证通过）。
+    不想改 `origin` 就用一次性 URL 重写：
 
-   ```powershell
-   git -c url.ssh://git@github.com/.insteadOf=https://github.com/ push origin main
-   git -c url.ssh://git@github.com/.insteadOf=https://github.com/ push origin v1.2.0
-   ```
+    ```powershell
+    git -c url.ssh://git@github.com/.insteadOf=https://github.com/ push origin main
+    git -c url.ssh://git@github.com/.insteadOf=https://github.com/ push origin v1.2.0
+    ```
 
-   想永久改：`git remote set-url origin git@github.com:NekoHome-Studio/neko-clicker.git`。
-   顺带一条判据：另外几个 GitHub IP（`140.82.112/113/114/116.3`、`20.205.243.166`）的 443
-   是通的——所以历史上"重试几次就成功"很可能是解析到了别的 IP，而不是同一 IP 时好时坏。
+    想永久改：`git remote set-url origin git@github.com:NekoHome-Studio/neko-clicker.git`。
+    顺带一条判据：另外几个 GitHub IP（`140.82.112/113/114/116.3`、`20.205.243.166`）的 443
+    是通的——所以历史上"重试几次就成功"很可能是解析到了别的 IP，而不是同一 IP 时好时坏。
 
 ---
 
 ## 8. 下一步的候选（按我的建议排序）
 
-1. **把端到端探针收成 `tools/api-test.ps1`，并加 CI** —— 前者现在躺在 `.tmp/` 里，
-   最容易被误删；后者让"435 条全绿"和"公开 API 只增不改"在远端有执法点。
-2. **铺完剩下的界面**：永久升级线、二周目、离线收益弹窗、通知未读游标。
-3. **补 `PackageId` / `IsPackable`** —— 给引擎留一条真正的分发路径（纯元数据，不动公开 API）。
-4. **给 `[未发布]` 收尾**：剧情外部化 + 并发修复都不动公开 API，发布时是 patch（1.2.1），
+1. **铺完剩下的界面**：永久升级线、二周目、离线收益弹窗、通知未读游标。
+2. **补 `PackageId` / `IsPackable`** —— 给引擎留一条真正的分发路径（纯元数据，不动公开 API）。
+3. **给 `[未发布]` 收尾**：剧情外部化 + 并发修复都不动公开 API，发布时是 patch（1.2.1），
    清单见 [VERSIONING](engine/docs/VERSIONING.md) §5。
