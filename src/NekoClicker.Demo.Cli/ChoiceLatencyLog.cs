@@ -7,8 +7,9 @@ namespace NekoClicker.Demo.Cli;
 /// <summary>
 /// 量「玩家从看到表态到作答」用了多久（<b>模拟</b>秒）。<para>
 /// <b>它是个测量埋点，不是玩法。</b>存在的理由：结局判定的作答宽限期
-/// （<see cref="EndingSystem.GraceSeconds"/>）该定多少秒，取决于真人需要多久，
-/// 而那个数引擎里量不到——机器人在毫秒内作答，量了也是 0。
+/// （<see cref="EndingSystem.DefaultGraceSeconds"/>，可由
+/// <see cref="GameEngineOptions.EndingGraceSeconds"/> 外部配置）该定多少秒，
+/// 取决于真人需要多久，而那个数引擎里量不到——机器人在毫秒内作答，量了也是 0。
 /// </para>
 /// <para>
 /// 记模拟秒而不是真实秒，是因为宽限期也用模拟秒：挂机造成的长尾必须被如实记下来，
@@ -57,14 +58,16 @@ internal sealed class ChoiceLatencyLog : IDisposable
     /// <summary>汇总成一行——这就是"宽限期该定多少秒"的输入。</summary>
     public string Summary()
     {
-        if (_samples.Count == 0) return "作答延迟：本次没有作答过表态，没有样本。";
+        // 生效值永远要报：宿主可能用 --grace 改过它，而"没有样本"并不意味着"参数没生效"。
+        string grace = $"宽限期当前 {NumFormat.Duration(EndingSystem.Grace(_engine))}";
+
+        if (_samples.Count == 0) return $"作答延迟：本次没有作答过表态，没有样本（{grace}）。";
 
         double max = _samples.Max(s => s.Seconds);
         double avg = _samples.Average(s => s.Seconds);
 
         return $"作答延迟：样本 {_samples.Count} 条，最长 {NumFormat.Duration(max)}"
-               + $"，平均 {NumFormat.Duration(avg)}"
-               + $"（宽限期当前 {NumFormat.Duration(EndingSystem.GraceSeconds)}）。";
+               + $"，平均 {NumFormat.Duration(avg)}（{grace}）。";
     }
 
     /// <inheritdoc />

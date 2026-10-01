@@ -27,6 +27,18 @@ public sealed class GameEngineOptions
 
     /// <summary>初始状态（测试可注入预设存档）。</summary>
     public GameState? InitialState { get; init; }
+
+    /// <summary>
+    /// 结局条件成立后留给玩家作答的宽限（<b>模拟</b>秒）。<see langword="null"/> 表示用
+    /// <see cref="EndingSystem.DefaultGraceSeconds"/>。<para>
+    /// <b>为什么是外部参数而不是常量</b>：这个数该定多少取决于"真人从看到表态到作答需要多久"，
+    /// 而那是个只能实测的量（示例宿主的 <c>ChoiceLatencyLog</c> 就是为它装的埋点，
+    /// 无头报告末尾那行「📏 作答延迟」即其读数）。把它写死在核心里的后果是：
+    /// 每次调参都要改代码、重编，再走一遍版本与快照流程——那会让"按数据调"变成不划算的事。
+    /// 传 <c>0</c> 即退回旧行为（条件一成立就落定）。
+    /// </para>
+    /// </summary>
+    public double? EndingGraceSeconds { get; init; }
 }
 
 /// <summary>
@@ -471,7 +483,7 @@ public sealed class GameEngine
     /// 想表达"走完主线"就在内容里写 <c>EraAtLeast(9)</c>。
     /// </para>
     /// <para>
-    /// 条件成立时若还有未作答的表态，落定会推迟 <see cref="EndingSystem.GraceSeconds"/>
+    /// 条件成立时若还有未作答的表态，落定会推迟 <see cref="GameEngineOptions.EndingGraceSeconds"/>
     /// 模拟秒（或直到玩家作答），给玩家留出反应时间；这是唯一会推迟落定的机制。
     /// </para>
     /// </summary>

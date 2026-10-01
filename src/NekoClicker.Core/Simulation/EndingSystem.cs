@@ -14,7 +14,8 @@ namespace NekoClicker.Core;
 /// 达成之后会一直成立）。
 /// </para>
 /// <para>
-/// <b>作答宽限</b>（<see cref="GraceSeconds"/>）：结局条件成立时若还有未作答的表态，
+/// <b>作答宽限</b>（<see cref="DefaultGraceSeconds"/>，可由
+/// <see cref="GameEngineOptions.EndingGraceSeconds"/> 外部配置）：结局条件成立时若还有未作答的表态，
 /// 判定会先等一等——因为"最后几次表态"往往就发生在结局条件成立前的几秒里，
 /// 而那时候玩家很可能还没反应过来。<b>这是唯一会让落定推迟的机制</b>，
 /// 它只会推迟、不会阻止：宽限期一到就照常落定（见 <see cref="Check"/>）。
@@ -23,11 +24,17 @@ namespace NekoClicker.Core;
 public static class EndingSystem
 {
     /// <summary>
-    /// 结局条件成立后、<b>落定之前</b>留给玩家作答的宽限（模拟秒）。<para>
+    /// 结局条件成立后、<b>落定之前</b>留给玩家作答的宽限的<b>默认值</b>（模拟秒）。<para>
     /// <b>为什么需要它</b>：《猫娘实验室》的末次表态门槛是 3.4e8，末层完成门槛是 1e9。
     /// 两者之间只隔几秒——终局判定一旦在这几秒里成立就永久锁死，于是"押了两次乌托邦、
     /// 第三次还在想"的玩家会拿到兜底结局，而他明明什么都没做错。这不是执行顺序问题
     /// （玩家的作答永远发生在触发它的那一拍之外），而是<b>缺一段等待</b>。
+    /// </para>
+    /// <para>
+    /// <b>这是一条实测出来的数，不是拍出来的</b>：窗口宽度实测在 0.40 秒到 11 分钟之间，
+    /// 而且同一个包能被一个恰好在场的增益压缩 100 倍——所以没有任何内容侧的改法能钉住
+    /// 一个安全的宽度，只能由引擎给一段固定的等待。30 秒的选择依据是"覆盖在场但在读题的
+    /// 玩家"，它<b>不</b>试图覆盖挂机的玩家（任何有限值都做不到）。
     /// </para>
     /// <para>
     /// <b>为什么用模拟秒</b>：这个框架的既有语义是"世界在你不看的时候也在前进"
@@ -35,8 +42,12 @@ public static class EndingSystem
     /// 而不是新学一条规则。代价是挂机跨过宽限期回来会发现结局已经自己落定了——
     /// 这正是想要的行为。
     /// </para>
+    /// <para>
+    /// 实际生效的值由 <see cref="GameEngineOptions.EndingGraceSeconds"/> 决定（外部可配，
+    /// 不必重编）；这里只是它的默认。传 <c>0</c> 即退回旧行为。
+    /// </para>
     /// </summary>
-    public const double GraceSeconds = 30.0;
+    public const double DefaultGraceSeconds = 30.0;
 
     /// <summary>
     /// "结局已就绪"的累计游玩秒数；<c>0</c> 表示尚未就绪。<para>
@@ -75,13 +86,14 @@ public static class EndingSystem
         }
 
         // 还有表态挂着没答 → 先等玩家。等满宽限期就当"放弃表态"处理，照常落定。
-        if (state.PendingChoices.Count > 0 && state.PlayTimeSeconds - readyAt < GraceSeconds)
+        double grace = Grace(engine);
+        if (state.PendingChoices.Count > 0 && state.PlayTimeSeconds - readyAt < grace)
         {
             if (justBecameReady)
             {
                 engine.Notify(
                     $"主线已经走完，但你还有 {state.PendingChoices.Count} 项表态没答。"
-                    + $"它们会决定你落到哪个结局——{NumFormat.Duration(GraceSeconds)}内还可以改。",
+                    + $"它们会决定你落到哪个结局——{NumFormat.Duration(grace)}内还可以改。",
                     NotificationKind.Warning,
                     "⏳");
             }
@@ -113,14 +125,32 @@ public static class EndingSystem
            && state.EndingsReached.Count == 0
            && state.GetCounter(ReadyAtCounterKey) > 0;
 
-    /// <summary>距宽限期结束还剩多少模拟秒；未就绪时为 <c>0</c>。</summary>
-    /// <param name="state">游戏状态。</param>
-    public static double GraceRemaining(GameState state)
+    /// <summary>
+    /// 本存档实际生效的宽限期（模拟秒）：取 <see cref="GameEngineOptions.EndingGraceSeconds"/>，
+    /// 未配置则用 <see cref="DefaultGraceSeconds"/>。<para>
+    /// 调用方需要它来画倒计时，所以是公开的；顺带也是"宿主到底把值设成了多少"的可查证据——
+    /// 少了它，一个被误设成 0 的宽限期在现象上与"根本没实现"完全一样。
+    /// </para>
+    /// </summary>
+    /// <param name="engine">宿主引擎。</param>
+    public static double Grace(GameEngine engine)
     {
-        double readyAt = state.GetCounter(ReadyAtCounterKey);
+        double? configured = engine.Options.EndingGraceSeconds;
+        if (configured is not { } value) return DefaultGraceSeconds;
+
+        // 负数与 NaN 都是配置错误。宁可按"没有宽限"处理，也不要让 NaN 的比较
+        // 悄悄把结局卡在永远不就绪的状态里（那会让存档再也走不到终局）。
+        return double.IsNaN(value) || value < 0 ? 0 : value;
+    }
+
+    /// <summary>距宽限期结束还剩多少模拟秒；未就绪时为 <c>0</c>。</summary>
+    /// <param name="engine">宿主引擎。</param>
+    public static double GraceRemaining(GameEngine engine)
+    {
+        double readyAt = engine.State.GetCounter(ReadyAtCounterKey);
         if (readyAt <= 0) return 0;
 
-        return Math.Max(0, GraceSeconds - (state.PlayTimeSeconds - readyAt));
+        return Math.Max(0, Grace(engine) - (engine.State.PlayTimeSeconds - readyAt));
     }
 
     /// <summary>是否有任何一个结局的条件已经成立。</summary>

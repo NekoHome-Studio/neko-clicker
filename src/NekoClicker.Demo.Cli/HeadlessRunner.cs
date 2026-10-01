@@ -19,7 +19,7 @@ internal static class HeadlessRunner
     /// <summary>运行模拟并打印报告。</summary>
     public static int RunSimulation(CliOptions options)
     {
-        using var session = new GameSession(options.Package, options.SavePath, options.Seed);
+        using var session = new GameSession(options.Package, options.SavePath, options.Seed, options.EndingGraceSeconds);
         GameEngine engine = session.Engine;
 
         Console.WriteLine($"内容包：{engine.Content.Title}（--package {options.Package.Id}）");
@@ -42,7 +42,7 @@ internal static class HeadlessRunner
     /// <summary>渲染一帧界面并打印（用于验证布局，可重定向到文件）。</summary>
     public static int RunFrame(CliOptions options)
     {
-        using var session = new GameSession(options.Package, options.SavePath, options.Seed);
+        using var session = new GameSession(options.Package, options.SavePath, options.Seed, options.EndingGraceSeconds);
 
         if (options.AutoPlay && options.SimulateSeconds > 0)
             Advance(session.Engine, options.SimulateSeconds, autoPlay: true, options.SimulateSeconds, options.Package);

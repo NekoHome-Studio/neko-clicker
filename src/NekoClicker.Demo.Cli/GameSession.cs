@@ -60,7 +60,8 @@ internal sealed class GameSession : IDisposable
     /// <param name="package">要玩的内容包（决定构建哪份 <c>GameContent</c>）。</param>
     /// <param name="savePath">存档路径；<c>null</c> 表示不落盘。</param>
     /// <param name="seed">随机种子。</param>
-    public GameSession(ContentPackage package, string? savePath, ulong seed)
+    /// <param name="endingGraceSeconds">终局作答宽限期（模拟秒）；<c>null</c> 表示用框架默认值。</param>
+    public GameSession(ContentPackage package, string? savePath, ulong seed, double? endingGraceSeconds = null)
     {
         Package = package;
 
@@ -70,6 +71,7 @@ internal sealed class GameSession : IDisposable
             Seed = seed,
             GrantOfflineProgress = true,
             MaxNotifications = 64,
+            EndingGraceSeconds = endingGraceSeconds,
         });
 
         _notificationSubscription = Engine.Events.Subscribe<NotificationEvent>(OnNotification);

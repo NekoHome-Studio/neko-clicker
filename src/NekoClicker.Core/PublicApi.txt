@@ -762,11 +762,12 @@ public enum NekoClicker.Core.Content.UpgradePersistence : System.Int32
   field Run = Run
 
 public static class NekoClicker.Core.EndingSystem
-  field const System.Double GraceSeconds = 30
+  field const System.Double DefaultGraceSeconds = 30
   method static NekoClicker.Core.Content.EndingDefinition? Check(NekoClicker.Core.GameEngine! engine)
   method static NekoClicker.Core.Content.EndingDefinition? Reached(NekoClicker.Core.Content.GameContent! content, NekoClicker.Core.GameState! state)
   method static System.Boolean IsReady(NekoClicker.Core.Content.GameContent! content, NekoClicker.Core.GameState! state)
-  method static System.Double GraceRemaining(NekoClicker.Core.GameState! state)
+  method static System.Double Grace(NekoClicker.Core.GameEngine! engine)
+  method static System.Double GraceRemaining(NekoClicker.Core.GameEngine! engine)
   method static System.String! CounterKey(System.String! endingId)
 
 public sealed class NekoClicker.Core.EraRecord
@@ -1139,6 +1140,7 @@ public sealed class NekoClicker.Core.GameEngineOptions
   prop System.Boolean AutoCheckAchievements { get; init; }
   prop System.Boolean GrantOfflineProgress { get; init; }
   prop System.Int32 MaxNotifications { get; init; }
+  prop System.Nullable<System.Double> EndingGraceSeconds { get; init; }
   prop System.UInt64 Seed { get; init; }
 
 public sealed class NekoClicker.Core.GameNotification : System.IEquatable<NekoClicker.Core.GameNotification>

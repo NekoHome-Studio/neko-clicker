@@ -21,7 +21,7 @@
 ### 破坏性变更
 
 - **结局落定会先等一段宽限期**。结局条件成立时若还有未作答的表态，判定推迟
-  `EndingSystem.GraceSeconds`（30 **模拟**秒，或直到玩家作答），期满即照常落定。
+  `GameEngineOptions.EndingGraceSeconds`（默认 30 **模拟**秒，或直到玩家作答），期满即照常落定。
   - 受影响的宿主：把 `CheckEnding()` 的返回值当作"条件成立的同义词"的代码。
     判定结果本身不变（仍是按 `Priority` 取第一个条件成立者），只是**可能晚 30 模拟秒出现**；
     在此期间 `CheckEnding()` 返回 `null`。宽限是**推迟而非阻止**，末层收尾不会悬空。
@@ -32,9 +32,22 @@
 
 ### 新增
 
-- **`EndingSystem.GraceSeconds`**：宽限期长度（模拟秒）。
+- **`GameEngineOptions.EndingGraceSeconds`**：宽限期（模拟秒），**外部可配置**。
+  传 `null` 用默认值，传 `0` 退回旧行为（条件一成立就落定）。
+  - **为什么做成参数而不是常量**：这个数该定多少取决于"真人从看到表态到作答需要多久"，
+    而那只能实测；写死在核心里就意味着每次按数据调参都要改代码 + 重编 + 走一遍版本与
+    快照流程，于是参数会永远停在初始那个数上。
+  - 非法值（负数 / NaN）按"没有宽限"处理。NaN 尤其要防：它的比较永远为假，
+    会让结局永远落不到定、存档再也走不到终局。
+- **`EndingSystem.DefaultGraceSeconds`**：默认值（30 秒）。实际生效值见 `Grace(engine)`。
 - **`EndingSystem.IsReady(content, state)`**：是否已有结局条件成立但还没落定，宿主据此提示玩家。
-- **`EndingSystem.GraceRemaining(state)`**：距宽限期结束还剩多少模拟秒，用于倒计时。
+- **`EndingSystem.Grace(engine)`**：本存档实际生效的宽限期长度。
+- **`EndingSystem.GraceRemaining(engine)`**：距宽限期结束还剩多少模拟秒，用于倒计时。
+  两者报的都是**生效值**而非默认值——宿主可能改过它，读默认值会让人拿一个
+  跟实际行为无关的数去下结论。
+
+> 本版本尚未发布，所以上面这些成员与 `GraceRemaining` 的签名改动都并入同一个 2.0.0，
+> 不另起版本号。
 
 ### 修复
 

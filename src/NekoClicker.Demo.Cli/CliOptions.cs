@@ -47,6 +47,14 @@ internal sealed class CliOptions
     /// <summary>随机种子；0 表示按时间随机。</summary>
     public ulong Seed { get; private set; }
 
+    /// <summary>
+    /// 终局作答宽限期（模拟秒）；<c>null</c> 表示用框架默认值。<para>
+    /// 做成命令行参数的理由：这个数该定多少只能靠真人的作答延迟实测，而调参不该需要重编。
+    /// 传 <c>0</c> 可以复现"条件一成立就落定"的旧行为，用来对照。
+    /// </para>
+    /// </summary>
+    public double? EndingGraceSeconds { get; private set; }
+
     /// <summary>要玩的内容包（默认 <c>neko</c>）。</summary>
     public ContentPackage Package { get; private set; } = ContentPackages.Default;
 
@@ -101,6 +109,18 @@ internal sealed class CliOptions
                 case "--seed":
                     if (i + 1 < args.Length && ulong.TryParse(args[i + 1], out ulong seed)) { options.Seed = seed; i++; }
                     else options.Error = "--seed 需要一个非负整数。";
+                    break;
+
+                case "--grace":
+                    if (i + 1 < args.Length
+                        && double.TryParse(args[i + 1], out double grace)
+                        && !double.IsNaN(grace)
+                        && grace >= 0)
+                    {
+                        options.EndingGraceSeconds = grace;
+                        i++;
+                    }
+                    else options.Error = "--grace 需要一个非负秒数（0 表示退回旧行为：条件一成立就落定）。";
                     break;
 
                 case "--package" or "-p":
@@ -207,6 +227,7 @@ internal sealed class CliOptions
           --simulate <秒>     无头模拟指定时长后打印报告（默认 3600 秒）
           --auto              模拟时启用自动购买策略（否则纯挂机）
           --seed <整数>       固定随机种子（同一存档的随机序列可复现）
+          --grace <秒>        终局作答宽限期（模拟秒；默认用框架值，0 = 旧行为：一成立就落定）
           --save <路径>       存档文件（默认按内容包分开：saves/<包 id>.json）
           --no-save           本次运行不读写存档
           --frame [宽x高]     渲染一帧界面到标准输出后退出（默认 100x30）

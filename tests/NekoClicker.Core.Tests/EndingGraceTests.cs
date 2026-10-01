@@ -3,7 +3,8 @@ using NekoClicker.Core.Content;
 namespace NekoClicker.Core.Tests;
 
 /// <summary>
-/// 终局判定的"作答宽限"（<see cref="EndingSystem.GraceSeconds"/>）。<para>
+/// 终局判定的"作答宽限"（<see cref="EndingSystem.DefaultGraceSeconds"/>，可由
+/// <see cref="GameEngineOptions.EndingGraceSeconds"/> 外部配置）。<para>
 /// <b>它修的是什么</b>：《猫娘实验室》的末次表态门槛（3.4e8）与末层完成门槛（1e9）
 /// 之间只隔几秒。终局判定一旦在那几秒里成立就永久锁死，于是"押了两次乌托邦、
 /// 第三次还在读题"的玩家会拿到兜底结局——他什么都没做错，只是手没那么快。
@@ -65,13 +66,13 @@ public static class EndingGraceTests
         engine.Simulate(2);
 
         Check.Null(engine.ReachedEnding, "宽限期内不该落定。");
-        Check.AtLeast(EndingSystem.GraceRemaining(engine.State), 1, "刚就绪时应当还剩几乎整个宽限期。");
+        Check.AtLeast(EndingSystem.GraceRemaining(engine), 1, "刚就绪时应当还剩几乎整个宽限期。");
 
         // 一直不答，只让时间走。宽限期一过就必须落定。
-        engine.Simulate(EndingSystem.GraceSeconds + 1);
+        engine.Simulate(EndingSystem.Grace(engine) + 1);
 
         Check.Equal("e", engine.ReachedEnding?.Id, "宽限期一到就得落定，不能因为没人答就永远悬着。");
-        Check.Close(0, EndingSystem.GraceRemaining(engine.State), 0.001, "落定之后宽限不该还剩时间。");
+        Check.Close(0, EndingSystem.GraceRemaining(engine), 0.001, "落定之后宽限不该还剩时间。");
     }
 
     /// <summary>
@@ -89,7 +90,7 @@ public static class EndingGraceTests
         engine.Simulate(2);
         Check.True(EndingSystem.IsReady(engine.Content, engine.State), "应当处于就绪状态。");
 
-        double remainingBefore = EndingSystem.GraceRemaining(engine.State);
+        double remainingBefore = EndingSystem.GraceRemaining(engine);
         string save = engine.Save();
 
         // 换个引擎读档：就绪状态与剩余宽限都必须跟着存档走。
@@ -99,9 +100,57 @@ public static class EndingGraceTests
         Check.True(EndingSystem.IsReady(reloaded.Content, reloaded.State), "读档后应当仍然是就绪状态。");
         Check.Close(
             remainingBefore,
-            EndingSystem.GraceRemaining(reloaded.State),
+            EndingSystem.GraceRemaining(reloaded),
             1e-6,
             "读档不该重置宽限期——否则反复存读就能无限续期。");
+    }
+
+    /// <summary>
+    /// 宽限期是<b>外部参数</b>，不是写死的常量。<para>
+    /// 它该定多少取决于"真人从看到表态到作答需要多久"，而那只能实测；写死在核心里
+    /// 就意味着每次按数据调参都要改代码 + 重编 + 走一遍版本与快照流程——那会让
+    /// "按数据调"变成不划算的事，于是参数就永远停在初始那个拍出来的数上。
+    /// </para>
+    /// <para>
+    /// 这条用例钉住三个边界：设 0 等于退回旧行为、设更大就真的等更久、
+    /// 非法值（负数 / NaN）按"没有宽限"处理而不是让结局卡死。
+    /// </para>
+    /// </summary>
+    [Test]
+    public static void GraceIsConfigurableFromOutsideAndHandlesBadValues()
+    {
+        // 设 0 → 条件一成立就落定，这就是修之前的行为。
+        GameEngine none = PlayToLastEra(choiceMilestone: 1e6, graceSeconds: 0);
+        Check.Equal(0, EndingSystem.Grace(none), "显式传 0 应当生效。");
+
+        none.State.CookiesEarnedThisRun = 1e6;
+        none.Simulate(2);
+
+        Check.Equal("e", none.ReachedEnding?.Id, "宽限设为 0 时应当立刻落定（旧行为）。");
+        Check.False(EndingSystem.IsReady(none.Content, none.State), "立刻落定之后不该停在就绪状态。");
+
+        // 设 120 秒 → 走过默认的 30 秒还得继续等。
+        GameEngine longer = PlayToLastEra(choiceMilestone: 1e6, graceSeconds: 120);
+        longer.State.CookiesEarnedThisRun = 1e6;
+        longer.Simulate(2);
+
+        Check.Null(longer.ReachedEnding, "宽限期内不该落定。");
+        longer.Simulate(EndingSystem.DefaultGraceSeconds + 5);
+        Check.Null(longer.ReachedEnding, "把宽限设成 120 秒之后，走过默认的 30 秒不该就落定。");
+
+        longer.Simulate(100);
+        Check.Equal("e", longer.ReachedEnding?.Id, "过了 120 秒就该落定。");
+
+        // 非法值：按"没有宽限"处理。NaN 尤其危险——比较永远为假会让结局永不落定。
+        foreach (double bad in new[] { -1.0, double.NaN })
+        {
+            GameEngine engine = PlayToLastEra(choiceMilestone: 1e6, graceSeconds: bad);
+            Check.Equal(0, EndingSystem.Grace(engine), $"非法值 {bad} 应当按没有宽限处理。");
+
+            engine.State.CookiesEarnedThisRun = 1e6;
+            engine.Simulate(2);
+            Check.Equal("e", engine.ReachedEnding?.Id, $"非法值 {bad} 不该让结局永远落不了定。");
+        }
     }
 
     /// <summary>
@@ -138,9 +187,9 @@ public static class EndingGraceTests
     /// </para>
     /// </summary>
     /// <param name="choiceMilestone">末层表态的层内门槛。</param>
-    private static GameEngine PlayToLastEra(double choiceMilestone)
+    private static GameEngine PlayToLastEra(double choiceMilestone, double? graceSeconds = null)
     {
-        GameEngine engine = Create(BuildContent(choiceMilestone));
+        GameEngine engine = Create(BuildContent(choiceMilestone), graceSeconds);
 
         // 第 1 层完成条件是 Always，所以一开始就能舍命——用引擎自己的入口进末层，
         // 而不是直接改 State.Era（那会绕过 EraSystem 该做的记账）。
@@ -190,11 +239,12 @@ public static class EndingGraceTests
             })
             .Build();
 
-    private static GameEngine Create(GameContent content) => new(content, new GameEngineOptions
+    private static GameEngine Create(GameContent content, double? graceSeconds = null) => new(content, new GameEngineOptions
     {
         Clock = new ManualClock(),
         Seed = 11,
         GrantOfflineProgress = false,
+        EndingGraceSeconds = graceSeconds,
     });
 
     private static ChoiceOption Option(string id, string stance = "", int weight = 0) => new()

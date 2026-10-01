@@ -6,7 +6,8 @@
 > 而且这条规矩不是靠自觉——有测试守着。
 >
 > 当前版本 **2.0.0**：语义层面的破坏性变更只有一处——结局条件成立后会给玩家一段作答宽限期
-> （`EndingSystem.GraceSeconds`），期间 `CheckEnding()` 返回 `null`。详见 [CHANGELOG](../CHANGELOG.md)。
+> （`GameEngineOptions.EndingGraceSeconds`，默认 30 模拟秒），期间 `CheckEnding()` 返回 `null`。
+> 详见 [CHANGELOG](../CHANGELOG.md)。
 
 ---
 
@@ -153,7 +154,7 @@ git tag -a v1.0.0 -m "NekoClicker.Core 1.0.0"
 ## 5. 发布检查清单
 
 - [ ] `pwsh -File tools/build.ps1 -Strict` 退出码 0，0 警告
-- [ ] 全部用例通过（当前 **410** 个）
+- [ ] 全部用例通过（当前 **411** 个）
 - [ ] `Directory.Build.props` 的 `Version` / `AssemblyVersion` / `FileVersion` 三处一致
 - [ ] `CHANGELOG.md` 有当前版本的带日期条目，写清了兼容性影响
 - [ ] 若公开 API 有变动：快照已更新，且**确实**是有意为之

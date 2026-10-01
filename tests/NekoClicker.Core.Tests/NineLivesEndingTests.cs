@@ -82,7 +82,7 @@ public static class NineLivesEndingTests
         Check.True(EndingSystem.IsReady(engine.Content, engine.State), "兜底结局的条件已经成立。");
 
         // 一直不答 → 宽限期一到，兜底结局照常到达（宽限是推迟，不是阻止）。
-        engine.Simulate(EndingSystem.GraceSeconds + 1);
+        engine.Simulate(EndingSystem.Grace(engine) + 1);
 
         Check.Equal("end_blank", engine.ReachedEnding?.Id, "一次都不表态也必须有一个收场。");
     }
