@@ -507,6 +507,28 @@ Web 宿主也有了一份（`games/hosts/Web/ChoiceLatencyLog.cs`），每一条
   （`BuildPendingChoices` 会跳过），所以界面上看不到任何异常——这是**已知的表现**，
   不是遗漏。
 
+### L. ⚠️ **未决（需要你定）**：`Icon` 要不要跟着外置
+
+建筑文本外置（`1f08b34`）**刻意只搬了 `name` 与 `description`**，`Icon` 留在代码里；
+而**剧情那边连 icon 一起外置了**——`CONTENT_AUTHORING.md` §12.0 里就有
+`Icon = Prose.Text("storylines", id, "icon")`。**两者不一致**：
+
+- **搬出去**：建筑的 `Icon` 也进 `text.json` 的 `buildings` 节 ⇒ 分类一致，改图标不用重编。
+- **搬回来**：把 `storylines` 的 icon 也收回代码 ⇒ 承认"符号属于代码"这条划法。
+
+**在决定之前，新写建筑就照现状**（`Icon` 留在代码里），别照着剧情那边抄出一半。
+已同时记在 `CONTENT_AUTHORING.md` §12.0.1 与 `games/docs/SETTING.md` 第五节。
+
+### M. 用例数漂移（6 处）仍未修
+
+`README.md`（2 处）、`STATUS.md`（3 处）、`RELEASING.md`（1 处）写着 `441 / 439`，实际 **469**。
+**目标值已见 §0.3 第 5 条**（那个 agent 已把它更新为 469）。
+⚠️ **批量替换数字不安全**——我曾试过并被自己设的"命中数与预期不符就不动"保险拦下
+（同样的数字在这些文件里还有别的出处）。请**带上下文逐处改**。
+**两条历史 CI 记录（`STATUS.md:222`、`RELEASING.md:120`）不要动**：那是历史。
+
+
+
 ## 4. 建议顺序
 
 ```
