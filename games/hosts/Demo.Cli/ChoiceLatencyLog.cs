@@ -6,13 +6,19 @@ namespace NekoClicker.Demo.Cli;
 
 /// <summary>
 /// 量「玩家从看到表态到作答」用了多久（<b>模拟</b>秒）。<para>
-/// <b>它是个测量埋点，不是玩法。</b>存在的理由：结局判定的作答宽限期
+/// <b>它是个测量埋点，不是玩法。</b>当年它存在的理由是：结局判定的作答宽限期
 /// （<see cref="EndingSystem.DefaultGraceSeconds"/>，可由
 /// <see cref="GameEngineOptions.EndingGraceSeconds"/> 外部配置）该定多少秒，
 /// 取决于真人需要多久，而那个数引擎里量不到——机器人在毫秒内作答，量了也是 0。
 /// </para>
 /// <para>
-/// 记模拟秒而不是真实秒，是因为宽限期也用模拟秒：挂机造成的长尾必须被如实记下来，
+/// <b>那个参数在 1.5.0 退役了</b>（落定条件改成了"玩家被展示过待答表态"，
+/// 见 <see cref="GameEngine.MarkPendingChoicesShown"/>），所以这份数据不再是"某个待调参数的输入"，
+/// 而是"真人从看到表态到作答要多久"这个事实本身。埋点照做：**这个数只有这一个来源**。
+/// 汇总里仍然报出那个参数的值——它已不参与判定，但样本行里的值要能对上当年设置的是什么。
+/// </para>
+/// <para>
+/// 记模拟秒而不是真实秒，是因为它换掉的那条宽限也用模拟秒：挂机造成的长尾必须被如实记下来，
 /// 而不是被"当时没开窗口"折算掉。
 /// </para>
 /// <para>
@@ -55,11 +61,15 @@ internal sealed class ChoiceLatencyLog : IDisposable
         Answered?.Invoke(evt.ChoiceId, latency);
     }
 
-    /// <summary>汇总成一行——这就是"宽限期该定多少秒"的输入。</summary>
+    /// <summary>
+    /// 汇总成一行——"真人从看到表态到作答要多久"就是这个问题的输入。<para>
+    /// 顺带报出那个已退役的宽限期参数：它 1.5.0 起不参与判定，但"当时设的是多少"仍然要能被对上。
+    /// </para>
+    /// </summary>
     public string Summary()
     {
         // 生效值永远要报：宿主可能用 --grace 改过它，而"没有样本"并不意味着"参数没生效"。
-        string grace = $"宽限期当前 {NumFormat.Duration(EndingSystem.Grace(_engine))}";
+        string grace = $"宽限期参数 {NumFormat.Duration(EndingSystem.Grace(_engine))}（1.5.0 起已退役，判定不再使用）";
 
         if (_samples.Count == 0) return $"作答延迟：本次没有作答过表态，没有样本（{grace}）。";
 

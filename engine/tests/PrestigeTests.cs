@@ -37,8 +37,9 @@ public static class PrestigeTests
         {
             double deadlineSeconds = deadlineHours * 3600;
 
-            // 后期用 0.25 秒细步：末层表态门槛与完成门槛之间只隔几秒，30 秒一步会跨过去，
-            // 机器人"来不及答"最后一次表态，结局就永远不来——那样测的是步长，不是内容。
+            // 后期用 0.25 秒细步：末层表态门槛与完成门槛之间只隔几秒，细步长让那个形状真的出现。
+            // （1.5.0 之前这里是"机器人来不及答最后一次表态"，靠 30 模拟秒的定时宽限兜住；
+            //   现在由"没被展示过就不落定"兜住，所以下面那行报告才是关键。）
             while (engine.ReachedEnding is null && engine.State.PlayTimeSeconds < deadlineSeconds)
             {
                 for (int i = 0; i < 8; i++) engine.Click();
@@ -46,6 +47,10 @@ public static class PrestigeTests
 
                 for (int i = engine.State.GoldenCookies.Count - 1; i >= 0; i--)
                     engine.ClickGoldenCookie(engine.State.GoldenCookies[i].InstanceId);
+
+                // 宿主把待答表态画出来了（1.5.0 起结局能否落定的唯一条件）。
+                // 这个机器人从不应答表态，所以那三个有表态的包完全靠这一行才可能走到结局。
+                engine.MarkPendingChoicesShown();
 
                 if (engine.EraGate.CanAdvance) engine.Ascend();
                 engine.Simulate(engine.State.Era >= 5 ? 0.25 : 30);

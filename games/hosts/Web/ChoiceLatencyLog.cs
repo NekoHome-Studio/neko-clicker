@@ -10,7 +10,7 @@ namespace NekoClicker.Web;
 /// <summary>
 /// 一条量到的作答延迟。<para>
 /// <see cref="SimulatedSeconds"/> 与 <see cref="WallSeconds"/> <b>两个都记</b>：
-/// 宽限期是模拟秒，所以定宽限期要用的是前者；而后者是这次等待真实的墙钟长度。
+/// 它换掉的那条宽限是模拟秒，所以两者对照要用的是前者；而后者是这次等待真实的墙钟长度。
 /// 两者不一致说明模拟与真实脱了节（长挂机、时钟被改、宿主被挂起），
 /// 那种情况下把两个数合并成一个就是在掩盖事实。
 /// </para>
@@ -64,17 +64,21 @@ internal static class LatencyLogFormat
     public const string Header = """
 # neko-clicker 作答延迟埋点（Web 宿主）—— 只追加，不重写。
 #
-# 为什么要它：结局落定前留给玩家作答的宽限期（GameEngineOptions.EndingGraceSeconds，
-# 默认 30 模拟秒）是全项目唯一一个没有人类数据支撑的玩法参数。缺的不是"玩家过去有多少窗口"
-# （那个量过：0.40 秒 ~ 11 分钟），而是"玩家需要多久"——机器人在毫秒内作答，引擎里量不到。
+# 为什么要它：这里记的是"真人从看到一次表态到作答，用了多久"。它最初是为一个玩法参数
+# 服务的——结局落定前留给玩家作答的宽限期（GameEngineOptions.EndingGraceSeconds，
+# 默认 30 模拟秒）——而那个参数缺的正是"玩家需要多久"这个数（机器人在毫秒内作答，
+# 引擎里量不到）。**1.5.0 起那个参数已退役**：落定条件改成了"玩家被展示过待答表态"
+# （GameEngine.MarkPendingChoicesShown），不再按时间兜底。所以这份文件现在的用途是
+# "真人从看到到作答有多久"这个事实本身，而不是某个待调参数的输入。
+# 样本行里仍然带着当时的宽限期参数值：它已不参与判定，但设置过什么要能对上。
 # 所以这个文件里只会有真人的数据行。
 #
-# 为什么记模拟秒：宽限期本身也是模拟秒。挂机造成的长尾必须被如实记下来，
+# 为什么记模拟秒：它换掉的那条宽限也用模拟秒。挂机造成的长尾必须被如实记下来，
 # 而不是被"当时窗口没开着"折算掉。真实秒另占一列：两者不一致就是模拟与真实脱节，
 # 不许悄悄折算成一个数。
 #
 # 行格式（制表符分隔，数字一律用不变文化的小数点，可直接解析）：
-#   S <utc> <包id> <表态id> <选项id> <模拟秒> <真实秒> <当时生效的宽限期秒> <本次会话第几条样本>
+#   S <utc> <包id> <表态id> <选项id> <模拟秒> <真实秒> <当时的宽限期参数秒> <本次会话第几条样本>
 #   U <utc> <包id> <表态id> <选项id> <不可量的原因>
 #   # ...  自述行（会话开始 / 会话结束汇总 / 写盘出错）
 """;
@@ -111,7 +115,7 @@ internal static class LatencyLogFormat
         DateTimeOffset at)
         => string.Join(Separator, UnmeasuredTag, Timestamp(at), packageId, choiceId, optionId, reason);
 
-    /// <summary>会话开始的自述行（含当时生效的宽限期，便于日后核对参数到底是多少）。</summary>
+    /// <summary>会话开始的自述行（含当时的宽限期参数，便于日后核对设过什么——该参数 1.5.0 起已退役）。</summary>
     public static string SessionStartLine(string packageId, double graceSeconds, DateTimeOffset at)
         => $"# session start {Timestamp(at)} package={packageId} grace={Number(graceSeconds)}";
 
@@ -243,10 +247,13 @@ internal sealed class LatencyLogFile
 
 /// <summary>
 /// 量「玩家从看到表态到作答」用了多久（<b>模拟</b>秒）——Web 宿主版。<para>
-/// <b>它是个测量埋点，不是玩法。</b>存在的理由：结局判定的作答宽限期
+/// <b>它是个测量埋点，不是玩法。</b>当年它存在的理由是：结局判定的作答宽限期
 /// （<see cref="EndingSystem.DefaultGraceSeconds"/>，可由
 /// <see cref="GameEngineOptions.EndingGraceSeconds"/> 外部配置）该定多少秒，取决于真人需要多久，
 /// 而那个数引擎里量不到——机器人在毫秒内作答，量了也是 0。
+/// <b>那个参数在 1.5.0 退役了</b>（落定条件改成了"玩家被展示过待答表态"，见
+/// <see cref="GameEngine.MarkPendingChoicesShown"/>），于是这份数据现在是
+/// "真人从看到到作答有多久"这个事实本身，而不再是某个待调参数的输入。
 /// </para>
 /// <para>
 /// 与终端宿主的 <c>Demo.Cli/ChoiceLatencyLog</c> 是<b>同构但不同程序集</b>的两份：Web 宿主
@@ -376,13 +383,15 @@ internal sealed class ChoiceLatencyLog : IDisposable
     private static double WallSeconds() => Stopwatch.GetTimestamp() / (double)Stopwatch.Frequency;
 
     /// <summary>
-    /// 汇总成一句话——这就是"宽限期该定多少秒"的输入。
+    /// 汇总成一句话——"真人从看到表态到作答要多久"就是这个问题的输入。<para>
+    /// 顺带报出那个已退役的宽限期参数：它 1.5.0 起不参与判定，但"当时设的是多少"仍然要能被对上。
+    /// </para>
     /// <b>只能在游戏线程停下之后调用</b>（见类注释的线程约定）。
     /// </summary>
     public string Summary()
     {
         // 生效值永远要报：宿主可能改过它，而"没有样本"并不意味着"参数没生效"。
-        string grace = $"宽限期当前 {NumFormat.Duration(EndingSystem.Grace(_engine))}";
+        string grace = $"宽限期参数 {NumFormat.Duration(EndingSystem.Grace(_engine))}（1.5.0 起已退役，判定不再使用）";
         string unmeasured = _unmeasuredAnswers.Count == 0
             ? string.Empty
             : $"，另有 {_unmeasuredAnswers.Count} 条量不出（会话开始前就挂着的表态）";

@@ -5,15 +5,21 @@
 > 一句话版本：**从 1.0.0 起，公开 API 只增不改。** 删改任何公开成员都必须升主版本号，
 > 而且这条规矩不是靠自觉——有测试守着。
 >
-> 当前版本 **1.4.0**：minor——公开 API **只增不改**（`UpgradeView` 新增
+> 当前版本 **1.5.0**：minor——公开 API **只增不改**（新增 `GameEngine.MarkPendingChoicesShown()`，
+> 也就是"玩家已经看过那批待答表态"这个信号）。但它**同时是一处刻意的语义不兼容**：
+> 结局的落定条件从"最多等 30 模拟秒"换成了"玩家被展示过待答表态"，
+> 于是"不会永远悬着"这条性质被**有意移除**（没看到表态面板的玩家永远拿不到结局）。
+> 按下面 §2 那张表，改语义本该是 major；这次按 1.1.0 的先例走 minor，例外同样记录在案。
+> 上一版 **1.4.0** 也是 minor（`UpgradeView` 新增
 > `UsesPrestigeCurrency` / `CurrencyName` / `CurrencyIcon`，也就是"这一行花哪种货币"）。
-> 上一版 **1.3.0** 也是 minor（新增 `GameSnapshot.Offline`、`OfflineView`、
+> **1.3.0** 也是 minor（新增 `GameSnapshot.Offline`、`OfflineView`、
 > `GameEngine.PendingOfflineProgress` 与 `DismissOfflineProgress()`，离线收益第一次能走到界面上）；
 > **1.2.1** 是 patch（421 条剧情散文搬出 dll，外加 `ContentText` 的一个并发修复），
 > **1.2.0** 只新增了 `ContentText`（剧情散文的外部化载体），没有不兼容改动。
-> 以上几版都没有改变任何既有成员的行为。语义层面的破坏性变更至今只有一处——
+> 语义层面的破坏性变更至今有**两处，都是同一件事的两次决定**——
 > 1.1.0 让结局条件成立后先等一段作答宽限期（`GameEngineOptions.EndingGraceSeconds`，
-> 默认 30 模拟秒），期间 `CheckEnding()` 返回 `null`。详见 [CHANGELOG](../../CHANGELOG.md)。
+> 默认 30 模拟秒），期间 `CheckEnding()` 返回 `null`；1.5.0 把那段宽限换成条件。
+> 详见 [CHANGELOG](../../CHANGELOG.md)。
 
 ---
 
@@ -26,9 +32,9 @@
 单一事实来源是 **`Directory.Build.props` 里的 `<Version>`**：
 
 ```xml
-<Version>1.4.0</Version>
-<AssemblyVersion>1.4.0.0</AssemblyVersion>
-<FileVersion>1.4.0.0</FileVersion>
+<Version>1.5.0</Version>
+<AssemblyVersion>1.5.0.0</AssemblyVersion>
+<FileVersion>1.5.0.0</FileVersion>
 ```
 
 这个值会同时成为程序集版本、文件版本，以及 `ApiVersion.Current` 报告的版本。
@@ -44,8 +50,8 @@
 ```csharp
 using NekoClicker.Core;
 
-Console.WriteLine(ApiVersion.Current);        // "1.4.0"
-Console.WriteLine(ApiVersion.AssemblyVersion); // 1.4.0.0
+Console.WriteLine(ApiVersion.Current);        // "1.5.0"
+Console.WriteLine(ApiVersion.AssemblyVersion); // 1.5.0.0
 Console.WriteLine(ApiVersion.Major);           // 1
 ```
 
@@ -64,14 +70,18 @@ Console.WriteLine(ApiVersion.Major);           // 1
 "公开 API" = `NekoClicker.Core.dll` 里所有 `public` / `protected` 类型与成员。
 **internal 成员随便改**，没人看得见。
 
-### 已知的一次例外：1.1.0
+### 已知的两次例外：1.1.0 与 1.5.0
 
 **1.1.0 改了行为语义，却按 minor 发布。** 它让 `CheckEnding()` 在结局条件成立后先等一段
 宽限期（默认 30 模拟秒），期间返回 `null`——按上表属于"改变已有成员的语义"，本该 major。
+**1.5.0 是同一个位置的第二次改动**：它把那段定时宽限换成条件（玩家**被展示过**那批待答表态
+之后才允许落定，`GameEngine.MarkPendingChoicesShown()`），同样按 minor 发布。
+这次连"不会永远悬着"这条性质也一起**刻意移除**了：没看到表态面板的玩家永远拿不到结局。
 
-这是**有意**的判断：判定结果不变（仍是按 `Priority` 取第一个条件成立者），
-受影响的只是结果出现的时刻，而且延迟上限可控。写在这里**不是给它开先例，而是相反**——
-例外要被记录；否则下次就分不清"决定"和"疏忽"，而一旦分不清，这张表就退化成橡皮图章。
+这两次都是**有意**的判断：判定结果不变（仍是按 `Priority` 取第一个条件成立者），
+受影响的只是结果出现的时刻（1.1.0 是"推迟一段固定时间"，1.5.0 是"推迟到玩家看过"）。
+写在这里**不是给它开先例，而是相反**——例外要被记录；否则下次就分不清"决定"和"疏忽"，
+而一旦分不清，这张表就退化成橡皮图章。
 理由与影响面同时记在 [CHANGELOG](../../CHANGELOG.md)。
 
 ### 容易漏掉的两类"不兼容"
@@ -96,7 +106,7 @@ Console.WriteLine(ApiVersion.Major);           // 1
 光有规矩没有守卫，规矩会在第一次赶工时失效。所以有一份**快照**：
 
 ```
-engine/core/PublicApi.txt     ← 1930 行，公开表面的逐项清单
+engine/core/PublicApi.txt     ← 1931 行，公开表面的逐项清单
 ```
 
 它被**嵌进 `NekoClicker.Core.dll`**，随 dll 一起走。任何拿到这个 dll 的宿主都能断言
@@ -173,8 +183,8 @@ git tag -a v1.0.0 -m "NekoClicker.Core 1.0.0"
 > [RELEASING](RELEASING.md)。下面是判据清单。
 
 - [ ] `pwsh -File tools/build.ps1 -Strict` 退出码 0，0 警告
-- [ ] 全部用例通过（当前 **455** 个）
-- [ ] 若这次动了 Web 宿主：`pwsh -File tools/api-test.ps1` 全部端到端检查通过（当前 44 项）
+- [ ] 全部用例通过（当前 **460** 个）
+- [ ] 若这次动了 Web 宿主：`pwsh -File tools/api-test.ps1` 全部端到端检查通过（当前 46 项）
 - [ ] `Directory.Build.props` 的 `Version` / `AssemblyVersion` / `FileVersion` 三处一致
 - [ ] `CHANGELOG.md` 有当前版本的带日期条目，写清了兼容性影响
 - [ ] 若公开 API 有变动：快照已更新，且**确实**是有意为之

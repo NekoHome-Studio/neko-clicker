@@ -9,7 +9,7 @@
 #     · 增量推送的派生字段没处理干净 → 每帧 28KB，而"变化字段数 ≤ 4"的用例照样绿。
 #   所以这一层的判据只能是**真的通**：起宿主、发请求、读 SSE 流、看着它回话。
 #
-# 与单元测试的分工：`tools/build.ps1 -Strict` 守引擎（441 个用例 + 公开 API 快照），
+# 与单元测试的分工：`tools/build.ps1 -Strict` 守引擎（460 个用例 + 公开 API 快照），
 # 本脚本守"宿主 + 浏览器协议"那一段。CI 里两条都跑（.github/workflows/ci.yml）。
 #
 # 四段刻意为之的行为（都不是默认就该有的，是踩出来的）：
@@ -168,16 +168,19 @@ function Stop-TestHost([int]$Port, $Process) {
 
 # 起宿主。**每次都会先摘掉 NEKO_DEBUG_KEY**：这样"缺省门是关着的"才是被测事实，
 # 而不是跑的人 shell 里有没有那个变量的巧合（第二段"离线段"会再起一次，同样适用）。
-function Start-TestHost([int]$Port, [string]$SaveRoot, [string]$OutLog, [string]$ErrLog) {
+function Start-TestHost([int]$Port, [string]$SaveRoot, [string]$OutLog, [string]$ErrLog, [string]$LatencyLog) {
     $hadKey = Test-Path Env:NEKO_DEBUG_KEY
     $savedKey = if ($hadKey) { $env:NEKO_DEBUG_KEY } else { $null }
     if ($hadKey) { Remove-Item Env:NEKO_DEBUG_KEY }
 
     try {
         # 路径一律自己加引号：Start-Process 是用空格拼接参数表的，工作区路径里有空格时不加引号会散架。
+        # --latency-log 也指向临时目录：宿主默认会往仓库的 artifacts/latency.txt 追加会话行，
+        # 而那份文件**是别人的真人数据**，跑一次端到端不该在上面留痕。
         $hostArgs = @(
             'run', '-m:1', '--no-build', '--project', "`"$webDir`"",
-            '--', '--urls', "`"http://127.0.0.1:$Port`"", '--save-root', "`"$SaveRoot`""
+            '--', '--urls', "`"http://127.0.0.1:$Port`"", '--save-root', "`"$SaveRoot`"",
+            '--latency-log', "`"$LatencyLog`""
         )
         return Start-Process -FilePath 'dotnet' -ArgumentList $hostArgs -PassThru -NoNewWindow `
             -RedirectStandardOutput $OutLog -RedirectStandardError $ErrLog
@@ -260,13 +263,15 @@ $errLog = Join-Path $workDir 'host.err.log'
 # 不然 Start-Process 的重定向会把第一段的日志覆盖掉——失败时最要紧的就是它。
 $outLog2 = Join-Path $workDir 'host2.out.log'
 $errLog2 = Join-Path $workDir 'host2.err.log'
+# 埋点也落在这里：仓库的 artifacts/latency.txt 是别人的真人数据，端到端不该往上写。
+$latencyLog = Join-Path $workDir 'latency.txt'
 New-Item -ItemType Directory -Force -Path $saveRoot | Out-Null
 
 Write-Host ''
 Write-Host "目标：$baseUrl ｜ 内容包：$Package ｜ 存档：$saveRoot" -ForegroundColor DarkGray
 
 # ---- 起宿主
-$hostProcess = Start-TestHost -Port $Port -SaveRoot $saveRoot -OutLog $outLog -ErrLog $errLog
+$hostProcess = Start-TestHost -Port $Port -SaveRoot $saveRoot -OutLog $outLog -ErrLog $errLog -LatencyLog $latencyLog
 $wait = Wait-TestHost -Port $Port -Process $hostProcess
 
 if (-not $wait.Ready) {
@@ -318,6 +323,11 @@ try {
 
     $permanentRender = [bool]($appScript.Body -and $appScript.Body.Contains('renderPermanent'))
     Check 'app.js 里有永久线渲染函数' ($appScript.Success -and $permanentRender) "含 <renderPermanent>: $permanentRender"
+
+    # 结局的落定条件（1.5.0）：宿主必须在**真的把表态画出来**时报告一声。
+    # 前端那一半的判据只能是"送到浏览器的文本里有这个命令"——本脚本不跑 JS（见上面的说明）。
+    $choicesShownSend = [bool]($appScript.Body -and $appScript.Body.Contains('"choicesShown"'))
+    Check 'app.js 会报告「表态已经展示过」' ($appScript.Success -and $choicesShownSend) "含 <`"choicesShown`">: $choicesShownSend"
 
     # ------------------------------------------------------------ 元信息
     Write-Section '元信息'
@@ -457,6 +467,18 @@ try {
         $badResult = Convert-FromJsonSafe $bad.Body
         Check '未知命令不崩（ok=false + 一句人话）' ($bad.Success -and $badResult.ok -eq $false) `
             "HTTP $($bad.Status)：$([string]$badResult.message)"
+
+        # "待答表态已经被展示过"这条命令（1.5.0 起结局能否落定的唯一条件）。
+        # 它必须**幂等**：前端每渲染一帧就可能发一次，第二发不是错误、也不该改坏状态。
+        # 这里刻意不要求"有表态挂着"——本脚本跑的是真实游玩的前几十秒，多半还没触发表态，
+        # 而那条命令在没有任何待答表态时也必须安全返回（这正是幂等的第一层含义）。
+        $shown1 = Invoke-PostJson "/api/command?package=$Package" @{ type = 'choicesShown' }
+        $shown1Result = Convert-FromJsonSafe $shown1.Body
+        $shown2 = Invoke-PostJson "/api/command?package=$Package" @{ type = 'choicesShown' }
+        $shown2Result = Convert-FromJsonSafe $shown2.Body
+        Check 'POST choicesShown 可用且幂等' `
+            ($shown1.Success -and $shown1Result.ok -eq $true -and $shown2.Success -and $shown2Result.ok -eq $true) `
+            "第一次：$([string]$shown1Result.message)；第二次：$([string]$shown2Result.message)"
     }
 
     # ------------------------------------------------------------ 负数
@@ -597,7 +619,7 @@ try {
         # 刻意用 .NET 写回（不带 BOM）：这是存档，不该由测试脚本顺手改掉它的字节形态。
         if ($patched -ne $rawSave) { [System.IO.File]::WriteAllText($savePath, $patched) }
 
-        $hostProcess = Start-TestHost -Port $Port -SaveRoot $saveRoot -OutLog $outLog2 -ErrLog $errLog2
+        $hostProcess = Start-TestHost -Port $Port -SaveRoot $saveRoot -OutLog $outLog2 -ErrLog $errLog2 -LatencyLog $latencyLog
         $wait2 = Wait-TestHost -Port $Port -Process $hostProcess
         Check '第二段宿主带着那份存档起来了' $wait2.Ready $wait2.Probe
 

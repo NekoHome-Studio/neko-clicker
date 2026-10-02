@@ -248,12 +248,28 @@ internal static class InteractiveLoop
             int renderHeight = Math.Max(1, height - _safeMargin);
             List<string> lines = TerminalUi.Render(session, renderWidth, renderHeight);
 
+            // 这一帧里有没有把待答表态画给玩家看？有的话必须告诉引擎一声：
+            // 1.5.0 起"玩家被展示过那批表态"是结局能否落定的唯一条件
+            // （见 GameEngine.MarkPendingChoicesShown，它换掉了以前那段 30 模拟秒的宽限）。
+            // 报告一律放在**写终端成功之后**（下面三处调用）：这一帧没写到屏幕上
+            // （窗口已经没了）就不算"展示过"；而"画面没变、一个字节都没写"算——
+            // 屏幕上本来就是同一幅画，玩家仍然看着它。
+            bool showsChoices = TerminalUi.ShowsChoicesPanel(session, renderWidth, renderHeight);
+
             // 终端不支持 VT 转义：没有定位 / 清屏 / 备用屏幕能力，全屏界面无从谈起。
             // 退化成"每次追加一整帧"的普通输出——绝不能走下面的增量路径：
             // 定位序列此时全是空串，所有行会被粘成一行。
             if (!Ansi.ColorEnabled)
             {
-                if (!TryWrite(string.Join('\n', lines) + "\n")) CountWriteFailure(session);
+                if (TryWrite(string.Join('\n', lines) + "\n"))
+                {
+                    if (showsChoices) session.MarkChoicesShown();
+                }
+                else
+                {
+                    CountWriteFailure(session);
+                }
+
                 return;
             }
 
@@ -292,16 +308,27 @@ internal static class InteractiveLoop
             _previous.Clear();
             _previous.AddRange(lines);
 
-            if (written == 0 && !sizeChanged) return; // 画面没变：不写，屏幕上就不该有任何动静
+            if (written == 0 && !sizeChanged)
+            {
+                // 画面没变：这一帧一个字节都没写，但屏幕上本来就是同一幅画——玩家仍然看着它。
+                // （每帧都写一遍只会闪，见类注释；"没写"与"玩家没看到"是两件事。）
+                if (showsChoices) session.MarkChoicesShown();
+                return;
+            }
 
             if (full) _lastFullRepaint = now;
 
             // 整帧一次 Write（而不是逐行 Write-Host 那种 N 次刷新），
             // 并用同步输出把它作为一帧原子呈现。
             if (TryWrite(Ansi.SyncStart() + builder.ToString() + Ansi.SyncEnd()))
+            {
                 _writeFailures = 0;
+                if (showsChoices) session.MarkChoicesShown();
+            }
             else
+            {
                 CountWriteFailure(session);
+            }
         }
 
         /// <summary>

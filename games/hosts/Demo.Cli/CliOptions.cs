@@ -49,8 +49,10 @@ internal sealed class CliOptions
 
     /// <summary>
     /// 终局作答宽限期（模拟秒）；<c>null</c> 表示用框架默认值。<para>
-    /// 做成命令行参数的理由：这个数该定多少只能靠真人的作答延迟实测，而调参不该需要重编。
-    /// 传 <c>0</c> 可以复现"条件一成立就落定"的旧行为，用来对照。
+    /// <b>1.5.0 起已退役</b>：结局的落定条件改成了"玩家被展示过那批待答表态"
+    /// （见 <see cref="GameEngine.MarkPendingChoicesShown"/>），不再按时间兜底，
+    /// 所以这个参数<b>不再改变任何落定时机</b>。命令行选项保留是为了不打断已有的脚本；
+    /// 引擎在收到非 <c>null</c> 的值时会发一条警告通知，宿主不会以为自己配好了一个期限。
     /// </para>
     /// </summary>
     public double? EndingGraceSeconds { get; private set; }
@@ -120,7 +122,7 @@ internal sealed class CliOptions
                         options.EndingGraceSeconds = grace;
                         i++;
                     }
-                    else options.Error = "--grace 需要一个非负秒数（0 表示退回旧行为：条件一成立就落定）。";
+                    else options.Error = "--grace 需要一个非负秒数（该参数 1.5.0 起已退役，传入只会得到一条警告）。";
                     break;
 
                 case "--package" or "-p":
@@ -227,7 +229,7 @@ internal sealed class CliOptions
           --simulate <秒>     无头模拟指定时长后打印报告（默认 3600 秒）
           --auto              模拟时启用自动购买策略（否则纯挂机）
           --seed <整数>       固定随机种子（同一存档的随机序列可复现）
-          --grace <秒>        终局作答宽限期（模拟秒；默认用框架值，0 = 旧行为：一成立就落定）
+          --grace <秒>        已退役（1.5.0）：结局不再按时间落定，传入只会得到一条警告；保留仅为不打断已有脚本
           --save <路径>       存档文件（默认按内容包分开：saves/<包 id>.json）
           --no-save           本次运行不读写存档
           --frame [宽x高]     渲染一帧界面到标准输出后退出（默认 100x30）

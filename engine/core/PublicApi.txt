@@ -1,4 +1,4 @@
-# NekoClicker 公开 API 快照 format=1 assembly=NekoClicker.Core version=1.4.0
+# NekoClicker 公开 API 快照 format=1 assembly=NekoClicker.Core version=1.5.0
 
 public static class NekoClicker.Core.AchievementSystem
   method static System.Collections.Generic.List<NekoClicker.Core.Content.AchievementDefinition>! Check(NekoClicker.Core.Content.GameContent! content, NekoClicker.Core.GameState! state, NekoClicker.Core.IGameMetrics! metrics, NekoClicker.Core.Events.GameEventBus! events)
@@ -1114,6 +1114,7 @@ public sealed class NekoClicker.Core.GameEngine
   method System.Double GetPriceMultiplier(System.String! buildingId)
   method System.Double Update(System.Double deltaSeconds)
   method System.Int32 DismissAllLorePopups()
+  method System.Int32 MarkPendingChoicesShown()
   method System.Nullable<NekoClicker.Core.OfflineProgress> ApplyOfflineProgress(System.TimeSpan elapsed)
   method System.Nullable<NekoClicker.Core.OfflineProgress> Load(System.String! json)
   method System.String! Save()

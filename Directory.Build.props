@@ -42,18 +42,22 @@
       - 公开 API 只增不改（新增类型 / 新增成员）        → minor
       - 公开 API 有任何不兼容改动（删 / 改签名 / 改语义）→ major
       - 纯文案、数值、内容包、注释                      → patch
+
+    **已知例外**：1.1.0 与 1.5.0 都是"改了已有成员的语义、却按 minor 发布"（都是结局的落定时机：
+    1.1.0 引入 30 模拟秒的作答宽限，1.5.0 把它换成"玩家被展示过待答表态"这个条件）。
+    两次都写明了理由与影响面（CHANGELOG + VERSIONING §2），**不是**给这条规矩开先例。
     改完必须同时更新 engine/core/PublicApi.txt 与 CHANGELOG.md，
     否则 tools/build.ps1 -Strict 会红（PublicApiTests + VersionTests 两条守卫）。
   -->
   <PropertyGroup>
-    <Version>1.4.0</Version>
+    <Version>1.5.0</Version>
     <!--
       程序集版本 = 完整语义版本（而不是只取 major）。
       消费者可能把 NekoClicker.Core.dll 直接拷进宿主目录（Unity / Mono 场景），
       同目录覆盖升级时，只取 major 会让 1.1.0 和 1.0.0 的文件版本号无法区分。
     -->
-    <AssemblyVersion>1.4.0.0</AssemblyVersion>
-    <FileVersion>1.4.0.0</FileVersion>
+    <AssemblyVersion>1.5.0.0</AssemblyVersion>
+    <FileVersion>1.5.0.0</FileVersion>
     <Product>NekoClicker</Product>
   </PropertyGroup>
 

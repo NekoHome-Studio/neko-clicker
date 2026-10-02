@@ -1,6 +1,5 @@
 using NekoClicker.Core.Content;
 using NekoClicker.Core.Events;
-using NekoClicker.Core.Numbers;
 
 namespace NekoClicker.Core;
 
@@ -14,37 +13,37 @@ namespace NekoClicker.Core;
 /// 达成之后会一直成立）。
 /// </para>
 /// <para>
-/// <b>作答宽限</b>（<see cref="DefaultGraceSeconds"/>，可由
-/// <see cref="GameEngineOptions.EndingGraceSeconds"/> 外部配置）：结局条件成立时若还有未作答的表态，
-/// 判定会先等一等——因为"最后几次表态"往往就发生在结局条件成立前的几秒里，
-/// 而那时候玩家很可能还没反应过来。<b>这是唯一会让落定推迟的机制</b>，
-/// 它只会推迟、不会阻止：宽限期一到就照常落定（见 <see cref="Check"/>）。
+/// <b>落定前的等待</b>：结局条件成立时若还有未作答的表态，判定会先等一等——
+/// 因为"最后几次表态"往往就发生在结局条件成立前的几秒里，而那时候玩家很可能还没反应过来。
+/// <b>1.5.0 起这个等待是条件，不是定时</b>：只有玩家<b>被展示过</b>那批待答表态之后，
+/// 结局才允许落定（由宿主在真的渲染出表态时调
+/// <see cref="GameEngine.MarkPendingChoicesShown"/>）。在那之前，无论过多久都不落定。
+/// </para>
+/// <para>
+/// <b>代价（刻意接受的，不是遗漏）</b>：没被展示过的待答表态会让结局<b>永远</b>悬着——
+/// 一个从不渲染表态面板的宿主永远拿不到结局。1.5.0 之前存在一条"最多等
+/// <see cref="DefaultGraceSeconds"/> 模拟秒"的兜底，那条兜底是<b>刻意移除</b>的
+/// （<see cref="DefaultGraceSeconds"/> / <see cref="Grace"/> / <see cref="GraceRemaining"/>
+/// 与 <see cref="GameEngineOptions.EndingGraceSeconds"/> 只为兼容保留，<b>不再参与判定</b>）。
+/// 换句话说："不会永远悬着"这条性质不是丢了，是决定不要了——别再顺手把它改回来。
 /// </para>
 /// </summary>
 public static class EndingSystem
 {
     /// <summary>
-    /// 结局条件成立后、<b>落定之前</b>留给玩家作答的宽限的<b>默认值</b>（模拟秒）。<para>
-    /// <b>为什么需要它</b>：《猫娘实验室》的末次表态门槛是 3.4e8，末层完成门槛是 1e9。
-    /// 两者之间只隔几秒——终局判定一旦在这几秒里成立就永久锁死，于是"押了两次乌托邦、
-    /// 第三次还在想"的玩家会拿到兜底结局，而他明明什么都没做错。这不是执行顺序问题
-    /// （玩家的作答永远发生在触发它的那一拍之外），而是<b>缺一段等待</b>。
+    /// 结局条件成立后、<b>落定之前</b>留给玩家作答的宽限的<b>历史默认值</b>（模拟秒）。<para>
+    /// <b>1.5.0 起它不再参与判定。</b>判定读的是"玩家被展示过那批待答表态没有"
+    /// （见 <see cref="Check"/>），不是"过了多久"。这个常量与
+    /// <see cref="GameEngineOptions.EndingGraceSeconds"/> 一起保留，只为不破坏已经引用它们的
+    /// 宿主与诊断输出（例如宿主那份作答延迟埋点会把它记进样本行）；
+    /// 删掉公开成员要按 <c>engine/docs/VERSIONING.md</c> 升主版本，而这次是有意的 minor。
     /// </para>
     /// <para>
-    /// <b>这是一条实测出来的数，不是拍出来的</b>：窗口宽度实测在 0.40 秒到 11 分钟之间，
-    /// 而且同一个包能被一个恰好在场的增益压缩 100 倍——所以没有任何内容侧的改法能钉住
-    /// 一个安全的宽度，只能由引擎给一段固定的等待。30 秒的选择依据是"覆盖在场但在读题的
-    /// 玩家"，它<b>不</b>试图覆盖挂机的玩家（任何有限值都做不到）。
-    /// </para>
-    /// <para>
-    /// <b>为什么用模拟秒</b>：这个框架的既有语义是"世界在你不看的时候也在前进"
-    /// （离线收益、离线期间的计数器都按这个来），所以宽限也走模拟时间，是同一套世界观，
-    /// 而不是新学一条规则。代价是挂机跨过宽限期回来会发现结局已经自己落定了——
-    /// 这正是想要的行为。
-    /// </para>
-    /// <para>
-    /// 实际生效的值由 <see cref="GameEngineOptions.EndingGraceSeconds"/> 决定（外部可配，
-    /// 不必重编）；这里只是它的默认。传 <c>0</c> 即退回旧行为。
+    /// 它当年是干什么的（留档）：《猫娘实验室》的末次表态门槛是 3.4e8，末层完成门槛是 1e9，
+    /// 两者之间只隔几秒；终局判定一旦在这几秒里成立就永久锁死，于是"押了两次乌托邦、
+    /// 第三次还在想"的玩家会拿到兜底结局。当时的修法是"给一段固定的等待"。
+    /// 那段等待的窗口宽度实测在 0.40 秒到 11 分钟之间（同一个包能被一个恰好在场的增益
+    /// 压缩 100 倍），所以 30 秒这个数从来没有人类数据支撑——这正是 1.5.0 用条件把它换掉的原因。
     /// </para>
     /// </summary>
     public const double DefaultGraceSeconds = 30.0;
@@ -73,7 +72,7 @@ public static class EndingSystem
         if (state.EndingsReached.Count > 0) return null; // 一份存档只有一个结局
 
         // 就绪时刻 = 第一次"有结局条件成立"的那一拍。记下来就不再改：
-        // 从那一刻起算宽限，条件即使中途抖动也不会把宽限重置（只会让它更早到点）。
+        // 它现在只用于 IsReady / GraceRemaining 这两个诊断查询（判定本身不再看时间）。
         double readyAt = state.GetCounter(ReadyAtCounterKey);
         bool justBecameReady = readyAt <= 0;
 
@@ -85,15 +84,17 @@ public static class EndingSystem
             state.SetCounter(ReadyAtCounterKey, readyAt);
         }
 
-        // 还有表态挂着没答 → 先等玩家。等满宽限期就当"放弃表态"处理，照常落定。
-        double grace = Grace(engine);
-        if (state.PendingChoices.Count > 0 && state.PlayTimeSeconds - readyAt < grace)
+        // 还有表态挂着没答，而且玩家还没被展示过它们 → 先等玩家**看到**。
+        //
+        // 1.5.0 起这是唯一会推迟落定的机制，而且它是**条件**不是定时：
+        // 只要那批待答表态没被展示过，过多久都不落定（代价见类注释——刻意接受）。
+        if (state.PendingChoices.Count > 0 && !ChoiceSystem.PendingAreAllShown(state))
         {
             if (justBecameReady)
             {
                 engine.Notify(
                     $"主线已经走完，但你还有 {state.PendingChoices.Count} 项表态没答。"
-                    + $"它们会决定你落到哪个结局——{NumFormat.Duration(grace)}内还可以改。",
+                    + "它们会决定你落到哪个结局——结局会等你把这些表态看完。",
                     NotificationKind.Warning,
                     "⏳");
             }
@@ -117,7 +118,12 @@ public static class EndingSystem
         return null;
     }
 
-    /// <summary>是否已有结局条件成立、但还没落定（即正处在作答宽限期里）。</summary>
+    /// <summary>
+    /// 是否已有结局条件成立、但还没落定（也就是"结局在等玩家"）。<para>
+    /// 1.5.0 起等的<b>不是</b>一段时间，而是"那批待答表态被展示过"——所以这个值为真时，
+    /// 结局可能无限期地等下去（见 <see cref="Check"/>）。
+    /// </para>
+    /// </summary>
     /// <param name="content">内容定义。</param>
     /// <param name="state">游戏状态。</param>
     public static bool IsReady(GameContent content, GameState state)
@@ -126,10 +132,16 @@ public static class EndingSystem
            && state.GetCounter(ReadyAtCounterKey) > 0;
 
     /// <summary>
-    /// 本存档实际生效的宽限期（模拟秒）：取 <see cref="GameEngineOptions.EndingGraceSeconds"/>，
-    /// 未配置则用 <see cref="DefaultGraceSeconds"/>。<para>
-    /// 调用方需要它来画倒计时，所以是公开的；顺带也是"宿主到底把值设成了多少"的可查证据——
-    /// 少了它，一个被误设成 0 的宽限期在现象上与"根本没实现"完全一样。
+    /// 本存档配置的<b>历史</b>宽限期值（模拟秒）：取
+    /// <see cref="GameEngineOptions.EndingGraceSeconds"/>，未配置则用
+    /// <see cref="DefaultGraceSeconds"/>。<para>
+    /// <b>1.5.0 起判定不再读它</b>（<see cref="Check"/> 用的是"待答表态被展示过"这个条件）。
+    /// 保留这个成员是为了不破坏已经引用它的宿主与诊断输出——例如宿主那份作答延迟埋点会把
+    /// 生效值记进每一行样本，好让"当时的参数是多少"在日后仍然对得上。
+    /// </para>
+    /// <para>
+    /// <b>不是"生效值"了</b>：它现在只回答"宿主把那个已经退役的参数设成了多少"。
+    /// 真正会拦住结局落定的是"玩家有没有被展示过那些表态"，与这个数无关。
     /// </para>
     /// </summary>
     /// <param name="engine">宿主引擎。</param>
@@ -143,7 +155,13 @@ public static class EndingSystem
         return double.IsNaN(value) || value < 0 ? 0 : value;
     }
 
-    /// <summary>距宽限期结束还剩多少模拟秒；未就绪时为 <c>0</c>。</summary>
+    /// <summary>
+    /// 按<b>历史</b>宽限期算出的剩余值；未就绪时为 <c>0</c>。<para>
+    /// <b>1.5.0 起判定不再读它</b>，也没有任何截止时间可画了：结局要等到玩家看过那批待答表态
+    /// 才落定，那个等待没有上界。保留成员只为兼容（正在画倒计时的宿主应当把那处倒计时撤掉，
+    /// 否则它会显示一个不存在的期限）。
+    /// </para>
+    /// </summary>
     /// <param name="engine">宿主引擎。</param>
     public static double GraceRemaining(GameEngine engine)
     {

@@ -31,11 +31,17 @@ public sealed class GameEngineOptions
     /// <summary>
     /// 结局条件成立后留给玩家作答的宽限（<b>模拟</b>秒）。<see langword="null"/> 表示用
     /// <see cref="EndingSystem.DefaultGraceSeconds"/>。<para>
-    /// <b>为什么是外部参数而不是常量</b>：这个数该定多少取决于"真人从看到表态到作答需要多久"，
-    /// 而那是个只能实测的量（示例宿主的 <c>ChoiceLatencyLog</c> 就是为它装的埋点，
-    /// 无头报告末尾那行「📏 作答延迟」即其读数）。把它写死在核心里的后果是：
-    /// 每次调参都要改代码、重编，再走一遍版本与快照流程——那会让"按数据调"变成不划算的事。
-    /// 传 <c>0</c> 即退回旧行为（条件一成立就落定）。
+    /// <b>已退役：1.5.0 起它不再参与判定。</b>当年它是"结局最多等多久"，
+    /// 现在是"待答表态被展示给玩家之后才允许落定"（<see cref="GameEngine.MarkPendingChoicesShown"/>）——
+    /// 那个等待没有上界，所以没有任何秒数能表达它。
+    /// </para>
+    /// <para>
+    /// <b>为什么留着而不是删掉</b>：删公开成员要按 <c>engine/docs/VERSIONING.md</c> 升主版本，
+    /// 而这次是有意的 minor；另外引用它的宿主（<c>--grace</c>、作答延迟埋点）不会因此编不过。
+    /// </para>
+    /// <para>
+    /// <b>设了它会喊一声</b>：构造时会发一条警告通知。一个"设置了却没有任何效果"的选项正是
+    /// 本项目最反对的沉默失败——退役不等于可以悄悄忽略。
     /// </para>
     /// </summary>
     public double? EndingGraceSeconds { get; init; }
@@ -100,6 +106,20 @@ public sealed class GameEngine
 
         GoldenCookieSystem.ResetSchedule(this);
         MarkDirty();
+
+        // 退役的参数必须喊一声（见 EndingGraceSeconds 的注释）：一个"设置了却没有任何效果"
+        // 的选项正是本项目最反对的沉默失败。宿主可能照着旧文档把它设成 0/5/120，
+        // 而 1.5.0 起判定根本不看它——不说出来的话，那个宿主会以为自己配好了一个期限。
+        if (Options.EndingGraceSeconds is not null)
+        {
+            Notify(
+                "EndingGraceSeconds 已不再生效：1.5.0 起结局改为「待答表态被展示给玩家之后」"
+                + "才允许落定，不再按时间兜底（见 GameEngine.MarkPendingChoicesShown）。",
+                NotificationKind.Warning,
+                // 图标只用宽度确定的字符：⚠ 是 East Asian Ambiguous，在终端里按 1 列或 2 列渲染
+                // 都可能，会把那行日志顶歪（FrameRenderTests.FramesAvoidFontFallbackProneGlyphs 守这条）。
+                "!");
+        }
     }
 
     /// <summary>内容定义。</summary>
@@ -257,9 +277,9 @@ public sealed class GameEngine
 
         // 顺序有讲究，两条理由各不相同：
         //
-        // ① 表态的触发排在终局判定<b>之前</b>。终局判定要读"还有没有未作答的表态"
-        //    来决定是否给玩家留宽限期（EndingSystem.GraceSeconds）；若它先跑，同一拍里
-        //    刚够条件的表态就还不在待答队列里，判定会误以为"没人要答"而立刻落定。
+        // ① 表态的触发排在终局判定<b>之前</b>。终局判定要读"还有没有未作答、且没被展示过的
+        //    表态"来决定要不要推迟落定（EndingSystem.Check）；若它先跑，同一拍里刚够条件的
+        //    表态就还不在待答队列里，判定会误以为"没有东西在等玩家"而立刻落定。
         //    这不是杞人忧天：表态门槛允许<b>等于</b>本层完成门槛（见 ValidateChoiceFitsItsEra
         //    只拦 >），此时表态与结局条件会在同一拍首次成立，顺序就是唯一的区别。
         //    提前一拍对内容没有副作用——没有任何选择的触发条件依赖结局（只有成才会）。
@@ -490,6 +510,34 @@ public sealed class GameEngine
     /// <param name="optionId">选中的选项 id。</param>
     public bool AnswerChoice(string choiceId, string optionId) => ChoiceSystem.Answer(this, choiceId, optionId);
 
+    /// <summary>
+    /// 宣告"当前挂着的待答表态已经被展示给玩家看过了"。<b>由宿主在真的渲染出表态时调用。</b><para>
+    /// <b>为什么这条信号必须由宿主发出</b>：引擎不该去猜视图层（它连"屏幕上有什么"都不知道），
+    /// 而这条信息是结局能否落定的唯一依据——万一猜错的方向是"玩家没看到却当成了看到过的"，
+    /// 那是不可逆的：一份存档的结局只会落定一次。
+    /// </para>
+    /// <para>
+    /// <b>它换掉了什么</b>：1.5.0 之前，结局落定前有一段 30 模拟秒的宽限期
+    /// （<see cref="GameEngineOptions.EndingGraceSeconds"/>），到期就当作"放弃表态"照常落定。
+    /// 现在推迟落定的是这个信号：<b>玩家看过那批表态之后，结局才允许落定</b>；
+    /// 在那之前，过多久都不落定。
+    /// </para>
+    /// <para>
+    /// <b>逐条记账，且随存档往返</b>：只标记<b>此刻</b>挂在待答队列里的表态
+    /// （之后才触发的不算"已经展示过"）；标记存在状态里的计数器上，因此读档回来仍然是
+    /// "已展示"——条件问的是"玩家有没有被展示过"，而玩家是跨会话的。反过来，
+    /// <b>没被展示过的表态不会因为读档而变成已展示</b>。
+    /// </para>
+    /// <para>
+    /// <b>代价（刻意接受的，不是遗漏）</b>：没有宿主来报，结局就<b>永远</b>不落定——
+    /// 一个从不渲染表态面板的宿主、一份从未被展示过的存档，都拿不到结局。
+    /// 这条"不会永远悬着"的性质是被有意移除的，见 <see cref="EndingSystem.Check"/>
+    /// 与 CHANGELOG 的 1.5.0：别再顺手把它改回来。
+    /// </para>
+    /// </summary>
+    /// <returns>本次新标记为"已展示"的表态条数；都已标记过（或当前没有待答表态）时为 <c>0</c>。</returns>
+    public int MarkPendingChoicesShown() => ChoiceSystem.MarkShown(this);
+
     /// <summary>当前主导立场 id；没有立场轴或全部权重为 0 时为 <c>null</c>。</summary>
     public string? DominantStance => ChoiceSystem.DominantStance(Content, State);
 
@@ -499,8 +547,10 @@ public sealed class GameEngine
     /// 想表达"走完主线"就在内容里写 <c>EraAtLeast(9)</c>。
     /// </para>
     /// <para>
-    /// 条件成立时若还有未作答的表态，落定会推迟 <see cref="GameEngineOptions.EndingGraceSeconds"/>
-    /// 模拟秒（或直到玩家作答），给玩家留出反应时间；这是唯一会推迟落定的机制。
+    /// 条件成立时若还有<b>没被展示给玩家看过</b>的待答表态，落定会一直推迟，直到宿主
+    /// 报告那些表态已经渲染出来了（<see cref="MarkPendingChoicesShown"/>）或玩家把它们答掉。
+    /// 1.5.0 起这是唯一会推迟落定的机制，而且它<b>没有时限</b>：没展示过就永远不落定。
+    /// （1.5.0 之前是"最多等 <see cref="GameEngineOptions.EndingGraceSeconds"/> 模拟秒"。）
     /// </para>
     /// </summary>
     public EndingDefinition? CheckEnding() => EndingSystem.Check(this);

@@ -156,6 +156,7 @@ function render() {
   renderPermanent();
   renderBatch();
   renderChoices();
+  reportChoicesShown();
   renderCodex();
   renderAchievements();
   renderNotifications();
@@ -239,6 +240,39 @@ function renderEra() {
     button.textContent = era.nextIndex ? "还不能舍命" : "已是最后一层";
     $("#era-reason").textContent = era.blockedReason ?? "";
   }
+}
+
+/**
+ * "玩家看过待答表态了吗"——1.5.0 起这是结局能否落定的**唯一**条件。
+ *
+ * 引擎侧对应 GameEngine.MarkPendingChoicesShown()，它换掉了以前那段 30 模拟秒的宽限
+ * （定时 → 条件）。判据只有一条：**「表态」面板此刻真的显示在屏幕上**
+ * （选中的是那个 tab、页面不在后台、并且真的有内容）。
+ *
+ * 为什么不用标签栏上那个角标当判据：角标只写条数，看见"表态 1"并不等于看见了谁在问、
+ * 问什么、有哪些选项——而结局只会落定一次，宁可晚，也不能把"没看到"记成"看到过"。
+ * 反过来，"从不打开这个面板就永远拿不到结局"正是这次改动有意接受的性质（CHANGELOG 1.5.0）。
+ *
+ * 只报一次：报成功的 id 记在这里，之后不再重复发。send 失败时**不记账**，
+ * 下一帧会重试——"发丢了却记成发过"会让结局永远落不下来，而且一点痕迹都没有。
+ */
+const shownChoices = new Set();
+
+function reportChoicesShown() {
+  if (!state || document.hidden) return;
+
+  const panel = document.querySelector('[data-panel="choices"]');
+  if (!panel || panel.classList.contains("hidden")) return;
+
+  const fresh = (state.pendingChoices ?? [])
+    .map((choice) => choice.id)
+    .filter((id) => !shownChoices.has(id));
+  if (fresh.length === 0) return;
+
+  send("choicesShown").then((result) => {
+    if (!result?.ok) return;
+    for (const id of fresh) shownChoices.add(id);
+  });
 }
 
 /** 表态：待答选择 + 立场轴。选择不阻塞游戏（决策 R6），所以它是一张待办卡片而不是弹窗。 */
@@ -873,7 +907,16 @@ function selectTab(name) {
     panel.classList.toggle("hidden", panel.dataset.panel !== name);
   }
   if (location.hash !== `#tab=${name}`) history.replaceState(null, "", `#tab=${name}`);
+
+  // 切到「表态」就是"玩家要求看这些表态"这一刻：立刻报告，不等下一帧
+  // （下一帧最多 250ms 之后才来，而结局的落定判定就在这中间跑）。
+  if (name === "choices") reportChoicesShown();
 }
+
+// 页面从后台回到前台：面板这几秒里看不见，此刻才真的被玩家看到。
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden) reportChoicesShown();
+});
 
 $("#tabs").addEventListener("click", (event) => {
   const button = event.target.closest("button[data-tab]");

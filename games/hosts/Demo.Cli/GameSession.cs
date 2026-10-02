@@ -60,7 +60,9 @@ internal sealed class GameSession : IDisposable
     /// <param name="package">要玩的内容包（决定构建哪份 <c>GameContent</c>）。</param>
     /// <param name="savePath">存档路径；<c>null</c> 表示不落盘。</param>
     /// <param name="seed">随机种子。</param>
-    /// <param name="endingGraceSeconds">终局作答宽限期（模拟秒）；<c>null</c> 表示用框架默认值。</param>
+    /// <param name="endingGraceSeconds">终局宽限期（模拟秒）；<c>null</c> 表示用框架默认值。
+    /// 该参数 <b>1.5.0 起已退役</b>（落定条件改成了"玩家被展示过待答表态"），
+    /// 传非 <c>null</c> 只会让引擎发一条警告；保留形参是为了不打断已有的调用与脚本。</param>
     public GameSession(ContentPackage package, string? savePath, ulong seed, double? endingGraceSeconds = null)
     {
         Package = package;
@@ -330,6 +332,21 @@ internal sealed class GameSession : IDisposable
         Log($"{row.Option.Label}{outcome}", "🗣");
         RefreshCache();
     }
+
+    /// <summary>
+    /// 报告"待答表态已经画到屏幕上了"（见 <see cref="GameEngine.MarkPendingChoicesShown"/>）。<para>
+    /// 由 <see cref="InteractiveLoop"/> 在<b>真的画出</b>「表态」面板的那一帧调用；
+    /// 会话只负责转发，"这一帧到底画没画出表态"由渲染器回答
+    /// （<see cref="TerminalUi.ShowsChoicesPanel"/>）——宿主这边再写一份近似，焦点规则、
+    /// 过小窗口、帮助浮层任何一处变了自己这份就会悄悄过时。
+    /// </para>
+    /// <para>
+    /// <b>状态栏那行「🗣 N 项待答」不算</b>：它只说有几项在等，选择本身（谁在问、问什么、
+    /// 有哪些选项）只有「表态」面板里才看得到。所以"看到角标"不等于"看到表态"。
+    /// </para>
+    /// </summary>
+    /// <returns>本次新标记的条数（幂等：都标记过时为 <c>0</c>）。</returns>
+    public int MarkChoicesShown() => Engine.MarkPendingChoicesShown();
 
     /// <summary>执行指定序号的建筑（供数字快捷键使用）。</summary>
     /// <param name="index">建筑列表下标。</param>

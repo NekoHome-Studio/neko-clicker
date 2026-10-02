@@ -53,10 +53,16 @@ public static class LabEndingTests
     }
 
     /// <summary>
-    /// 机器人从第 1 批跑到终局：每次有待答就作答（能选乌托邦就选），完成主线就舍命。<para>
-    /// 最后一批改用细步长推进——表态门槛（3.4e8）与完成门槛（1e9）之间的窗口只有几秒，
-    /// 一步 30 秒会直接跨过去，让机器人"来不及答"最后一个选择；
-    /// 真实玩家的手速不会这样，但测试必须把那个窗口留出来，否则测的是步长而不是内容。
+    /// 机器人从第 1 批跑到终局：每次有待答就作答（能选乌托邦就选），完成主线就舍命，
+    /// 并且像宿主那样每轮报告一次「待答表态已经画给玩家看过了」。<para>
+    /// <b>最后那一步是 1.5.0 起结局能否落定的唯一条件</b>（原来是 30 模拟秒的定时宽限）。
+    /// 少了它，<c>FallbackEndingStillArrivesWhenNobodyAnswers</c> 那条「一次都不答也有收场」
+    /// 会变成「永远等不到结局」——而那不是内容的问题，是这条用例忘了把宿主该做的事做掉。
+    /// </para>
+    /// <para>
+    /// 最后一批仍用细步长：让「表态门槛与完成门槛落在同一拍」这个致命形状真的出现。
+    /// （粗步长不会再吞掉最后一次表态了——1.5.0 之前靠定时宽限兜住的那件事，
+    /// 现在由「没被展示过就不落定」兜住。）
     /// </para>
     /// </summary>
     private static GameEngine PlayToEnding(bool answerUtopia)
@@ -72,6 +78,9 @@ public static class LabEndingTests
                 engine.ClickGoldenCookie(engine.State.GoldenCookies[i].InstanceId);
 
             if (answerUtopia) AnswerUtopiaWherePossible(engine);
+
+            // 宿主把表态画出来了（这一轮里新挂上的那些）。
+            engine.MarkPendingChoicesShown();
 
             if (engine.EraGate.CanAdvance) engine.Ascend();
 

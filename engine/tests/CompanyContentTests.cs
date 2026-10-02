@@ -270,12 +270,17 @@ public static class CompanyContentTests
     /// <summary>
     /// 把末轮主线推到完成：直接把"本轮累计"顶过门槛（成就数在跑图里已经够了），
     /// 然后让引擎自己跑一拍做终局判定。终局必须在末层完成后才成立——
-    /// 这是实验室包那个坑的修复方式，公司包从内容上就要求同一条。
+    /// 这是实验室包那个坑的修复方式，公司包从内容上就要求同一条。<para>
+    /// 顺带报告"这批表态已经被展示过了"（1.5.0 起结局能否落定的唯一条件）：
+    /// 已答完的批次里它是空操作，而 <c>AvoidingEveryChoiceYieldsTheFallbackEnding</c>
+    /// 那条"一次都不答也有收场"靠的就是它——没被展示过的表态会让结局一直等下去。
+    /// </para>
     /// </summary>
     private static void FinishLastRound(GameEngine engine)
     {
         engine.State.CookiesEarnedThisRun = 5e8;
         engine.MarkDirty();
+        engine.MarkPendingChoicesShown();
         engine.Simulate(60);
     }
 }

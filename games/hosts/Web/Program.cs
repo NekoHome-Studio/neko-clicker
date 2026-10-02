@@ -241,6 +241,21 @@ public static class Program
                     return new CommandOutcome(ok, ok ? "已表态。" : "这次表态不成立（可能已经答过，或那层已经过去了）。", host.Seq);
                 }).ConfigureAwait(false);
 
+            // "待答表态已经展示给玩家看过了"——1.5.0 起这是结局能否落定的**唯一**条件
+            // （见 GameEngine.MarkPendingChoicesShown；它换掉了以前那段 30 模拟秒的宽限）。
+            // 它是一条**状态**而不是前端的记忆：刷新、换标签页、换设备之后，"玩家看没看过"
+            // 必须仍是同一个答案，所以真相在引擎里，前端每次渲染只负责报告"我把它画出来了"。
+            // 幂等：客户端每渲染一帧都可能发一次，第二发不是错误。
+            case "choicesShown":
+                return await host.ExecuteAsync(engine =>
+                {
+                    int marked = engine.MarkPendingChoicesShown();
+                    return new CommandOutcome(
+                        true,
+                        marked > 0 ? $"已记下 {marked} 项表态看过。" : "这些表态已经记过了。",
+                        host.Seq);
+                }).ConfigureAwait(false);
+
             case "dismissLore":
                 if (id is null) return Missing("id");
                 return await host.ExecuteAsync(engine =>

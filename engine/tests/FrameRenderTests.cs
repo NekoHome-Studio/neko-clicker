@@ -89,6 +89,43 @@ public static class FrameRenderTests
             "过小窗口应当给一句人话提示，而不是硬渲染一屏放不下的界面（那会持续滚屏）。");
     }
 
+    /// <summary>
+    /// 「玩家被展示过那批待答表态」是 1.5.0 起结局能否落定的唯一条件，
+    /// 而终端宿主的判据由渲染器回答（<see cref="TerminalUi.ShowsChoicesPanel"/>）。<para>
+    /// 这条钉住三处会<b>悄悄</b>改变结论的地方：焦点不在表态面板、窗口小到只剩兜底帧、
+    /// 帮助浮层盖住了整个主体。判错的方向若是"没看到却当成看到过"，后果是不可逆的
+    /// ——一份存档的结局只会落定一次。
+    /// </para>
+    /// </summary>
+    [Test]
+    public static void ChoicesPanelCountsAsShownOnlyWhenItIsActuallyOnScreen()
+    {
+        using var session = new GameSession(ContentPackages.Find("lab")!, savePath: null, seed: 7);
+
+        // 直接塞一条待答表态：这一层测的是"画没画出来"，不是触发条件（触发由引擎的用例管）。
+        session.Engine.State.PendingChoices.Add("choice_archive");
+        session.Refresh();
+        Check.AtLeast(session.ChoiceRows.Count, 1, "前提：待答表态应当已经进了面板的行缓存。");
+
+        Check.False(
+            TerminalUi.ShowsChoicesPanel(session, 100, 30),
+            "焦点还在建筑面板上时「表态」面板并没有画出来——不许算成展示过。");
+
+        session.SetFocus(PanelFocus.Choices);
+        Check.True(
+            TerminalUi.ShowsChoicesPanel(session, 100, 30),
+            "焦点在表态面板、而且窗口画得下时，才算真的展示过。");
+
+        Check.False(
+            TerminalUi.ShowsChoicesPanel(session, 20, 5),
+            "窗口小到只画「终端太小」那一帧时，面板没有画出来（过小窗口的兜底帧不算展示）。");
+
+        session.ToggleHelp();
+        Check.False(
+            TerminalUi.ShowsChoicesPanel(session, 100, 30),
+            "帮助浮层盖住了整个主体时，面板没有画出来。");
+    }
+
     [Test]
     public static void FramesAvoidFontFallbackProneGlyphs()
     {

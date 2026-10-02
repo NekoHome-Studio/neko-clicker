@@ -65,6 +65,13 @@ public static class EndingTests
         engine.CheckChoices();   // 触发但故意不答
         Check.Equal(0, engine.State.ChoiceAnswers.Count);
 
+        // 1.5.0 起，没被展示过的待答表态会让结局一直等着（那条「不会永远悬着」是刻意移除的）。
+        Check.Null(engine.ReachedEnding, "玩家还没看到那条表态，结局不该落定。");
+
+        // 宿主把表态画出来（本用例不跑界面，直接报告这一点）；玩家仍然不作答。
+        Check.Equal(1, engine.MarkPendingChoicesShown(), "应当恰好标记那条待答表态。");
+        engine.Simulate(2);
+
         // 注意这里读的是 ReachedEnding 而不是 CheckEnding() 的返回值：
         // Step 里的自动检查（与成就/叙事/选择同频）早就判过了，显式再判是 no-op。
         EndingDefinition? reached = engine.ReachedEnding;

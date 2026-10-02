@@ -13,6 +13,12 @@ namespace NekoClicker.Core;
 /// 未作答的选择<b>不产生任何效果</b>——不累加立场、选项修饰符也不生效。
 /// 这是刻意的：把"回避表态"也做成一种合法玩法，而不是拿弹窗逼玩家点。
 /// </para>
+/// <para>
+/// 本类还负责另一件与"答不答"无关、但同样只属于引擎的事：<b>待答表态有没有被展示给玩家看过</b>
+/// （<see cref="MarkShown"/> / <see cref="PendingAreAllShown"/>）。它由宿主在真的渲染出表态时
+/// 通过 <see cref="GameEngine.MarkPendingChoicesShown"/> 报告，是 1.5.0 起结局能否落定的
+/// 唯一依据（见 <see cref="EndingSystem.Check"/>）。
+/// </para>
 /// </summary>
 public static class ChoiceSystem
 {
@@ -103,6 +109,61 @@ public static class ChoiceSystem
             engine.Events.Publish(new DominantStanceChangedEvent(previousDominant, currentDominant));
 
         return true;
+    }
+
+    /// <summary>"这条表态已经被展示给玩家看过"的计数器键前缀。</summary>
+    /// <remarks>
+    /// 存在 <see cref="GameState.Counters"/> 里（与 <c>EraSystem.PeakCpsCounterKey</c>、
+    /// <c>EndingSystem</c> 的就绪时刻同一个套路）：这样它自动随存档往返，<b>不用改存档格式、
+    /// 也不用升存档版本号</b>。键以 <c>$</c> 开头是为了跟内容自定义的计数器划清界限
+    /// ——任何选择 id 都拼不出这个前缀。
+    /// </remarks>
+    internal const string ShownCounterPrefix = "$choice_shown_";
+
+    /// <summary>某条表态"被展示过"的计数器键。</summary>
+    internal static string ShownCounterKey(string choiceId) => ShownCounterPrefix + choiceId;
+
+    /// <summary>某条表态是否已经被展示给玩家看过。</summary>
+    /// <param name="state">游戏状态。</param>
+    /// <param name="choiceId">选择 id。</param>
+    internal static bool IsShown(GameState state, string choiceId)
+        => state.GetCounter(ShownCounterKey(choiceId)) > 0;
+
+    /// <summary>
+    /// 此刻仍挂在待答队列里的表态是否<b>全部</b>都被展示过。<para>
+    /// 队列为空时返回 <c>true</c>——"没有要展示的东西"不等于"有东西没展示"。
+    /// </para>
+    /// </summary>
+    /// <param name="state">游戏状态。</param>
+    internal static bool PendingAreAllShown(GameState state)
+    {
+        foreach (string id in state.PendingChoices)
+            if (!IsShown(state, id)) return false;
+
+        return true;
+    }
+
+    /// <summary>
+    /// 把此刻挂着的待答表态全部标记为"已展示"。<para>
+    /// <b>只标此刻挂着的</b>：之后才触发的表态不会被这一发连坐——那正是"展示过"这句话
+    /// 必须逐条记账、而不是存一个布尔值的原因。
+    /// </para>
+    /// </summary>
+    /// <param name="engine">宿主引擎。</param>
+    /// <returns>本次新标记的条数；都已标记过（或没有待答表态）时为 <c>0</c>。</returns>
+    internal static int MarkShown(GameEngine engine)
+    {
+        GameState state = engine.State;
+        int marked = 0;
+
+        foreach (string id in state.PendingChoices)
+        {
+            if (IsShown(state, id)) continue;
+            state.SetCounter(ShownCounterKey(id), 1);
+            marked++;
+        }
+
+        return marked;
     }
 
     /// <summary>
