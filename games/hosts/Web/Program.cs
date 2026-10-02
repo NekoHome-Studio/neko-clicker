@@ -34,13 +34,19 @@ public static class Program
 
     /// <summary>启动宿主。</summary>
     /// <param name="args">
-    /// <c>--urls &lt;地址&gt;</c> 换监听地址；<c>--save-root &lt;目录&gt;</c> 换存档根目录。
+    /// <c>--urls &lt;地址&gt;</c> 换监听地址；<c>--save-root &lt;目录&gt;</c> 换存档根目录；
+    /// <c>--latency-log &lt;文件&gt;</c> 换作答延迟埋点文件（默认 <c>artifacts/latency.txt</c>）。
     /// </param>
     /// <returns>进程退出码。</returns>
     public static int Main(string[] args)
     {
         string url = ReadOption(args, "--urls") ?? ReadOption(args, "--url") ?? DefaultUrl;
         string saveRoot = Path.GetFullPath(ReadOption(args, "--save-root") ?? DefaultSaveRoot());
+
+        // 作答延迟埋点（见 ChoiceLatencyLog 的类注释）：默认落在仓库的 artifacts/ 里，
+        // **不是**因为"顺手"，而是因为这是唯一一条能把数字交到不坐在这台终端前的人手里的路。
+        string latencyLog = Path.GetFullPath(
+            ReadOption(args, "--latency-log") ?? Path.Combine(DefaultArtifactsRoot(), "latency.txt"));
 
         // 内容根：能自己找就自己找，别依赖"启动时的工作目录"。
         // 实测（2026-10-02，打包后的产物）：在包根目录敲 `web\neko-clicker-web.exe`，
@@ -59,7 +65,7 @@ public static class Program
             ContentRootPath = contentRoot,
         });
         builder.WebHost.UseUrls(url);
-        builder.Services.AddSingleton(new HostOptions(saveRoot));
+        builder.Services.AddSingleton(new HostOptions(saveRoot, latencyLog));
 
         WebApplication app = builder.Build();
 
@@ -92,6 +98,14 @@ public static class Program
             : $"调试门：已启用（{DebugKeyVariable} 已设置）；用法 {url}/?package=<id>&password=<密钥>&epoch=<层号>。");
 
         Console.WriteLine($"打开 {url}/ 开始玩；换包用 {url}/?package=<id>。Ctrl+C 退出。");
+
+        // 埋点写到哪去了必须当场说清楚：这个文件的读者常常不是启动它的人，
+        // 而"埋点在跑"与"埋点没接线"在现象上都是"没有数据"——只有把路径报出来才分得清。
+        // 表头同时在这里先落好：这样"埋点接没接上"在看任何页面之前就能被检查
+        // （文件在 = 线接上了；文件不在 = 埋点根本没跑）。
+        var latencyFile = new LatencyLogFile(latencyLog);
+        if (!latencyFile.Ensure()) Console.Error.WriteLine($"[埋点] 写不进 <{latencyLog}>：{latencyFile.LastError}");
+        Console.WriteLine($"作答延迟埋点：{latencyLog}（只追加；只有真人作答才会出现数据行）");
 
         app.Run();
         return 0;
@@ -397,26 +411,21 @@ public static class Program
         => Results.Json(body, SnapshotProtocol.Options, statusCode: statusCode).ExecuteAsync(context);
 
     /// <summary>
-    /// 存档根目录：从程序集所在目录往上找仓库根（有 <c>NekoClicker.sln</c> 的那一层）。<para>
-    /// 刻意用与 <c>VersionTests.RepositoryRoot</c> 相同的判据、不写死"往上几层"——
-    /// 层数会随目标框架、Debug/Release、将来换输出布局而变。
-    /// 找不到时退化成当前目录下的 <c>saves/</c>，至少不会写到别处去。
+    /// 存档根目录：仓库根下的 <c>saves/</c>（仓库根由 <see cref="RepositoryPaths"/> 定位）。<para>
+    /// 找不到仓库根时退化成当前目录下的 <c>saves/</c>，至少不会写到别处去。
     /// </para>
     /// </summary>
     private static string DefaultSaveRoot()
     {
-        DirectoryInfo? directory = new(AppContext.BaseDirectory);
-        while (directory is not null)
-        {
-            if (File.Exists(Path.Combine(directory.FullName, "NekoClicker.sln")))
-            {
-                return Path.Combine(directory.FullName, "saves");
-            }
+        string? root = RepositoryPaths.Find();
+        return root is null ? Path.Combine(Directory.GetCurrentDirectory(), "saves") : Path.Combine(root, "saves");
+    }
 
-            directory = directory.Parent;
-        }
-
-        return Path.Combine(Directory.GetCurrentDirectory(), "saves");
+    /// <summary>埋点目录：仓库根下的 <c>artifacts/</c>（<c>.gitignore</c> 已忽略）。</summary>
+    private static string DefaultArtifactsRoot()
+    {
+        string? root = RepositoryPaths.Find();
+        return Path.Combine(root ?? Directory.GetCurrentDirectory(), "artifacts");
     }
 
     private static string? ReadOption(string[] args, string name)
@@ -432,7 +441,8 @@ public static class Program
 
 /// <summary>宿主级选项。</summary>
 /// <param name="SaveRoot">存档根目录。</param>
-public sealed record HostOptions(string SaveRoot);
+/// <param name="LatencyLog">作答延迟埋点文件路径（见 <see cref="ChoiceLatencyLog"/>）。</param>
+public sealed record HostOptions(string SaveRoot, string LatencyLog);
 
 /// <summary>
 /// 已启动的会话表。<para>
@@ -460,7 +470,7 @@ internal static class Sessions
         {
             if (Started.TryGetValue(package.Id, out GameHost? existing)) return existing;
 
-            var host = new GameHost(package, options.SaveRoot);
+            var host = new GameHost(package, options.SaveRoot, latencyLogPath: options.LatencyLog);
             Started[package.Id] = host;
 
             if (host.OfflineOnLoad is { CookiesGained: > 0 } offline)

@@ -64,6 +64,7 @@ public sealed class GameHost : IAsyncDisposable
     private readonly WebPackage _package;
     private readonly GameEngine _engine;
     private readonly SaveManager _saves;
+    private readonly ChoiceLatencyLog _latency;
     private readonly Channel<Func<Task>> _work = Channel.CreateUnbounded<Func<Task>>(
         new UnboundedChannelOptions { SingleReader = true, SingleWriter = false });
 
@@ -86,6 +87,9 @@ public sealed class GameHost : IAsyncDisposable
     private readonly CancellationTokenSource _stopping = new();
     private readonly Thread _thread;
     private readonly Stopwatch _wall = Stopwatch.StartNew();
+
+    /// <summary><see cref="StopAsync"/> 只真正执行一次（否则第二次会在死掉的游戏线程上白等超时）。</summary>
+    private int _stopped;
     private double _lastTick;
     private double _lastPush;
     private OfflineProgress? _offlineOnLoad;
@@ -94,7 +98,8 @@ public sealed class GameHost : IAsyncDisposable
     /// <param name="package">要玩的内容包。</param>
     /// <param name="saveRoot">存档根目录（键会映射成 <c>根目录/键</c>）。<c>null</c> 表示不落盘。</param>
     /// <param name="seed">随机种子；<c>0</c> 表示按时间随机。</param>
-    public GameHost(WebPackage package, string? saveRoot = null, ulong seed = 0)
+    /// <param name="latencyLogPath">作答延迟埋点文件路径（见 <see cref="ChoiceLatencyLog"/>）；<c>null</c> 表示不落盘。</param>
+    public GameHost(WebPackage package, string? saveRoot = null, ulong seed = 0, string? latencyLogPath = null)
     {
         _package = package;
         _engine = new GameEngine(package.Build(), new GameEngineOptions
@@ -115,6 +120,15 @@ public sealed class GameHost : IAsyncDisposable
         {
             _saves = null!;
         }
+
+        // 作答延迟埋点（理由见 ChoiceLatencyLog 的类注释）。**必须建在读档之后**：
+        // 读档会把表态放进待答队列，而那些表态的"出现时刻"在这次会话之外，只能如实记成不可量。
+        _latency = new ChoiceLatencyLog(_engine, package.Id, latencyLogPath);
+        _latency.Answered += sample => Console.WriteLine(
+            $"[{package.Id}] ⏱ 表态「{sample.ChoiceId}」等了 {NumFormat.Duration(sample.SimulatedSeconds)}（模拟）"
+            + $" / {sample.WallSeconds.ToString("0.#", CultureInfo.InvariantCulture)} 秒（真实）才作答。");
+        _latency.Unmeasured += (choiceId, reason) =>
+            Console.WriteLine($"[{package.Id}] ⏱ 表态「{choiceId}」量不出时长：{reason}。");
 
         _lastSnapshot = _engine.Snapshot(_mode);
         _viewJson = SnapshotProtocol.Serialize(_lastSnapshot);
@@ -385,29 +399,86 @@ public sealed class GameHost : IAsyncDisposable
             ex => new DebugEraJump(false, $"内部错误：{ex.Message}", 0, 0, 0, 0))
             .ConfigureAwait(false);
 
-    /// <summary>停止推进并存档。给 <c>ApplicationStopping</c> 用。</summary>
+    /// <summary>
+    /// 停止推进并存档。给 <c>ApplicationStopping</c> 用。<para>
+    /// <b>这里的顺序是本质的。</b>1.2.0 声称"关停时经 <c>ApplicationStopping</c> 强制存档一次"，
+    /// 而实测没有发生——原因就是顺序反了：<c>_stopping.Cancel()</c> 排在"把存盘任务排进队列"
+    /// <b>之前</b>，ticker 循环当场退出，那条任务永远不会被排空。所以现在改为：
+    /// <b>先把存盘任务排进去、等它真的执行完，再取消循环</b>；而且等待用的是这条任务自己的回执，
+    /// <b>不绑在 <see cref="_stopping"/> 上</b>——绑上去的话一取消就立刻返回"游戏线程没有响应"，
+    /// 等于把"到底写没写"换成了"我猜它写了"，那正是这个 bug 的另一半。
+    /// </para>
+    /// <para>
+    /// 循环那一侧也补了一道：退出前会把队列最后排空一次（见 <see cref="TickerLoop"/> 的收尾），
+    /// 于是"取消之前排进来的工作"不会被静默丢掉。
+    /// </para>
+    /// </summary>
     public async Task StopAsync()
     {
-        _stopping.Cancel();
+        // 幂等：第二次调用时游戏线程已经死了，再排一条存盘任务只会白等超时。
+        if (Interlocked.Exchange(ref _stopped, 1) == 1) return;
 
-        // 存档必须在游戏线程上做（它要读引擎状态），所以先排一条工作再停线程
-        try
+        // ① 关停存档。必须在游戏线程上做（它要读引擎状态），而且必须在循环还活着的时候做。
+        if (_saves is not null)
         {
-            await ExecuteAsync(_ =>
+            var written = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            if (_work.Writer.TryWrite(() =>
+                {
+                    try
+                    {
+                        // 调试跳层过的会话不落盘：否则"退出时的那一次存档"会把调试状态写进玩家的真实存档。
+                        // 这一步是兜底——正常退出时 AutosaveEnabled 早已被跳层关掉了（见 JumpToEraAsync）。
+                        if (_debugMode)
+                        {
+                            Console.WriteLine($"[{_package.Id}] 调试模式：退出时不写存档。");
+                        }
+                        else
+                        {
+                            _saves.Save();
+                            Console.WriteLine($"[{_package.Id}] 退出前已存档：{_saves.Slot}");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        // 关停路径上不再抛：存不上也不能让进程退不出去。**但必须喊出来**——
+                        // "以为存上了、其实没存"正是 1.2.0 那句话造成的伤害。
+                        Console.Error.WriteLine($"[{_package.Id}] 退出存档失败：{ex.Message}");
+                    }
+                    finally
+                    {
+                        written.TrySetResult(true);
+                    }
+
+                    return Task.CompletedTask;
+                }))
             {
-                // 调试跳层过的会话不落盘：否则"退出时的那一次存档"会把调试状态写进玩家的真实存档。
-                // 这一步是兜底——正常退出时 AutosaveEnabled 早已被跳层关掉了（见 JumpToEraAsync）。
-                if (!_debugMode) _saves?.Save();
-                return new CommandOutcome(true, _debugMode ? "调试模式：退出时不写存档。" : "已存档。", Seq);
-            }, CancellationToken.None).ConfigureAwait(false);
-        }
-        catch (Exception)
-        {
-            // 关停路径上不再抛：存不上也不能让进程退不出去
+                try
+                {
+                    await written.Task.WaitAsync(TimeSpan.FromSeconds(5)).ConfigureAwait(false);
+                }
+                catch (TimeoutException)
+                {
+                    Console.Error.WriteLine(
+                        $"[{_package.Id}] 退出存档 5 秒内没有执行完，进程可能带着没落盘的进度退出。");
+                }
+            }
+            else
+            {
+                Console.Error.WriteLine(
+                    $"[{_package.Id}] 退出存档没能排进游戏线程（队列已封闭），本次关停没有写存档。");
+            }
         }
 
+        // ② 现在才让循环停下。它会先把手里的活干完再退出（TickerLoop 的收尾排空）。
+        _stopping.Cancel();
         _work.Writer.TryComplete();
         _thread.Join(TimeSpan.FromSeconds(2));
+
+        // ③ 游戏线程已经停了 —— 这时读埋点的累计值才是安全的（见 ChoiceLatencyLog 的线程约定）。
+        //    汇总同时进控制台与埋点文件：否则"真人到底等了多久"只留在文件里，而控制台当场就关了。
+        Console.WriteLine($"[{_package.Id}] {_latency.Summary()}");
+        _latency.Dispose();
 
         lock (_viewGate)
         {
@@ -431,17 +502,7 @@ public sealed class GameHost : IAsyncDisposable
         while (!_stopping.IsCancellationRequested)
         {
             // ① 先执行排队的命令（它们也在这个线程上，所以和 tick 天然互斥）
-            while (_work.Reader.TryRead(out Func<Task>? job))
-            {
-                try
-                {
-                    job();
-                }
-                catch (Exception)
-                {
-                    // 单条命令出错不该杀死整个会话；结果已经由 ExecuteAsync 回给对方了
-                }
-            }
+            DrainPendingWork();
 
             // ② 按真实经过时间推进。引擎内部是 30Hz 固定步长累加器，
             //    所以这里调用得比 30Hz 更频繁也不会改变模拟结果。
@@ -458,6 +519,27 @@ public sealed class GameHost : IAsyncDisposable
             }
 
             Thread.Sleep(8);
+        }
+
+        // 收尾：取消之后也要把队列排空。**这是"关停时强制存档"能成立的另一半**——
+        // 关停路径正是往这个队列里排一条存盘任务，而循环若在排空前就退出，
+        // 那条任务就被静默丢掉了（1.2.0 的 bug 就是这个形态：任务排进去了，只是没人执行）。
+        DrainPendingWork();
+    }
+
+    /// <summary>把队列里现有的工作全部执行掉。<b>只能在游戏线程上调用。</b></summary>
+    private void DrainPendingWork()
+    {
+        while (_work.Reader.TryRead(out Func<Task>? job))
+        {
+            try
+            {
+                job();
+            }
+            catch (Exception)
+            {
+                // 单条命令出错不该杀死整个会话；结果已经由 ExecuteAsync 回给对方了
+            }
         }
     }
 

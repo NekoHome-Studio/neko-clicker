@@ -30,15 +30,18 @@
 
   <ItemGroup>
     <!--
-      Web 前端的线上协议（SnapshotProtocol）以**共享源码**的形式参与编译，而不是加一个
-      ProjectReference。原因是两层框架不匹配：Web 宿主是 net10.0（本机只有 ASP.NET Core 10.x
-      共享框架），测试项目是 net8.0，直接引用编不过；而给宿主加 TargetFrameworks 会把
-      "这个宿主只跑在一个框架上"这件事复杂化。
+      Web 前端的三份实现以**共享源码**的形式参与编译，而不是加一个 ProjectReference：
+      线上协议（SnapshotProtocol）与作答延迟埋点（ChoiceLatencyLog / RepositoryPaths）。
 
-      共享源码的好处是**只有一份实现**：协议改了，两端编到的是同一份代码，
-      不存在"测试测的是一份副本、线上跑的是另一份"这种最坏的形态。
+      原先写的理由是"两层框架不匹配（Web 宿主是 net10.0）"——**那个理由已经过时**：
+      Web 宿主后来改成了与全仓库一致的 net8.0。机制保留的理由换成了下面这条，
+      而且它本来就比前一条更硬：共享源码保证**只有一份实现**——协议或埋点格式改了，
+      两端编到的是同一份代码，不存在"测试测的是一份副本、线上跑的是另一份"这种最坏的形态。
+      （改成 ProjectReference 能不能编过没有验证过；既然共享源码已经成立，就不为它冒险改结构。）
     -->
     <Compile Include="..\..\games\hosts\Web\SnapshotProtocol.cs" Link="Web\SnapshotProtocol.cs" />
+    <Compile Include="..\..\games\hosts\Web\ChoiceLatencyLog.cs" Link="Web\ChoiceLatencyLog.cs" />
+    <Compile Include="..\..\games\hosts\Web\RepositoryPaths.cs" Link="Web\RepositoryPaths.cs" />
   </ItemGroup>
 
 </Project>
