@@ -9,7 +9,7 @@
 #     · 增量推送的派生字段没处理干净 → 每帧 28KB，而"变化字段数 ≤ 4"的用例照样绿。
 #   所以这一层的判据只能是**真的通**：起宿主、发请求、读 SSE 流、看着它回话。
 #
-# 与单元测试的分工：`tools/build.ps1 -Strict` 守引擎（439 个用例 + 公开 API 快照），
+# 与单元测试的分工：`tools/build.ps1 -Strict` 守引擎（441 个用例 + 公开 API 快照），
 # 本脚本守"宿主 + 浏览器协议"那一段。CI 里两条都跑（.github/workflows/ci.yml）。
 #
 # 四段刻意为之的行为（都不是默认就该有的，是踩出来的）：
@@ -312,6 +312,13 @@ try {
     $offlineRender = [bool]($appScript.Body -and $appScript.Body.Contains('renderOffline'))
     Check 'app.js 里有离线收益渲染函数' ($appScript.Success -and $offlineRender) "含 <renderOffline>: $offlineRender"
 
+    # 永久线面板：同一层判据（挂载点 + 渲染函数真的送到了浏览器）
+    $permanentMount = [bool]($indexPage.Body -and $indexPage.Body.Contains('data-panel="permanent"'))
+    Check '首页里有永久线面板的挂载点' ($indexPage.Success -and $permanentMount) "含 <data-panel=`"permanent`">: $permanentMount"
+
+    $permanentRender = [bool]($appScript.Body -and $appScript.Body.Contains('renderPermanent'))
+    Check 'app.js 里有永久线渲染函数' ($appScript.Success -and $permanentRender) "含 <renderPermanent>: $permanentRender"
+
     # ------------------------------------------------------------ 元信息
     Write-Section '元信息'
     $expectedVersion = $null
@@ -350,6 +357,41 @@ try {
     Check '字段名是 camelCase' (($names -ccontains 'cookiesText') -and ($names -cnotcontains 'CookiesText')) ''
     Check '快照是紧凑 JSON（无缩进换行）' ($snapshotResponse.Body -and -not $snapshotResponse.Body.Contains("`n")) `
         "$([System.Text.Encoding]::UTF8.GetByteCount($snapshotResponse.Body)) 字节"
+
+    # 升级行的货币语义。前端不再解释枚举序数（老写法 `currency === 1` 一错就是静默的），
+    # 所以服务端必须把"这一行花哪个钱包、货币叫什么/什么图标"说全——这就是永久线面板的全部依据。
+    Write-Section '升级行的货币语义（永久线面板的依据）'
+    $upgrades = @($snapshot.upgrades)
+    $missingFields = @()
+    $wrongIcon = @()
+    $wrongWallet = @()
+    $permanentCount = 0
+    $prestigeRows = 0
+    foreach ($u in $upgrades) {
+        $fields = @($u.PSObject.Properties.Name)
+        foreach ($f in @('currencyIcon', 'currencyName', 'usesPrestigeCurrency', 'isPermanent', 'price')) {
+            if ($fields -cnotcontains $f) { $missingFields += "$($u.id):$f" }
+        }
+        if ([bool]$u.usesPrestigeCurrency) {
+            $prestigeRows++
+            if ($u.currencyIcon -ne $snapshot.prestigeCurrencyIcon) { $wrongIcon += $u.id }
+        }
+        elseif ($u.currencyIcon -ne $snapshot.currencyIcon) { $wrongIcon += $u.id }
+
+        if ([bool]$u.isPermanent) {
+            $permanentCount++
+            if (-not [bool]$u.usesPrestigeCurrency) { $wrongWallet += $u.id }
+        }
+    }
+    $missingDetail = if ($missingFields.Count -eq 0) { "$($upgrades.Count) 行都齐" } else { "缺：" + (($missingFields | Select-Object -First 4) -join '、') }
+    Check '每条升级行都带货币语义字段' ($upgrades.Count -gt 0 -and $missingFields.Count -eq 0) $missingDetail
+
+    $iconDetail = if ($wrongIcon.Count -eq 0) { "普通货币 $($upgrades.Count - $prestigeRows) 行、转生货币 $prestigeRows 行" } else { "对不上：" + (($wrongIcon | Select-Object -First 4) -join '、') }
+    Check '货币图标与该行所用的钱包一致' ($upgrades.Count -gt 0 -and $wrongIcon.Count -eq 0) $iconDetail
+
+    # 这个包必须有永久线，否则下面那条（以及前端那个面板）都是空的。
+    Check '永久线全部花转生货币（前端按这个旗子选钱包）' ($permanentCount -ge 1 -and $wrongWallet.Count -eq 0) `
+        "永久升级 $permanentCount 条$(if ($wrongWallet.Count -gt 0) { "，其中 " + ($wrongWallet -join '、') + " 用了普通货币" })"
 
     # ------------------------------------------------------------ 命令
     Write-Section '命令（点 40 下，应该真的涨钱）'

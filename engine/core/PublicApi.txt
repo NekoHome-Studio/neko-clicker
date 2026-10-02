@@ -1,4 +1,4 @@
-# NekoClicker 公开 API 快照 format=1 assembly=NekoClicker.Core version=1.3.0
+# NekoClicker 公开 API 快照 format=1 assembly=NekoClicker.Core version=1.4.0
 
 public static class NekoClicker.Core.AchievementSystem
   method static System.Collections.Generic.List<NekoClicker.Core.Content.AchievementDefinition>! Check(NekoClicker.Core.Content.GameContent! content, NekoClicker.Core.GameState! state, NekoClicker.Core.IGameMetrics! metrics, NekoClicker.Core.Events.GameEventBus! events)
@@ -1913,12 +1913,15 @@ public sealed class NekoClicker.Core.Views.UpgradeView : System.IEquatable<NekoC
   prop System.Boolean IsPermanent { get; init; }
   prop System.Boolean IsUnlocked { get; init; }
   prop System.Boolean IsVisible { get; }
+  prop System.Boolean UsesPrestigeCurrency { get; init; }
   prop System.Double Price { get; init; }
   prop System.Double UnlockProgress { get; init; }
   prop System.Int32 MaxPurchases { get; init; }
   prop System.Int32 Owned { get; init; }
   prop System.Int32 Tier { get; init; }
   prop System.String! Category { get; init; }
+  prop System.String! CurrencyIcon { get; init; }
+  prop System.String! CurrencyName { get; init; }
   prop System.String! Description { get; init; }
   prop System.String! EffectSummary { get; init; }
   prop System.String! Icon { get; init; }

@@ -84,7 +84,8 @@ public static class GameViewFactory
             bool unlocked = definition.Unlock.IsMet(metrics, content);
             int owned = state.UpgradeCount(definition.Id);
             double price = Pricing.UpgradePrice(definition, owned, 1);
-            double wallet = definition.Currency == UpgradeCurrency.PrestigeChips ? state.PrestigeChips : state.Cookies;
+            bool usesChips = definition.Currency == UpgradeCurrency.PrestigeChips;
+            double wallet = usesChips ? state.PrestigeChips : state.Cookies;
 
             upgrades.Add(new UpgradeView
             {
@@ -94,6 +95,11 @@ public static class GameViewFactory
                 Description = definition.Description,
                 Price = price,
                 Currency = definition.Currency,
+                // 钱包与货币名一起给：前端只该按 UsesPrestigeCurrency 选钱包、按 CurrencyIcon 画图标，
+                // 而不是去解释枚举序数（那条路错起来是静默的，见 UpgradeView 的注释）。
+                UsesPrestigeCurrency = usesChips,
+                CurrencyName = usesChips ? content.PrestigeCurrencyName : content.CurrencyName,
+                CurrencyIcon = usesChips ? content.PrestigeCurrencyIcon : content.CurrencyIcon,
                 Owned = owned,
                 MaxPurchases = definition.MaxPurchases,
                 IsUnlocked = unlocked,

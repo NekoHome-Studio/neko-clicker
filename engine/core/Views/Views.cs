@@ -90,6 +90,22 @@ public sealed record UpgradeView
     /// <summary>计价货币。</summary>
     public UpgradeCurrency Currency { get; init; }
 
+    /// <summary>
+    /// 这一行是否花**转生货币**（即该与 <see cref="GameSnapshot.PrestigeChips"/> 比价，
+    /// 而不是与 <see cref="GameSnapshot.Cookies"/>）。<para>
+    /// 存在的理由是<b>让前端不必认识枚举序数</b>：它按服务端给的这面旗子选钱包，
+    /// 而不是写 <c>currency === 1</c>——后者在 <see cref="UpgradeCurrency"/> 成员顺序
+    /// 一变时就静默错位（买得起的行灰着、买不起的行亮着，而两边都不报错）。
+    /// </para>
+    /// </summary>
+    public bool UsesPrestigeCurrency { get; init; }
+
+    /// <summary>计价货币的显示名（与内容包里那一份一致：普通货币或转生货币）。</summary>
+    public string CurrencyName { get; init; } = string.Empty;
+
+    /// <summary>计价货币的图标。</summary>
+    public string CurrencyIcon { get; init; } = string.Empty;
+
     /// <summary>已购次数。</summary>
     public int Owned { get; init; }
 

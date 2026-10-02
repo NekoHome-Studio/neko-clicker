@@ -74,6 +74,8 @@
       <nav class="tabs" id="tabs">
         <button data-tab="buildings" class="active">建筑</button>
         <button data-tab="upgrades">升级</button>
+        <!-- 永久线：内容包没有这条线时整个按钮会被隐藏（见 app.js 的 renderPermanent） -->
+        <button data-tab="permanent" id="tab-permanent">永久 <b id="permanent-badge" class="badge hidden"></b></button>
         <button data-tab="choices">表态 <b id="choice-badge" class="badge hidden"></b></button>
         <button data-tab="codex">图鉴</button>
         <button data-tab="achievements">成就</button>
@@ -94,6 +96,20 @@
           <span id="upgrade-count" class="muted"></span>
         </div>
         <div id="upgrades" class="list"></div>
+      </div>
+
+      <!-- 永久升级线：转生后保留的那条线（`upgrades[].isPermanent`），也是转生货币唯一的去处。
+           它刻意**不服从 hiddenUntilUnlocked**（与「升级」面板相反）：这条线的存在本身要在
+           第一次舍命之前就能看见——否则玩家不知道该攒什么，而"舍一命换转生货币、再拿它买永久升级"
+           正是这个游戏的主循环。锁着的行照样列出来，带解锁条件与进度。 -->
+      <div class="panel hidden" data-panel="permanent">
+        <div class="panel-head">
+          <h2>永久升级线</h2>
+          <span id="permanent-count" class="muted"></span>
+        </div>
+        <p id="permanent-wallet" class="wallet"></p>
+        <p id="permanent-hint" class="muted"></p>
+        <div id="permanent" class="list"></div>
       </div>
 
       <div class="panel hidden" data-panel="choices">

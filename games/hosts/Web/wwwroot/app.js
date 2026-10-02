@@ -106,7 +106,10 @@ function recomputeAffordable() {
   const rows = [...(state.buildings ?? []), ...(state.upgrades ?? [])];
 
   for (const row of rows) {
-    const budget = row.currency === 1 ? premium : wallet;
+    // 哪一行花哪个钱包由服务端说了算（`usesPrestigeCurrency`）。
+    // 这里曾经写的是 `row.currency === 1`——枚举序数，成员顺序一变就静默错位：
+    // 买得起的行灰着、买不起的行亮着，而控制台里一个错都没有。
+    const budget = row.usesPrestigeCurrency ? premium : wallet;
     const price = row.price ?? row.batchPrice ?? Infinity;
     row.canAfford = Boolean(row.isUnlocked) && !row.isMaxed && price <= budget;
   }
@@ -150,6 +153,7 @@ function render() {
   renderEra();
   renderBuildings();
   renderUpgrades();
+  renderPermanent();
   renderBatch();
   renderChoices();
   renderCodex();
@@ -669,15 +673,23 @@ function renderBuildings() {
   }
 }
 
+/**
+ * 普通升级列表。**永久线不在这里**——它们有自己的面板（见 renderPermanent），
+ * 否则一条线会被两处渲染，而且"哪个钱包付钱"会在同一张列表里混着。
+ *
+ * 这里曾经有一个 `slice(0, 40)`：咖啡馆包 48 条升级，末尾几条会**无声地**少掉。
+ * 那是这一层最不该有的失败形态（数据都在，界面上什么都不说），所以直接去掉——
+ * 四十来张卡片对浏览器不是负担。
+ */
 function renderUpgrades() {
   const host = $("#upgrades");
-  const rows = (state.upgrades ?? []).filter((u) => u.isVisible);
+  const rows = (state.upgrades ?? []).filter((u) => u.isVisible && !u.isPermanent);
   const available = rows.filter((u) => u.isAvailable);
   host.textContent = "";
 
   $("#upgrade-count").textContent = available.length > 0 ? `${available.length} 项可买` : "暂无可买";
 
-  for (const upgrade of rows.slice(0, 40)) {
+  for (const upgrade of rows) {
     const card = document.createElement("button");
     card.className = "card compact";
     if (upgrade.isMaxed) card.classList.add("maxed");
@@ -692,8 +704,8 @@ function renderUpgrades() {
 
     const price = document.createElement("span");
     price.className = "price";
-    const icon = upgrade.currency === 1 ? state.prestigeCurrencyIcon : state.currencyIcon;
-    price.textContent = upgrade.isUnlocked ? `${icon} ${number(upgrade.price)}` : percent(upgrade.unlockProgress);
+    // 图标也由服务端给（`currencyIcon`），不再按枚举序数在前端两选一
+    price.textContent = upgrade.isUnlocked ? `${upgrade.currencyIcon} ${number(upgrade.price)}` : percent(upgrade.unlockProgress);
     card.append(price);
 
     if (upgrade.effectSummary) {
@@ -705,6 +717,85 @@ function renderUpgrades() {
 
     if (upgrade.isUnlocked && !upgrade.isMaxed) {
       card.addEventListener("click", () => send("upgrade", { id: upgrade.id }));
+    } else {
+      card.disabled = true;
+    }
+
+    host.append(card);
+  }
+}
+
+/**
+ * 永久升级线：转生之后仍然保留的那条线（服务端 `isPermanent`），也是转生货币唯一的去处。
+ *
+ * 两条刻意的设计：
+ *   · **不服从 `hiddenUntilUnlocked`**（与「升级」面板相反）。这条线的存在本身要在玩家
+ *     第一次舍命之前就能看见——否则他不知道该攒什么，而"舍一命换转生货币、再拿它买永久升级"
+ *     正是这游戏的主循环。锁着的行照样列出来，带解锁条件与进度（与图鉴里未读条目的做法一致）。
+ *   · 钱包、货币名、货币图标全部取服务端字段（`usesPrestigeCurrency` / `currencyName` /
+ *     `currencyIcon`），前端不认识 `UpgradeCurrency` 这种东西。
+ *
+ * 内容包没有这条线时（`isPermanent` 一行都没有），整个标签会被隐藏；留在「永久」标签上时会
+ * 自动退回「升级」，免得停在一张空面板上。
+ */
+function renderPermanent() {
+  const rows = (state.upgrades ?? []).filter((u) => u.isPermanent);
+  const tab = $("#tab-permanent");
+  const panel = document.querySelector('[data-panel="permanent"]');
+
+  tab.classList.toggle("hidden", rows.length === 0);
+  if (rows.length === 0) {
+    if (panel && !panel.classList.contains("hidden")) selectTab("upgrades");
+    return;
+  }
+
+  const owned = rows.filter((u) => u.owned > 0).length;
+  const affordable = rows.filter((u) => u.isAvailable && u.canAfford).length;
+  const icon = state.prestigeCurrencyIcon ?? "";
+  const name = state.prestigeCurrencyName ?? "";
+
+  const badge = $("#permanent-badge");
+  badge.textContent = affordable;
+  badge.classList.toggle("hidden", affordable === 0);
+
+  $("#permanent-count").textContent = `已买 ${owned} / ${rows.length} 项`;
+  $("#permanent-wallet").textContent = `${icon} ${number(state.prestigeChips ?? 0)} ${name}`;
+
+  const preview = state.prestige ?? {};
+  $("#permanent-hint").textContent = preview.canAscend
+    ? `现在舍一命可得 ${icon} ${number(preview.chipsOnAscend ?? 0)} ${name}；这条线上的东西转生之后仍然在。`
+    : `这条线上的东西转生之后仍然在。${name}来自「舍一命」`
+      + `${state.era?.progressText ? `——本层进度 ${state.era.progressText}` : "（完成本层主线即可）"}。`;
+
+  const host = $("#permanent");
+  host.textContent = "";
+
+  for (const row of rows) {
+    const card = document.createElement("button");
+    card.className = "card compact";
+    if (row.isMaxed) card.classList.add("maxed");
+    else if (!row.isUnlocked) card.classList.add("locked");
+    else if (row.canAfford) card.classList.add("affordable");
+
+    const label = document.createElement("span");
+    label.className = "name";
+    label.textContent = row.isUnlocked ? `${row.icon} ${row.name}` : `🔒 ${row.name}`;
+    if (row.maxPurchases > 1) label.textContent += ` ${row.owned} / ${row.maxPurchases}`;
+    else if (row.owned > 0) label.textContent += " ✔";
+    card.append(label);
+
+    const price = document.createElement("span");
+    price.className = "price";
+    price.textContent = row.isUnlocked ? `${row.currencyIcon} ${number(row.price)}` : percent(row.unlockProgress);
+    card.append(price);
+
+    const note = document.createElement("span");
+    note.className = "effect";
+    note.textContent = row.isUnlocked ? row.description : `${row.unlockHint}（${percent(row.unlockProgress)}）`;
+    card.append(note);
+
+    if (row.isUnlocked && !row.isMaxed) {
+      card.addEventListener("click", () => send("upgrade", { id: row.id }));
     } else {
       card.disabled = true;
     }

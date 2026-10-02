@@ -591,3 +591,13 @@ footer code { background: #00000055; padding: .05rem .3rem; border-radius: 4px; 
   .sheet { animation: none; }
 }
 
+/* ---------------------------------------------------------------- 永久升级线
+   钱包那一行是这块面板的计数器：它回答"我还差多少才能买下一条"。
+   金色是因为它数的不是普通货币——与纪元面板上的"可得 🍃 N"是同一套语言。 */
+.wallet {
+  margin: 0 0 .4rem;
+  font-size: 1.05rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--gold);
+}
+
