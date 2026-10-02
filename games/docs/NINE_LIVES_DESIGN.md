@@ -2,9 +2,9 @@
 
 > 本文把世界观设定翻译成**引擎可承载的设计**。当前阶段只做设计，不改代码。
 >
-> 关联文档：[ARCHITECTURE.md]../../engine/docs/ARCHITECTURE.md（引擎结构）、[CONTENT_AUTHORING.md]../../engine/docs/CONTENT_AUTHORING.md（内容写法）
+> 关联文档：[ARCHITECTURE.md](../../engine/docs/ARCHITECTURE.md)（引擎结构）、[CONTENT_AUTHORING.md](../../engine/docs/CONTENT_AUTHORING.md)（内容写法）
 >
-> **要动手时的入口是 [ROADMAP.md]ROADMAP.md**：那里有全部已定决策、架构不变量、
+> **要动手时的入口是 [ROADMAP.md](ROADMAP.md)**：那里有全部已定决策、架构不变量、
 > 能力依赖图、接口契约与阶段验收。本文只负责"设定 → 设计"的翻译。
 
 ---
@@ -88,7 +88,7 @@
    它们的转生语义只是 `Era` 的不同文案，建筑线只是不同命名与解锁表，**不需要新的引擎代码**。
    这就是框架分层真正的回报——四个包的内容生产成本 ≈ 一个包。
    ✅ **已在阶段 5 全部交付**（四个包核心零改动，见 `games/docs/ROADMAP.md` 阶段 5 与
-   [STAGE_5_RESKINS.md]STAGE_5_RESKINS.md）。
+   [STAGE_5_RESKINS.md](STAGE_5_RESKINS.md)）。
 
 只有两个包需要**超出 Era 的额外机制**：
 - **#6 末世**需要"跨转生继承"（`ResetRun` 现在的语义是清空全部建筑，而末世要"保留上纪元猫娘"）。
@@ -433,7 +433,7 @@ public sealed record ChoiceDefinition
 
 | 阶段 | 交付 | 为什么这个顺序 |
 |---|---|---|
-| **0** | **#1 猫娘咖啡馆**（零引擎改动） | 验证"换内容包即换游戏"。今天就能做，且不需要任何新系统。**完整规格见 [PACK_01_CAT_CAFE.md]PACK_01_CAT_CAFE.md**。<br>✅ **已完成**（2026-09-24）：`engine/content/Cafe/` + Demo `--package` + 架构测试 |
+| **0** | **#1 猫娘咖啡馆**（零引擎改动） | 验证"换内容包即换游戏"。今天就能做，且不需要任何新系统。**完整规格见 [PACK_01_CAT_CAFE.md](PACK_01_CAT_CAFE.md)**。<br>✅ **已完成**（2026-09-24）：`engine/content/Cafe/` + Demo `--package` + 架构测试 |
 | **1** | 系统 A（Era + 灰按钮）+ **#2 九命轮回** | `Era` 是 9/10 个包的必经之路；九命轮回是它的母版。<br>✅ **已完成**：`engine/content/NineLives/` |
 | **2** | 系统 B（叙事 + 图鉴） | 所有包共用；先把 #1#2 的文案挂上去验收。<br>✅ **已完成**：叙事线 + 图鉴 + 两包 101 条条目 |
 | **3** | 系统 C（选择 + 立场轴）+ **#3 实验室** / **#10 公司** | 做"道德层"与"讽刺层"这两个以选择为核心的包。<br>✅ **已完成**：`engine/content/Lab/` + `engine/content/Company/`（第二套、第三套立场轴与叙事都跑在同一套代码上） |

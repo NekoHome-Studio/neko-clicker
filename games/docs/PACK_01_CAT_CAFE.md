@@ -1,14 +1,14 @@
 # 内容包 #1：《猫娘咖啡馆》完整规格
 
 > **状态（2026-09-24）：已落代码。** 实现在 `engine/content/Cafe/`，
-> 可执行 `.\tools\play.ps1 --package cafe` 试玩；验收记录见 [ROADMAP.md]ROADMAP.md §7 阶段 0。
+> 可执行 `.\tools\play.ps1 --package cafe` 试玩；验收记录见 [ROADMAP.md](ROADMAP.md) §7 阶段 0。
 > 唯一与本文的差异：§10 的 50 条叙事按 R10 暂走描述字段，等阶段 2 的 S-B 到位再补。
 
 > **这份文档有双重身份**：
 > 1. 它是**内容包 #1 的可落代码规格**——按表填就能做出能玩的游戏，不需要任何引擎能力。
 > 2. 它是**其余九个包的写作模板**——第 14 节列出"换一个包要改哪几行"。
 >
-> 关联：[NINE_LIVES_DESIGN.md]NINE_LIVES_DESIGN.md（总体设计）、[CONTENT_AUTHORING.md]../../engine/docs/CONTENT_AUTHORING.md（框架写法）
+> 关联：[NINE_LIVES_DESIGN.md](NINE_LIVES_DESIGN.md)（总体设计）、[CONTENT_AUTHORING.md](../../engine/docs/CONTENT_AUTHORING.md)（框架写法）
 
 ---
 

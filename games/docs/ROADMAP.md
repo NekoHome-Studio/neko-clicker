@@ -15,7 +15,7 @@
 > [NINE_LIVES_DESIGN.md](NINE_LIVES_DESIGN.md)（世界观映射）、
 > [PACK_01_CAT_CAFE.md](PACK_01_CAT_CAFE.md)（第一个包的完整规格）、
 > [ARCHITECTURE.md](../../engine/docs/ARCHITECTURE.md)（引擎结构）、
-> [VERSIONING.md]../../engine/docs/VERSIONING.md（版本与兼容性承诺）
+> [VERSIONING.md](../../engine/docs/VERSIONING.md)（版本与兼容性承诺）
 
 ---
 
@@ -873,7 +873,7 @@ Modifiers =
 **四个包都只用已经交付过的能力**：`Era`（五层，每层换一处规则）、`Lore`（四条线 40 条）、
 一个 `IGameModule` 承载的第二资源、结局条件树——没有新增任何引擎能力。这就是 G1/A3 主张的
 最终检验：**十个包跑在同一个核心上，核心零内容知识**。执行手册见
-[STAGE_5_RESKINS.md]STAGE_5_RESKINS.md。
+[STAGE_5_RESKINS.md](STAGE_5_RESKINS.md)。
 
 #### 四个包各自抓到的东西（都不是"写完就过"）
 

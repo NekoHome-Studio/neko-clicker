@@ -378,7 +378,7 @@ public void Configure(GameContentBuilder builder)
 **正常写内容包不会。** 你只是在调用 `NekoClicker.Core` 的公开 API，
 不修改它的表面，所以 `PublicApiTests` 不会因为你的内容改动而红。
 
-只有两种情况会牵动版本号（详见 [VERSIONING.md]VERSIONING.md）：
+只有两种情况会牵动版本号（详见 [VERSIONING.md](VERSIONING.md)）：
 
 1. **你觉得框架少了个能力，想往核心里加一个公开成员**。这是 ROADMAP 里 A3 想拦的事：
    先停下来问"这能不能用已有的接缝表达"。#6 末世（跨转生继承）与 #9 图书馆（虚无化）
