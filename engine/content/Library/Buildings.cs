@@ -20,6 +20,14 @@ namespace NekoClicker.Content.Library;
 /// </summary>
 internal static class Buildings
 {
+    /// <summary>
+    /// 本包的 <c>text.json</c>：建筑文案与剧情散文<b>共用同一份实例</b>（<see cref="Lore.Prose"/>）。<para>
+    /// 必须共用：孤儿检查会遍历整份文件的每个 kind，而"哪些 id 已取用"是按实例记的——
+    /// 两个实例各记一半，就会把对方那些 id 全报成孤儿。
+    /// </para>
+    /// </summary>
+    private static ContentText Prose => Lore.Prose;
+
     /// <summary>产出「被阅读度」的建筑标签。</summary>
     public const string ReaderTag = ReadershipModule.ReaderTag;
 
@@ -29,18 +37,18 @@ internal static class Buildings
         new()
         {
             Id = "bookshelf",
-            Name = "书架",
+            Name = Prose.Text("buildings", "bookshelf", "name"),
             Icon = "📚",
-            Description = "一排从地板顶到天花板的架子，上面什么都有，也什么都没人拿下来过。",
+            Description = Prose.Text("buildings", "bookshelf", "description"),
             BasePrice = 15,
             BaseCps = 0.1,
         },
         new()
         {
             Id = "reading_room",
-            Name = "阅览室",
+            Name = Prose.Text("buildings", "reading_room", "name"),
             Icon = "🪑",
-            Description = "长桌，绿罩灯，椅背上有别人留下的温度。她第一次听见翻页的声音。",
+            Description = Prose.Text("buildings", "reading_room", "description"),
             BasePrice = 100,
             BaseCps = 1,
             Unlock = UnlockCondition.EarnedAllTimeAtLeast(30),
@@ -49,9 +57,9 @@ internal static class Buildings
         new()
         {
             Id = "copier",
-            Name = "复印机",
+            Name = Prose.Text("buildings", "copier", "name"),
             Icon = "📠",
-            Description = "复印是唯一的传播方式。墨粉贵得要命，但一本变成两本就是两倍的读者。",
+            Description = Prose.Text("buildings", "copier", "description"),
             BasePrice = 1_100,
             BaseCps = 8,
             Unlock = UnlockCondition.EarnedAllTimeAtLeast(330),
@@ -60,9 +68,9 @@ internal static class Buildings
         new()
         {
             Id = "banned_section",
-            Name = "禁书区",
+            Name = Prose.Text("buildings", "banned_section", "name"),
             Icon = "🔒",
-            Description = "铁栅栏后面那排书反而最抢手。她说早知道这样，当初就不该上锁。",
+            Description = Prose.Text("buildings", "banned_section", "description"),
             BasePrice = 12_000,
             BaseCps = 47,
             Unlock = UnlockCondition.EarnedAllTimeAtLeast(4_000),
@@ -71,9 +79,9 @@ internal static class Buildings
         new()
         {
             Id = "author_room",
-            Name = "作者室",
+            Name = Prose.Text("buildings", "author_room", "name"),
             Icon = "🖋️",
-            Description = "一张桌子，一盏灯，一把永远是热的椅子。她在这儿写下一个世界的第一句话。",
+            Description = Prose.Text("buildings", "author_room", "description"),
             BasePrice = 130_000,
             BaseCps = 260,
             Unlock = UnlockCondition.EarnedAllTimeAtLeast(45_000),
@@ -81,9 +89,9 @@ internal static class Buildings
         new()
         {
             Id = "index_tower",
-            Name = "索引塔",
+            Name = Prose.Text("buildings", "index_tower", "name"),
             Icon = "🗼",
-            Description = "把整座图书馆的目录立起来，高到能看见天台。找得到才有人读。",
+            Description = Prose.Text("buildings", "index_tower", "description"),
             BasePrice = 1_400_000,
             BaseCps = 1_400,
             Unlock = UnlockCondition.EarnedAllTimeAtLeast(500_000),
@@ -92,9 +100,9 @@ internal static class Buildings
         new()
         {
             Id = "printing_house",
-            Name = "印坊",
+            Name = Prose.Text("buildings", "printing_house", "name"),
             Icon = "🖨️",
-            Description = "第一次印出不是手抄的整本。油墨味顺着走廊一直飘到门口。",
+            Description = Prose.Text("buildings", "printing_house", "description"),
             BasePrice = 20_000_000,
             BaseCps = 7_800,
             Unlock = UnlockCondition.EarnedAllTimeAtLeast(6_000_000),
@@ -103,9 +111,9 @@ internal static class Buildings
         new()
         {
             Id = "world_workshop",
-            Name = "世界观工坊",
+            Name = Prose.Text("buildings", "world_workshop", "name"),
             Icon = "🧩",
-            Description = "墙上贴满便签，每一张都是一条规则。规则越多，住进去的人越不容易掉出来。",
+            Description = Prose.Text("buildings", "world_workshop", "description"),
             BasePrice = 330_000_000,
             BaseCps = 44_000,
             Unlock = UnlockCondition.EarnedAllTimeAtLeast(80_000_000),
@@ -113,9 +121,9 @@ internal static class Buildings
         new()
         {
             Id = "endless_shelf",
-            Name = "无尽书架",
+            Name = Prose.Text("buildings", "endless_shelf", "name"),
             Icon = "♾️",
-            Description = "走到头要花掉一整天。她说不必走到头，「读到哪里，哪里就是书架的尽头」。",
+            Description = Prose.Text("buildings", "endless_shelf", "description"),
             BasePrice = 5_100_000_000,
             BaseCps = 260_000,
             Unlock = UnlockCondition.EarnedAllTimeAtLeast(1_000_000_000),

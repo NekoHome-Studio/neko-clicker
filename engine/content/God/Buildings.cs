@@ -29,6 +29,14 @@ namespace NekoClicker.Content.God;
 /// </summary>
 internal static class Buildings
 {
+    /// <summary>
+    /// 本包的 <c>text.json</c>：建筑文案与剧情散文<b>共用同一份实例</b>（<see cref="Lore.Prose"/>）。<para>
+    /// 必须共用：孤儿检查会遍历整份文件的每个 kind，而"哪些 id 已取用"是按实例记的——
+    /// 两个实例各记一半，就会把对方那些 id 全报成孤儿。
+    /// </para>
+    /// </summary>
+    private static ContentText Prose => Lore.Prose;
+
     /// <summary>产出「信仰」的建筑标签。</summary>
     public const string TempleTag = FaithModule.TempleTag;
 
@@ -41,9 +49,9 @@ internal static class Buildings
         new()
         {
             Id = "house_shrine",
-            Name = "家神龛",
+            Name = Prose.Text("buildings", "house_shrine", "name"),
             Icon = "🏠",
-            Description = "灶台边上那块木板。她第一天上岗，供品是自己偷来的半条鱼。",
+            Description = Prose.Text("buildings", "house_shrine", "description"),
             BasePrice = 15,
             BaseCps = 0.1,
             Tags = [TempleTag],
@@ -51,9 +59,9 @@ internal static class Buildings
         new()
         {
             Id = "stone_temple",
-            Name = "石造神殿",
+            Name = Prose.Text("buildings", "stone_temple", "name"),
             Icon = "🏛️",
-            Description = "终于有了屋顶。柱子是她自己搬的，搬了三个月，中途骂了两次人。",
+            Description = Prose.Text("buildings", "stone_temple", "description"),
             BasePrice = 100,
             BaseCps = 1,
             Unlock = UnlockCondition.EarnedThisRunAtLeast(30),
@@ -62,9 +70,9 @@ internal static class Buildings
         new()
         {
             Id = "offering_altar",
-            Name = "祭坛",
+            Name = Prose.Text("buildings", "offering_altar", "name"),
             Icon = "🕯️",
-            Description = "放供品的地方。规矩是「先闻一下再收走」，她说这是流程，不是馋。",
+            Description = Prose.Text("buildings", "offering_altar", "description"),
             BasePrice = 1_100,
             BaseCps = 8,
             Unlock = UnlockCondition.EarnedThisRunAtLeast(330),
@@ -73,9 +81,9 @@ internal static class Buildings
         new()
         {
             Id = "sun_obelisk",
-            Name = "太阳方尖碑",
+            Name = Prose.Text("buildings", "sun_obelisk", "name"),
             Icon = "☀️",
-            Description = "埃及猫神的排面。影子每天准点扫过广场，信徒说这是神迹，其实是她懒得调表。",
+            Description = Prose.Text("buildings", "sun_obelisk", "description"),
             BasePrice = 12_000,
             BaseCps = 47,
             Unlock = UnlockCondition.EarnedThisRunAtLeast(4_000),
@@ -83,9 +91,9 @@ internal static class Buildings
         new()
         {
             Id = "oracle_grove",
-            Name = "神谕林",
+            Name = Prose.Text("buildings", "oracle_grove", "name"),
             Icon = "🌳",
-            Description = "希腊猫神的神谕处。预言以雾的形式发放，实际内容多半是「你自己看着办」。",
+            Description = Prose.Text("buildings", "oracle_grove", "description"),
             BasePrice = 130_000,
             BaseCps = 260,
             Unlock = UnlockCondition.EarnedThisRunAtLeast(45_000),
@@ -93,9 +101,9 @@ internal static class Buildings
         new()
         {
             Id = "thunder_hall",
-            Name = "雷霆殿",
+            Name = Prose.Text("buildings", "thunder_hall", "name"),
             Icon = "⚡",
-            Description = "北欧猫神的英灵殿分殿。不打烊，不收门票，唯一的规矩是进门要脱鞋。",
+            Description = Prose.Text("buildings", "thunder_hall", "description"),
             BasePrice = 1_400_000,
             BaseCps = 1_400,
             Unlock = UnlockCondition.EarnedThisRunAtLeast(500_000),
@@ -104,9 +112,9 @@ internal static class Buildings
         new()
         {
             Id = "stream_studio",
-            Name = "直播间",
+            Name = Prose.Text("buildings", "stream_studio", "name"),
             Icon = "📹",
-            Description = "神也要恰饭。补光灯一开，香火变成了打赏，经文变成了口播广告。",
+            Description = Prose.Text("buildings", "stream_studio", "description"),
             BasePrice = 20_000_000,
             BaseCps = 7_800,
             Unlock = UnlockCondition.EarnedThisRunAtLeast(6_000_000),
@@ -115,9 +123,9 @@ internal static class Buildings
         new()
         {
             Id = "merch_factory",
-            Name = "周边工厂",
+            Name = Prose.Text("buildings", "merch_factory", "name"),
             Icon = "🧸",
-            Description = "毛绒猫神、猫神马克杯、猫神联名猫薄荷。她说这是传播信仰，账本说这是营收。",
+            Description = Prose.Text("buildings", "merch_factory", "description"),
             BasePrice = 330_000_000,
             BaseCps = 44_000,
             Unlock = UnlockCondition.EarnedThisRunAtLeast(80_000_000),
@@ -125,9 +133,9 @@ internal static class Buildings
         new()
         {
             Id = "abyssal_cathedral",
-            Name = "深渊大教堂",
+            Name = Prose.Text("buildings", "abyssal_cathedral", "name"),
             Icon = "🐙",
-            Description = "克苏鲁猫的主场。建筑学上它不该存在，会计学上它是这一层最赚的一座。",
+            Description = Prose.Text("buildings", "abyssal_cathedral", "description"),
             BasePrice = 5_100_000_000,
             BaseCps = 260_000,
             Unlock = UnlockCondition.EarnedThisRunAtLeast(1_000_000_000),

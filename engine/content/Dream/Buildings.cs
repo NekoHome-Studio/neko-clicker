@@ -20,6 +20,14 @@ namespace NekoClicker.Content.Dream;
 /// </summary>
 internal static class Buildings
 {
+    /// <summary>
+    /// 本包的 <c>text.json</c>：建筑文案与剧情散文<b>共用同一份实例</b>（<see cref="Lore.Prose"/>）。<para>
+    /// 必须共用：孤儿检查会遍历整份文件的每个 kind，而"哪些 id 已取用"是按实例记的——
+    /// 两个实例各记一半，就会把对方那些 id 全报成孤儿。
+    /// </para>
+    /// </summary>
+    private static ContentText Prose => Lore.Prose;
+
     /// <summary>产出「梦境能量」的建筑标签。</summary>
     public const string DreamLayerTag = DreamEnergyModule.DreamLayerTag;
 
@@ -29,18 +37,18 @@ internal static class Buildings
         new()
         {
             Id = "pillow",
-            Name = "枕头",
+            Name = Prose.Text("buildings", "pillow", "name"),
             Icon = "🛏️",
-            Description = "她侧过身，把脸埋进那一小块凹下去的地方。世界安静下来，只剩自己的心跳在数数。",
+            Description = Prose.Text("buildings", "pillow", "description"),
             BasePrice = 15,
             BaseCps = 0.1,
         },
         new()
         {
             Id = "dream_layer",
-            Name = "梦层",
+            Name = Prose.Text("buildings", "dream_layer", "name"),
             Icon = "🌙",
-            Description = "第一层梦。楼下的街是熟悉的，只是所有的招牌都换成了她认得的字。",
+            Description = Prose.Text("buildings", "dream_layer", "description"),
             BasePrice = 100,
             BaseCps = 1,
             Unlock = UnlockCondition.EarnedThisRunAtLeast(30),
@@ -49,9 +57,9 @@ internal static class Buildings
         new()
         {
             Id = "dream_mirror",
-            Name = "梦镜",
+            Name = Prose.Text("buildings", "dream_mirror", "name"),
             Icon = "🪞",
-            Description = "镜子里的她比她慢半拍。她抬手，镜子里的人还没来得及抬——然后两个人都笑了。",
+            Description = Prose.Text("buildings", "dream_mirror", "description"),
             BasePrice = 1_100,
             BaseCps = 8,
             Unlock = UnlockCondition.EarnedThisRunAtLeast(330),
@@ -59,9 +67,9 @@ internal static class Buildings
         new()
         {
             Id = "nightmare_nest",
-            Name = "噩梦巢",
+            Name = Prose.Text("buildings", "nightmare_nest", "name"),
             Icon = "🕷️",
-            Description = "梦的褶皱里积着没做完的坏事。它们不追人，只是挤在一起，把那一块梦境压得很低。",
+            Description = Prose.Text("buildings", "nightmare_nest", "description"),
             BasePrice = 12_000,
             BaseCps = 47,
             Unlock = UnlockCondition.EarnedThisRunAtLeast(4_000),
@@ -70,9 +78,9 @@ internal static class Buildings
         new()
         {
             Id = "insomnia_corridor",
-            Name = "失眠走廊",
+            Name = Prose.Text("buildings", "insomnia_corridor", "name"),
             Icon = "🚪",
-            Description = "两边全是门，每一扇后面都是同一个房间。她走到第 47 扇才承认自己在绕圈。",
+            Description = Prose.Text("buildings", "insomnia_corridor", "description"),
             BasePrice = 130_000,
             BaseCps = 260,
             Unlock = UnlockCondition.EarnedThisRunAtLeast(45_000),
@@ -80,9 +88,9 @@ internal static class Buildings
         new()
         {
             Id = "lucid_zone",
-            Name = "清醒区",
+            Name = Prose.Text("buildings", "lucid_zone", "name"),
             Icon = "💡",
-            Description = "在这里她知道自己在做梦。知道这件事之后，楼可以折起来，海可以倒过来流。",
+            Description = Prose.Text("buildings", "lucid_zone", "description"),
             BasePrice = 1_400_000,
             BaseCps = 1_400,
             Unlock = UnlockCondition.EarnedThisRunAtLeast(500_000),
@@ -91,9 +99,9 @@ internal static class Buildings
         new()
         {
             Id = "dream_weaver",
-            Name = "织梦者",
+            Name = Prose.Text("buildings", "dream_weaver", "name"),
             Icon = "🧶",
-            Description = "把上一晚剩下的线头接起来。接得好的话，今晚的梦会接着说昨天那一句。",
+            Description = Prose.Text("buildings", "dream_weaver", "description"),
             BasePrice = 20_000_000,
             BaseCps = 7_800,
             Unlock = UnlockCondition.EarnedThisRunAtLeast(6_000_000),
@@ -102,9 +110,9 @@ internal static class Buildings
         new()
         {
             Id = "nesting_tower",
-            Name = "嵌套塔",
+            Name = Prose.Text("buildings", "nesting_tower", "name"),
             Icon = "🗼",
-            Description = "塔顶有一扇门，门后是同一座塔。她数到第九层就不数了——反正每一层都在往上。",
+            Description = Prose.Text("buildings", "nesting_tower", "description"),
             BasePrice = 330_000_000,
             BaseCps = 44_000,
             Unlock = UnlockCondition.EarnedThisRunAtLeast(80_000_000),
@@ -113,9 +121,9 @@ internal static class Buildings
         new()
         {
             Id = "dream_core",
-            Name = "梦核",
+            Name = Prose.Text("buildings", "dream_core", "name"),
             Icon = "🔮",
-            Description = "所有梦层套着的那一颗芯。她把手放上去的时候，整座梦轻轻震了一下，像是认出了她。",
+            Description = Prose.Text("buildings", "dream_core", "description"),
             BasePrice = 5_100_000_000,
             BaseCps = 260_000,
             Unlock = UnlockCondition.EarnedThisRunAtLeast(1_000_000_000),

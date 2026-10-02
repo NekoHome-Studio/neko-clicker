@@ -19,6 +19,14 @@ namespace NekoClicker.Content.Civ;
 /// </summary>
 internal static class Buildings
 {
+    /// <summary>
+    /// 本包的 <c>text.json</c>：建筑文案与剧情散文<b>共用同一份实例</b>（<see cref="Lore.Prose"/>）。<para>
+    /// 必须共用：孤儿检查会遍历整份文件的每个 kind，而"哪些 id 已取用"是按实例记的——
+    /// 两个实例各记一半，就会把对方那些 id 全报成孤儿。
+    /// </para>
+    /// </summary>
+    private static ContentText Prose => Lore.Prose;
+
     /// <summary>产出「文化」的建筑标签。</summary>
     public const string RecorderTag = CultureModule.RecorderTag;
 
@@ -28,18 +36,18 @@ internal static class Buildings
         new()
         {
             Id = "cat_nest",
-            Name = "猫窝",
+            Name = Prose.Text("buildings", "cat_nest", "name"),
             Icon = "🪹",
-            Description = "几根树枝搭出来的一个坑，里面垫着干草。她第一次在里面睡了一整夜，没有被雨淋醒。",
+            Description = Prose.Text("buildings", "cat_nest", "description"),
             BasePrice = 15,
             BaseCps = 0.1,
         },
         new()
         {
             Id = "village",
-            Name = "村庄",
+            Name = Prose.Text("buildings", "village", "name"),
             Icon = "🏘️",
-            Description = "猫窝挨着猫窝，中间留出一条踩出来的路。路是文明的第一件公共设施。",
+            Description = Prose.Text("buildings", "village", "description"),
             BasePrice = 100,
             BaseCps = 1,
             Unlock = UnlockCondition.EarnedThisRunAtLeast(30),
@@ -48,9 +56,9 @@ internal static class Buildings
         new()
         {
             Id = "city_wall",
-            Name = "城墙",
+            Name = Prose.Text("buildings", "city_wall", "name"),
             Icon = "🧱",
-            Description = "石头一块一块垒起来，高过她的头顶。她说这道墙不是为了拦住谁，是为了让里面的人敢睡着。",
+            Description = Prose.Text("buildings", "city_wall", "description"),
             BasePrice = 1_100,
             BaseCps = 8,
             Unlock = UnlockCondition.EarnedThisRunAtLeast(330),
@@ -58,9 +66,9 @@ internal static class Buildings
         new()
         {
             Id = "market",
-            Name = "集市",
+            Name = Prose.Text("buildings", "market", "name"),
             Icon = "🏪",
-            Description = "第一次有人用东西换东西。她发现原来可以让别人替自己干活——代价是把这件事讲清楚。",
+            Description = Prose.Text("buildings", "market", "description"),
             BasePrice = 12_000,
             BaseCps = 47,
             Unlock = UnlockCondition.EarnedThisRunAtLeast(4_000),
@@ -69,9 +77,9 @@ internal static class Buildings
         new()
         {
             Id = "academy",
-            Name = "学院",
+            Name = Prose.Text("buildings", "academy", "name"),
             Icon = "🏛️",
-            Description = "她第一次把「为什么」写下来，而不是记住它。写下来的那一天，知道的人从一变成了不止一。",
+            Description = Prose.Text("buildings", "academy", "description"),
             BasePrice = 130_000,
             BaseCps = 260,
             Unlock = UnlockCondition.EarnedThisRunAtLeast(45_000),
@@ -80,9 +88,9 @@ internal static class Buildings
         new()
         {
             Id = "temple",
-            Name = "神殿",
+            Name = Prose.Text("buildings", "temple", "name"),
             Icon = "⛩️",
-            Description = "柱子很高，里面很暗。她把最早那只猫窝的形状刻在了正中间，说这是为了让后来的人记得起点。",
+            Description = Prose.Text("buildings", "temple", "description"),
             BasePrice = 1_400_000,
             BaseCps = 1_400,
             Unlock = UnlockCondition.EarnedThisRunAtLeast(500_000),
@@ -91,9 +99,9 @@ internal static class Buildings
         new()
         {
             Id = "star_port",
-            Name = "星港",
+            Name = Prose.Text("buildings", "star_port", "name"),
             Icon = "🚀",
-            Description = "第一艘船不是往外飞的，是往上飞的。她站在下面仰着头，直到看不见为止。",
+            Description = Prose.Text("buildings", "star_port", "description"),
             BasePrice = 20_000_000,
             BaseCps = 7_800,
             Unlock = UnlockCondition.EarnedThisRunAtLeast(6_000_000),
@@ -101,9 +109,9 @@ internal static class Buildings
         new()
         {
             Id = "spirit_bridge",
-            Name = "灵桥",
+            Name = Prose.Text("buildings", "spirit_bridge", "name"),
             Icon = "🌉",
-            Description = "为了让下一艘船找得到回来。桥上没有车，只有一串一直在发的信号——它在说「这里有人」。",
+            Description = Prose.Text("buildings", "spirit_bridge", "description"),
             BasePrice = 330_000_000,
             BaseCps = 44_000,
             Unlock = UnlockCondition.EarnedThisRunAtLeast(80_000_000),
@@ -111,9 +119,9 @@ internal static class Buildings
         new()
         {
             Id = "deep_space_relay",
-            Name = "深空中继",
+            Name = Prose.Text("buildings", "deep_space_relay", "name"),
             Icon = "📡",
-            Description = "信号跳了一次、两次、无数次，跳到连她自己也听不清。它还在发，因为另一端也许有人在等。",
+            Description = Prose.Text("buildings", "deep_space_relay", "description"),
             BasePrice = 5_100_000_000,
             BaseCps = 260_000,
             Unlock = UnlockCondition.EarnedThisRunAtLeast(1_000_000_000),

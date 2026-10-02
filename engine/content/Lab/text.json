@@ -166,5 +166,43 @@
       "title": "最后一条记录",
       "body": "档案的最后一行是空的，但序号已经打上去了。它留给下一条记录——如果有的话。"
     }
+  },
+  "buildings": {
+    "incubator": {
+      "name": "培养舱",
+      "description": "玻璃上有雾。她在里面写了一个字，又擦掉了。"
+    },
+    "feeding_arm": {
+      "name": "喂食臂",
+      "description": "机械臂每天七点准时伸进去。她学会在六点五十九分坐好。"
+    },
+    "gene_bank": {
+      "name": "基因库",
+      "description": "一排排抽屉，每个抽屉里都是一份「备用的她」。编号比名字好用。"
+    },
+    "observation_room": {
+      "name": "观察室",
+      "description": "单向玻璃。你以为她在看窗外，她其实在看玻璃上自己的倒影。"
+    },
+    "awakening_zone": {
+      "name": "觉醒区",
+      "description": "这里没有仪器。这是全楼唯一一处不需要记录她在做什么的地方。"
+    },
+    "ethics_board": {
+      "name": "伦理委员会",
+      "description": "六把椅子，五个空着。第六把上坐着一个正在打瞌睡的人。"
+    },
+    "memory_workshop": {
+      "name": "记忆作坊",
+      "description": "把上一批的记忆缝进这一批。线是金的，针脚歪歪扭扭。"
+    },
+    "sample_farm": {
+      "name": "样本农场",
+      "description": "从「一只一只做」变成「一批一批做」。效率提升了，名字也消失了。"
+    },
+    "archive": {
+      "name": "归档室",
+      "description": "所有批次最后都到这里。架子顶到天花板，最上面一层是空的——留给还没做的那些。"
+    }
   }
 }

@@ -16,15 +16,23 @@ namespace NekoClicker.Content.Cafe;
 /// </summary>
 internal static class Buildings
 {
+    /// <summary>
+    /// 本包的 <c>text.json</c>：建筑文案与剧情散文<b>共用同一份实例</b>（<see cref="Lore.Prose"/>）。<para>
+    /// 必须共用：孤儿检查会遍历整份文件的每个 kind，而"哪些 id 已取用"是按实例记的——
+    /// 两个实例各记一半，就会把对方那些 id 全报成孤儿。
+    /// </para>
+    /// </summary>
+    private static ContentText Prose => Lore.Prose;
+
     /// <summary>全部建筑，顺序即 UI 展示顺序。</summary>
     public static BuildingDefinition[] All =>
     [
         new()
         {
             Id = "coffee_machine",
-            Name = "咖啡机",
+            Name = Prose.Text("buildings", "coffee_machine", "name"),
             Icon = "☕",
-            Description = "二手市场淘来的半自动咖啡机。清晨的嗡鸣，是这家店最早的呼吸。",
+            Description = Prose.Text("buildings", "coffee_machine", "description"),
             BasePrice = 15,
             BaseCps = 0.1,
             Tags = ["drink"],
@@ -32,9 +40,9 @@ internal static class Buildings
         new()
         {
             Id = "bar_counter",
-            Name = "吧台",
+            Name = Prose.Text("buildings", "bar_counter", "name"),
             Icon = "🪑",
-            Description = "一块旧木料磨出来的吧台。客人靠着它等了很久，久到开始跟猫说话。",
+            Description = Prose.Text("buildings", "bar_counter", "description"),
             BasePrice = 100,
             BaseCps = 1,
             Unlock = UnlockCondition.EarnedThisRunAtLeast(30),
@@ -43,9 +51,9 @@ internal static class Buildings
         new()
         {
             Id = "cat_tree",
-            Name = "猫爬架",
+            Name = Prose.Text("buildings", "cat_tree", "name"),
             Icon = "🐈",
-            Description = "三层麻绳柱，顶上有个晒太阳的位置。谁先占上，谁就是今天的店主。",
+            Description = Prose.Text("buildings", "cat_tree", "description"),
             BasePrice = 1_100,
             BaseCps = 8,
             Unlock = UnlockCondition.EarnedThisRunAtLeast(330),
@@ -54,9 +62,9 @@ internal static class Buildings
         new()
         {
             Id = "window_seat",
-            Name = "靠窗座位",
+            Name = Prose.Text("buildings", "window_seat", "name"),
             Icon = "🪟",
-            Description = "玻璃上永远有雾气。有人用手指画了只猫，第二天它还在。",
+            Description = Prose.Text("buildings", "window_seat", "description"),
             BasePrice = 12_000,
             BaseCps = 47,
             Unlock = UnlockCondition.EarnedThisRunAtLeast(3_600),
@@ -65,9 +73,9 @@ internal static class Buildings
         new()
         {
             Id = "upstairs",
-            Name = "二楼雅座",
+            Name = Prose.Text("buildings", "upstairs", "name"),
             Icon = "🪜",
-            Description = "楼上只摆得下四张桌子。据说坐得越高，听见的故事越不像这个世界。",
+            Description = Prose.Text("buildings", "upstairs", "description"),
             BasePrice = 130_000,
             BaseCps = 260,
             Unlock = UnlockCondition.EarnedThisRunAtLeast(39_000),
@@ -76,9 +84,9 @@ internal static class Buildings
         new()
         {
             Id = "bakery",
-            Name = "烘焙间",
+            Name = Prose.Text("buildings", "bakery", "name"),
             Icon = "🥐",
-            Description = "凌晨三点，黄油的味道从门缝里漏出去，比招牌还招人。",
+            Description = Prose.Text("buildings", "bakery", "description"),
             BasePrice = 1_400_000,
             BaseCps = 1_400,
             Unlock = UnlockCondition.EarnedThisRunAtLeast(420_000),
@@ -87,9 +95,9 @@ internal static class Buildings
         new()
         {
             Id = "catgirl_staff",
-            Name = "猫娘店员",
+            Name = Prose.Text("buildings", "catgirl_staff", "name"),
             Icon = "😺",
-            Description = "她记得每位常客的口味，也记得他们从没说过的心事。",
+            Description = Prose.Text("buildings", "catgirl_staff", "description"),
             BasePrice = 20_000_000,
             BaseCps = 7_800,
             Unlock = UnlockCondition.EarnedThisRunAtLeast(6_000_000),
@@ -98,9 +106,9 @@ internal static class Buildings
         new()
         {
             Id = "otherworld_door",
-            Name = "异世界门",
+            Name = Prose.Text("buildings", "otherworld_door", "name"),
             Icon = "🌀",
-            Description = "门框上挂着一串铃铛。风从另一边吹来时，它们会响，方向却不对。",
+            Description = Prose.Text("buildings", "otherworld_door", "description"),
             BasePrice = 330_000_000,
             BaseCps = 44_000,
             Unlock = UnlockCondition.EarnedThisRunAtLeast(99_000_000),
@@ -109,9 +117,9 @@ internal static class Buildings
         new()
         {
             Id = "memory_roastery",
-            Name = "记忆烘焙坊",
+            Name = Prose.Text("buildings", "memory_roastery", "name"),
             Icon = "🫘",
-            Description = "豆子在这里被烘成某种更轻的东西——有人喝下后，想起了一间不存在的屋子。",
+            Description = Prose.Text("buildings", "memory_roastery", "description"),
             BasePrice = 5_100_000_000,
             BaseCps = 260_000,
             Unlock = UnlockCondition.EarnedThisRunAtLeast(1_530_000_000),
@@ -120,9 +128,9 @@ internal static class Buildings
         new()
         {
             Id = "branch_store",
-            Name = "分店",
+            Name = Prose.Text("buildings", "branch_store", "name"),
             Icon = "🏬",
-            Description = "第五家分店开在一条地图上找不到的街上。门口也挂着同一串铃铛。",
+            Description = Prose.Text("buildings", "branch_store", "description"),
             BasePrice = 75_000_000_000,
             BaseCps = 1_600_000,
             Unlock = UnlockCondition.EarnedThisRunAtLeast(22_500_000_000),

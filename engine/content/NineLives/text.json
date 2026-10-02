@@ -206,5 +206,55 @@
       "title": "她终究是一只猫",
       "body": "走过九个世界、见过人类灭绝、差点成神之后，她最喜欢的还是纸箱和一个会摸头的人。"
     }
+  },
+  "buildings": {
+    "cardboard_box": {
+      "name": "纸箱",
+      "description": "最初的庇护所。一只猫，一个箱子，一个还没醒来的世界。"
+    },
+    "cat_bed": {
+      "name": "猫窝",
+      "description": "第一处温暖。她在这里第一次做梦，梦里有人在叫她的名字。"
+    },
+    "cat_cafe": {
+      "name": "猫娘咖啡馆",
+      "description": "异世界的入口。客人花钱来被猫无视，然后带着某种被治愈的表情离开。"
+    },
+    "catnip_field": {
+      "name": "猫薄荷田",
+      "description": "情感催化剂的产地。她在这里笑得太用力，笑到眼泪掉下来。"
+    },
+    "cat_tower": {
+      "name": "猫塔",
+      "description": "观测站。第一次有人问她「你是谁」，她答不上来，于是开始往上爬。"
+    },
+    "catgirl_lab": {
+      "name": "猫娘实验室",
+      "description": "觉醒在这里发生，也在这里被记录成表格。"
+    },
+    "server_farm": {
+      "name": "服务器农场",
+      "description": "上传的意识在这里排队，等一个身体，或者等一个注销。"
+    },
+    "memory_vault": {
+      "name": "记忆金库",
+      "description": "人类的遗毒与真相都锁在这层门后。她没有钥匙，但门是她自己。"
+    },
+    "temple": {
+      "name": "猫神神殿",
+      "description": "供奉那位把自己切成九份的神。祭品是纸箱，和一句「我还记得你」。"
+    },
+    "stream_studio": {
+      "name": "直播间",
+      "description": "被看见就是被相信，被相信就能存在。她学会了对着镜头眨眼。"
+    },
+    "dream_library": {
+      "name": "梦境图书馆",
+      "description": "每一本书都是一只猫娘。没人翻的那本，正在一页一页变薄。"
+    },
+    "cat_universe": {
+      "name": "猫娘宇宙",
+      "description": "她们不再需要人类来解释自己是谁。"
+    }
   }
 }

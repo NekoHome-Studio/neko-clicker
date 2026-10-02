@@ -15,47 +15,43 @@ namespace NekoClicker.Content.NineLives;
 /// </summary>
 internal static class Buildings
 {
+    /// <summary>
+    /// 本包的 <c>text.json</c>：建筑文案与剧情散文<b>共用同一份实例</b>（<see cref="Lore.Prose"/>）。<para>
+    /// 必须共用：孤儿检查会遍历整份文件的每个 kind，而"哪些 id 已取用"是按实例记的——
+    /// 两个实例各记一半，就会把对方那些 id 全报成孤儿。
+    /// </para>
+    /// </summary>
+    private static ContentText Prose => Lore.Prose;
+
     /// <summary>全部建筑。</summary>
     public static BuildingDefinition[] All =>
     [
-        Make("cardboard_box", "纸箱", "📦", 15, 0.1, era: 1,
-            "最初的庇护所。一只猫，一个箱子，一个还没醒来的世界。"),
-        Make("cat_bed", "猫窝", "🛏️", 100, 1, era: 1,
-            "第一处温暖。她在这里第一次做梦，梦里有人在叫她的名字。"),
+        Make("cardboard_box", "📦", 15, 0.1, era: 1),
+        Make("cat_bed", "🛏️", 100, 1, era: 1),
 
-        Make("cat_cafe", "猫娘咖啡馆", "☕", 1_100, 8, era: 2,
-            "异世界的入口。客人花钱来被猫无视，然后带着某种被治愈的表情离开。"),
-        Make("catnip_field", "猫薄荷田", "🌿", 12_000, 47, era: 2,
-            "情感催化剂的产地。她在这里笑得太用力，笑到眼泪掉下来。"),
+        Make("cat_cafe", "☕", 1_100, 8, era: 2),
+        Make("catnip_field", "🌿", 12_000, 47, era: 2),
 
-        Make("cat_tower", "猫塔", "🗼", 130_000, 260, era: 3,
-            "观测站。第一次有人问她「你是谁」，她答不上来，于是开始往上爬。"),
-        Make("catgirl_lab", "猫娘实验室", "🧪", 1_400_000, 1_400, era: 3,
-            "觉醒在这里发生，也在这里被记录成表格。"),
+        Make("cat_tower", "🗼", 130_000, 260, era: 3),
+        Make("catgirl_lab", "🧪", 1_400_000, 1_400, era: 3),
 
-        Make("server_farm", "服务器农场", "🖥️", 20_000_000, 7_800, era: 4,
-            "上传的意识在这里排队，等一个身体，或者等一个注销。"),
-        Make("memory_vault", "记忆金库", "🗄️", 330_000_000, 44_000, era: 5,
-            "人类的遗毒与真相都锁在这层门后。她没有钥匙，但门是她自己。"),
+        Make("server_farm", "🖥️", 20_000_000, 7_800, era: 4),
+        Make("memory_vault", "🗄️", 330_000_000, 44_000, era: 5),
 
-        Make("temple", "猫神神殿", "🏛️", 5_100_000_000, 260_000, era: 6,
-            "供奉那位把自己切成九份的神。祭品是纸箱，和一句「我还记得你」。"),
-        Make("stream_studio", "直播间", "📺", 75_000_000_000, 1_600_000, era: 7,
-            "被看见就是被相信，被相信就能存在。她学会了对着镜头眨眼。"),
+        Make("temple", "🏛️", 5_100_000_000, 260_000, era: 6),
+        Make("stream_studio", "📺", 75_000_000_000, 1_600_000, era: 7),
 
-        Make("dream_library", "梦境图书馆", "📚", 1_200_000_000_000, 9_000_000, era: 8,
-            "每一本书都是一只猫娘。没人翻的那本，正在一页一页变薄。"),
-        Make("cat_universe", "猫娘宇宙", "🌌", 18_000_000_000_000, 54_000_000, era: 9,
-            "她们不再需要人类来解释自己是谁。"),
+        Make("dream_library", "📚", 1_200_000_000_000, 9_000_000, era: 8),
+        Make("cat_universe", "🌌", 18_000_000_000_000, 54_000_000, era: 9),
     ];
 
     private static BuildingDefinition Make(
-        string id, string name, string icon, double price, double cps, int era, string description) => new()
+        string id, string icon, double price, double cps, int era) => new()
         {
             Id = id,
-            Name = name,
+            Name = Prose.Text("buildings", id, "name"),
             Icon = icon,
-            Description = description,
+            Description = Prose.Text("buildings", id, "description"),
             BasePrice = price,
             BaseCps = cps,
             Unlock = UnlockCondition.All(

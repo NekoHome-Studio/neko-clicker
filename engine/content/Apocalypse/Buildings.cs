@@ -21,6 +21,14 @@ namespace NekoClicker.Content.Apocalypse;
 /// </summary>
 internal static class Buildings
 {
+    /// <summary>
+    /// 本包的 <c>text.json</c>：建筑文案与剧情散文<b>共用同一份实例</b>（<see cref="Lore.Prose"/>）。<para>
+    /// 必须共用：孤儿检查会遍历整份文件的每个 kind，而"哪些 id 已取用"是按实例记的——
+    /// 两个实例各记一半，就会把对方那些 id 全报成孤儿。
+    /// </para>
+    /// </summary>
+    private static ContentText Prose => Lore.Prose;
+
     /// <summary>能从废墟里读出记忆的建筑标签（第二资源「记忆残片」的产出口）。</summary>
     public const string RelicTag = "relic";
 
@@ -30,18 +38,18 @@ internal static class Buildings
         new()
         {
             Id = "ruins",
-            Name = "废墟",
+            Name = Prose.Text("buildings", "ruins", "name"),
             Icon = "🧱",
-            Description = "一层压着一层的地基，最底下那层是混凝土，最上面那层是别人的家。她从这里开始翻。",
+            Description = Prose.Text("buildings", "ruins", "description"),
             BasePrice = 15,
             BaseCps = 0.1,
         },
         new()
         {
             Id = "generator",
-            Name = "发电机",
+            Name = Prose.Text("buildings", "generator", "name"),
             Icon = "🔌",
-            Description = "柴油味很重，但灯亮了。有灯以后，晚上也算一天。",
+            Description = Prose.Text("buildings", "generator", "description"),
             BasePrice = 100,
             BaseCps = 1,
             Unlock = UnlockCondition.EarnedAllTimeAtLeast(30),
@@ -49,9 +57,9 @@ internal static class Buildings
         new()
         {
             Id = "water_purifier",
-            Name = "净水器",
+            Name = Prose.Text("buildings", "water_purifier", "name"),
             Icon = "💧",
-            Description = "三道滤芯，滤出来的水要先静置一晚。她说这水有股铁锈味，但比上一批好。",
+            Description = Prose.Text("buildings", "water_purifier", "description"),
             BasePrice = 1_100,
             BaseCps = 8,
             Unlock = UnlockCondition.EarnedAllTimeAtLeast(330),
@@ -59,9 +67,9 @@ internal static class Buildings
         new()
         {
             Id = "shelter",
-            Name = "避难所",
+            Name = Prose.Text("buildings", "shelter", "name"),
             Icon = "🛖",
-            Description = "地下二层，门朝里开。墙上她用炭笔画了一道线，写着「到这里为止淹过」。",
+            Description = Prose.Text("buildings", "shelter", "description"),
             BasePrice = 12_000,
             BaseCps = 47,
             Unlock = UnlockCondition.EarnedAllTimeAtLeast(4_000),
@@ -69,9 +77,9 @@ internal static class Buildings
         new()
         {
             Id = "greenhouse",
-            Name = "温室",
+            Name = Prose.Text("buildings", "greenhouse", "name"),
             Icon = "🌱",
-            Description = "第一株活下来的东西不是她种的，是自己在裂缝里长出来的。它被搬了进来。",
+            Description = Prose.Text("buildings", "greenhouse", "description"),
             BasePrice = 130_000,
             BaseCps = 260,
             Unlock = UnlockCondition.EarnedAllTimeAtLeast(45_000),
@@ -79,9 +87,9 @@ internal static class Buildings
         new()
         {
             Id = "data_tower",
-            Name = "数据塔",
+            Name = Prose.Text("buildings", "data_tower", "name"),
             Icon = "📡",
-            Description = "天线歪着，但还能收到东西。绝大部分是噪声，偶尔有一句完整的话。",
+            Description = Prose.Text("buildings", "data_tower", "description"),
             BasePrice = 1_400_000,
             BaseCps = 1_400,
             Unlock = UnlockCondition.EarnedAllTimeAtLeast(500_000),
@@ -90,9 +98,9 @@ internal static class Buildings
         new()
         {
             Id = "archive",
-            Name = "记忆档案馆",
+            Name = Prose.Text("buildings", "archive", "name"),
             Icon = "🗄️",
-            Description = "一格一格的抽屉，标签是手写的。最上面那排是空的——她说那是留给还没发生的事。",
+            Description = Prose.Text("buildings", "archive", "description"),
             BasePrice = 20_000_000,
             BaseCps = 7_800,
             Unlock = UnlockCondition.EarnedAllTimeAtLeast(6_000_000),
@@ -101,9 +109,9 @@ internal static class Buildings
         new()
         {
             Id = "fusion_reactor",
-            Name = "聚变堆",
+            Name = Prose.Text("buildings", "fusion_reactor", "name"),
             Icon = "⚛️",
-            Description = "上一批人类留下的图纸，缺了最后三页。她补了四年，补出来的版本比原来的小一圈。",
+            Description = Prose.Text("buildings", "fusion_reactor", "description"),
             BasePrice = 330_000_000,
             BaseCps = 44_000,
             Unlock = UnlockCondition.EarnedAllTimeAtLeast(80_000_000),
@@ -111,9 +119,9 @@ internal static class Buildings
         new()
         {
             Id = "relic_city",
-            Name = "遗迹之城",
+            Name = Prose.Text("buildings", "relic_city", "name"),
             Icon = "🏚️",
-            Description = "整座城市被留下来当档案。她不准任何人拆——「拆了就真的没有了」。",
+            Description = Prose.Text("buildings", "relic_city", "description"),
             BasePrice = 5_100_000_000,
             BaseCps = 260_000,
             Unlock = UnlockCondition.EarnedAllTimeAtLeast(1_000_000_000),

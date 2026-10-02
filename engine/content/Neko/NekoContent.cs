@@ -15,7 +15,8 @@ public static class NekoContent
 
     /// <summary>构建内容定义。</summary>
     public static GameContent Build()
-        => new GameContentBuilder(GameTitle)
+    {
+        GameContent content = new GameContentBuilder(GameTitle)
             .WithCurrency("小鱼干", "🐟", "撸猫")
             .WithPrestigeCurrency("猫薄荷", "🌿")
             .WithBalance(BuildBalance())
@@ -25,6 +26,14 @@ public static class NekoContent
             .AddBuffs(Buffs.All)
             .AddGoldenCookieOutcomes(GoldenCookieOutcomes.All)
             .Build();
+
+        // 到这里 10 座建筑的名字与说明都已经从 text.json 读过一遍了，正是查孤儿的时候：
+        // 文件里若有代码从不取用的条目，在这里当场抛，而不是让它静静躺在文件里。
+        // （其余包没有单独这一句：它们与剧情共用同一份文本实例，由 Lore.VerifyAllTextUsed 一并查。）
+        Buildings.VerifyAllTextUsed();
+
+        return content;
+    }
 
     /// <summary>平衡参数。<see cref="GameBalance"/> 的默认值已经是原版手感，这里只覆盖需要调的几项。</summary>
     public static GameBalance BuildBalance() => new()

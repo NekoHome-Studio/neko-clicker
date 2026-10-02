@@ -34,7 +34,7 @@ internal static class Lore
     /// 不能有两个实例各记一半。
     /// </para>
     /// </summary>
-    private static ContentText Prose => ProseCache.Value;
+    internal static ContentText Prose => ProseCache.Value;
 
     /// <summary>四条剧情线。名称 / 主题 / 图标来自文本文件，条数留在代码里（它是纪律，不是散文）。</summary>
     public static StorylineDefinition[] Storylines =>
@@ -64,10 +64,14 @@ internal static class Lore
     ];
 
     /// <summary>
-    /// 文本文件里"有、但代码从不取用"的条目会在这里抛（孤儿文本）。<para>
-    /// 调用点必须在 <see cref="Storylines"/> 与 <see cref="Entries"/> 都被取过之后——
-    /// 现在只有 <c>LabContent.Build()</c> 末尾一处。孤儿必须炸的理由见 <see cref="ContentText"/>：
-    /// 删了剧情却留着文本，运行、断言、界面都不会有任何反应，于是那段死文本会一直躺在文件里等人改。
+    /// 文本文件里“有、但代码从不取用”的条目会在这里抛（孤儿文本）。<para>
+    /// 覆盖<b>整份 <c>text.json</c></b>：剧情条目与 <see cref="Buildings"/> 的建筑文案都算——
+    /// 两者共用同一份 <see cref="Prose"/> 实例，所以调用点必须在两者都被取过之后
+    /// （现在只有包入口的 <c>Build()</c> 末尾一处）。
+    /// </para>
+    /// <para>
+    /// 孤儿必须炸的理由见 <see cref="ContentText"/>：删了剧情却留着文本，
+    /// 运行、断言、界面都不会有任何反应，于是那段死文本会一直躺在文件里等人改。
     /// </para>
     /// </summary>
     public static void VerifyAllTextUsed() => Prose.EnsureNoOrphans();

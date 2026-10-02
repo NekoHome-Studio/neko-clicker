@@ -15,15 +15,23 @@ namespace NekoClicker.Content.Lab;
 /// </summary>
 internal static class Buildings
 {
+    /// <summary>
+    /// 本包的 <c>text.json</c>：建筑文案与剧情散文<b>共用同一份实例</b>（<see cref="Lore.Prose"/>）。<para>
+    /// 必须共用：孤儿检查会遍历整份文件的每个 kind，而"哪些 id 已取用"是按实例记的——
+    /// 两个实例各记一半，就会把对方那些 id 全报成孤儿。
+    /// </para>
+    /// </summary>
+    private static ContentText Prose => Lore.Prose;
+
     /// <summary>全部建筑，顺序即 UI 展示顺序。</summary>
     public static BuildingDefinition[] All =>
     [
         new()
         {
             Id = "incubator",
-            Name = "培养舱",
+            Name = Prose.Text("buildings", "incubator", "name"),
             Icon = "🧪",
-            Description = "玻璃上有雾。她在里面写了一个字，又擦掉了。",
+            Description = Prose.Text("buildings", "incubator", "description"),
             BasePrice = 15,
             BaseCps = 0.1,
             Tags = ["growth"],
@@ -31,9 +39,9 @@ internal static class Buildings
         new()
         {
             Id = "feeding_arm",
-            Name = "喂食臂",
+            Name = Prose.Text("buildings", "feeding_arm", "name"),
             Icon = "🦾",
-            Description = "机械臂每天七点准时伸进去。她学会在六点五十九分坐好。",
+            Description = Prose.Text("buildings", "feeding_arm", "description"),
             BasePrice = 100,
             BaseCps = 1,
             Unlock = UnlockCondition.EarnedThisRunAtLeast(30),
@@ -42,9 +50,9 @@ internal static class Buildings
         new()
         {
             Id = "gene_bank",
-            Name = "基因库",
+            Name = Prose.Text("buildings", "gene_bank", "name"),
             Icon = "🧬",
-            Description = "一排排抽屉，每个抽屉里都是一份「备用的她」。编号比名字好用。",
+            Description = Prose.Text("buildings", "gene_bank", "description"),
             BasePrice = 1_100,
             BaseCps = 8,
             Unlock = UnlockCondition.EarnedThisRunAtLeast(330),
@@ -53,9 +61,9 @@ internal static class Buildings
         new()
         {
             Id = "observation_room",
-            Name = "观察室",
+            Name = Prose.Text("buildings", "observation_room", "name"),
             Icon = "🔭",
-            Description = "单向玻璃。你以为她在看窗外，她其实在看玻璃上自己的倒影。",
+            Description = Prose.Text("buildings", "observation_room", "description"),
             BasePrice = 12_000,
             BaseCps = 47,
             Unlock = UnlockCondition.EarnedThisRunAtLeast(4_000),
@@ -64,9 +72,9 @@ internal static class Buildings
         new()
         {
             Id = "awakening_zone",
-            Name = "觉醒区",
+            Name = Prose.Text("buildings", "awakening_zone", "name"),
             Icon = "🌅",
-            Description = "这里没有仪器。这是全楼唯一一处不需要记录她在做什么的地方。",
+            Description = Prose.Text("buildings", "awakening_zone", "description"),
             BasePrice = 130_000,
             BaseCps = 260,
             Unlock = UnlockCondition.EarnedThisRunAtLeast(45_000),
@@ -75,9 +83,9 @@ internal static class Buildings
         new()
         {
             Id = "ethics_board",
-            Name = "伦理委员会",
+            Name = Prose.Text("buildings", "ethics_board", "name"),
             Icon = "⚖️",
-            Description = "六把椅子，五个空着。第六把上坐着一个正在打瞌睡的人。",
+            Description = Prose.Text("buildings", "ethics_board", "description"),
             BasePrice = 1_400_000,
             BaseCps = 1_400,
             Unlock = UnlockCondition.EarnedThisRunAtLeast(500_000),
@@ -86,9 +94,9 @@ internal static class Buildings
         new()
         {
             Id = "memory_workshop",
-            Name = "记忆作坊",
+            Name = Prose.Text("buildings", "memory_workshop", "name"),
             Icon = "🪡",
-            Description = "把上一批的记忆缝进这一批。线是金的，针脚歪歪扭扭。",
+            Description = Prose.Text("buildings", "memory_workshop", "description"),
             BasePrice = 20_000_000,
             BaseCps = 7_800,
             Unlock = UnlockCondition.EarnedThisRunAtLeast(6_000_000),
@@ -97,9 +105,9 @@ internal static class Buildings
         new()
         {
             Id = "sample_farm",
-            Name = "样本农场",
+            Name = Prose.Text("buildings", "sample_farm", "name"),
             Icon = "🏭",
-            Description = "从「一只一只做」变成「一批一批做」。效率提升了，名字也消失了。",
+            Description = Prose.Text("buildings", "sample_farm", "description"),
             BasePrice = 330_000_000,
             BaseCps = 44_000,
             Unlock = UnlockCondition.EarnedThisRunAtLeast(80_000_000),
@@ -108,9 +116,9 @@ internal static class Buildings
         new()
         {
             Id = "archive",
-            Name = "归档室",
+            Name = Prose.Text("buildings", "archive", "name"),
             Icon = "🗄️",
-            Description = "所有批次最后都到这里。架子顶到天花板，最上面一层是空的——留给还没做的那些。",
+            Description = Prose.Text("buildings", "archive", "description"),
             BasePrice = 5_100_000_000,
             BaseCps = 260_000,
             Unlock = UnlockCondition.EarnedThisRunAtLeast(1_000_000_000),

@@ -15,15 +15,23 @@ namespace NekoClicker.Content.Company;
 /// </summary>
 internal static class Buildings
 {
+    /// <summary>
+    /// 本包的 <c>text.json</c>：建筑文案与剧情散文<b>共用同一份实例</b>（<see cref="Lore.Prose"/>）。<para>
+    /// 必须共用：孤儿检查会遍历整份文件的每个 kind，而"哪些 id 已取用"是按实例记的——
+    /// 两个实例各记一半，就会把对方那些 id 全报成孤儿。
+    /// </para>
+    /// </summary>
+    private static ContentText Prose => Lore.Prose;
+
     /// <summary>全部建筑，顺序即 UI 展示顺序。</summary>
     public static BuildingDefinition[] All =>
     [
         new()
         {
             Id = "desk",
-            Name = "工位",
+            Name = Prose.Text("buildings", "desk", "name"),
             Icon = "🪑",
-            Description = "一张桌子，一把椅子，一台借来的显示器。她贴了张便利贴：「先活下去。」",
+            Description = Prose.Text("buildings", "desk", "description"),
             BasePrice = 15,
             BaseCps = 0.1,
             Tags = ["team"],
@@ -31,9 +39,9 @@ internal static class Buildings
         new()
         {
             Id = "meeting_room",
-            Name = "会议室",
+            Name = Prose.Text("buildings", "meeting_room", "name"),
             Icon = "🗣️",
-            Description = "白板上的箭头越画越多，最后指回原点。会开完了，事没动，人倒是熟了些。",
+            Description = Prose.Text("buildings", "meeting_room", "description"),
             BasePrice = 100,
             BaseCps = 1,
             Unlock = UnlockCondition.EarnedThisRunAtLeast(30),
@@ -42,9 +50,9 @@ internal static class Buildings
         new()
         {
             Id = "outsourcing_base",
-            Name = "外包基地",
+            Name = Prose.Text("buildings", "outsourcing_base", "name"),
             Icon = "🧵",
-            Description = "把活分给更便宜的手。她们在另一个时区，也在另一张价格表里。",
+            Description = Prose.Text("buildings", "outsourcing_base", "description"),
             BasePrice = 1_100,
             BaseCps = 8,
             Unlock = UnlockCondition.EarnedThisRunAtLeast(330),
@@ -53,9 +61,9 @@ internal static class Buildings
         new()
         {
             Id = "server_room",
-            Name = "服务器",
+            Name = Prose.Text("buildings", "server_room", "name"),
             Icon = "🖥️",
-            Description = "机房冷得像冰箱。值班的人裹着毯子，盯着不会说话的灯。",
+            Description = Prose.Text("buildings", "server_room", "description"),
             BasePrice = 12_000,
             BaseCps = 47,
             Unlock = UnlockCondition.EarnedThisRunAtLeast(4_000),
@@ -64,9 +72,9 @@ internal static class Buildings
         new()
         {
             Id = "growth_team",
-            Name = "增长团队",
+            Name = Prose.Text("buildings", "growth_team", "name"),
             Icon = "📈",
-            Description = "他们负责把「还行」说成「爆发」。数据确实涨了，只是没人说得清为什么。",
+            Description = Prose.Text("buildings", "growth_team", "description"),
             BasePrice = 130_000,
             BaseCps = 260,
             Unlock = UnlockCondition.EarnedThisRunAtLeast(45_000),
@@ -75,9 +83,9 @@ internal static class Buildings
         new()
         {
             Id = "roadshow_hall",
-            Name = "IPO 路演厅",
+            Name = Prose.Text("buildings", "roadshow_hall", "name"),
             Icon = "🎤",
-            Description = "灯打在你脸上，PPT 翻到第 42 页。台下有人问：「你们的护城河是什么？」",
+            Description = Prose.Text("buildings", "roadshow_hall", "description"),
             BasePrice = 1_400_000,
             BaseCps = 1_400,
             Unlock = UnlockCondition.EarnedThisRunAtLeast(500_000),
@@ -86,9 +94,9 @@ internal static class Buildings
         new()
         {
             Id = "data_center",
-            Name = "数据中心",
+            Name = Prose.Text("buildings", "data_center", "name"),
             Icon = "🗄️",
-            Description = "一整层楼在低声嗡鸣。她的工位搬到了这里，因为只有这里离服务器最近。",
+            Description = Prose.Text("buildings", "data_center", "description"),
             BasePrice = 20_000_000,
             BaseCps = 7_800,
             Unlock = UnlockCondition.EarnedThisRunAtLeast(6_000_000),
@@ -97,9 +105,9 @@ internal static class Buildings
         new()
         {
             Id = "overseas_branch",
-            Name = "海外分部",
+            Name = Prose.Text("buildings", "overseas_branch", "name"),
             Icon = "🌏",
-            Description = "时差刚好接上：这边下班，那边上班。灯一天二十四小时都亮着。",
+            Description = Prose.Text("buildings", "overseas_branch", "description"),
             BasePrice = 330_000_000,
             BaseCps = 44_000,
             Unlock = UnlockCondition.EarnedThisRunAtLeast(80_000_000),
@@ -108,9 +116,9 @@ internal static class Buildings
         new()
         {
             Id = "headquarters",
-            Name = "总部大楼",
+            Name = Prose.Text("buildings", "headquarters", "name"),
             Icon = "🏢",
-            Description = "玻璃幕墙，前台，工牌，一间没有窗的会议室。楼顶那盏灯谁都没关过。",
+            Description = Prose.Text("buildings", "headquarters", "description"),
             BasePrice = 5_100_000_000,
             BaseCps = 260_000,
             Unlock = UnlockCondition.EarnedThisRunAtLeast(1_000_000_000),

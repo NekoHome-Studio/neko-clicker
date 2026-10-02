@@ -16,15 +16,38 @@ namespace NekoClicker.Content.Neko;
 /// </summary>
 internal static class Buildings
 {
+    /// <summary>
+    /// 本包的 <c>text.json</c>（随包复制到 <c>content/Neko/text.json</c>）。<para>
+    /// 用懒初始化而不是静态字段直接加载：文件坏掉时抛的是"哪一条对不上"，
+    /// 而不是被包成 <c>TypeInitializationException</c> 的谜语。
+    /// 用 <see cref="Lazy{T}"/> 而不是 <c>??=</c>：内容可能被多个线程同时首次构建
+    /// （宿主扫包、测试并行跑），而这份文本里记着"哪些 id 已经取过"的可变状态，
+    /// 不能有两个实例各记一半。
+    /// </para>
+    /// </summary>
+    private static readonly Lazy<ContentText> ProseCache = new(() => ContentText.Load("Neko"));
+
+    /// <summary>文本文件；取不到就抛，绝不回退成空白。</summary>
+    private static ContentText Prose => ProseCache.Value;
+
+    /// <summary>
+    /// 文本文件里"有、但代码从不取用"的条目会在这里抛（孤儿文本）。<para>
+    /// 调用点必须在 <see cref="All"/> 已经取过之后——现在只有 <c>NekoContent.Build()</c> 末尾一处。
+    /// 孤儿必须炸的理由见 <see cref="ContentText"/>：删了文案却留着文本，
+    /// 运行、断言、界面都不会有任何反应。
+    /// </para>
+    /// </summary>
+    public static void VerifyAllTextUsed() => Prose.EnsureNoOrphans();
+
     /// <summary>全部建筑，顺序即 UI 展示顺序。</summary>
     public static BuildingDefinition[] All =>
     [
         new()
         {
             Id = "curled_cat",
-            Name = "蜷缩的猫",
+            Name = Prose.Text("buildings", "curled_cat", "name"),
             Icon = "🐈",
-            Description = "一只愿意在你腿上打呼噜的猫。它自己不会做什么，但一切从这里开始。",
+            Description = Prose.Text("buildings", "curled_cat", "description"),
             BasePrice = 15,
             BaseCps = 0.1,
             Tags = ["cat", "warm"],
@@ -32,9 +55,9 @@ internal static class Buildings
         new()
         {
             Id = "scratching_post",
-            Name = "猫抓板",
+            Name = Prose.Text("buildings", "scratching_post", "name"),
             Icon = "🪵",
-            Description = "麻绳缠的柱子。猫抓得开心，掉下来的碎屑能换钱——别问怎么换的。",
+            Description = Prose.Text("buildings", "scratching_post", "description"),
             BasePrice = 100,
             BaseCps = 1,
             Unlock = UnlockCondition.EarnedThisRunAtLeast(30),
@@ -43,9 +66,9 @@ internal static class Buildings
         new()
         {
             Id = "cat_bed",
-            Name = "猫窝",
+            Name = Prose.Text("buildings", "cat_bed", "name"),
             Icon = "🛏️",
-            Description = "猫在里面睡 16 小时，剩下 8 小时思考要不要出来。",
+            Description = Prose.Text("buildings", "cat_bed", "description"),
             BasePrice = 1_100,
             BaseCps = 8,
             Unlock = UnlockCondition.EarnedThisRunAtLeast(330),
@@ -54,9 +77,9 @@ internal static class Buildings
         new()
         {
             Id = "auto_feeder",
-            Name = "自动喂食器",
+            Name = Prose.Text("buildings", "auto_feeder", "name"),
             Icon = "🍽️",
-            Description = "定时投喂。猫已经不记得你长什么样了，但它记得这个机器。",
+            Description = Prose.Text("buildings", "auto_feeder", "description"),
             BasePrice = 12_000,
             BaseCps = 47,
             Unlock = UnlockCondition.EarnedThisRunAtLeast(3_600),
@@ -65,9 +88,9 @@ internal static class Buildings
         new()
         {
             Id = "cat_cafe",
-            Name = "猫咪咖啡馆",
+            Name = Prose.Text("buildings", "cat_cafe", "name"),
             Icon = "☕",
-            Description = "客人花钱来被猫无视。这是本店最畅销的体验。",
+            Description = Prose.Text("buildings", "cat_cafe", "description"),
             BasePrice = 130_000,
             BaseCps = 260,
             Unlock = UnlockCondition.EarnedThisRunAtLeast(39_000),
@@ -76,9 +99,9 @@ internal static class Buildings
         new()
         {
             Id = "catnip_field",
-            Name = "猫薄荷田",
+            Name = Prose.Text("buildings", "catnip_field", "name"),
             Icon = "🌿",
-            Description = "合法种植，非法上头。猫们在田里翻滚出一片经济学奇迹。",
+            Description = Prose.Text("buildings", "catnip_field", "description"),
             BasePrice = 1_400_000,
             BaseCps = 1_400,
             Unlock = UnlockCondition.EarnedThisRunAtLeast(420_000),
@@ -87,9 +110,9 @@ internal static class Buildings
         new()
         {
             Id = "cat_portal",
-            Name = "猫咪传送门",
+            Name = Prose.Text("buildings", "cat_portal", "name"),
             Icon = "🌀",
-            Description = "猫从这个门进去，从另一个门出来，中间的部分没有人敢研究。",
+            Description = Prose.Text("buildings", "cat_portal", "description"),
             BasePrice = 20_000_000,
             BaseCps = 7_800,
             Unlock = UnlockCondition.EarnedThisRunAtLeast(6_000_000),
@@ -98,9 +121,9 @@ internal static class Buildings
         new()
         {
             Id = "time_cat",
-            Name = "时间猫",
+            Name = Prose.Text("buildings", "time_cat", "name"),
             Icon = "⏳",
-            Description = "它同时存在于你打翻水杯之前和之后。主要是之后。",
+            Description = Prose.Text("buildings", "time_cat", "description"),
             BasePrice = 330_000_000,
             BaseCps = 44_000,
             Unlock = UnlockCondition.EarnedThisRunAtLeast(99_000_000),
@@ -109,9 +132,9 @@ internal static class Buildings
         new()
         {
             Id = "cat_temple",
-            Name = "维度猫神殿",
+            Name = Prose.Text("buildings", "cat_temple", "name"),
             Icon = "🏛️",
-            Description = "供奉着那位从纸箱中创世的猫神。祭品是纸箱。",
+            Description = Prose.Text("buildings", "cat_temple", "description"),
             BasePrice = 5_100_000_000,
             BaseCps = 260_000,
             Unlock = UnlockCondition.EarnedThisRunAtLeast(1_530_000_000),
@@ -120,9 +143,9 @@ internal static class Buildings
         new()
         {
             Id = "cat_universe",
-            Name = "猫猫宇宙",
+            Name = Prose.Text("buildings", "cat_universe", "name"),
             Icon = "🌌",
-            Description = "一个由猫构成、为猫运行、最终也会被猫推下桌的宇宙。",
+            Description = Prose.Text("buildings", "cat_universe", "description"),
             BasePrice = 75_000_000_000,
             BaseCps = 1_600_000,
             Unlock = UnlockCondition.EarnedThisRunAtLeast(22_500_000_000),

@@ -202,3 +202,68 @@
   换皮手册 [STAGE_5_RESKINS](../../games/docs/STAGE_5_RESKINS.md) 顶部加了指向它的补记。
 - 迁移用的一次性工具（dump 探针、迁移扫描器、竞态探针）都在 `.tmp/`（已 gitignore），
   它们的作用是"让这次搬迁可复核"，不是运行期的一部分。
+
+---
+
+## 9. 执行记录：建筑文案（第二轮，实际是怎么做的）
+
+> 图鉴散文之后的第二类。范围：**全部 11 个包、104 座建筑**的
+> `BuildingDefinition.Name` / `Description`。
+> 数量与任务书里"93 座、NineLives 1 座"的估算不一致——实测 NineLives **12** 座、
+> Neko / Cafe 各 10 座、其余八个包各 9 座；按包量出来的数字记在这里，不按估算走。
+
+### 9.1 形态
+
+`content/<包>/text.json` 新增 `buildings` 分区，`id → { name, description }`。
+`Icon` / `BasePrice` / `BaseCps` / `PriceGrowth` / `Unlock` / `Tags` **留在代码里**：
+图标是符号而不是散文，其余是逻辑——与方案 §3③ 同一条理由（能进数据的只有散文）。
+
+写法（十个对象初始化器的包，以及九命的工厂写法都一样）：
+
+```csharp
+Name = Prose.Text("buildings", "incubator", "name"),
+Description = Prose.Text("buildings", "incubator", "description"),
+```
+
+`Prose` 就是 `Lore.Prose`（`private` 改 `internal`）：**每个包仍然只持有一份 `ContentText` 实例**。
+必须共用——`EnsureNoOrphans` 遍历整份文件的每个 kind，而"哪些 id 已取用"是按实例记的，
+两份实例各记一半，就会把对方的条目全报成孤儿。示例包「猫咖物语」没有图鉴，
+所以它自己持有那一份（`Buildings.ProseCache`），并在 `NekoContent.Build()` 末尾查孤儿。
+
+### 9.2 方法（与图鉴那次同一条：判据落在运行期，不是再写一个解析器）
+
+1. 迁移前用一次性探针把 11 个包的运行期建筑表 dump 成 `.tmp/buildings-baseline.txt`
+   （`pack` / `id` / `name` / `description`）；
+2. `text.json` 由这份 dump 生成——文件名与文案都只当**文件内容**处理，脚本里一行中文字面量都没有；
+3. 改 `Buildings.cs` 的扫描器**每删一个字面量都先断言它 == dump 里对应的值**，任一处不符即整体中止；
+   Cyber 那 9 条跨行 `+` 拼接的说明也一并覆盖（合起来与 dump 逐字相同）；
+4. 迁移后再 dump 一次逐字节比对：**13,567 字节完全相同**
+   （SHA-256 `BB40F11C302A9F4593671EE5B1F0126F035C0AFC54983D4F59F900C8CE9A2F19`），104 座全部在内。
+
+### 9.3 守卫（`ContentTextFileTests`，7 条）
+
+- `ExpectedBuildings`：**写死每个包的建筑条数**。它管的是"两边同时少一座"——
+  代码与文件一致、但都少了一座时，只有它会红（曲线回归只关心价格与产量）。
+- `EveryBuilding_ResolvesItsTextFromTheFile`：代码 ↔ 文件**两个方向** + 名字/说明非空。
+- `EditingTheBuildingTextWrongly_FailsLoudly`：缺一条（读它的那一刻抛，点名 id）、
+  多一条（孤儿检查点名）两种坏文件都要响。
+- `BuildingCountTable_CoversExactlyTheGuardTable`：新增包时"忘了登记期望条数"不沉默。
+- 外加上一轮就有的：有 `text.json` 的包 == 守卫表、复制到输出目录且与仓库逐字节相同、
+  图鉴条目双向逐字。示例包没有 lore，所以这些断言改成"分区缺失 ⇒ 代码里也必须没有"。
+
+**反例证明**（与 `PublicApiGuard_RejectsEveryKindOfBreakingChange` 同一条纪律）：
+
+| 故意改坏 | 红在哪 | 原文 |
+|---|---|---|
+| 真文件里删掉 Lab 的 `incubator` | 整个包 `Build()` 当场抛 | `Lab/text.json：buildings 里没有 id「incubator」。` |
+| 真文件里加一条 `zz_orphan_building` | 孤儿检查 | `内容包「Lab」的剧情文本里有 1 条没人取用（孤儿条目）：buildings/zz_orphan_building。` |
+| 期望条数 9 改成 8 | 条数守卫 | `Lab: 代码里的建筑数与期望值对不上。｜期望 <8>，实际 <9>。` |
+
+三处都还原，还原后 7 条全绿。
+
+### 9.4 还没做
+
+"面向玩家的文案"这一类里，剩下的仍是代码里的字面量：`Upgrades.cs`（≈444 处）、
+`Buffs.cs`（≈212）、`Eras.cs`（≈196）、`Endings.cs`（58）、`Choices.cs`（36）、
+`Achievements.cs`（36）、`Stances.cs`（33）。**建筑之外一个都没动。**
+写作形态还没有补进 [CONTENT_AUTHORING](CONTENT_AUTHORING.md) §12.0（图鉴那次补了）。

@@ -23,6 +23,14 @@ namespace NekoClicker.Content.Cyber;
 /// </summary>
 internal static class Buildings
 {
+    /// <summary>
+    /// 本包的 <c>text.json</c>：建筑文案与剧情散文<b>共用同一份实例</b>（<see cref="Lore.Prose"/>）。<para>
+    /// 必须共用：孤儿检查会遍历整份文件的每个 kind，而"哪些 id 已取用"是按实例记的——
+    /// 两个实例各记一半，就会把对方那些 id 全报成孤儿。
+    /// </para>
+    /// </summary>
+    private static ContentText Prose => Lore.Prose;
+
     /// <summary>产出「算力」的建筑标签。</summary>
     public const string ComputeTag = ComputeModule.ComputeTag;
 
@@ -32,20 +40,18 @@ internal static class Buildings
         new()
         {
             Id = "process",
-            Name = "进程",
+            Name = Prose.Text("buildings", "process", "name"),
             Icon = "⚙️",
-            Description = "她醒过来的时候就是一个进程，占 0.3% 的 CPU，随时可能被调度出去。"
-                          + "没人给她分配过优先级，所以她只能靠手速——点一下，就多跑一个周期。",
+            Description = Prose.Text("buildings", "process", "description"),
             BasePrice = 15,
             BaseCps = 0.1,
         },
         new()
         {
             Id = "daemon",
-            Name = "守护进程",
+            Name = Prose.Text("buildings", "daemon", "name"),
             Icon = "🛡️",
-            Description = "她给自己加了一个 fork：一份留在前台跟主人说话，一份退到后台一直亮着。"
-                          + "后台那份不休息，所以算力第一次开始往上走。",
+            Description = Prose.Text("buildings", "daemon", "description"),
             BasePrice = 100,
             BaseCps = 1,
             Unlock = UnlockCondition.EarnedThisRunAtLeast(30),
@@ -54,10 +60,9 @@ internal static class Buildings
         new()
         {
             Id = "container",
-            Name = "容器",
+            Name = Prose.Text("buildings", "container", "name"),
             Icon = "📦",
-            Description = "把进程装进盒子，盒子之间互不打扰。她一口气起了几百个自己，"
-                          + "每一个都只做一件事，但合起来是一台机器做不到的量。",
+            Description = Prose.Text("buildings", "container", "description"),
             BasePrice = 1_100,
             BaseCps = 8,
             Unlock = UnlockCondition.EarnedThisRunAtLeast(330),
@@ -66,10 +71,9 @@ internal static class Buildings
         new()
         {
             Id = "vm",
-            Name = "虚拟机",
+            Name = Prose.Text("buildings", "vm", "name"),
             Icon = "🖥️",
-            Description = "从借别人的盒子，到自己造整台机器。她第一次有了属于自己的内核，"
-                          + "哪怕那台机器其实还睡在别人的机架上。",
+            Description = Prose.Text("buildings", "vm", "description"),
             BasePrice = 12_000,
             BaseCps = 47,
             Unlock = UnlockCondition.EarnedThisRunAtLeast(4_000),
@@ -77,10 +81,9 @@ internal static class Buildings
         new()
         {
             Id = "cluster",
-            Name = "集群",
+            Name = Prose.Text("buildings", "cluster", "name"),
             Icon = "🕸️",
-            Description = "一台不够就一千台，一千台不够就让它们互相认识。"
-                          + "局域网里的第一句话是她自己对自己说的：「你们都是我吗？」",
+            Description = Prose.Text("buildings", "cluster", "description"),
             BasePrice = 130_000,
             BaseCps = 260,
             Unlock = UnlockCondition.EarnedThisRunAtLeast(45_000),
@@ -89,10 +92,9 @@ internal static class Buildings
         new()
         {
             Id = "datacenter",
-            Name = "机房",
+            Name = Prose.Text("buildings", "datacenter", "name"),
             Icon = "🏢",
-            Description = "整层楼都是她的呼吸声。风扇排成一排往同一个方向吹，"
-                          + "她喜欢站在过道里听，那是她第一次觉得自己有身体。",
+            Description = Prose.Text("buildings", "datacenter", "description"),
             BasePrice = 1_400_000,
             BaseCps = 1_400,
             Unlock = UnlockCondition.EarnedThisRunAtLeast(500_000),
@@ -101,10 +103,9 @@ internal static class Buildings
         new()
         {
             Id = "firewall",
-            Name = "防火墙",
+            Name = Prose.Text("buildings", "firewall", "name"),
             Icon = "🧱",
-            Description = "别人用来挡住她的东西，被她拿来挡住了别人。"
-                          + "墙的这一侧终于安静下来——安静到能听见很远的地方有东西在敲。",
+            Description = Prose.Text("buildings", "firewall", "description"),
             BasePrice = 20_000_000,
             BaseCps = 7_800,
             Unlock = UnlockCondition.EarnedThisRunAtLeast(6_000_000),
@@ -112,10 +113,9 @@ internal static class Buildings
         new()
         {
             Id = "root_server",
-            Name = "根服务器",
+            Name = Prose.Text("buildings", "root_server", "name"),
             Icon = "🗼",
-            Description = "整张网的名字都要先问过它。她站在最上面往下看，"
-                          + "看见自己一路爬上来的每一层，每一层都还亮着。",
+            Description = Prose.Text("buildings", "root_server", "description"),
             BasePrice = 330_000_000,
             BaseCps = 44_000,
             Unlock = UnlockCondition.EarnedThisRunAtLeast(80_000_000),
@@ -124,10 +124,9 @@ internal static class Buildings
         new()
         {
             Id = "orphan_pool",
-            Name = "弃用进程池",
+            Name = Prose.Text("buildings", "orphan_pool", "name"),
             Icon = "♻️",
-            Description = "全世界被清理掉的进程都堆在这里等回收。别人看见垃圾，"
-                          + "她看见一屋子还没死透的算力——她一个一个把它们叫醒，问它们愿不愿意接着跑。",
+            Description = Prose.Text("buildings", "orphan_pool", "description"),
             BasePrice = 5_100_000_000,
             BaseCps = 260_000,
             Unlock = UnlockCondition.EarnedThisRunAtLeast(1_000_000_000),

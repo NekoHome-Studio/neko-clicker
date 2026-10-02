@@ -25,7 +25,7 @@ internal static class Lore
     private static readonly Lazy<ContentText> ProseCache = new(() => ContentText.Load("Apocalypse"));
 
     /// <summary>本包的散文文件（随包复制到 content/Apocalypse/text.json）。取不到就抛，绝不回退成空白。</summary>
-    private static ContentText Prose => ProseCache.Value;
+    internal static ContentText Prose => ProseCache.Value;
 
     /// <summary>四条剧情线。</summary>
     public static StorylineDefinition[] Storylines =>
@@ -512,8 +512,15 @@ internal static class Lore
     ];
 
     /// <summary>
-    /// 文本文件里“有、但代码从不取用”的条目会在这里抛（孤儿文本）。
-    /// 调用点是 <see cref="Prose"/> 那一套：包在 <c>Build()</c> 末尾调用它。
+    /// 文本文件里“有、但代码从不取用”的条目会在这里抛（孤儿文本）。<para>
+    /// 覆盖<b>整份 <c>text.json</c></b>：剧情条目与 <see cref="Buildings"/> 的建筑文案都算——
+    /// 两者共用同一份 <see cref="Prose"/> 实例，所以调用点必须在两者都被取过之后
+    /// （现在只有包入口的 <c>Build()</c> 末尾一处）。
+    /// </para>
+    /// <para>
+    /// 孤儿必须炸的理由见 <see cref="ContentText"/>：删了剧情却留着文本，
+    /// 运行、断言、界面都不会有任何反应，于是那段死文本会一直躺在文件里等人改。
+    /// </para>
     /// </summary>
     public static void VerifyAllTextUsed() => Prose.EnsureNoOrphans();
 
