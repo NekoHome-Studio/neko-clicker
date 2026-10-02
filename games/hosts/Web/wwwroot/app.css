@@ -233,6 +233,13 @@ kbd {
 
 .card.affordable { border-left-color: var(--ok); }
 .card.affordable .price { color: var(--ok); }
+
+/* 「买得起」此前只靠颜色（左侧绿边 + 绿色价格）：色觉障碍读不出，长列表也容易扫漏。
+   这两条是不依赖颜色的第二重信号 —— 加粗 + 行首勾号。
+   勾号用 CSS 转义 \2713 写，源码保持纯 ASCII（避免符号经 shell 时的编码问题）。
+   想撤掉只需删掉这两条规则。 */
+.card.affordable .price { font-weight: 600; }
+.card.affordable .price::before { content: "\2713  "; }
 .card.locked { opacity: .55; cursor: default; border-left-color: var(--line); }
 .card.locked .price { color: var(--dim); }
 .card.maxed { opacity: .45; cursor: default; border-left-color: var(--gold); }
