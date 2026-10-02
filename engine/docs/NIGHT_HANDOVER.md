@@ -9,7 +9,8 @@
 ## 1. 现在的一行状态
 
 **HEAD `aa66d13`（已提交的部分是文档）；工作区里还有 64 项未提交，属于两个切片；
-`tools\build.ps1 -Strict` 当前 `468 通过 / 1 失败（共 469）`——那 1 条红是引擎侧的真问题，不是用例陈旧。**
+`tools\build.ps1 -Strict` 我最后一次实测是 `468 通过 / 1 失败（共 469）`——那条红**已被该 agent 修好**
+（是**测试的断言与驱动步骤不配套**，不是引擎缺陷；精确机制见 §3），它正在跑全量确认。**最终数字以你重跑为准。**
 
 ## 2. 为什么没提交：一条我自己定的规矩
 
@@ -20,33 +21,43 @@
 
 所以：**我一个字都没碰它那 64 个文件**，只提交了我自己的两个文档（`aa66d13`）。
 
-## 3. 那一条红是什么（已定位，且方向明确）
+## 3. 那一条红是什么（**已由该 agent 修好；我最初的诊断是错的，见下**）
+
+> ⚠️ **更正**：本节最初写的是"这是**引擎过度阻塞**"。**那个诊断是错的**——我只读到断言失败的位置就下了结论，
+> 没有去查 `IsReady` 读的是什么。该 agent 给出精确机制并已修复；下面是更正后的记录。
 
 ```
 ✗ NineLivesEndingTests.AvoidingEveryCommitmentYieldsTheFallbackEnding
   AssertionException: 结局条件已经成立。
 ```
 
-**它不是"旧语义残留"。** 它的实际内容（`engine/tests/NineLivesEndingTests.cs:106` 起）是：
+**真实原因：测试自己的断言与驱动步骤不配套，不是引擎过拦。**
+
+- `EndingSystem.IsReady` 读的是**计数器** `$ending_ready_at_play_time`，而那个计数器**只有在
+  `EndingSystem.Check` 真的跑过一次、且那一刻结局条件成立时才会被写上**。
+- 那条用例（该 agent 23:17 重写的版本）把 `engine.State.Era = 9;`（**直接赋值，不经过任何检查**）
+  与 `Check.True(EndingSystem.IsReady(...))` 放在一起——**它断言的是一个还没被写下的诊断值**。
+- 1.5.0 的老版本之所以能过，是因为它中间调了一次 `engine.CheckEnding()`（那次调用顺手把就绪计数器写了）；
+  重写时删掉了那次调用（理由是"全答完了就不该再指望『就绪但被拦』这个状态"），**却留下了 IsReady 断言**。
+
+**修法（是收紧、不是放宽）**：删掉那条断言，改为**直接问判定本身**：
 
 ```csharp
-AnswerWithoutCommitting(engine);                 // 六条表态全答了
-Check.Equal(engine.Content.Choices.Count, engine.State.ChoiceAnswers.Count, "前提：六次表态都答了。");
-engine.State.Era = 9;
-Check.Equal(0, engine.State.PendingChoices.Count, "答完之后队列应当空了。");   // 这行过
-Check.True(EndingSystem.IsReady(...), "结局条件已经成立。");                  // 红在这里
-Check.Equal("end_blank", engine.ReachedEnding?.Id, "不押任何一条立场也必须有一个收场。");
+EndingDefinition? reached = engine.CheckEnding();
+Check.NotNull(reached, "六次表态都答完之后判定不该再等任何人（1.6.0 等的是作答，队列已经空了）。");
+Check.Equal("end_blank", reached!.Id, "不押任何一条立场也必须有一个收场。");
+Check.Equal("end_blank", engine.ReachedEnding?.Id, "落定的结局要能被读到。");
 ```
 
-**它把六条表态全答了**，只是**不押立场**。按 1.6.0 的新判据（"答完就允许落定"）**它本该通过**。
-所以这是**引擎过度阻塞**：怀疑 `AnswerablePendingCount`（或新闸门）在 `State.Era` 被直接赋值
-（这条用例就是这么干的）时行为不对，或者走了某个"已答但仍留在队列里"的路径。
+"就绪但一直没落定"那半由同文件的 `NeverAnsweringMeansNoEndingAtAllAndThatIsDeliberate` 覆盖
+（它先 `Simulate`，所以 `IsReady` 在那里**是**有效的）。文件注释写清了这里**为什么不用** `IsReady`，
+免得下一个人再加回去。
 
-**时间顺序也支持这个判断**：测试文件改于 `23:17:18`，而 `EndingSystem.cs` 改于 `23:36:51`——
-红是冲着更新后的核心去的。
+**该 agent 另外逐条查了 `EndingGraceTests` / `LabEndingTests` 里其余 7 处 `IsReady` 断言**：
+都排在 `Simulate` / 跑图循环之后，**没有第二处同类不配套**。
 
-**我已经把这个分析发给了那个 agent，并明确要求：不许靠改松用例来"修"它**（例如删掉 `IsReady` 断言）。
-从迹象看它接受了——测试文件自 `23:17:18` 起**没有再被动过**，它在改引擎。
+删除 Lab 的 `incubator` 那次（建筑切片）与本条无关；本条只需按 §4 重新跑一次全量确认。
+
 
 ## 4. 早上按这个顺序做
 
