@@ -5,8 +5,8 @@
 > 版本号的语义（什么改动升哪一位）见 [VERSIONING](VERSIONING.md)；当前状态见 [STATUS](../../STATUS.md)；
 > 逐版本改动见 [CHANGELOG](../../CHANGELOG.md)。这里只讲**操作**：命令、顺序，以及这台机器上会咬人的地方。
 >
-> 写于 1.2.1 发布时（2026-10-01），并带一节**实际执行记录**。流程文档最怕写成"应该怎样"——
-> 没跑过的那一步，下一次没人知道它是事实还是猜想。
+> 写于 1.2.1 发布时（2026-10-01），并带两节**实际执行记录**（§3 的 1.2.1 与 §4 的 1.3.0）。
+> 流程文档最怕写成"应该怎样"——没跑过的那一步，下一次没人知道它是事实还是猜想。
 
 ---
 
@@ -22,10 +22,10 @@
 | ④ | `CHANGELOG.md`：加 `## [<版本>] - YYYY-MM-DD` | 写清兼容性影响；`VersionTests` 会验"有带日期的条目" |
 | ⑤ | **先构建一次**，再跑 `tools\public-api.ps1` | 快照由测试程序集打印，`ApiVersion.Current` 读程序集元数据——版本号改了没重编，快照会带**旧版本号**且看起来完全正常 |
 | ⑥ | 扫一遍所有"当前版本"字样 | 清单见 §2；判据是 `git grep <旧版本号>`，不是记性 |
-| ⑦ | `tools\build.ps1 -Strict` | 435 用例 + 公开 API 快照 + 版本守卫；**0 警告** |
-| ⑧ | `tools\api-test.ps1` | 全部端到端检查通过（真起宿主、真读 SSE；当前 26 项）；动了宿主/前端时必跑 |
+| ⑦ | `tools\build.ps1 -Strict` | 439 用例 + 公开 API 快照 + 版本守卫；**0 警告** |
+| ⑧ | `tools\api-test.ps1` | 全部端到端检查通过（真起宿主、真读 SSE；当前 39 项）；动了宿主/前端时必跑 |
 | ⑨ | `tools\pack.ps1` | 产出 `artifacts\neko-clicker-<版本>-win-x64.zip` |
-| ⑩ | `git commit` → `git tag -a v<版本>` → 推送 | 本机 HTTPS 不通，走 SSH（见 §4） |
+| ⑩ | `git commit` → `git tag -a v<版本>` → 推送 | 本机 HTTPS 不通，走 SSH（见 §5） |
 | ⑪ | 看 CI 的两个作业，把结果写回 `STATUS.md` §6 | "本地全绿"不等于"runner 上全绿" |
 
 第 ⑤ 步拆成两步是 1.2.1 才写清楚的细节；在此之前它只是 VERSIONING 里的一句
@@ -104,7 +104,37 @@ git grep -n "1\.2\.0"        # 换成你刚发完的那个版本号
 
 ---
 
-## 4. 本机特有的坑（一条条都踩过）
+## 4. 执行记录：1.3.0（2026-10-02，**发布尚未走完**）
+
+### 4.1 做到哪一步了
+
+| 步 | 结果 |
+|---|---|
+| ② 升位 | **minor**——公开 API 只增不改（`GameSnapshot.Offline`、`OfflineView`、`GameEngine.PendingOfflineProgress`、`GameEngine.DismissOfflineProgress()`） |
+| ③ 版本号 | `Directory.Build.props` 三处一起：`1.2.1` → `1.3.0`、`1.2.1.0` → `1.3.0.0` |
+| ④ CHANGELOG | `## [1.3.0] - 2026-10-02`，并把 `[未发布]` 里攒着的宿主侧改动（Web 日志面板）收进这一版 |
+| ⑤ 快照 | **先构建再生成**：1909 → **1927 行**，diff 除首行 `version=` 外只有那四个新增成员——"只增不改"的证据 |
+| ⑦ 验收 | `build.ps1 -Strict`：**439 全绿、0 警告**；`api-test.ps1`：**39 项全过** |
+| ⑨⑩⑪ | **还没做**：打包、打 tag、推送、看 CI。它们是下一轮的第一件事（见 [STATUS](../../STATUS.md) §8） |
+
+### 4.2 这一轮逮到的两件事
+
+1. **`[未发布]` 与版本号是两套节奏，得说清收谁**。1.2.1 的经验是"宿主侧改动攒在 `[未发布]`"，
+   而这一轮引擎侧动了公开 API——按 §1 的第 ③ 步必须当场升版本，不能等。
+   于是这一版同时包含 minor 的引擎新增与纯宿主的日志面板。
+   写法沿用 1.2.1 定下的取舍（CHANGELOG 同时充当改动记录），并在 1.3.0 条目的开头写明。
+2. **快照行数是最省事的"只增不改"证据**：1909 → 1927（+18 行 = 4 个新成员加 `OfflineView`
+   这个新类型的合成成员）。反过来，如果 diff 里出现了删除行，那就不是 minor 了——
+   这条判据比读一遍 diff 快，也比"我觉得没删东西"可靠。
+
+### 4.3 1.3.0 还没验的那一半
+
+打包产物、tag、以及 CI 在 runner 上的表现都还没跑过。**"本地全绿"不等于"远端全绿"**，
+所以 §1 的 ⑨⑩⑪ 不能省——它们同时是"这一版真的发出去了"的唯一证据。
+
+---
+
+## 5. 本机特有的坑（一条条都踩过）
 
 - **推送走 SSH**：`github.com:443` 结构性不通，重试不会好；SSH 正常。**用显式 URL**：
 
@@ -119,14 +149,16 @@ git grep -n "1\.2\.0"        # 换成你刚发完的那个版本号
   想永久改：`git remote set-url origin git@github.com:NekoHome-Studio/neko-clicker.git`。
 - **看 CI 走 `api.github.com`**：`github.com:443` 不通不妨碍 REST API 返回 200（公开仓库只读）。
 - **`tools/*.ps1` 必须 UTF-8 with BOM**（Windows PowerShell 5.1 会按 GBK 解析无 BOM 的中文）。
-  本仓库的编辑器工具会吃掉 BOM——改完要补，`.md` 不受影响。
+  本仓库的编辑器工具会吃掉 BOM——**而且会顺手把 CRLF 变成 LF**（2026-10-02 实测，
+  `git` 随后警告 `LF will be replaced by CRLF`）。两样一起补：按 `\r\n` 归一化后用
+  `UTF8Encoding($true)` 写回。`.md` 不受影响。
 - **`git` 报 dubious ownership**：用 `GIT_CONFIG_COUNT=1 / GIT_CONFIG_KEY_0=safe.directory /
   GIT_CONFIG_VALUE_0="D:/githb/neko-clicker"` 绕过。
 - 其余（`-m:1`、nuget 不可用、Web 宿主必须 `dotnet run` 起）见 [STATUS](../../STATUS.md) §7。
 
 ---
 
-## 5. 这份文档保证不了什么
+## 6. 这份文档保证不了什么
 
 - **没有独立的发布脚本**：步骤还是人来点的。`tools/pack.ps1` 只做打包，`public-api.ps1`
   只做快照——它们刻意不"一键发布"，因为 ②（升哪一位）与 ④（兼容性怎么写）是判断，不是命令。
