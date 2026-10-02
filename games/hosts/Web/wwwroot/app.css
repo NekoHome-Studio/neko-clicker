@@ -321,6 +321,23 @@ kbd {
 .tabs button:hover { color: var(--fg); }
 .tabs button.active { background: var(--card-hi); border-color: var(--accent-deep); color: var(--fg); }
 
+/* The "choices" tab exists only when there is something to answer, so when it
+   appears it must be noticed: missing it means this run never gets an ending
+   (the engine waits until the choices have been shown). One expanding ring plus
+   a border/text change; JS removes the class afterwards so it can retrigger.
+   Users who asked for reduced motion lose the animation through the rule above,
+   but keep the border and text colour - the cue does not depend on animation. */
+.tabs button.urgent {
+  border-color: var(--accent);
+  color: var(--fg);
+  animation: tab-pop 1.1s ease-out 2;
+}
+@keyframes tab-pop {
+  0%   { box-shadow: 0 0 0 0 #ffb3c780; }
+  70%  { box-shadow: 0 0 0 .55rem #ffb3c700; }
+  100% { box-shadow: 0 0 0 0 #ffb3c700; }
+}
+
 .badge {
   display: inline-block;
   min-width: 1.1em;

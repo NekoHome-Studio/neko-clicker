@@ -46,6 +46,7 @@ let offlineDismissed = false;
  */
 let shownCookies = 0;
 let lastTickAt = performance.now();
+let lastFrameAt = 0; // written but never read: the throttle/staleness indicator it was meant for was never finished
 
 // ---------------------------------------------------------------- 传输
 
@@ -280,11 +281,34 @@ function renderChoices() {
   const pending = state.pendingChoices ?? [];
   const badge = $("#choice-badge");
 
-  if (pending.length > 0) {
+  const hasPending = pending.length > 0;
+
+  if (hasPending) {
     badge.textContent = pending.length;
     badge.classList.remove("hidden");
   } else {
     badge.classList.add("hidden");
+  }
+
+  // 「表态」这一页只在真有东西要答的时候存在：标签页的出现本身就是提示，
+  // 玩家不必先学会去点一个总是空着的页签。这与引擎那侧是配套的——结局要等玩家
+  // 真的"看过"这些表态才允许落定，所以"让它被看见"这件事必须由界面负责。
+  const choicesTab = document.querySelector('button[data-tab="choices"]');
+  if (choicesTab) {
+    const appearing = hasPending && choicesTab.classList.contains("hidden");
+    choicesTab.classList.toggle("hidden", !hasPending);
+    if (appearing) {
+      // 冒出来那一下强调一次；否则"多了个页签"很容易被完全错过。
+      choicesTab.classList.add("urgent");
+      setTimeout(() => choicesTab.classList.remove("urgent"), 2600);
+    }
+    if (!hasPending) choicesTab.classList.remove("urgent");
+  }
+
+  // 玩家正看着表态页、而表态没了（答完了或这一层结束）→ 换到一个不会突然变空的页。
+  if (!hasPending) {
+    const choicesPanel = document.querySelector('[data-panel="choices"]');
+    if (choicesPanel && !choicesPanel.classList.contains("hidden")) selectTab("upgrades");
   }
 
   const host = $("#choices");
