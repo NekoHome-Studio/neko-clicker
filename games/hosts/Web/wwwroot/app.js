@@ -156,12 +156,14 @@ function render() {
   renderUpgrades();
   renderPermanent();
   renderBatch();
-  renderChoices();
+  // 两张 sheet 的次序在这里定：离线收益先算，表态那张才知道自己要不要让位
+  // （判据就是离线那张此刻的 class，见 renderChoicesSheet 的规则 3）。
+  renderOffline();
+  renderChoicesSheet();
   reportChoicesShown();
   renderCodex();
   renderAchievements();
   renderNotifications();
-  renderOffline();
 }
 
 /**
@@ -204,6 +206,10 @@ function renderOffline() {
 function dismissOffline() {
   offlineDismissed = true;
   $("#offline").classList.add("hidden");
+  // 离线那张一关，表态这张立刻回来（两张 sheet 的次序规则 3）——
+  // 不等下一帧：结局的落定判定就跑在这中间，而玩家此刻已经能看见表态了。
+  renderChoicesSheet();
+  reportChoicesShown();
   send("dismissOffline");
 }
 
@@ -244,28 +250,133 @@ function renderEra() {
 }
 
 /**
+ * 待答表态：从页签改成了一张 sheet（小窗口）。三条规则，都在下面这段里执行：
+ *
+ * 1. **它自己冒出来。** 有待答表态时，玩家不需要先去发现并点开哪个页签——提示本身就是内容。
+ *    这与引擎那侧配套：结局要等玩家真的"看过"这些表态才允许落定（1.5.0 的
+ *    `GameEngine.MarkPendingChoicesShown`），所以"让它被看见"这件事必须由界面负责。
+ * 2. **可以收起，但不会丢。** 收起后只剩下页面底部那个药丸（写着还有几项待答），点它就回来。
+ *    玩家按过"收起"的那一批不再自己弹回来（否则收起等于没收起）；而**没被收起过**的一批
+ *    （新触发的、或刚读档进来的）出现时，sheet 会自己回来。
+ * 3. **两张 sheet 不打架：离线收益先讲完。** 它是读档补发的一次性事件（"你不在的时候发生了什么"
+ *    在时间上先于现在），而且只能被"收下"一次；叠在它上面的表态 sheet 会落在遮罩底下，
+ *    等于玩家点不到。所以离线收益开着时表态这张（连同药丸）先让位，它一关，
+ *    表态立刻自己回来——不需要玩家再做一次操作。
+ */
+const shownChoices = new Set();
+
+/** 玩家按过"收起"的那批待答 id：同一批不再自己弹回来，新的一批会（见规则 2）。 */
+const collapsedChoices = new Set();
+
+/** 这张 sheet 现在该不该显示；`pinned` = 玩家自己点开只为看立场/结局，没有待答也要留住。 */
+let choicesSheetOpen = false;
+let choicesSheetPinned = false;
+
+/** 离线收益那张 sheet 此刻是不是开着（表态是否要让位的唯一判据）。 */
+function offlineSheetOpen() {
+  return !$("#offline").classList.contains("hidden");
+}
+
+/**
+ * 玩家自己把 sheet 叫回来：底部药丸，或 hero 里那个常驻的立场按钮。
+ * 待答为空时（点开只为看立场轴/结局）把它钉住，否则"点开看一眼"会被下一帧立刻关掉。
+ */
+function openChoicesSheet() {
+  if (!state) return;
+  choicesSheetOpen = true;
+  choicesSheetPinned = (state.pendingChoices ?? []).length === 0;
+  renderChoicesSheet();
+  reportChoicesShown();
+}
+
+/**
+ * 收起（"收起，稍后再答" / 右上角 × / 点遮罩 / Esc）。
+ * **这不是关闭**：表态还在引擎里挂着，药丸会一直在，点它就回来。收起只对**这一批**生效。
+ */
+function collapseChoicesSheet() {
+  choicesSheetOpen = false;
+  choicesSheetPinned = false;
+  for (const choice of state?.pendingChoices ?? []) collapsedChoices.add(choice.id);
+  renderChoicesSheet();
+}
+
+/**
+ * 收起之后的药丸：**只要还有待答就一直在**，它是表态唯一的入口。
+ * 它只写条数——而"看到条数"不等于"看到了谁在问、问什么、有哪些选项"，
+ * 所以它**不**触发 choicesShown（见 reportChoicesShown 的注释）。
+ */
+function renderChoicesPill(count, visible) {
+  const pill = $("#choices-pill");
+  if (!pill) return;
+
+  const appearing = visible && pill.classList.contains("hidden");
+  pill.classList.toggle("hidden", !visible);
+
+  if (!visible) {
+    pill.classList.remove("urgent");
+    return;
+  }
+
+  const label = `🗣 还有 ${count} 项表态`;
+  // 每帧都重建的话，文字节点会被反复换掉；只在真的变了才写。
+  if (pill.textContent !== label) pill.textContent = label;
+  pill.title = "点开作答";
+
+  if (appearing) {
+    // 冒出来那一下强调一次：它出现只可能是因为玩家刚把 sheet 收起。
+    pill.classList.add("urgent");
+    setTimeout(() => pill.classList.remove("urgent"), 2600);
+  }
+}
+
+/**
+ * 立场轴与结局的常驻入口（hero 里那个按钮）。
+ *
+ * 为什么需要它：药丸只在"还有待答"时存在（规则 2），所以答完最后一条之后，
+ * 那张 sheet 就再也没有别的入口了——而玩家恰恰是在**答完之后**才想回头看
+ * "我偏向了哪一边""结局说了什么"。没有这个按钮，结局文本会随着最后一条作答一起消失。
+ * 所以它不是页签，也不是"待办提示"：它写着当前主导立场，随时可以点开那张 sheet。
+ * 既没有立场、也没有结局的内容包（11 个包里有 8 个）整个按钮隐藏。
+ */
+function renderStanceEntry() {
+  const button = $("#stances-open");
+  if (!button) return;
+
+  const stances = state.stances ?? [];
+  const dominant = stances.find((stance) => stance.isDominant);
+  const has = stances.length > 0 || Boolean(state.ending);
+
+  button.classList.toggle("hidden", !has);
+  if (!has) return;
+
+  const label = dominant ? `${dominant.icon} ${dominant.name}` : "立场";
+  if (button.textContent !== label) button.textContent = label;
+  button.title = dominant ? `看立场轴与结局（当前主导：${dominant.name}）` : "看立场轴与结局";
+}
+
+/**
  * "玩家看过待答表态了吗"——1.5.0 起这是结局能否落定的**唯一**条件。
  *
  * 引擎侧对应 GameEngine.MarkPendingChoicesShown()，它换掉了以前那段 30 模拟秒的宽限
- * （定时 → 条件）。判据只有一条：**「表态」面板此刻真的显示在屏幕上**
- * （选中的是那个 tab、页面不在后台、并且真的有内容）。
+ * （定时 → 条件）。判据只有一条：**那张画着选项的 sheet 此刻真的显示在屏幕上**
+ * （没有收起、页面不在后台、并且真的有内容要答）。
  *
- * 为什么不用标签栏上那个角标当判据：角标只写条数，看见"表态 1"并不等于看见了谁在问、
- * 问什么、有哪些选项——而结局只会落定一次，宁可晚，也不能把"没看到"记成"看到过"。
- * 反过来，"从不打开这个面板就永远拿不到结局"正是这次改动有意接受的性质（CHANGELOG 1.5.0）。
+ * 为什么药丸不算：它只写条数，看见"还有 1 项表态"并不等于看见了谁在问、问什么、
+ * 有哪些选项——而结局只会落定一次，宁可晚，也不能把"没看到"记成"看到过"。
+ * 反过来，"从不看这些表态就永远拿不到结局"正是这次改动有意接受的性质（CHANGELOG 1.5.0）。
+ * 收起（变成药丸）之后也不再报告：那批表态此刻并不在玩家眼前。
  *
  * 只报一次：报成功的 id 记在这里，之后不再重复发。send 失败时**不记账**，
  * 下一帧会重试——"发丢了却记成发过"会让结局永远落不下来，而且一点痕迹都没有。
  */
-const shownChoices = new Set();
-
 function reportChoicesShown() {
   if (!state || document.hidden) return;
 
-  const panel = document.querySelector('[data-panel="choices"]');
-  if (!panel || panel.classList.contains("hidden")) return;
+  const layer = $("#choices-sheet");
+  if (!layer || layer.classList.contains("hidden")) return;
+  if ((state.pendingChoices ?? []).length === 0) return;
 
-  const fresh = (state.pendingChoices ?? [])
+  const fresh = state.pendingChoices
     .map((choice) => choice.id)
     .filter((id) => !shownChoices.has(id));
   if (fresh.length === 0) return;
@@ -276,40 +387,34 @@ function reportChoicesShown() {
   });
 }
 
-/** 表态：待答选择 + 立场轴。选择不阻塞游戏（决策 R6），所以它是一张待办卡片而不是弹窗。 */
-function renderChoices() {
+/** 表态 sheet：待答选择 + 立场轴 + 结局。选择不阻塞游戏（决策 R6），所以它不拦着谁。 */
+function renderChoicesSheet() {
+  if (!state) return;
+
   const pending = state.pendingChoices ?? [];
-  const badge = $("#choice-badge");
 
-  const hasPending = pending.length > 0;
-
-  if (hasPending) {
-    badge.textContent = pending.length;
-    badge.classList.remove("hidden");
-  } else {
-    badge.classList.add("hidden");
+  // 规则 1：这一批里还有没被收起过的 → 自己冒出来。
+  if (pending.some((choice) => !collapsedChoices.has(choice.id))) {
+    choicesSheetOpen = true;
+    choicesSheetPinned = false;
   }
+  // 一旦真的有东西要答，"钉住"就失效：答完最后一条时它必须自己收起（规则 2）。
+  if (pending.length > 0) choicesSheetPinned = false;
+  // 规则 2 的另一半：答完就收。玩家自己点开看立场（当时没有待答）时不动它。
+  if (pending.length === 0 && !choicesSheetPinned) choicesSheetOpen = false;
 
-  // 「表态」这一页只在真有东西要答的时候存在：标签页的出现本身就是提示，
-  // 玩家不必先学会去点一个总是空着的页签。这与引擎那侧是配套的——结局要等玩家
-  // 真的"看过"这些表态才允许落定，所以"让它被看见"这件事必须由界面负责。
-  const choicesTab = document.querySelector('button[data-tab="choices"]');
-  if (choicesTab) {
-    const appearing = hasPending && choicesTab.classList.contains("hidden");
-    choicesTab.classList.toggle("hidden", !hasPending);
-    if (appearing) {
-      // 冒出来那一下强调一次；否则"多了个页签"很容易被完全错过。
-      choicesTab.classList.add("urgent");
-      setTimeout(() => choicesTab.classList.remove("urgent"), 2600);
-    }
-    if (!hasPending) choicesTab.classList.remove("urgent");
-  }
+  // 规则 3：离线收益先讲完，表态这张让位（dismissOffline 里一关就立刻重画，不等下一帧）。
+  const show = choicesSheetOpen && !offlineSheetOpen();
 
-  // 玩家正看着表态页、而表态没了（答完了或这一层结束）→ 换到一个不会突然变空的页。
-  if (!hasPending) {
-    const choicesPanel = document.querySelector('[data-panel="choices"]');
-    if (choicesPanel && !choicesPanel.classList.contains("hidden")) selectTab("upgrades");
-  }
+  const layer = $("#choices-sheet");
+  if (!layer) return;
+  layer.classList.toggle("hidden", !show);
+
+  // 药丸：收起之后唯一的入口。离线那张开着时也不显示——它落在遮罩底下，点也点不到。
+  renderChoicesPill(pending.length, pending.length > 0 && !show && !offlineSheetOpen());
+  renderStanceEntry();
+
+  if (!show) return;
 
   const host = $("#choices");
   host.textContent = "";
@@ -369,19 +474,25 @@ function renderChoices() {
     host.append(card);
   }
 
-  // 立场轴
+  // 立场轴：它在 sheet 里，因为"我偏向哪边"正是这些表态累积出来的结果。
+  const stances = state.stances ?? [];
+  const total = stances.reduce((sum, stance) => sum + stance.weight, 0);
+  // 这句说明没有立场轴时也要写（否则会留着上一批的旧文字）。
+  $("#stance-summary").textContent = stances.length === 0
+    ? (state.ending ? "已落定" : "")
+    : state.dominantStanceId
+      ? `主导：${stances.find((s) => s.isDominant)?.name ?? "—"}`
+      : total === 0 ? "还没有表态" : "还没有占上风的立场";
+
+  // 底部那颗按钮：还有待答时是"收起"（表态不会丢，只是变成药丸），没有待答时就是"关闭"。
+  $("#choices-later").textContent = pending.length > 0 ? "收起，稍后再答" : "关闭";
+
   const axis = $("#stances");
   axis.textContent = "";
-  const stances = state.stances ?? [];
   if (stances.length > 0) {
     const title = document.createElement("h3");
     title.textContent = "立场轴";
     axis.append(title);
-
-    const total = stances.reduce((sum, s) => sum + s.weight, 0);
-    $("#stance-summary").textContent = state.dominantStanceId
-      ? `主导：${stances.find((s) => s.isDominant)?.name ?? "—"}`
-      : total === 0 ? "还没有表态" : "还没有占上风的立场";
 
     for (const stance of stances) {
       const row = document.createElement("div");
@@ -403,18 +514,21 @@ function renderChoices() {
       if (stance.costText) row.title = stance.costText;
       axis.append(row);
     }
+  }
 
-    if (state.ending) {
-      const ending = document.createElement("div");
-      ending.className = "ending";
-      ending.innerHTML = "";
-      const h = document.createElement("h3");
-      h.textContent = `${state.ending.icon} 结局：${state.ending.name}`;
-      const p = document.createElement("p");
-      p.textContent = state.ending.text;
-      ending.append(h, p);
-      axis.append(ending);
-    }
+  // 结局：**不挂在立场轴里面**。11 个内容包里有 6 个（末日 / 文明 / 赛博 / 梦境 / 神 / 图书馆）
+  // 只有结局、没有立场轴（`Choices.cs` / `Stances.cs` 都没有），原先那层 `if (stances.length > 0)`
+  // 让这 6 个包的终局文本一次都没显示过。结局是走到了才有的东西，它跟立场轴一样属于这张 sheet。
+  if (state.ending) {
+    const ending = document.createElement("div");
+    ending.className = "ending";
+    ending.innerHTML = "";
+    const h = document.createElement("h3");
+    h.textContent = `${state.ending.icon} 结局：${state.ending.name}`;
+    const p = document.createElement("p");
+    p.textContent = state.ending.text;
+    ending.append(h, p);
+    axis.append(ending);
   }
 }
 
@@ -922,22 +1036,34 @@ $("#offline").addEventListener("click", (event) => {
   if (event.target.id === "offline") dismissOffline();
 });
 
+// 表态 sheet：底部按钮 / 右上角 × / 点遮罩都只是"收起"（表态还在，只是变成药丸）；
+// 药丸与 hero 里那个立场按钮把它叫回来。
+$("#choices-later").addEventListener("click", collapseChoicesSheet);
+$("#choices-close").addEventListener("click", collapseChoicesSheet);
+$("#choices-sheet").addEventListener("click", (event) => {
+  if (event.target.id === "choices-sheet") collapseChoicesSheet();
+});
+$("#choices-pill").addEventListener("click", openChoicesSheet);
+$("#stances-open").addEventListener("click", openChoicesSheet);
+
 // 面板切换：按钮 + URL hash 双向同步，于是可以把 #tab=codex 直接发给别人
 function selectTab(name) {
+  const panels = [...document.querySelectorAll("[data-panel]")];
+
+  // 「表态」不再是页签（它是自己冒出来的那张 sheet）。老书签 #tab=choices 会指到一个
+  // 已经不存在的面板，那样所有面板都会被隐藏、留下一个空白右栏——所以没有这一页就退回建筑。
+  if (!panels.some((panel) => panel.dataset.panel === name)) name = "buildings";
+
   for (const button of document.querySelectorAll("#tabs button")) {
     button.classList.toggle("active", button.dataset.tab === name);
   }
-  for (const panel of document.querySelectorAll("[data-panel]")) {
+  for (const panel of panels) {
     panel.classList.toggle("hidden", panel.dataset.panel !== name);
   }
   if (location.hash !== `#tab=${name}`) history.replaceState(null, "", `#tab=${name}`);
-
-  // 切到「表态」就是"玩家要求看这些表态"这一刻：立刻报告，不等下一帧
-  // （下一帧最多 250ms 之后才来，而结局的落定判定就在这中间跑）。
-  if (name === "choices") reportChoicesShown();
 }
 
-// 页面从后台回到前台：面板这几秒里看不见，此刻才真的被玩家看到。
+// 页面从后台回到前台：那几秒里 sheet 是看不见的，此刻才真的被玩家看到。
 document.addEventListener("visibilitychange", () => {
   if (!document.hidden) reportChoicesShown();
 });
@@ -956,6 +1082,21 @@ document.addEventListener("keydown", (event) => {
   if (offlineOpen && (event.code === "Escape" || event.code === "Space")) {
     event.preventDefault();
     dismissOffline();
+    return;
+  }
+
+  // 表态 sheet 开着时：Esc 收起它（与离线那张同一个键，收起≠丢掉，药丸还在）。
+  // 空格在这里被吃掉而**不是**退回"点猫"：那张窗口此刻盖在游戏上面，
+  // 按空格却在背后偷偷点一下猫，是一步谁也没要求过的操作。要作答请点选项或按回车。
+  const choicesLayer = $("#choices-sheet");
+  const choicesOpen = Boolean(choicesLayer) && !choicesLayer.classList.contains("hidden");
+  if (choicesOpen && event.code === "Escape") {
+    event.preventDefault();
+    collapseChoicesSheet();
+    return;
+  }
+  if (choicesOpen && event.code === "Space") {
+    event.preventDefault();
     return;
   }
 

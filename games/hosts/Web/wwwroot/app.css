@@ -155,6 +155,9 @@ kbd {
   padding-top: .75rem;
 }
 
+/* 成就计数与两个按钮分列两端：按钮自己成组，免得三个子项被 space-between 拉散。 */
+.meta-actions { display: flex; gap: .4rem; }
+
 .ghost {
   background: transparent;
   border: 1px solid var(--line);
@@ -321,18 +324,16 @@ kbd {
 .tabs button:hover { color: var(--fg); }
 .tabs button.active { background: var(--card-hi); border-color: var(--accent-deep); color: var(--fg); }
 
-/* The "choices" tab exists only when there is something to answer, so when it
-   appears it must be noticed: missing it means this run never gets an ending
-   (the engine waits until the choices have been shown). One expanding ring plus
-   a border/text change; JS removes the class afterwards so it can retrigger.
-   Users who asked for reduced motion lose the animation through the rule above,
-   but keep the border and text colour - the cue does not depend on animation. */
-.tabs button.urgent {
+/* 「表态」不再是页签（它是自己冒出来的那张 sheet，见文件末尾的「表态」一节）。
+   所以这里只剩下"收起之后那个药丸冒出来时必须被看见"这一条：一圈扩散的光环，
+   JS 加完类之后自己摘掉，好让它下次还能重放。
+   系统里关掉动效的人失去的是这圈动画，边框与文字颜色照旧——提示不依赖动画。 */
+.choices-pill.urgent {
   border-color: var(--accent);
   color: var(--fg);
-  animation: tab-pop 1.1s ease-out 2;
+  animation: choices-pop 1.1s ease-out 2;
 }
-@keyframes tab-pop {
+@keyframes choices-pop {
   0%   { box-shadow: 0 0 0 0 #ffb3c780; }
   70%  { box-shadow: 0 0 0 .55rem #ffb3c700; }
   100% { box-shadow: 0 0 0 0 #ffb3c700; }
@@ -350,7 +351,10 @@ kbd {
   text-align: center;
 }
 
-/* ---------------------------------------------------------------- 表态 */
+/* ---------------------------------------------------------------- 表态
+   待答表态、立场轴与结局现在都住在一张 sheet 里（形态见下面的「离线收益弹窗」一节，
+   两处共用 .sheet-layer / .sheet / .sheet-ok；这里只加它自己的零件）。
+   下面这些是选项卡片与立场轴本来的样式，一个像素没动——换的只是它们被画在哪。 */
 
 .choice {
   border: 1px solid var(--accent-deep);
@@ -409,6 +413,36 @@ kbd {
 .ending { margin-top: .9rem; padding: .7rem .8rem; border-radius: 9px; background: #00000044; }
 .ending h3 { color: var(--gold); }
 .ending p { margin: .3rem 0 0; font-size: .87rem; color: #cdc7e4; }
+
+/* 表态列表在 sheet 里**不自带滚动条**：整张 sheet 只有一条滚动条（.sheet 已经有
+   max-height + overflow-y）。否则会变成"滚动条里的滚动条"，而最里面那条会把
+   "收起，稍后再答"一直顶在可视区之外。 */
+#choices-sheet #choices { max-height: none; overflow: visible; }
+
+/* 收起之后的那个药丸：固定在屏幕底部正中。
+   z-index 55 —— 在 sheet（60）之下、金猫浮层（50）之上。它不是第二个弹窗，
+   只是一个"还有事要答"的入口，所以不挡任何东西、也永远不自己消失。 */
+.choices-pill {
+  position: fixed;
+  left: 50%;
+  bottom: 1rem;
+  transform: translateX(-50%);
+  z-index: 55;
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  min-height: 44px; /* 触屏目标下限，与窄屏那节的 .tabs button 同一个理由 */
+  padding: .5rem 1.1rem;
+  border-radius: 999px;
+  border: 1px solid var(--accent-deep);
+  background: var(--card-hi);
+  color: var(--fg);
+  font: inherit;
+  font-size: .85rem;
+  cursor: pointer;
+  box-shadow: 0 8px 30px #0008;
+}
+.choices-pill:hover { border-color: var(--accent); background: var(--accent-deep); color: #1a1220; }
 
 /* ---------------------------------------------------------------- 图鉴 */
 
@@ -562,10 +596,14 @@ footer code { background: #00000055; padding: .05rem .3rem; border-radius: 4px; 
   * { animation-duration: .001ms !important; animation-iteration-count: 1 !important; }
 }
 
-/* ---------------------------------------------------------------- 离线收益弹窗
-   读档补发的那一笔（`GameSnapshot.offline`）。做成压在画面之上的卡片而不是内联面板，
-   是因为它讲的是"你不在的时候发生了什么"——那件事在时间上先于当前画面。
-   它是**事件**而不是面板：收下之后服务端就把它清掉了，刷新不会再出现。 */
+/* ---------------------------------------------------------------- 弹窗（sheet）
+   读档补发的那一笔（`GameSnapshot.offline`）与待答表态（`GameSnapshot.pendingChoices`）
+   共用这一套：压在画面之上的卡片，而不是内联面板。
+   · 离线收益讲的是"你不在的时候发生了什么"——那件事在时间上先于当前画面，
+     而且它是**事件**：收下之后服务端就把它清掉了，刷新不会再出现。
+   · 表态讲的是"现在有件事要你回答"——它自己冒出来，收起之后变成页面底部那个药丸
+     （见「表态」一节的 .choices-pill）。
+   两张不会同时出现（离线收益先讲完，规则在 app.js 的 renderChoicesSheet）。 */
 .sheet-layer {
   position: fixed;
   inset: 0;
@@ -591,7 +629,33 @@ footer code { background: #00000055; padding: .05rem .3rem; border-radius: 4px; 
   overflow-y: auto;
 }
 
+/* 标题行：标题 / 说明 / 收起按钮。表态那张比离线收益高得多（选项 + 立场轴 + 结局），
+   所以它多一个常驻右上角的收起按钮——底部的"收起，稍后再答"可能落在折叠线以下，
+   而"这东西怎么关掉"不该需要先滚动才找得到。 */
+.sheet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .6rem;
+  margin-bottom: .55rem;
+}
+
+.sheet-close {
+  min-width: 2rem;
+  min-height: 2rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--dim);
+  font: inherit;
+  line-height: 1;
+  cursor: pointer;
+}
+.sheet-close:hover { color: var(--fg); border-color: var(--accent-deep); }
+
 .sheet h2 { margin: 0 0 .55rem; font-size: 1.05rem; color: var(--accent); }
+/* 放在 .sheet h2 之后：两者特异度相同，标题行里的 h2 不该再带一段下边距。 */
+.sheet-head h2 { margin: 0; }
 .sheet p { margin: 0 0 .5rem; font-size: .9rem; color: #cdc7e4; line-height: 1.55; }
 .sheet p.muted { color: var(--dim); font-size: .82rem; }
 .sheet b { color: var(--gold); }

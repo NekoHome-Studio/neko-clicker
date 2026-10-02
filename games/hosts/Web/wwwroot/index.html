@@ -23,6 +23,33 @@
     </div>
   </div>
 
+  <!-- 表态（待答选择 + 立场轴 + 结局）：它**不是页签，而是一张小窗口**，
+       形态与上面那张离线收益完全共用（`.sheet-layer` / `.sheet` / `.sheet-ok` /
+       `sheet-in`）——这里没有第二套弹窗。
+       三条约定写在 app.js 的 renderChoicesSheet 里，这里只说界面：
+       ① 有待答表态时它自己冒出来，玩家不必先去发现并点开哪个页签；
+       ② 它可以被收起（"收起，稍后再答" / 右上角 × / 点遮罩 / Esc），收起后只剩
+          下面那个药丸——表态**不会被丢掉**，药丸一直在，点它就回来；
+       ③ 与离线收益那张不会同时出现：离线收益是读档补发的一次性事件，它先讲完。 -->
+  <div id="choices-sheet" class="sheet-layer hidden">
+    <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="choices-title">
+      <div class="sheet-head">
+        <h2 id="choices-title">表态</h2>
+        <span id="stance-summary" class="muted"></span>
+        <button id="choices-close" class="sheet-close" type="button" aria-label="收起表态窗口">&times;</button>
+      </div>
+      <div id="choices" class="list"></div>
+      <div id="stances" class="stances"></div>
+      <button id="choices-later" class="sheet-ok">收起，稍后再答</button>
+    </div>
+  </div>
+
+  <!-- 收起之后的表态：这是它唯一的入口，因此**只要还有待答就一直在**。
+       它只写条数——"看到条数"不等于"看到了谁在问什么、有哪些选项"，而结局只会落定一次，
+       所以给引擎的 choicesShown 只由上面那张真的画出选项的 sheet 发出（见 reportChoicesShown）。
+       答完最后一条时它和 sheet 一起消失。 -->
+  <button id="choices-pill" class="choices-pill hidden" type="button"></button>
+
   <header>
     <h1 id="title">载入中…</h1>
     <div class="status">
@@ -65,7 +92,14 @@
 
       <div class="meta">
         <span>成就 <b id="achievements">0 / 0</b></span>
-        <button id="save" class="ghost">存档</button>
+        <span class="meta-actions">
+          <!-- 立场轴与结局的常驻入口。它**不是**一个需要玩家先去发现的页签：
+               待答表态会自己弹出来（见下面的 #choices-sheet），这里只是"想再看一眼我偏向哪边、
+               结局说了什么"时的入口——答完最后一条表态之后，那是唯一还能回到那张 sheet 的路。
+               内容包没有立场也没有结局时整个按钮隐藏（见 app.js 的 renderStanceEntry）。 -->
+          <button id="stances-open" class="ghost hidden" title="看立场轴与结局">立场</button>
+          <button id="save" class="ghost">存档</button>
+        </span>
       </div>
     </section>
 
@@ -76,7 +110,6 @@
         <button data-tab="upgrades">升级</button>
         <!-- 永久线：内容包没有这条线时整个按钮会被隐藏（见 app.js 的 renderPermanent） -->
         <button data-tab="permanent" id="tab-permanent">永久 <b id="permanent-badge" class="badge hidden"></b></button>
-        <button data-tab="choices">表态 <b id="choice-badge" class="badge hidden"></b></button>
         <button data-tab="codex">图鉴</button>
         <button data-tab="achievements">成就</button>
         <button data-tab="log">日志</button>
@@ -110,12 +143,6 @@
         <p id="permanent-wallet" class="wallet"></p>
         <p id="permanent-hint" class="muted"></p>
         <div id="permanent" class="list"></div>
-      </div>
-
-      <div class="panel hidden" data-panel="choices">
-        <div class="panel-head"><h2>表态</h2><span id="stance-summary" class="muted"></span></div>
-        <div id="choices" class="list"></div>
-        <div id="stances" class="stances"></div>
       </div>
 
       <div class="panel hidden" data-panel="codex">
