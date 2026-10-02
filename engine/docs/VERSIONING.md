@@ -5,11 +5,13 @@
 > 一句话版本：**从 1.0.0 起，公开 API 只增不改。** 删改任何公开成员都必须升主版本号，
 > 而且这条规矩不是靠自觉——有测试守着。
 >
-> 当前版本 **1.3.0**：minor——公开 API **只增不改**（新增 `GameSnapshot.Offline`、`OfflineView`、
-> `GameEngine.PendingOfflineProgress` 与 `GameEngine.DismissOfflineProgress()`，离线收益第一次
-> 能走到界面上）。模拟结果一个字节没变。上一版 **1.2.1** 是 patch（421 条剧情散文搬出 dll，
-> 外加 `ContentText` 的一个并发修复），**1.2.0** 只新增了 `ContentText`（剧情散文的外部化载体），
-> 没有不兼容改动。语义层面的破坏性变更至今只有一处——
+> 当前版本 **1.4.0**：minor——公开 API **只增不改**（`UpgradeView` 新增
+> `UsesPrestigeCurrency` / `CurrencyName` / `CurrencyIcon`，也就是"这一行花哪种货币"）。
+> 上一版 **1.3.0** 也是 minor（新增 `GameSnapshot.Offline`、`OfflineView`、
+> `GameEngine.PendingOfflineProgress` 与 `DismissOfflineProgress()`，离线收益第一次能走到界面上）；
+> **1.2.1** 是 patch（421 条剧情散文搬出 dll，外加 `ContentText` 的一个并发修复），
+> **1.2.0** 只新增了 `ContentText`（剧情散文的外部化载体），没有不兼容改动。
+> 以上几版都没有改变任何既有成员的行为。语义层面的破坏性变更至今只有一处——
 > 1.1.0 让结局条件成立后先等一段作答宽限期（`GameEngineOptions.EndingGraceSeconds`，
 > 默认 30 模拟秒），期间 `CheckEnding()` 返回 `null`。详见 [CHANGELOG](../../CHANGELOG.md)。
 
@@ -24,9 +26,9 @@
 单一事实来源是 **`Directory.Build.props` 里的 `<Version>`**：
 
 ```xml
-<Version>1.3.0</Version>
-<AssemblyVersion>1.3.0.0</AssemblyVersion>
-<FileVersion>1.3.0.0</FileVersion>
+<Version>1.4.0</Version>
+<AssemblyVersion>1.4.0.0</AssemblyVersion>
+<FileVersion>1.4.0.0</FileVersion>
 ```
 
 这个值会同时成为程序集版本、文件版本，以及 `ApiVersion.Current` 报告的版本。
@@ -42,8 +44,8 @@
 ```csharp
 using NekoClicker.Core;
 
-Console.WriteLine(ApiVersion.Current);        // "1.3.0"
-Console.WriteLine(ApiVersion.AssemblyVersion); // 1.3.0.0
+Console.WriteLine(ApiVersion.Current);        // "1.4.0"
+Console.WriteLine(ApiVersion.AssemblyVersion); // 1.4.0.0
 Console.WriteLine(ApiVersion.Major);           // 1
 ```
 
@@ -94,7 +96,7 @@ Console.WriteLine(ApiVersion.Major);           // 1
 光有规矩没有守卫，规矩会在第一次赶工时失效。所以有一份**快照**：
 
 ```
-engine/core/PublicApi.txt     ← 1927 行，公开表面的逐项清单
+engine/core/PublicApi.txt     ← 1930 行，公开表面的逐项清单
 ```
 
 它被**嵌进 `NekoClicker.Core.dll`**，随 dll 一起走。任何拿到这个 dll 的宿主都能断言
@@ -171,8 +173,8 @@ git tag -a v1.0.0 -m "NekoClicker.Core 1.0.0"
 > [RELEASING](RELEASING.md)。下面是判据清单。
 
 - [ ] `pwsh -File tools/build.ps1 -Strict` 退出码 0，0 警告
-- [ ] 全部用例通过（当前 **439** 个）
-- [ ] 若这次动了 Web 宿主：`pwsh -File tools/api-test.ps1` 全部端到端检查通过（当前 39 项）
+- [ ] 全部用例通过（当前 **441** 个）
+- [ ] 若这次动了 Web 宿主：`pwsh -File tools/api-test.ps1` 全部端到端检查通过（当前 44 项）
 - [ ] `Directory.Build.props` 的 `Version` / `AssemblyVersion` / `FileVersion` 三处一致
 - [ ] `CHANGELOG.md` 有当前版本的带日期条目，写清了兼容性影响
 - [ ] 若公开 API 有变动：快照已更新，且**确实**是有意为之

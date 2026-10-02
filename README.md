@@ -5,12 +5,12 @@
 + #3《猫娘实验室》+ #10《猫娘公司》+ #6《猫娘末世》+ #9《猫娘图书馆》
 + #7《猫娘神明》+ #4《猫娘文明》+ #5《赛博猫娘》+ #8《猫娘梦境》）和一个可玩的终端 Demo。
 
-**当前版本 `1.3.0`**（`NekoClicker.Core` 的公开 API 版本）。从 `1.0.0` 起
+**当前版本 `1.4.0`**（`NekoClicker.Core` 的公开 API 版本）。从 `1.0.0` 起
 **公开 API 只增不改**，而且有测试守着——见 [版本与兼容性承诺](#版本与兼容性承诺)。
 1.1.0 的破坏性变更只有一处语义改动：结局条件成立后会给玩家一段作答宽限期（见 [CHANGELOG](CHANGELOG.md)）；
 1.2.0 只新增了 `ContentText`（剧情散文的外部化载体），没有不兼容改动；
 1.2.1 是 patch：421 条散文铺满十个包、修掉 `ContentText` 的并发缺陷，公开 API 一行没动；
-1.3.0 是 minor：新增 `GameSnapshot.Offline` 一族（离线收益第一次能走到界面上），公开 API 只增不改。
+1.3.0 是 minor：新增 `GameSnapshot.Offline` 一族（离线收益第一次能走到界面上）；1.4.0 也是 minor：`UpgradeView` 补上货币语义（前端不再解释枚举序数），Web 端多了「永久」面板。
 
 框架的核心目标是**把"引擎"和"内容"彻底分开**：引擎负责时间推进、数值管线、存档与事件；
 内容只描述"这个世界有什么"。换掉内容包就能做出完全不同的游戏，引擎代码一行都不用改。
@@ -59,7 +59,7 @@
 > 代价是画面右侧与底部各有一格空白——这是换「拖横向不崩」付出的代价。
 
 ```powershell
-# 构建 + 跑测试（439 个用例，零依赖迷你运行器）
+# 构建 + 跑测试（441 个用例，零依赖迷你运行器）
 .\tools\build.ps1
 
 # 逐条计时：打印最慢的一批与分档占比（想知道"什么变慢了"就用它）
@@ -167,7 +167,7 @@ engine/content/Cyber/   内容包 #5《赛博猫娘》（五层数字层，迁�
 engine/content/Dream/   内容包 #8《猫娘梦境》（五层梦，越睡越浓的梦境能量）
 games/hosts/Demo.Cli/        终端 UI 适配层（ANSI 全屏 + 键盘 + 无头模式 + --package）
 games/hosts/Web/         Web 前端宿主（本地 HTTP + wwwroot，浏览器里可玩）
-engine/tests/    439 个测试 + 自研迷你测试运行器（含架构不变量与全程可达测试）
+engine/tests/    441 个测试 + 自研迷你测试运行器（含架构不变量与全程可达测试）
 engine/docs/ARCHITECTURE.md             架构与设计决策
 engine/docs/CONTENT_AUTHORING.md        如何写内容（数值节奏、校验规则、常见坑）
 engine/docs/VERSIONING.md               版本与兼容性承诺：什么改动升哪一位、公开 API 快照怎么用
@@ -202,7 +202,7 @@ tools/seed-packages.ps1          把全局 NuGet 缓存里的 net8.0 targeting p
 所以 `engine/tests` 与内容包同属引擎侧，一起被提取——这也是 `engine/` 能自包含的原因。
 
 > **`games/hosts/Web/` 的状态**：**可玩**——点击、买建筑与升级、推进纪元、表态、看图鉴、
-> 日志（引擎的通知列表，`#tab=log`）、**离线收益弹窗**（读档补发的那一笔，收下之后不再弹），
+> 日志（引擎的通知列表，`#tab=log`）、**离线收益弹窗**（读档补发的那一笔，收下之后不再弹）、**永久升级线**（`#tab=permanent`：转生后保留的那条线，锁着的行也列出来），
 > 与终端 Demo 共用同一份存档（`saves/<包 id>.json`）；零前端依赖（手写 ES 模块 + 一份 CSS，
 > 无 npm、无打包步骤）。调试要用 `NEKO_DEBUG_KEY` 开门，见
 > [WEB_DEBUG_GATE_PLAN](engine/docs/WEB_DEBUG_GATE_PLAN.md)。它刻意不挂进 `NekoClicker.sln`
@@ -321,7 +321,7 @@ Console.WriteLine(engine.Save());           // JSON 存档
 
 ## 版本与兼容性承诺
 
-**当前版本 `1.3.0`。从 `1.0.0` 起，`NekoClicker.Core` 的公开 API 只增不改。**
+**当前版本 `1.4.0`。从 `1.0.0` 起，`NekoClicker.Core` 的公开 API 只增不改。**
 
 | 改动 | 升哪一位 |
 |---|---|
@@ -334,15 +334,15 @@ Console.WriteLine(engine.Save());           // JSON 存档
 ```csharp
 using NekoClicker.Core;
 
-Console.WriteLine(ApiVersion.Current);         // "1.3.0"
-Console.WriteLine(ApiVersion.AssemblyVersion);  // 1.3.0.0
+Console.WriteLine(ApiVersion.Current);         // "1.4.0"
+Console.WriteLine(ApiVersion.AssemblyVersion);  // 1.4.0.0
 ```
 
 ### 这条承诺是怎么被守住的
 
 不是靠自觉，是靠一份**快照**加四条守卫：
 
-- `engine/core/PublicApi.txt` —— 1927 行的公开表面逐项清单，
+- `engine/core/PublicApi.txt` —— 1930 行的公开表面逐项清单，
   **嵌进 `NekoClicker.Core.dll`**，随 dll 一起走。任何拿到这个 dll 的宿主都能自己断言
   "这份二进制的公开 API 与我预期的一致"，不需要把本仓库的测试代码也带走。
 - `PublicApiTests` —— 快照必须逐项一致；快照必须真的覆盖每个公开成员（防止守卫自己瞎掉）；
@@ -393,7 +393,7 @@ Console.WriteLine(ApiVersion.AssemblyVersion);  // 1.3.0.0
 一条命令就是全仓库的验收：
 
 ```powershell
-.\tools\build.ps1 -Strict   # 引擎 + 内容 + 439 条用例 + Web 宿主（0 警告）
+.\tools\build.ps1 -Strict   # 引擎 + 内容 + 441 条用例 + Web 宿主（0 警告）
 .\tools\web.ps1   build -Strict   # 只编 Web 宿主时用它
 .\tools\api-test.ps1        # 再把宿主真起起来，打一遍端点（含 SSE 流）
 ```
@@ -407,9 +407,9 @@ Console.WriteLine(ApiVersion.AssemblyVersion);  // 1.3.0.0
 
 - 核心引擎、十一个内容包（猫咖物语 / 猫娘咖啡馆 / 九命轮回 / 猫娘实验室 / 猫娘公司 / 猫娘末世 /
   猫娘图书馆 / 猫娘神明 / 猫娘文明 / 赛博猫娘 / 猫娘梦境）、**两个前端宿主**（终端 Demo + Web），
-  **439 个测试**全部通过。
+  **441 个测试**全部通过。
 - **端到端回归与 CI 已落地**：`tools/api-test.ps1` 起真宿主打一遍全部端点（静态文件 / 前端面板 /
-  元信息 / 快照 / 命令 / 通知 / 负数 / SSE 流 / **离线收益**，39 项检查——最后一段会带同一份存档
+  元信息 / 快照 / 命令 / 通知 / 负数 / SSE 流 / **离线收益** / **永久线货币语义**，44 项检查——最后一段会带同一份存档
   **再起一次宿主**，验"读档补发 → 没播报之前刷新不消失 → 收下之后消失"），自带临时存档目录、
   缺省把调试门关着、收尾按端口反查并清掉
   `dotnet run` 的子进程；`.github/workflows/ci.yml` 在每次 push / PR 上跑 `tools/build.ps1 -Strict`
@@ -505,7 +505,8 @@ Console.WriteLine(ApiVersion.AssemblyVersion);  // 1.3.0.0
   ROADMAP 规划范围内的**十个内容包至此全部交付**，
   四个引擎能力里只有 S-A / S-B / S-C 动过核心（S-D 一行核心代码都没写）。
 
-**接下来做什么**：见 [STATUS.md 的 §8「下一步与交接」](STATUS.md)——**1.3.0 已发布**
-（tag `v1.3.0` 在远端、CI 两个作业 success），再往下是剩下的 Web 界面（永久升级线 / 二周目）
-与 `PackageId` 打包元数据，每条都带了验收命令与已知边界。1.2.1 / 1.3.0 是怎么发的
-（含发布流程与实际执行记录）见 [engine/docs/RELEASING.md](engine/docs/RELEASING.md)。
+**接下来做什么**：见 [STATUS.md 的 §8「下一步与交接」](STATUS.md)——工作树是 **1.4.0**
+（升级行的货币语义 + Web 的「永久」面板），**发布还没走**：打包 / 打 tag / 推送 / 看 CI
+是下一轮的第一件事；再往后是二周目界面（要先定语义）与 `PackageId` 打包元数据。
+1.2.1 / 1.3.0 是怎么发的（含发布流程与实际执行记录）
+见 [engine/docs/RELEASING.md](engine/docs/RELEASING.md)。
