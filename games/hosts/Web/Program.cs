@@ -42,7 +42,22 @@ public static class Program
         string url = ReadOption(args, "--urls") ?? ReadOption(args, "--url") ?? DefaultUrl;
         string saveRoot = Path.GetFullPath(ReadOption(args, "--save-root") ?? DefaultSaveRoot());
 
-        var builder = WebApplication.CreateBuilder(args);
+        // 内容根：能自己找就自己找，别依赖"启动时的工作目录"。
+        // 实测（2026-10-02，打包后的产物）：在包根目录敲 `web\neko-clicker-web.exe`，
+        // `/api/*` 全部正常而首页 404——ASP.NET Core 默认把**当前工作目录**当 ContentRoot，
+        // 而 `wwwroot` 在 `web\` 下面；说明书里写的正是那条命令。
+        // 但也不能无条件指向程序集目录：开发期 `bin` 里**没有** `wwwroot`（静态文件靠 SDK 写的
+        // staticwebassets 清单解析到源码目录），内容根一改清单就找不到，首页照样 404。
+        // 于是判据就是"程序集旁边有没有 wwwroot"：有（= 发布产物）用它，没有（= 开发期）保持默认。
+        string? contentRoot = Directory.Exists(Path.Combine(AppContext.BaseDirectory, "wwwroot"))
+            ? AppContext.BaseDirectory
+            : null;
+
+        var builder = WebApplication.CreateBuilder(new WebApplicationOptions
+        {
+            Args = args,
+            ContentRootPath = contentRoot,
+        });
         builder.WebHost.UseUrls(url);
         builder.Services.AddSingleton(new HostOptions(saveRoot));
 
