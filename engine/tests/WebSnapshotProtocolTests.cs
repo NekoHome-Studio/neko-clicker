@@ -137,6 +137,48 @@ public sealed class WebSnapshotProtocolTests
         Check.Null(held["era"]?.ToJsonString(), "era 应当是 null。");
     }
 
+    /// <summary>
+    /// 离线报告要真的走完"出现 → 播报 → 消失"这一整条协议路径。<para>
+    /// 它是**一次性播报**的字段：播报之前必须一直待在全量帧里（前端一刷新就再取一份全量，
+    /// 靠"推过一次就算数"是收不到的），播报之后必须以 <c>null</c> 补丁到前端——
+    /// 中间任何一步缺失，玩家要么看不到自己离线赚了多少，要么那张卡永远关不掉。
+    /// </para>
+    /// </summary>
+    [Test]
+    public void OfflineReport_ArrivesThenLeavesAsANullPatch()
+    {
+        GameEngine engine = TestGame.CreateNineLivesFunded(out ManualClock clock);
+        TestGame.BuyGreedily(engine);
+        Check.Greater(engine.CookiesPerSecond, 0, "前置条件：产量为 0 就补发不出任何收益，这条用例会变成橡皮图章。");
+        string json = engine.Save();
+
+        clock.Advance(4 * 3600);
+        engine.Load(json);
+
+        GameSnapshot withReport = engine.Snapshot(PurchaseMode.Buy1);
+        JsonObject full = ToJson(withReport);
+        Check.True(full["offline"] is JsonObject, "读档补发之后，全量帧里应带上待播报的离线报告。");
+        var report = full["offline"] as JsonObject;
+        if (report is null) return;
+
+        foreach (string field in new[] { "cookiesGained", "creditedSeconds", "elapsedSeconds", "wasCapped", "durationText", "cookiesText" })
+        {
+            Check.True(report.ContainsKey(field), $"离线报告缺字段 <{field}>（前端按 camelCase 取，缺了就静默显示不出来）。");
+        }
+        Check.Greater(report["cookiesGained"]!.GetValue<double>(), 0, "补发的货币应当大于 0。");
+
+        // 播报之后：字段还在（值为 null），差别在于值
+        engine.DismissOfflineProgress();
+        GameSnapshot afterDismiss = engine.Snapshot(PurchaseMode.Buy1);
+        Check.Null(ToJson(afterDismiss)["offline"], "播报之后全量帧里的 offline 应当是 null 而不是整个字段消失。");
+
+        SnapshotProtocol.Delta delta = SnapshotProtocol.Diff(withReport, afterDismiss);
+        Check.True(
+            delta.Changed.ContainsKey("offline"),
+            $"播报之后增量帧应当显式带上 offline——否则前端那张卡永远关不掉（实际带的字段：{string.Join('、', delta.Changed.Select(p => p.Key))}）。");
+        Check.Null(delta.Changed["offline"], "offline 的补丁值应当是 null。");
+    }
+
     /// <summary>增量帧里没提到的字段不能被改动——"没变化"与"变成空"必须区分得开。</summary>
     [Test]
     public void DeltaLeavesUnmentionedFieldsAlone()

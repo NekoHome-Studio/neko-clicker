@@ -64,6 +64,8 @@ public sealed class GameEngine
     private readonly List<GameNotification> _notifications = [];
     private readonly int _maxNotifications;
 
+    private OfflineProgress? _pendingOffline;
+
     private DeterministicRandom _random;
     private ModifierSet _modifiers = new();
     private ProductionBreakdown _production = ProductionBreakdown.Empty;
@@ -126,6 +128,20 @@ public sealed class GameEngine
 
     /// <summary>最近的玩家可见消息（最多 <see cref="GameEngineOptions.MaxNotifications"/> 条）。</summary>
     public IReadOnlyList<GameNotification> Notifications => _notifications;
+
+    /// <summary>
+    /// 已经结算、但**还没被界面播报过**的离线收益；没有则为 <c>null</c>。<para>
+    /// 为什么这个状态属于引擎而不是宿主：离线补发是**事件**，事件只该被播报一次，
+    /// 而"播报过没有"必须只有一个主人。放在宿主里的后果实测过——刷新一次页面就按各自的
+    /// 记忆重复弹，而两次离线补发完全可能数值一模一样（同样离线到上限、产量也没变），
+    /// 于是"拿数值当指纹去重"这条路本身就不成立。
+    /// </para>
+    /// <para>
+    /// <b>收益为 0 时不记录</b>（离线时长不到门槛、或产量为 0）：没有东西可以播报。
+    /// 播报完由宿主调 <see cref="DismissOfflineProgress"/>。
+    /// </para>
+    /// </summary>
+    public OfflineProgress? PendingOfflineProgress => _pendingOffline;
 
     /// <summary>当前生效的修饰符集合（访问时按需重算）。</summary>
     public ModifierSet Modifiers
@@ -543,7 +559,25 @@ public sealed class GameEngine
         // 模块自己维护的派生状态（计数器之类）不经过 Step()，必须显式通知它们补算。
         for (int i = 0; i < _modules.Count; i++) _modules[i].OnOffline(this, progress);
 
+        // 补发了多少是一件事、"有没有被界面播报过"是另一件：这里只登记，播报由宿主决定
+        // （它拿到的是快照里的 `offline`），播报完再调 DismissOfflineProgress。
+        if (progress.CookiesGained > 0) _pendingOffline = progress;
+
         return progress;
+    }
+
+    /// <summary>
+    /// 宣告"这条离线收益已经播报过了"，之后 <see cref="PendingOfflineProgress"/> 归 <c>null</c>。
+    /// </summary>
+    /// <returns>
+    /// 之前确实有待播报的收益时为 <c>true</c>；本来就没有（或已经播报过）时为 <c>false</c>。
+    /// 重复调用是安全的——宿主不该为了幂等自己再存一份状态。
+    /// </returns>
+    public bool DismissOfflineProgress()
+    {
+        if (_pendingOffline is null) return false;
+        _pendingOffline = null;
+        return true;
     }
 
     // ---------------------------------------------------------------- 存档
@@ -569,6 +603,8 @@ public sealed class GameEngine
     public void HardReset()
     {
         _notifications.Clear();
+        // 上一局的离线收益还没播报就先重开：那笔钱已经不属于这一局了，不该再弹。
+        _pendingOffline = null;
         _accumulator = 0;
         _achievementTimer = 0;
         _production = ProductionBreakdown.Empty;

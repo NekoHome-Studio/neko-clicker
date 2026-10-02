@@ -11,6 +11,18 @@
   <div id="golden" class="golden-layer hidden"></div>
   <div id="toast" class="toast"></div>
 
+  <!-- 离线收益：读档补发的那一笔（GameSnapshot.offline）。
+       它是一次性**事件**而不是每秒都在的数值，所以做成压在画面之上的播报卡；
+       "收下"会把宿主那份状态清掉，于是刷新页面不会再弹第二次。 -->
+  <div id="offline" class="sheet-layer hidden">
+    <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="offline-title">
+      <h2 id="offline-title">🌙 欢迎回来</h2>
+      <p id="offline-text"></p>
+      <p id="offline-note" class="muted"></p>
+      <button id="offline-ok" class="sheet-ok">收下</button>
+    </div>
+  </div>
+
   <header>
     <h1 id="title">载入中…</h1>
     <div class="status">

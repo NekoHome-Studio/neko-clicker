@@ -464,6 +464,38 @@ public sealed record EndingView
 }
 
 /// <summary>
+/// 读档补发的那笔离线收益，UI 拿它弹一次"欢迎回来"。<para>
+/// 出现条件是 <see cref="GameEngine.PendingOfflineProgress"/> 非空——也就是"补发过、
+/// 但界面还没播报过"。播报完由宿主发一条 <c>dismissOffline</c> 之类的命令把它收掉，
+/// 于是**刷新页面不会重复弹**，而"同一个数值的两次离线"也不会被误当成同一次。
+/// </para>
+/// <para>
+/// 时长与货币都给了格式化文本：同一条读数在终端与浏览器上必须是同一句话的一部分，
+/// 而这正是 <see cref="GameViewFactory"/> 存在的理由。
+/// </para>
+/// </summary>
+public sealed record OfflineView
+{
+    /// <summary>实际离线秒数。</summary>
+    public double ElapsedSeconds { get; init; }
+
+    /// <summary>计入收益的秒数（受 <c>OfflineCapSeconds</c> 上限约束）。</summary>
+    public double CreditedSeconds { get; init; }
+
+    /// <summary>补发的货币量。</summary>
+    public double CookiesGained { get; init; }
+
+    /// <summary>是否因为触到上限而被截断（UI 该说清"只补了这么多"）。</summary>
+    public bool WasCapped { get; init; }
+
+    /// <summary>计入收益时长的文本形式，例如 <c>3 小时</c>。</summary>
+    public string DurationText { get; init; } = string.Empty;
+
+    /// <summary>补发货币的文本形式，例如 <c>1.2 百万</c>。</summary>
+    public string CookiesText { get; init; } = string.Empty;
+}
+
+/// <summary>
 /// 一帧 UI 所需的全部数据。<para>
 /// 这是引擎对前端的完整契约：前端只读它、只发命令，不接触 <see cref="GameState"/>。
 /// 由于是普通 record，前端可以直接做差异比较来决定重绘哪些行。
@@ -572,6 +604,13 @@ public sealed record GameSnapshot
 
     /// <summary>转生预览。</summary>
     public PrestigePreview Prestige { get; init; }
+
+    /// <summary>
+    /// 待播报的离线收益；没有（或已经播报过）时为 <c>null</c>（UI 不该弹那张卡）。<para>
+    /// 它从出现到消失只由一件事驱动：宿主在播报之后宣告"看过了"。
+    /// </para>
+    /// </summary>
+    public OfflineView? Offline { get; init; }
 
     /// <summary>舍命面板；内容包没有分层转生时为 <c>null</c>（UI 应隐藏该面板）。</summary>
     public EraView? Era { get; init; }

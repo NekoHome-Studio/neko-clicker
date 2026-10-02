@@ -200,6 +200,7 @@ public static class GameViewFactory
             GoldenCookies = goldenCookies,
             Notifications = [.. engine.Notifications],
             Prestige = PrestigeSystem.Preview(engine),
+            Offline = BuildOfflineView(engine),
             Era = BuildEraView(engine),
             Codex = BuildCodexView(engine),
             PendingLore = BuildPendingLore(engine),
@@ -207,6 +208,24 @@ public static class GameViewFactory
             Stances = BuildStances(engine),
             DominantStanceId = engine.DominantStance,
             Ending = BuildEndingView(engine),
+        };
+    }
+
+    /// <summary>构造待播报的离线收益视图；没有待播报的（或收益为 0）时返回 <c>null</c>。</summary>
+    private static OfflineView? BuildOfflineView(GameEngine engine)
+    {
+        if (engine.PendingOfflineProgress is not { } offline) return null;
+        if (offline.CookiesGained <= 0) return null;
+
+        return new OfflineView
+        {
+            ElapsedSeconds = offline.ElapsedSeconds,
+            CreditedSeconds = offline.CreditedSeconds,
+            CookiesGained = offline.CookiesGained,
+            WasCapped = offline.WasCapped,
+            // 文本一律走 NumFormat：终端 demo 与 Web 前端显示的是同一句话里的同两个词。
+            DurationText = NumFormat.Duration(offline.CreditedSeconds),
+            CookiesText = NumFormat.FormatLong(offline.CookiesGained),
         };
     }
 

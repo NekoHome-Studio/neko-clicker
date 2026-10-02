@@ -1,6 +1,7 @@
 using System.Text.Json.Nodes;
 using NekoClicker.Core.Events;
 using NekoClicker.Core.Persistence;
+using NekoClicker.Core.Views;
 
 namespace NekoClicker.Core.Tests;
 
@@ -131,6 +132,83 @@ public static class SaveTests
         clock.Advance(4 * 3600);
 
         Check.False(engine.Load(json).HasValue);
+    }
+
+    /// <summary>
+    /// 离线补发要能走到 UI：读档之后快照里带着它，宿主播报完（<c>DismissOfflineProgress</c>）
+    /// 快照里就没有了。<para>
+    /// 这一对"出现 → 消失"是本轮新增的语义（见 <c>GameSnapshot.Offline</c>）：少了前半段，
+    /// 玩家永远看不到自己离线赚了多少；少了后半段，刷新一次页面就重复弹一次。
+    /// </para>
+    /// </summary>
+    [Test]
+    public static void OfflineReport_ReachesTheSnapshotUntilDismissed()
+    {
+        GameEngine engine = TestGame.CreateNeko(out ManualClock clock);
+        engine.State.Cookies = 1_000_000;
+        engine.MarkDirty();
+        engine.BuyBuilding("curled_cat", 10);
+
+        Check.Null(engine.Snapshot().Offline, "新开局不该有待播报的离线收益。");
+
+        string json = engine.Save();
+        clock.Advance(4 * 3600);
+        OfflineProgress? recorded = engine.Load(json);
+        Check.True(recorded.HasValue, "4 小时离线应结算收益。");
+
+        OfflineView? view = engine.Snapshot().Offline;
+        Check.NotNull(view, "补发了收益就该有待播报的离线报告。");
+        if (view is null || recorded is not { } offline) return;
+
+        Check.Close(offline.ElapsedSeconds, view.ElapsedSeconds, 1e-9);
+        Check.Close(offline.CreditedSeconds, view.CreditedSeconds, 1e-9);
+        Check.Close(offline.CookiesGained, view.CookiesGained, 1e-9);
+        Check.True(view.WasCapped, "4 小时超过 3 小时上限，应标记被截断。");
+        Check.False(string.IsNullOrWhiteSpace(view.DurationText), "时长文本不该为空。");
+        Check.False(string.IsNullOrWhiteSpace(view.CookiesText), "货币文本不该为空。");
+
+        // 报告在"播报"之前一直有效：刷新页面（= 再取一次快照）不该让它消失，
+        // 否则玩家一刷新就再也看不到这笔钱是怎么来的。
+        Check.NotNull(engine.Snapshot().Offline, "没播报过的报告不该自己过期。");
+
+        Check.True(engine.DismissOfflineProgress(), "第一次播报应报告 true。");
+        Check.Null(engine.Snapshot().Offline, "播报之后快照里不该再有它。");
+        Check.False(engine.DismissOfflineProgress(), "重复播报应报告 false（幂等，不是错误）。");
+    }
+
+    /// <summary>离线时长不到门槛时既没有补发、也没有报告——不然会弹一张"赚了 0"的卡。</summary>
+    [Test]
+    public static void OfflineReport_NotRaisedForShortAbsence()
+    {
+        GameEngine engine = TestGame.CreateNeko(out ManualClock clock);
+        engine.State.Cookies = 1_000;
+        engine.MarkDirty();
+        engine.BuyBuilding("curled_cat", 1);
+        string json = engine.Save();
+
+        clock.Advance(10); // 低于 MinimumOfflineSeconds
+
+        Check.Null(engine.Load(json));
+        Check.Null(engine.Snapshot().Offline, "没补发就不该有待播报的报告。");
+    }
+
+    /// <summary>重开一局时，上一局还没播报的离线收益要一起丢掉（那笔钱不属于这一局）。</summary>
+    [Test]
+    public static void OfflineReport_ClearedByHardReset()
+    {
+        GameEngine engine = TestGame.CreateNeko(out ManualClock clock);
+        engine.State.Cookies = 1_000_000;
+        engine.MarkDirty();
+        engine.BuyBuilding("curled_cat", 10);
+        string json = engine.Save();
+
+        clock.Advance(4 * 3600);
+        engine.Load(json);
+        Check.NotNull(engine.Snapshot().Offline, "前置条件：读档后应有一份待播报的报告。");
+
+        engine.HardReset();
+
+        Check.Null(engine.Snapshot().Offline, "重开之后不该再播报上一局的离线收益。");
     }
 
     [Test]

@@ -9,16 +9,20 @@
 #     · 增量推送的派生字段没处理干净 → 每帧 28KB，而"变化字段数 ≤ 4"的用例照样绿。
 #   所以这一层的判据只能是**真的通**：起宿主、发请求、读 SSE 流、看着它回话。
 #
-# 与单元测试的分工：`tools/build.ps1 -Strict` 守引擎（435 个用例 + 公开 API 快照），
+# 与单元测试的分工：`tools/build.ps1 -Strict` 守引擎（439 个用例 + 公开 API 快照），
 # 本脚本守"宿主 + 浏览器协议"那一段。CI 里两条都跑（.github/workflows/ci.yml）。
 #
-# 三条刻意为之的行为（都不是默认就该有的，是踩出来的）：
+# 四段刻意为之的行为（都不是默认就该有的，是踩出来的）：
 #   ① **自带临时存档目录**（--save-root）。探针会点击、会买入；跑在真实存档上等于
 #      把玩家的进度当测试夹具。旧版探针就是这么干的（.tmp/api-probe），收进仓库时必须改掉。
 #   ② **强制清掉 NEKO_DEBUG_KEY 再起子进程**，于是"缺省门是关着的"这条断言在任何开发机上
 #      都成立，而不是"取决于跑的人 shell 里有没有那个变量"。
 #   ③ **收尾按端口反查进程**：`dotnet run` 会再起一个真正的宿主子进程，只杀 dotnet run 自己
-#      会留下还在监听端口的孤儿（本仓库踩过）。杀完还要确认端口真的松手。
+#      会留下还在监听的孤儿（本仓库踩过）。杀完还要确认端口真的松手。
+#   ④ **最后一段会再起一次宿主**（同一个存档目录）：离线补发只在读档那一刻发生，而"读档"
+#      没法在一次会话里伪造。所以那一段真的走一遍玩家的路——存档 → 把存档里的"上次保存时刻"
+#      改老 5 小时 → 重新起宿主——验"补发出现 → 没播报之前刷新不消失 → 收下之后消失"。
+#      它同时是"读档 + 存档格式 + 弹窗数据源"这三件事唯一的端到端证据。
 #
 # 用法：
 #   powershell -File tools/api-test.ps1                 # 构建 + 起宿主 + 打全套 + 收尾
@@ -162,6 +166,50 @@ function Stop-TestHost([int]$Port, $Process) {
     return $false
 }
 
+# 起宿主。**每次都会先摘掉 NEKO_DEBUG_KEY**：这样"缺省门是关着的"才是被测事实，
+# 而不是跑的人 shell 里有没有那个变量的巧合（第二段"离线段"会再起一次，同样适用）。
+function Start-TestHost([int]$Port, [string]$SaveRoot, [string]$OutLog, [string]$ErrLog) {
+    $hadKey = Test-Path Env:NEKO_DEBUG_KEY
+    $savedKey = if ($hadKey) { $env:NEKO_DEBUG_KEY } else { $null }
+    if ($hadKey) { Remove-Item Env:NEKO_DEBUG_KEY }
+
+    try {
+        # 路径一律自己加引号：Start-Process 是用空格拼接参数表的，工作区路径里有空格时不加引号会散架。
+        $hostArgs = @(
+            'run', '-m:1', '--no-build', '--project', "`"$webDir`"",
+            '--', '--urls', "`"http://127.0.0.1:$Port`"", '--save-root', "`"$SaveRoot`""
+        )
+        return Start-Process -FilePath 'dotnet' -ArgumentList $hostArgs -PassThru -NoNewWindow `
+            -RedirectStandardOutput $OutLog -RedirectStandardError $ErrLog
+    }
+    finally {
+        if ($hadKey) { $env:NEKO_DEBUG_KEY = $savedKey }
+    }
+}
+
+# 等宿主就绪。返回 @{ Ready; Probe }——探针文本要带回去，失败时它就是唯一的线索。
+function Wait-TestHost([int]$Port, $Process, [int]$TimeoutSeconds = 60) {
+    $lastProbe = ''
+    $deadline = [System.Diagnostics.Stopwatch]::StartNew()
+    while ($deadline.Elapsed.TotalSeconds -lt $TimeoutSeconds) {
+        if ($Process.HasExited) { break }
+        Start-Sleep -Milliseconds 400
+        $probe = Invoke-Get '/api/ping'
+        if ($probe.Ok -and $probe.Success) { return [pscustomobject]@{ Ready = $true; Probe = '' } }
+        $lastProbe = "HTTP $($probe.Status) $($probe.Body)"
+    }
+
+    return [pscustomobject]@{ Ready = $false; Probe = $lastProbe }
+}
+
+function Show-HostLogs([string]$OutLog, [string]$ErrLog) {
+    if (Test-Path $OutLog) { Get-Content $OutLog -Encoding UTF8 | Select-Object -Last 30 | ForEach-Object { Write-Host "    $_" } }
+    if ((Test-Path $ErrLog) -and (Get-Item $ErrLog).Length -gt 0) {
+        Write-Host '  stderr：' -ForegroundColor Red
+        Get-Content $ErrLog -Encoding UTF8 | Select-Object -Last 20 | ForEach-Object { Write-Host "    $_" }
+    }
+}
+
 # ================================================================ 主流程
 
 Write-Host '=== Web 宿主端到端（api-test） ===' -ForegroundColor Cyan
@@ -208,46 +256,23 @@ $workDir = Join-Path $root ".tmp\api-test\$stamp-$PID"
 $saveRoot = Join-Path $workDir 'saves'
 $outLog = Join-Path $workDir 'host.out.log'
 $errLog = Join-Path $workDir 'host.err.log'
+# 离线段要重启一次宿主（见下面"离线收益"一节），第二段另开两个日志文件，
+# 不然 Start-Process 的重定向会把第一段的日志覆盖掉——失败时最要紧的就是它。
+$outLog2 = Join-Path $workDir 'host2.out.log'
+$errLog2 = Join-Path $workDir 'host2.err.log'
 New-Item -ItemType Directory -Force -Path $saveRoot | Out-Null
 
 Write-Host ''
 Write-Host "目标：$baseUrl ｜ 内容包：$Package ｜ 存档：$saveRoot" -ForegroundColor DarkGray
 
 # ---- 起宿主
-# 保存并摘掉 NEKO_DEBUG_KEY：这样"缺省门是关着的"才是被测事实，而不是跑的人 shell 的巧合。
-$hadDebugKey = Test-Path Env:NEKO_DEBUG_KEY
-$savedDebugKey = if ($hadDebugKey) { $env:NEKO_DEBUG_KEY } else { $null }
-if ($hadDebugKey) { Remove-Item Env:NEKO_DEBUG_KEY }
+$hostProcess = Start-TestHost -Port $Port -SaveRoot $saveRoot -OutLog $outLog -ErrLog $errLog
+$wait = Wait-TestHost -Port $Port -Process $hostProcess
 
-# 路径一律自己加引号：Start-Process 是用空格拼接参数表的，工作区路径里有空格时不加引号会散架。
-$hostArgs = @(
-    'run', '-m:1', '--no-build', '--project', "`"$webDir`"",
-    '--', '--urls', "`"$baseUrl`"", '--save-root', "`"$saveRoot`""
-)
-$hostProcess = Start-Process -FilePath 'dotnet' -ArgumentList $hostArgs -PassThru -NoNewWindow `
-    -RedirectStandardOutput $outLog -RedirectStandardError $errLog
-
-if ($hadDebugKey) { $env:NEKO_DEBUG_KEY = $savedDebugKey }
-
-$ready = $false
-$lastProbe = ''
-$deadline = [System.Diagnostics.Stopwatch]::StartNew()
-while ($deadline.Elapsed.TotalSeconds -lt 60) {
-    if ($hostProcess.HasExited) { break }
-    Start-Sleep -Milliseconds 400
-    $probe = Invoke-Get '/api/ping'
-    if ($probe.Ok -and $probe.Success) { $ready = $true; break }
-    $lastProbe = "HTTP $($probe.Status) $($probe.Body)"
-}
-
-if (-not $ready) {
+if (-not $wait.Ready) {
     Write-Host ''
-    Write-Host "宿主 60 秒内没有就绪（PID $($hostProcess.Id)）；最后一次探测：$lastProbe" -ForegroundColor Red
-    if (Test-Path $outLog) { Get-Content $outLog -Encoding UTF8 | Select-Object -Last 30 | ForEach-Object { Write-Host "    $_" } }
-    if ((Test-Path $errLog) -and (Get-Item $errLog).Length -gt 0) {
-        Write-Host '  stderr：' -ForegroundColor Red
-        Get-Content $errLog -Encoding UTF8 | Select-Object -Last 20 | ForEach-Object { Write-Host "    $_" }
-    }
+    Write-Host "宿主 60 秒内没有就绪（PID $($hostProcess.Id)）；最后一次探测：$($wait.Probe)" -ForegroundColor Red
+    Show-HostLogs -OutLog $outLog -ErrLog $errLog
     Stop-TestHost -Port $Port -Process $hostProcess | Out-Null
     exit 1
 }
@@ -279,6 +304,13 @@ try {
     $appScript = Invoke-Get '/app.js'
     $logRender = [bool]($appScript.Body -and $appScript.Body.Contains('renderNotifications'))
     Check 'app.js 里有日志渲染函数' ($appScript.Success -and $logRender) "含 <renderNotifications>: $logRender"
+
+    # 离线收益弹窗：同一层判据——挂在首页上的容器与画它的那个函数真的送到了浏览器。
+    $offlineMount = [bool]($indexPage.Body -and $indexPage.Body.Contains('id="offline"'))
+    Check '首页里有离线收益弹窗的挂载点' ($indexPage.Success -and $offlineMount) "含 <id=`"offline`">: $offlineMount"
+
+    $offlineRender = [bool]($appScript.Body -and $appScript.Body.Contains('renderOffline'))
+    Check 'app.js 里有离线收益渲染函数' ($appScript.Success -and $offlineRender) "含 <renderOffline>: $offlineRender"
 
     # ------------------------------------------------------------ 元信息
     Write-Section '元信息'
@@ -480,6 +512,104 @@ try {
     else {
         Check '增量远小于全量（<10%）' $false '一帧增量都没有，无从比较'
         Check 'seq 单调递增' $false '一帧增量都没有'
+    }
+
+    # ------------------------------------------------------------ 离线收益
+    # 这一段刻意**重启一次宿主**：离线补发只在读档的那一刻发生，而"读档"没法在一次会话里伪造。
+    # 走的是玩家真实的路：存档 → 把存档里的"上次保存时刻"改老 5 小时 → 重新起宿主。
+    # 三条判据缺一不可：读档后它出现（玩家看得到自己离线赚了多少）、没播报之前刷新不消失
+    # （否则"弹一次"退化成"弹 0 次"）、收下之后消失（否则刷新一次就弹一次）。
+    Write-Section '离线收益（真的重启一次宿主：存档 → 改老 → 读档 → 弹窗数据）'
+
+    # 前置条件：离线补发按**基础产量**结算，产量为 0 就什么都补不出来（报告也不会出现）。
+    # 上面的买入如果其实没买成（钱不够），这里会看得出来，而不是让后面的断言莫名其妙地红。
+    $preSave = Convert-FromJsonSafe (Invoke-Get "/api/snapshot?package=$Package").Body
+    if ($null -ne $preSave -and [double]$preSave.cookiesPerSecond -le 0) {
+        for ($i = 0; $i -lt 20; $i++) { Invoke-PostJson "/api/command?package=$Package" @{ type = 'click' } | Out-Null }
+        $firstUnlocked = @($preSave.buildings | Where-Object { $_.isUnlocked } | Select-Object -First 1)
+        if ($firstUnlocked.Count -gt 0) {
+            Invoke-PostJson "/api/command?package=$Package" @{ type = 'buy'; id = $firstUnlocked[0].id } | Out-Null
+        }
+        Start-Sleep -Milliseconds 400
+        $preSave = Convert-FromJsonSafe (Invoke-Get "/api/snapshot?package=$Package").Body
+    }
+    $preCps = if ($null -ne $preSave) { [double]$preSave.cookiesPerSecond } else { -1 }
+    Check '存档之前已经有产量（离线补发的前提）' ($preCps -gt 0) "cookiesPerSecond=$preCps"
+
+    $saveCommand = Invoke-PostJson "/api/command?package=$Package" @{ type = 'save' }
+    $saveResult = Convert-FromJsonSafe $saveCommand.Body
+    Check 'POST /api/command save 成功' ($saveCommand.Success -and $saveResult.ok -eq $true) `
+        "HTTP $($saveCommand.Status)：$([string]$saveResult.message)"
+
+    Stop-TestHost -Port $Port -Process $hostProcess | Out-Null
+
+    $saveFiles = @(Get-ChildItem -Path $saveRoot -Filter *.json -File -ErrorAction SilentlyContinue)
+    Check '存档文件真的落在了临时目录里' ($saveFiles.Count -eq 1) "$($saveFiles.Count) 个 .json 在 $saveRoot"
+
+    if ($saveFiles.Count -eq 1) {
+        $savePath = $saveFiles[0].FullName
+        $rawSave = Get-Content $savePath -Raw -Encoding UTF8
+        $agedAt = [DateTimeOffset]::Now.AddHours(-5).ToString('o')
+        $patched = $rawSave -replace '"LastSavedAt":"[^"]*"', "`"LastSavedAt`":`"$agedAt`""
+        Check '存档里写着上次保存时刻（能被改老）' ($patched -ne $rawSave) "LastSavedAt → $agedAt"
+        # 刻意用 .NET 写回（不带 BOM）：这是存档，不该由测试脚本顺手改掉它的字节形态。
+        if ($patched -ne $rawSave) { [System.IO.File]::WriteAllText($savePath, $patched) }
+
+        $hostProcess = Start-TestHost -Port $Port -SaveRoot $saveRoot -OutLog $outLog2 -ErrLog $errLog2
+        $wait2 = Wait-TestHost -Port $Port -Process $hostProcess
+        Check '第二段宿主带着那份存档起来了' $wait2.Ready $wait2.Probe
+
+        if ($wait2.Ready) {
+            $afterLoad = Convert-FromJsonSafe (Invoke-Get "/api/snapshot?package=$Package").Body
+            $offline = if ($null -ne $afterLoad) { $afterLoad.offline } else { $null }
+            $offlineFields = if ($null -ne $offline) { @($offline.PSObject.Properties.Name) } else { @() }
+            $wanted = @('elapsedSeconds', 'creditedSeconds', 'cookiesGained', 'wasCapped', 'durationText', 'cookiesText')
+            $missingOffline = @($wanted | Where-Object { $offlineFields -cnotcontains $_ })
+            $shapeOk = ($null -ne $offline) -and ($missingOffline.Count -eq 0)
+
+            $shapeDetail = if ($null -eq $offline) { 'offline 是 null——补发根本没发生' }
+            elseif ($missingOffline.Count -gt 0) { "缺 $($missingOffline -join '、')" }
+            else { "补了 $($offline.cookiesText)，时长 $($offline.durationText)" }
+            Check '读档之后快照里出现待播报的离线收益' $shapeOk $shapeDetail
+
+            if ($shapeOk) {
+                $elapsed = [double]$offline.elapsedSeconds
+                $credited = [double]$offline.creditedSeconds
+                # 改老了 5 小时，所以：确实离开了 5 小时上下、计入的不超过离开的、被标记为截断、
+                # 补发量为正。上限具体是多少归内容包管，这里不写死。
+                $sane = ([double]$offline.cookiesGained -gt 0) -and ($credited -gt 0) `
+                    -and ($credited -le $elapsed) -and ($elapsed -ge 4.5 * 3600) -and [bool]$offline.wasCapped
+                Check '离线时长与补发量自洽（5 小时超过上限，应标记被截断）' $sane `
+                    "离开 $([math]::Round($elapsed / 3600, 2))h、计入 $([math]::Round($credited / 3600, 2))h、补发 $($offline.cookiesGained)、wasCapped=$($offline.wasCapped)"
+
+                # 刷新页面 = 重新取一份全量快照。没播报之前它必须还在（前端就是靠全量帧拿到它的）。
+                Start-Sleep -Milliseconds 300
+                $reloaded = Convert-FromJsonSafe (Invoke-Get "/api/snapshot?package=$Package").Body
+                Check '没播报之前刷新（再取一次全量）不会让它消失' ($null -ne $reloaded -and $null -ne $reloaded.offline) `
+                    $(if ($null -ne $reloaded.offline) { '再取一次仍在' } else { 'offline 已经没了' })
+
+                $dismiss = Invoke-PostJson "/api/command?package=$Package" @{ type = 'dismissOffline' }
+                $dismissResult = Convert-FromJsonSafe $dismiss.Body
+                Check 'POST /api/command dismissOffline 成功' ($dismiss.Success -and $dismissResult.ok -eq $true) `
+                    "HTTP $($dismiss.Status)：$([string]$dismissResult.message)"
+
+                # 快照由游戏线程按 250ms 的节拍重算，所以这里轮询而不是立刻断言。
+                $cleared = $null
+                for ($i = 0; $i -lt 12; $i++) {
+                    Start-Sleep -Milliseconds 250
+                    $cleared = Convert-FromJsonSafe (Invoke-Get "/api/snapshot?package=$Package").Body
+                    if ($null -eq $cleared.offline) { break }
+                }
+                Check '收下之后快照里不再有它（刷新不会再弹）' ($null -ne $cleared -and $null -eq $cleared.offline) `
+                    $(if ($null -eq $cleared.offline) { 'offline 已是 null' } else { '收下之后它还在' })
+
+                # 两个标签页都会发这条命令，所以第二发必须是 ok，而不是"你已经点过了"这种错误。
+                $again = Invoke-PostJson "/api/command?package=$Package" @{ type = 'dismissOffline' }
+                $againResult = Convert-FromJsonSafe $again.Body
+                Check '重复收下是幂等的（第二个标签页也会发它）' ($again.Success -and $againResult.ok -eq $true) `
+                    "HTTP $($again.Status)：$([string]$againResult.message)"
+            }
+        }
     }
 }
 finally {

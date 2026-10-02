@@ -28,6 +28,12 @@ let seq = 0;
 let connected = false;
 
 /**
+ * 玩家已经按下"收下"了吗。<b>这只是本地的一格乐观更新</b>（收下到下一帧回来之间
+ * 不该再闪一下弹窗），真正的状态在引擎里——见 `renderOffline` 的注释。
+ */
+let offlineDismissed = false;
+
+/**
  * 显示用的数字。<b>刻意不做"追赶式插值"</b>，而是按当前每秒产量持续累加。
  *
  * 为什么不能"追目标"：服务端每 250ms 才推一帧，追到之后剩下的 150ms 完全静止，
@@ -149,6 +155,50 @@ function render() {
   renderCodex();
   renderAchievements();
   renderNotifications();
+  renderOffline();
+}
+
+/**
+ * 离线收益弹窗（`GameSnapshot.offline`）。
+ *
+ * 它是**一次性事件**，不是每秒都在的数值：读档补发之后服务端一直带着它，直到有人
+ * "看过了"。所以这里刻意不做任何本地去重（localStorage / sessionStorage 都不用）——
+ * 去重状态放在前端一定会错，两种写法各有各的错法：
+ *   · 拿数值当指纹（时长 + 补发量）：两次离线完全可能一模一样（都离线到上限、产量也没变），
+ *     于是第二次永远不弹；
+ *   · 每个标签页记一次：刷新不弹了，但新开一个标签页又弹，而"关掉页面明天再来"正是这游戏的主玩法。
+ * 真相只有一份，在引擎里（`PendingOfflineProgress`）；"收下"就是让服务端把它清掉，
+ * 于是刷新、重连、换标签页拿到的那份快照里都没有它。
+ */
+function renderOffline() {
+  const layer = $("#offline");
+  const report = state.offline;
+  const show = Boolean(report) && !offlineDismissed;
+
+  layer.classList.toggle("hidden", !show);
+  if (!show) return;
+
+  const text = $("#offline-text");
+  text.textContent = "";
+  const head = document.createElement("span");
+  head.textContent = "你不在的这段时间里，它们自己涨了 ";
+  const amount = document.createElement("b");
+  amount.textContent = `${state.currencyIcon} ${report.cookiesText} ${state.currencyName}`;
+  const tail = document.createElement("span");
+  tail.textContent = "。";
+  text.append(head, amount, tail);
+
+  // 被上限截断时必须说清楚"只补了这么多"，否则玩家会以为自己少拿了钱。
+  $("#offline-note").textContent = report.wasCapped
+    ? `离线收益有上限：按上限补了 ${report.durationText}，实际离开了 ${duration(report.elapsedSeconds)}。`
+    : `补的是 ${report.durationText} 的产量。`;
+}
+
+/** 收下：先本地收起来（下一帧回来之前不该闪），再让宿主把那份状态清掉。 */
+function dismissOffline() {
+  offlineDismissed = true;
+  $("#offline").classList.add("hidden");
+  send("dismissOffline");
 }
 
 /**
@@ -448,6 +498,34 @@ function relativeGameTime(seconds) {
 }
 
 /**
+ * 一段时长本身（`3h 00m` / `12m 30s` / `4.2s`）——与引擎 `NumFormat.Duration` 同口径，
+ * 连进位都照抄（浮点累加会算出 59.9999 分钟，不处理就会出现 "24m 60s" 这种像 bug 的读数）。
+ *
+ * 为什么前端也要有一份：服务端只给"计入收益的那段"（受上限截断），而弹窗在说明
+ * "被截断了"时还要说出**实际离开了多久**，那个数只有快照里的 `elapsedSeconds`。
+ */
+function duration(seconds) {
+  if (!(seconds > 0)) return "0s";
+  if (seconds < 60) return `${seconds.toFixed(1)}s`;
+  if (seconds < 3600) {
+    let minutes = Math.floor(seconds / 60);
+    let rest = Math.round(seconds - minutes * 60);
+    if (rest >= 60) { rest -= 60; minutes += 1; }
+    return `${minutes}m ${String(rest).padStart(2, "0")}s`;
+  }
+  if (seconds < 86400) {
+    let hours = Math.floor(seconds / 3600);
+    let minutes = Math.round((seconds - hours * 3600) / 60);
+    if (minutes >= 60) { minutes -= 60; hours += 1; }
+    return `${hours}h ${String(minutes).padStart(2, "0")}m`;
+  }
+  let days = Math.floor(seconds / 86400);
+  let hours = Math.round((seconds - days * 86400) / 3600);
+  if (hours >= 24) { hours -= 24; days += 1; }
+  return `${days}d ${hours}h`;
+}
+
+/**
  * 每帧把显示值按当前每秒产量往前推，然后重画。
  *
  * 与"追一个每 250ms 才动的目标"相比，这样每个帧都有变化，数字是**连续在跑**的；
@@ -688,6 +766,13 @@ $("#big-cat").addEventListener("click", () => send("click"));
 $("#save").addEventListener("click", () => send("save"));
 $("#ascend").addEventListener("click", () => send("ascend"));
 
+// 离线弹窗：按钮、点遮罩空白处、Esc、空格都能收下它。
+// 遮罩上的点击要认准"点在遮罩本身"——点在卡片里的任何地方都不该关掉。
+$("#offline-ok").addEventListener("click", dismissOffline);
+$("#offline").addEventListener("click", (event) => {
+  if (event.target.id === "offline") dismissOffline();
+});
+
 // 面板切换：按钮 + URL hash 双向同步，于是可以把 #tab=codex 直接发给别人
 function selectTab(name) {
   for (const button of document.querySelectorAll("#tabs button")) {
@@ -706,6 +791,16 @@ $("#tabs").addEventListener("click", (event) => {
 
 document.addEventListener("keydown", (event) => {
   if (event.target.tagName === "INPUT") return;
+
+  // 离线弹窗开着时，空格/Esc 先用来收下它：否则玩家按空格想关弹窗，
+  // 结果既没关掉又多点了一下（两个都是意外）。
+  const offlineOpen = !$("#offline").classList.contains("hidden");
+  if (offlineOpen && (event.code === "Escape" || event.code === "Space")) {
+    event.preventDefault();
+    dismissOffline();
+    return;
+  }
+
   if (event.code === "Space") {
     event.preventDefault();
     send("click");

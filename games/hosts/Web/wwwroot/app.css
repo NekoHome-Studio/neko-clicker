@@ -538,3 +538,56 @@ footer code { background: #00000055; padding: .05rem .3rem; border-radius: 4px; 
   * { animation-duration: .001ms !important; animation-iteration-count: 1 !important; }
 }
 
+/* ---------------------------------------------------------------- 离线收益弹窗
+   读档补发的那一笔（`GameSnapshot.offline`）。做成压在画面之上的卡片而不是内联面板，
+   是因为它讲的是"你不在的时候发生了什么"——那件事在时间上先于当前画面。
+   它是**事件**而不是面板：收下之后服务端就把它清掉了，刷新不会再出现。 */
+.sheet-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 60; /* 压过金猫浮层（50）：补发结算发生在"现在能点什么"之前 */
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: #0b0a12cc;
+}
+
+.sheet {
+  width: min(26rem, 100%);
+  background: linear-gradient(180deg, #2a2135, var(--card));
+  border: 1px solid var(--accent-deep);
+  border-radius: var(--radius);
+  padding: 1.2rem 1.3rem 1.1rem;
+  box-shadow: 0 18px 60px #000000aa;
+  animation: sheet-in .18s ease-out;
+}
+
+.sheet h2 { margin: 0 0 .55rem; font-size: 1.05rem; color: var(--accent); }
+.sheet p { margin: 0 0 .5rem; font-size: .9rem; color: #cdc7e4; line-height: 1.55; }
+.sheet p.muted { color: var(--dim); font-size: .82rem; }
+.sheet b { color: var(--gold); }
+
+.sheet-ok {
+  margin-top: .5rem;
+  width: 100%;
+  min-height: 44px;
+  padding: .55rem 1rem;
+  border-radius: 9px;
+  border: 1px solid var(--accent-deep);
+  background: var(--accent);
+  color: #2a1520;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.sheet-ok:hover { background: #ffc7d6; }
+
+@keyframes sheet-in {
+  from { opacity: 0; transform: translateY(.6rem) scale(.98); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sheet { animation: none; }
+}
+

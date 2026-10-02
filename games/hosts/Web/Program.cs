@@ -240,6 +240,18 @@ public static class Program
             case "save":
                 return await host.SaveAsync().ConfigureAwait(false);
 
+            // 离线收益弹窗的"看过了"。这是一条**状态**而不是前端的记忆：
+            // 放在前端（localStorage / sessionStorage）就一定会错——两次离线补发完全可能
+            // 数值一模一样（同样离线到上限、产量也没变），按数值当指纹去重会把第二次吃掉；
+            // 按"每个标签页记一次"则刷新不弹、新开标签页又弹。状态在引擎里就只有一份真相。
+            case "dismissOffline":
+                return await host.ExecuteAsync(engine =>
+                {
+                    bool seen = engine.DismissOfflineProgress();
+                    // 幂等：两个标签页都会发这条命令，第二发不是错误。
+                    return new CommandOutcome(true, seen ? "已收下离线收益。" : "没有待播报的离线收益。", host.Seq);
+                }).ConfigureAwait(false);
+
             case "hardReset":
             {
                 // 先存一次（正常玩法下这是"重置前把当前进度落盘"），再重置。
