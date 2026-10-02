@@ -505,7 +505,7 @@ Console.WriteLine(ApiVersion.AssemblyVersion);  // 1.3.0.0
   ROADMAP 规划范围内的**十个内容包至此全部交付**，
   四个引擎能力里只有 S-A / S-B / S-C 动过核心（S-D 一行核心代码都没写）。
 
-**接下来做什么**：见 [STATUS.md 的 §8「下一步与交接」](STATUS.md)——1.3.0 已就位但**还没打 tag**
-（发布的那几步是下一轮的第一件事），再往后是剩下的 Web 界面与 `PackageId` 打包元数据，
-每条都带了验收命令与已知边界。1.2.1 / 1.3.0 是怎么发的（含发布流程与实际执行记录）
-见 [engine/docs/RELEASING.md](engine/docs/RELEASING.md)。
+**接下来做什么**：见 [STATUS.md 的 §8「下一步与交接」](STATUS.md)——**1.3.0 已发布**
+（tag `v1.3.0` 在远端、CI 两个作业 success），再往下是剩下的 Web 界面（永久升级线 / 二周目）
+与 `PackageId` 打包元数据，每条都带了验收命令与已知边界。1.2.1 / 1.3.0 是怎么发的
+（含发布流程与实际执行记录）见 [engine/docs/RELEASING.md](engine/docs/RELEASING.md)。
