@@ -557,6 +557,8 @@ footer code { background: #00000055; padding: .05rem .3rem; border-radius: 4px; 
   place-items: center;
   padding: 1rem;
   background: #0b0a12cc;
+  /* Keep the layer scrollable so a tall sheet cannot push the only close button off-screen. */
+  overflow-y: auto;
 }
 
 .sheet {
@@ -567,6 +569,9 @@ footer code { background: #00000055; padding: .05rem .3rem; border-radius: 4px; 
   padding: 1.2rem 1.3rem 1.1rem;
   box-shadow: 0 18px 60px #000000aa;
   animation: sheet-in .18s ease-out;
+  /* The only way out is the button at the bottom: without a height cap and scroll it is unreachable on short windows. */
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
 }
 
 .sheet h2 { margin: 0 0 .55rem; font-size: 1.05rem; color: var(--accent); }
