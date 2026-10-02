@@ -216,7 +216,7 @@ public static class SaveSerializer
 
         if (node is not JsonObject root) throw new InvalidDataException("存档根节点必须是 JSON 对象。");
 
-        int version = root["Version"]?.GetValue<int>() ?? 0;
+        int version = ReadVersion(root);
         if (version > CurrentVersion)
             throw new InvalidDataException(
                 $"存档版本 {version} 高于当前游戏支持的 {CurrentVersion}，请更新游戏后再读取。");
@@ -230,7 +230,20 @@ public static class SaveSerializer
             root["Version"] = version;
         }
 
-        SaveData? data = root.Deserialize<SaveData>(JsonOptions);
+        SaveData? data;
+        try
+        {
+            data = root.Deserialize<SaveData>(JsonOptions);
+        }
+        catch (JsonException ex)
+        {
+            // 合法 JSON ≠ 能读成存档：字段类型对不上（比如 <c>Cookies</c> 是个字符串、
+            // <c>Buildings</c> 是个数组）也是"存档损坏"。它必须和别的损坏走同一个类型——
+            // 本方法的契约写的就是 InvalidDataException，而"写入之前先反解一遍"
+            //（见 FileStorage.Write）正是靠这个类型判定"这份内容读不回来"。
+            throw new InvalidDataException($"存档结构与 SaveData 对不上，读不成存档：{ex.Message}", ex);
+        }
+
         if (data is null) throw new InvalidDataException("存档反序列化失败。");
 
         // 集合属性在 JSON 中为 null 时兜底，避免后续到处判空。
@@ -251,6 +264,19 @@ public static class SaveSerializer
         data.EndingsReached ??= [];
 
         return data;
+    }
+
+    /// <summary>读出存档版本号；字段缺失按 0（最老的格式）处理，不是整数就按存档损坏处理。</summary>
+    /// <param name="root">存档根对象。</param>
+    /// <returns>存档声明的版本。</returns>
+    /// <exception cref="InvalidDataException">
+    /// <c>Version</c> 存在但不是整数。它同样属于"存档损坏"，必须和别的损坏抛同一个类型。
+    /// </exception>
+    private static int ReadVersion(JsonObject root)
+    {
+        if (root["Version"] is not { } node) return 0;
+        if (node is JsonValue value && value.TryGetValue(out int version)) return version;
+        throw new InvalidDataException($"存档的 Version 字段不是整数：{node.ToJsonString()}");
     }
 
     private static string Normalize(string json)

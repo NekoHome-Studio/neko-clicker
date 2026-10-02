@@ -136,6 +136,9 @@ internal sealed class GameSession : IDisposable
     /// <summary>已退出标记。</summary>
     public bool QuitRequested { get; private set; }
 
+    /// <summary>退出前那次存档的错误；没失败则为 <c>null</c>。</summary>
+    public Exception? ExitSaveError { get; private set; }
+
     /// <summary>最近一帧的快照（渲染与选择都基于它，避免每帧重复生成）。</summary>
     public GameSnapshot Snapshot => _snapshot;
 
@@ -413,7 +416,10 @@ internal sealed class GameSession : IDisposable
     /// <summary>请求退出。</summary>
     public void Quit()
     {
-        if (Saves is not null) Saves.Save();
+        // 退出前这一次存档失败必须被记下来、并且**在离开备用屏之后再喊一次**：
+        // 循环下一轮就结束了，界面日志面板不会被重画，所以只往 _log 里塞一条等于静默
+        // （备用屏退出时那行还会被整屏丢掉）。谁来喊见 <c>InteractiveLoop.Run</c> 的收尾。
+        if (Saves is not null && !Saves.Save()) ExitSaveError = Saves.LastError;
         QuitRequested = true;
     }
 

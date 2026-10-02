@@ -68,6 +68,15 @@ internal static class InteractiveLoop
                      + (altScreen ? Ansi.ExitAlternateScreen() : Ansi.Home() + Ansi.Clear()));
         }
 
+        // 退出前那次存档失败的喊话**必须排在这儿**：上面那一步已经离开了备用屏，
+        // 这一行才留得住。写在 `Quit()` 里面的话，它会跟着备用屏一起被丢掉——
+        // 那就成了"处理了，但玩家永远看不见"。
+        if (session.ExitSaveError is { } saveError)
+        {
+            Console.Error.WriteLine(
+                $"退出存档失败：{saveError.Message}（进度没有落盘，磁盘上还是上一次的那份）。");
+        }
+
         if (crash is null) return 0;
 
         string? logPath = CrashLog.Write(crash);

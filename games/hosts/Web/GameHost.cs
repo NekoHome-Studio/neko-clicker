@@ -48,7 +48,8 @@ public sealed record DebugEraJump(bool Applied, string Message, int From, int To
 /// </list>
 /// </para>
 /// <para>
-/// 存档复用引擎自带的 <see cref="FileStorage"/>（它已经是"先写 .tmp 再原子替换"的）与
+/// 存档复用引擎自带的 <see cref="FileStorage"/>（它写盘时是"先写 <c>.tmp</c>、反解一遍确认
+/// 读得回来、再原子替换，并把上一份留下"的）与
 /// <see cref="SaveManager"/>，槽位与终端 Demo 同构，于是<b>同一份存档两个前端都能接着玩</b>。
 /// </para>
 /// </summary>
@@ -321,8 +322,11 @@ public sealed class GameHost : IAsyncDisposable
             // 调试跳层之后一个字节都不许写：玩家没玩过的层号不该出现在他的真实存档里（plan §4）
             if (_debugMode) return new CommandOutcome(false, "调试模式下不写存档（跳层只在内存里，退出即弃）。", Seq);
 
-            _saves.Save();
-            return new CommandOutcome(true, "已存档。", Seq);
+            // 存档是"报了成功就等于玩家信了"的动作：`SaveManager.Save()` 把失败翻成
+            // `false` + `LastError`（它自己不抛），所以不看返回值就等于把"没存上"说成"已存档"。
+            return _saves.Save()
+                ? new CommandOutcome(true, "已存档。", Seq)
+                : new CommandOutcome(false, $"存档失败：{_saves.LastError?.Message ?? "原因未记录"}", Seq);
         }).ConfigureAwait(false);
 
     /// <summary>
@@ -433,10 +437,18 @@ public sealed class GameHost : IAsyncDisposable
                         {
                             Console.WriteLine($"[{_package.Id}] 调试模式：退出时不写存档。");
                         }
+                        else if (_saves.Save())
+                        {
+                            Console.WriteLine($"[{_package.Id}] 退出前已存档：{_saves.Slot}");
+                        }
                         else
                         {
-                            _saves.Save();
-                            Console.WriteLine($"[{_package.Id}] 退出前已存档：{_saves.Slot}");
+                            // 退出存档失败以前是**静默**的：`Save()` 把异常翻成了 false + LastError，
+                            // 而这里不读返回值，于是日志照样写"退出前已存档"。那正是"以为存上了、
+                            // 其实没存"的形状——必须喊出来。
+                            Console.Error.WriteLine(
+                                $"[{_package.Id}] 退出存档失败：{_saves.LastError?.Message ?? "原因未记录"}"
+                                + $"，{_saves.Slot} 没有更新，进程带着上一次的存档退出。");
                         }
                     }
                     catch (Exception ex)

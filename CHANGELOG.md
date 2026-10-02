@@ -9,8 +9,8 @@
 
 ## [未发布]
 
-> 目前是空的。往这里攒改动时请顺手写清它属于哪一档（patch / minor / major）——
-> 下一次升版本就是按它决定升哪一位。
+> 这里攒的是**已经做完、但还没随版本号发布**的改动；每条都写清它属于哪一档
+> （patch / minor / major）——下一次升版本就是按它决定升哪一位。
 
 ### 新增
 
@@ -44,6 +44,44 @@
     排除"写其实是别的进程干的"。
   - 顺带把这条路径的失败也变成**响的**：退出存档失败会打 stderr，
     排不进队列/超时也会明确说出来，不再只是安静地"没写成"。
+- **坏存档不再静默地成为当前存档**（patch：`FileStorage` 的写入行为；公开 API 一行未动，
+  因此不升版本号、不动 `PublicApi.txt`）。此前它是"写 `.tmp` → `File.Move(overwrite: true)`"：
+  崩在写一半确实不会截断真存档，但**写出来的内容对不对从没人看过**，而且替换之后
+  **上一份好存档在磁盘上不再存在**。现在同一条路径是三步：① 内容落到 `<槽位>.tmp`（不变）；
+  ② **提交之前把 `.tmp` 里刚写出来的字节读回来、用 `SaveSerializer.Parse` 反解一遍**
+  ——读不回来就抛 `InvalidDataException`，真存档与备份一个字节都不动（验的是**磁盘上那份**，
+  不是手里那个字符串：要被提交的是前者）；③ 用
+  `File.Replace(temp, path, path + ".bak", ignoreMetadataErrors: true)` 原子替换，并把
+  **被换下来的那一份**留成 `<槽位>.bak`——但只在它**自己也读得回来**时才留
+  （读不回来的那份不配叫"上一份好存档"：把坏内容请进 `.bak`，备份就成了一句谎话）。
+  第一次存档没有目标可替换，走 `File.Move`。
+  - **`ignoreMetadataErrors: true` 不是可选项**（实测：net8.0 / Windows，沙箱临时目录与工作区目录
+    结果一致）。不传它时，连"同一进程刚在同一目录里建的两个普通文件"都会在合并元数据那一步
+    失败并抛 `UnauthorizedAccessException`，替换根本没发生；传了它之后，目标拿到新内容、
+    备份拿到旧内容、`.tmp` 被消费掉。`File.Replace` 的前提是**目标已存在**（不存在时抛
+    `FileNotFoundException`，源文件与目标都原样留着）——所以第一次存档必须走另一条路。
+  - **顺带补上 `SaveSerializer.Parse` 的契约**：合法 JSON 但读不成 `SaveData`（字段类型对不上）、
+    以及 `Version` 不是整数，此前会让 `System.Text.Json` / `InvalidOperationException` 漏出去，
+    而它的文档写的是 `InvalidDataException`。现在两者都按文档抛。这不是好看不好看的问题：
+    写入前的自检就是按这个类型判定"这份内容读不回来"的。
+  - **顺带把三处"存档失败却报告成功"改成失败**：Web 宿主的 `SaveAsync`（不看 `Save()` 的返回值，
+    失败也回"已存档。"）、Web 宿主的 `StopAsync`，以及终端宿主的 `Quit()`。
+    **其中第二处是更正上一条修复里的说法**：那里写着"退出存档失败会打 stderr"，
+    而那段 `catch` 只覆盖 `Save()` **抛异常**的形状——`Save()` 其实是把异常翻成
+    `false` + `LastError` 的，于是 `catch` 永不触发、日志照样打"退出前已存档"。
+    终端宿主那处另有一步：失败要在**离开备用屏之后**说，否则那一行会跟着备用屏一起被丢掉。
+  - **玩家可见的变化**：存档目录里会多出一个 `<槽位>.bak`（例如 `neko.json.bak`）。
+    它不参与读档，只是"上一份验证过的好存档"。
+  - **用例 9 条**（446 → 455，`engine/tests/SaveFileTests.cs`）：第一次存档可用且不凭空造备份、
+    覆盖时把上一份留在 `.bak` 且备份自己读得回来、备份每次向前滚动、写不回来的载荷被拒绝
+    且真存档一字未动、读不回来的上一份不被请进 `.bak`、失败在 `SaveManager` 层响亮
+    （`false` + `LastError` + **不发** `GameSavedEvent`）、存储层直接抛时也不静默。
+  - **判别力（故障注入，跑完即还原）**：① 临时关掉第 ② 步 →
+    `SaveFile_RefusesContentThatCannotBeParsedBack` 与
+    `SaveManager_FailedWriteIsLoudAndLosesNothing` 变红
+    （"期望抛出 InvalidDataException，但没有抛出任何异常"、"写不进去必须回报 false，而不是回报成功"）；
+    ② 临时把第 ③ 步退化成 `File.Move` 覆盖 → 两条备份用例与上面那条的备份断言变红
+    （"覆盖之前必须把上一份留下来。期望非 null，实际为 null"）。还原后 9 条全绿。
 
 ### 已知问题
 
