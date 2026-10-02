@@ -9,11 +9,12 @@
 > **当前状态**：第 7 节的阶段 0~5 全部交付（十个内容包全部可玩），
 > 之后追加了**阶段 6（产品化：版本号 + 公开 API 快照守卫 + v1.0.0）**——
 > 它不在原规划范围内，补的是"别人能不能安全依赖这个框架"。
-> 版本语义与兼容性承诺见 [VERSIONING.md]../../engine/docs/VERSIONING.md，逐版本记录见 [CHANGELOG.md](../../CHANGELOG.md)。
+> 版本语义与兼容性承诺见 [VERSIONING.md](../../engine/docs/VERSIONING.md)，逐版本记录见 [CHANGELOG.md](../../CHANGELOG.md)。
 >
-> 关联：[NINE_LIVES_DESIGN.md]NINE_LIVES_DESIGN.md（世界观映射）、
-> [PACK_01_CAT_CAFE.md]PACK_01_CAT_CAFE.md（第一个包的完整规格）、
-> [ARCHITECTURE.md]../../engine/docs/ARCHITECTURE.md（引擎结构）、
+> 关联：**[SETTING.md](SETTING.md)（世界观设定集——本文讲"怎么做"，它讲"这个世界是什么"）**、
+> [NINE_LIVES_DESIGN.md](NINE_LIVES_DESIGN.md)（世界观映射）、
+> [PACK_01_CAT_CAFE.md](PACK_01_CAT_CAFE.md)（第一个包的完整规格）、
+> [ARCHITECTURE.md](../../engine/docs/ARCHITECTURE.md)（引擎结构）、
 > [VERSIONING.md]../../engine/docs/VERSIONING.md（版本与兼容性承诺）
 
 ---
