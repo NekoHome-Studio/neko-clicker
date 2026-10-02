@@ -14,10 +14,16 @@ namespace NekoClicker.Core;
 /// 这是刻意的：把"回避表态"也做成一种合法玩法，而不是拿弹窗逼玩家点。
 /// </para>
 /// <para>
-/// 本类还负责另一件与"答不答"无关、但同样只属于引擎的事：<b>待答表态有没有被展示给玩家看过</b>
-/// （<see cref="MarkShown"/> / <see cref="PendingAreAllShown"/>）。它由宿主在真的渲染出表态时
-/// 通过 <see cref="GameEngine.MarkPendingChoicesShown"/> 报告，是 1.5.0 起结局能否落定的
-/// 唯一依据（见 <see cref="EndingSystem.Check"/>）。
+/// 本类还负责另一件与"答不答"无关、但同样只属于引擎的事：<b>哪一批待答表态还拦着结局</b>
+/// （<see cref="AnswerablePendingCount"/>）。判据是"这条表态此刻是否<b>答得上</b>"，
+/// 不是"玩家看过它没有"——1.6.0 起，结局要等的是<b>作答</b>（见 <see cref="EndingSystem.Check"/>）。
+/// </para>
+/// <para>
+/// 另有一份<b>只作诊断</b>的记录：<see cref="MarkShown"/>（由宿主的
+/// <see cref="GameEngine.MarkPendingChoicesShown"/> 报告）记下"这条表态有没有被画给玩家看过"。
+/// 它<b>不参与任何判定</b>，只回答"这个存档里的表态到底露过面没有"——因为
+/// "结局一直没落定"在新规则下是一件真实可能的事，而"从没被展示过"与"看过但没答"
+/// 是两种完全不同的原因，没有这份记录就分不出来。
 /// </para>
 /// </summary>
 public static class ChoiceSystem
@@ -117,36 +123,89 @@ public static class ChoiceSystem
     /// <c>EndingSystem</c> 的就绪时刻同一个套路）：这样它自动随存档往返，<b>不用改存档格式、
     /// 也不用升存档版本号</b>。键以 <c>$</c> 开头是为了跟内容自定义的计数器划清界限
     /// ——任何选择 id 都拼不出这个前缀。
+    /// <para>
+    /// <b>1.6.0 起它只是诊断信息</b>：判定读的是"答没答"（见 <see cref="AnswerablePendingCount"/>），
+    /// 不是"看没看过"。宿主可以按 <c>$choice_shown_&lt;id&gt;</c> 读它来区分
+    /// "玩家从没看到这条表态"与"看到了但没答"。
+    /// </para>
     /// </remarks>
     internal const string ShownCounterPrefix = "$choice_shown_";
 
     /// <summary>某条表态"被展示过"的计数器键。</summary>
     internal static string ShownCounterKey(string choiceId) => ShownCounterPrefix + choiceId;
 
-    /// <summary>某条表态是否已经被展示给玩家看过。</summary>
+    /// <summary>某条表态是否已经被展示给玩家看过。<b>诊断用，不参与判定。</b></summary>
     /// <param name="state">游戏状态。</param>
     /// <param name="choiceId">选择 id。</param>
     internal static bool IsShown(GameState state, string choiceId)
         => state.GetCounter(ShownCounterKey(choiceId)) > 0;
 
     /// <summary>
-    /// 此刻仍挂在待答队列里的表态是否<b>全部</b>都被展示过。<para>
-    /// 队列为空时返回 <c>true</c>——"没有要展示的东西"不等于"有东西没展示"。
+    /// 此刻挂在待答队列里、而且玩家<b>仍然答得上</b>的表态条数（1.6.0 起这就是"拦不拦结局"的判据）。<para>
+    /// <b>为什么不能只数 <see cref="GameState.PendingChoices"/> 的长度</b>：队列里的 id 有可能
+    /// <b>永远答不上</b>，那样"必须答完"就会把这一局永久卡死（见
+    /// <see cref="GameEngine.CheckEnding"/>）。两种情形都真实存在，而且都只在<b>读档</b>时才出现：
+    /// </para>
+    /// <list type="number">
+    ///   <item><b>内容里已经没有这条表态了</b>（换内容包，或包改版时重命名 / 删掉了选择 id）。
+    ///     存档格式里只存 id，没有包标识，<c>SaveSerializer.Apply</c> 也不做存在性过滤，
+    ///     所以旧存档会带着一个当前内容不认识的 id 一直挂在待答队列里；
+    ///     它既画不出来（<c>GameViewFactory.BuildPendingChoices</c> 的 <c>FindChoice</c> 会跳过），
+    ///     也答不上（<see cref="Answer"/> 要在 <c>Content.ChoiceById</c> 里找得到它）。</item>
+    ///   <item><b>这条 id 同时又出现在已答表里</b>（手改的存档、或有缺陷的迁移）。
+    ///     <see cref="Answer"/> 对"已经答过"直接返回 <c>false</c>，于是它同样永远答不上。</item>
+    /// </list>
+    /// <para>
+    /// 这两种都<b>不拦结局</b>，而且不拦这件事必须<b>说出来</b>（引擎会发一条警告通知）——
+    /// 静默地忽略一批玩家看得见的待答项，正是本项目最反对的失败形态。
+    /// 反过来，"挂在队列里、内容里也有、且还没答过"的表态一律拦着：这就是 1.6.0 的规则。
     /// </para>
     /// </summary>
+    /// <param name="content">内容定义。</param>
     /// <param name="state">游戏状态。</param>
-    internal static bool PendingAreAllShown(GameState state)
+    internal static int AnswerablePendingCount(GameContent content, GameState state)
     {
-        foreach (string id in state.PendingChoices)
-            if (!IsShown(state, id)) return false;
+        int count = 0;
 
-        return true;
+        foreach (string id in state.PendingChoices)
+        {
+            if (state.HasChoice(id)) continue;                 // 已经答过（重复出现在队列里）
+            if (!content.ChoiceById.ContainsKey(id)) continue; // 内容里没有它 → 答不上
+
+            count++;
+        }
+
+        return count;
+    }
+
+    /// <summary>
+    /// 此刻挂在待答队列里、但玩家<b>已经答不上</b>的表态条数（只用于把这件事喊出来）。<para>
+    /// 判据与 <see cref="AnswerablePendingCount"/> 互补；为什么要区分见那一条的注释。
+    /// </para>
+    /// </summary>
+    /// <param name="content">内容定义。</param>
+    /// <param name="state">游戏状态。</param>
+    internal static int UnanswerablePendingCount(GameContent content, GameState state)
+    {
+        int count = 0;
+
+        foreach (string id in state.PendingChoices)
+        {
+            if (state.HasChoice(id)) { count++; continue; }
+            if (!content.ChoiceById.ContainsKey(id)) count++;
+        }
+
+        return count;
     }
 
     /// <summary>
     /// 把此刻挂着的待答表态全部标记为"已展示"。<para>
     /// <b>只标此刻挂着的</b>：之后才触发的表态不会被这一发连坐——那正是"展示过"这句话
     /// 必须逐条记账、而不是存一个布尔值的原因。
+    /// </para>
+    /// <para>
+    /// <b>1.6.0 起它不再影响任何判定</b>（结局等的是作答，不是"看过"）；它留下的是一份
+    /// 可以事后回答"这条表态到底露过面没有"的诊断记录，随存档往返。
     /// </para>
     /// </summary>
     /// <param name="engine">宿主引擎。</param>

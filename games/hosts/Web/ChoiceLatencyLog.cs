@@ -67,8 +67,10 @@ internal static class LatencyLogFormat
 # 为什么要它：这里记的是"真人从看到一次表态到作答，用了多久"。它最初是为一个玩法参数
 # 服务的——结局落定前留给玩家作答的宽限期（GameEngineOptions.EndingGraceSeconds，
 # 默认 30 模拟秒）——而那个参数缺的正是"玩家需要多久"这个数（机器人在毫秒内作答，
-# 引擎里量不到）。**1.5.0 起那个参数已退役**：落定条件改成了"玩家被展示过待答表态"
-# （GameEngine.MarkPendingChoicesShown），不再按时间兜底。所以这份文件现在的用途是
+# 引擎里量不到）。**1.5.0 起那个参数已退役**：落定条件改成了条件——1.5.0 是
+# "玩家被展示过待答表态"（GameEngine.MarkPendingChoicesShown），1.6.0 又收紧成
+# "玩家把它们答完"（GameEngine.CheckEnding）。两次都不再按时间兜底。
+# 所以这份文件现在的用途是
 # "真人从看到到作答有多久"这个事实本身，而不是某个待调参数的输入。
 # 样本行里仍然带着当时的宽限期参数值：它已不参与判定，但设置过什么要能对上。
 # 所以这个文件里只会有真人的数据行。
@@ -251,8 +253,9 @@ internal sealed class LatencyLogFile
 /// （<see cref="EndingSystem.DefaultGraceSeconds"/>，可由
 /// <see cref="GameEngineOptions.EndingGraceSeconds"/> 外部配置）该定多少秒，取决于真人需要多久，
 /// 而那个数引擎里量不到——机器人在毫秒内作答，量了也是 0。
-/// <b>那个参数在 1.5.0 退役了</b>（落定条件改成了"玩家被展示过待答表态"，见
-/// <see cref="GameEngine.MarkPendingChoicesShown"/>），于是这份数据现在是
+/// <b>那个参数在 1.5.0 退役了</b>（落定条件改成了条件：1.5.0 是"玩家被展示过待答表态"
+/// ——<see cref="GameEngine.MarkPendingChoicesShown"/>；1.6.0 又收紧成"玩家把它们答完"
+/// ——<see cref="GameEngine.CheckEnding"/>），于是这份数据现在是
 /// "真人从看到到作答有多久"这个事实本身，而不再是某个待调参数的输入。
 /// </para>
 /// <para>

@@ -39,7 +39,8 @@ public static class PrestigeTests
 
             // 后期用 0.25 秒细步：末层表态门槛与完成门槛之间只隔几秒，细步长让那个形状真的出现。
             // （1.5.0 之前这里是"机器人来不及答最后一次表态"，靠 30 模拟秒的定时宽限兜住；
-            //   现在由"没被展示过就不落定"兜住，所以下面那行报告才是关键。）
+            //   1.5.0 到 1.6.0 之间靠"报告看过"；**1.6.0 起必须真的作答**——所以下面那行
+            //   AnswerPending 才是关键，不再是"报告一下就行"。）
             while (engine.ReachedEnding is null && engine.State.PlayTimeSeconds < deadlineSeconds)
             {
                 for (int i = 0; i < 8; i++) engine.Click();
@@ -48,9 +49,11 @@ public static class PrestigeTests
                 for (int i = engine.State.GoldenCookies.Count - 1; i >= 0; i--)
                     engine.ClickGoldenCookie(engine.State.GoldenCookies[i].InstanceId);
 
-                // 宿主把待答表态画出来了（1.5.0 起结局能否落定的唯一条件）。
-                // 这个机器人从不应答表态，所以那三个有表态的包完全靠这一行才可能走到结局。
-                engine.MarkPendingChoicesShown();
+                // 把待答的表态答掉（各取第一个选项）。1.6.0 起不答完就永远走不到结局，
+                // 而这条用例要的正是"一次自然游玩"的完整包络。
+                // 副作用照实记：机器人现在会拿到选项与主导立场的加成，产量比 1.5.0 那次高一点——
+                // 这条断言问的是"买不买得起"，方向只会更宽松。
+                AnswerPending(engine);
 
                 if (engine.EraGate.CanAdvance) engine.Ascend();
                 engine.Simulate(engine.State.Era >= 5 ? 0.25 : 30);
@@ -64,7 +67,8 @@ public static class PrestigeTests
                 engine.ReachedEnding,
                 $"{name} 在 {deadlineHours:F0} 游戏小时内没走到结局"
                 + $"（当前 {engine.State.PlayTimeSeconds / 3600:F1} 小时）——"
-                + $"要么它的终局条件不可达，要么末层表态窗口被步长跨过去了。");
+                + $"要么它的终局条件不可达，要么末层表态始终没被答掉"
+                + $"（1.6.0 起待答表态会一直拦着结局；当前待答 {engine.State.PendingChoices.Count} 项）。");
 
             List<UpgradeDefinition> line =
             [
@@ -254,5 +258,22 @@ public static class PrestigeTests
         engine.Ascend();
 
         Check.Close(clicksBefore, engine.State.TotalClicks);
+    }
+
+    /// <summary>
+    /// 把待答的表态答掉（各取第一个选项）。<para>
+    /// 机器人此前从不应答表态，靠"宿主报告展示过"才走到结局（1.5.0 的判据）。
+    /// 1.6.0 起判据是<b>作答</b>，所以这条替代那一行——不然这三个有表态的包会永远等不到结局，
+    /// 而失败信息会指向"终局条件不可达"这个错误的诊断。
+    /// </para>
+    /// </summary>
+    /// <param name="engine">跑图中的引擎。</param>
+    private static void AnswerPending(GameEngine engine)
+    {
+        foreach (ChoiceDefinition choice in engine.Content.Choices)
+        {
+            if (!engine.State.PendingChoices.Contains(choice.Id)) continue;
+            Check.True(engine.AnswerChoice(choice.Id, choice.Options[0].Id), $"作答 {choice.Id} 失败。");
+        }
     }
 }

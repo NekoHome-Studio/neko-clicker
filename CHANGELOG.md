@@ -7,6 +7,130 @@
 
 ---
 
+## [1.6.0] - 2026-10-02
+
+> 发布口径：**minor**——公开 API **一个成员都没有增删**（`MarkPendingChoicesShown()` 还在，
+> 但它的**效果**变了：从此不再参与判定）。而它同时是一处**刻意的语义不兼容**：
+> 结局的落定条件从"玩家**被展示过**那批待答表态"改成"玩家把它们**答完**"。
+> 按 [VERSIONING](engine/docs/VERSIONING.md) §2 那张表，"改变已有成员的语义"本该 major；
+> 这次按 1.1.0 / 1.5.0 的先例走 minor——**同一处、同一类改动的第三次**
+> （只改"落定的时机"，不改"落到哪个结局"：判定仍然按 `Priority` 取第一个条件成立者）。
+> 理由与影响面全写在这里，也记在 VERSIONING §2；**例外是被记录的，不是被默许的**。
+>
+> 决定文档（为什么改、代价是什么、证据在哪）见 [OPEN_WORK](engine/docs/OPEN_WORK.md) 的 K 条。
+
+### 变更（不兼容：结局等的是"作答"，不再是"看过"）
+
+- **落定判据改成"还有答得上的待答表态就不落定"**（`EndingSystem.Check`）。1.5.0 的判据是
+  "还有**没被展示过**的待答表态就不落定"；现在玩家把最后一条答掉之后，结局才在下一拍落定。
+  理由：**"看过"只证明面板画出来了，证明不了玩家不再需要它**——玩家可能只是把 sheet 收起来，
+  或者正读着题。
+- **`GameEngine.MarkPendingChoicesShown()` 保留，但不再参与任何判定。** 它记下的
+  "每条表态到底露过面没有"降级成**诊断信号**（仍然逐条记在 `GameState.Counters` 的
+  `$choice_shown_<id>`，宿主读得到，随存档往返）。留着的理由很具体：新规则下
+  "结局一直没落定"是**真实可能**的事，而**"从没看到这条表态"与"看到了却一直没答"
+  是两种完全不同的原因**，没有这份记录就分不出来。
+  - **两个宿主照旧上报**（Web 的 `choicesShown` 命令与前端 `reportChoicesShown()`、
+    终端的 `TerminalUi.ShowsChoicesPanel` → `MarkChoicesShown()`），但那是**诊断**，
+    不再是必做动作；它们的文档、命令回复与注释都改成了这个口径。
+  - 为什么**不删**这个公开成员：删公开成员按 VERSIONING §2 要升 **major**，而这次是有意的
+    minor；而且它记下的信息本身仍然有用（见上）。**它的文档里不再有一句暗示它决定结局。**
+- **刻意接受的代价（照实写，不是疏漏）：一个从不作答的玩家永远拿不到结局。**
+  "不会永远悬着"这条性质 1.5.0 就已经被移除（那会儿是"没看到"），这次覆盖面更大（"没答"）。
+  守它的那条用例从来是**重写**而不是删除，三代名字都能 grep 到：
+  `GraceExpiresSoAnUnansweredChoiceCannotStallTheEndingForever`（1.1.0 的定时兜底）
+  → `NotShownChoicesStallTheEndingForeverAndThatIsDeliberate`（1.5.0 的"看过"）
+  → `ShownButUnansweredChoicesStallTheEndingForeverAndThatIsDeliberate`（现在，看过也一样）。
+- **没有新公开成员，也没有删公开成员**：这一版只改判定与文档。`EndingGraceSeconds` /
+  `DefaultGraceSeconds` / `Grace()` / `GraceRemaining()` 的运行行为与 1.5.0 一致
+  （设置它仍然只发一条警告、**不参与判定**），`PublicApi.txt` 只变了第一行的版本号。
+- **"答不上"的待答表态不拦结局——这是 1.6.0 必须显式加上的规则**，否则"必须答完"会把
+  这一局永久卡死。两种形态都真实存在，而且都只在**读档**时才出现：
+  1. 存档里的表态 id **在当前内容里不存在**（换内容包，或包改版时重命名 / 删掉了它）：
+     `SaveData` 只存 id、`SaveSerializer` 不做存在性过滤，于是它会一直挂在待答队列里；
+     而 `ChoiceSystem.Answer` 找不到它 → 返回 `false`，
+     `GameViewFactory.BuildPendingChoices` 也画不出它（`FindChoice` 为 `null` 就跳过）。
+  2. 同一个 id **既在已答表里、又挂在待答队列里**（手改的存档 / 有缺陷的迁移）：
+     `Answer` 对"已经答过"直接返回 `false`。
+  这两种都**不拦**，但**必须说出来**：结局就绪时引擎会发一条警告，点名有几项答不上。
+  静默地忽略一批玩家看得见的待答项，正是本项目最反对的失败形态。
+  **存档里的待答清单不被改写**（它是诊断信息，不是判定该动的东西）。
+- **跨层 / 转生不会把待答表态变成"答不上"**（上面那条规则的另外一半，也是它不卡死的前提）：
+  `PrestigeSystem.ResetRun`（`EraSystem.Advance` 与 `PrestigeSystem.Ascend` 都走它）清的是
+  货币 / 建筑 / 增益 / 非永久升级，**不碰** `PendingChoices`；`ChoiceSystem.Answer` 也**不**
+  重判 `EraId`（只要求"在待答队列里"）；两个宿主的表态面板都照 `PendingChoices` 全量渲染。
+  所以第 2 层的表态在第 3 层照样答得上。UI 上那句「舍命之后就遇不到了」说的是**触发**
+  （`EraId` 是硬门：没触发的表态过了那层不会再出现），**不是**"已经挂着的答不上"——
+  两者不能混为一谈。**证据是用例，不是从 UI 文案推的**：
+  `EndingGraceTests.AdvancingTheEraKeepsPendingChoicesAnswerableSoTheNewRuleCannotHang`、
+  `EndingGraceTests.PrestigeKeepsPendingChoicesAnswerable`、
+  `EndingGraceTests.UnanswerablePendingChoicesDoNotStallTheRunAndTheEngineSaysSo`。
+
+### 措辞与宿主（哪些话现在是假的，改掉）
+
+- **引擎的就绪通知**从「结局会等你把这些表态**看完**」改成「结局会等你把它们**答完**」。
+  旧措辞在 1.6.0 已经**是假的**（看过没用）。仍然<b>不许许诺任何时限</b>——守这条的断言留着。
+- **Web 宿主 `answer` 命令的失败文案**去掉了「**或那层已经过去了**」：实测跨层之后待答表态
+  仍然答得上（见上），那句话是一个错误的诊断，会把玩家引向不存在的原因。
+- **Web 宿主 `choicesShown` 的回复**改成「已记下 N 项表态的展示记录（诊断用；结局现在等的是
+  作答）」，不再暗示它决定落定。
+- **前端 `reportChoicesShown()` 的判据与行为一字未改**（仍然是"那张画着选项的 sheet 真的
+  显示着"才报，药丸不算、收起不算、页面隐藏不算）：它现在服务的是诊断，所以更要准确。
+  `tools/web-smoke.mjs` 的 **62 条断言未改、仍全绿**。
+- **`tools/api-test.ps1` 46 → 48 项**：新增「app.js 会发出 answer」与
+  「POST answer 对不存在的表态明确失败（ok=false + 一句人话）」。
+  **作答是 1.6.0 唯一能解除结局等待的动作**，而此前端到端脚本一条都没覆盖它。
+
+### 用例（460 → 469）
+
+> 这次净增 **6** 条（重写的不算）。同一份工作树里还有**另一处改动**（建筑/剧情文案外部化）
+> 新增的 3 条，所以总数里也含它们——本条目只对本次这 6 条负责。见
+> [OPEN_WORK](engine/docs/OPEN_WORK.md) 的 0.5（共享工作区里"我刚跑的数字"随时可能被别人改掉）。
+
+- **重写（不删除）4 条**，旧名字全留在注释里可 grep：
+  `NotShownChoicesStallTheEndingForeverAndThatIsDeliberate` →
+  `ShownButUnansweredChoicesStallTheEndingForeverAndThatIsDeliberate`；
+  `ShownChoicesLetTheEndingLockAndReportingTwiceIsHarmless` →
+  `ShowingChoicesNoLongerLetsTheEndingLockAnsweringIsWhatDoes`；
+  `ShownnessSurvivesASaveRoundTrip` → `ShownnessSurvivesASaveTripButDoesNotBecomeAnAnswer`；
+  `LoadingASaveDoesNotInventShownness` → `LoadingASaveInventsNeitherShownnessNorAnswers`。
+  另外两条保持原名但按新语义重写：`CommittedEndingWaitsForTheChoiceThatLandsOnTheSameTick`、
+  `ReportingBeforeAChoiceExistsDoesNotPreApproveItAndItStillBlocksUntilAnswered`。
+- **新增 6 条**：`AnsweringEveryPendingChoiceLetsTheEndingLock`（逐条作答：答完最后一条才落定）、
+  `UnanswerablePendingChoicesDoNotStallTheRunAndTheEngineSaysSo`（两种"答不上"的形态 +
+  必须有一条警告）、`AdvancingTheEraKeepsPendingChoicesAnswerableSoTheNewRuleCannotHang`、
+  `PrestigeKeepsPendingChoicesAnswerable`（跨层/转生不会让表态变成答不上）、
+  `NineLivesEndingTests.NeverAnsweringMeansNoEndingAtAllAndThatIsDeliberate`、
+  `LabEndingTests.NeverAnsweringMeansNoEndingAtAllAndThatIsDeliberate`（最后两条在**真实内容**上
+  钉住那条刻意接受的代价）。
+- **内容层的"回避表态"用例按新语义改写**（名字保留、注释写明旧写法）：
+  `NineLivesEndingTests.AvoidingEveryChoiceYieldsTheFallbackEnding` 与
+  `CompanyContentTests.AvoidingEveryChoiceYieldsTheFallbackEnding` 现在走"**每次都答，但每次都挑
+  当前权重最低的那条立场**"；`LabEndingTests.FallbackEndingStillArrivesWhenNobodyAnswers` 改名
+  `FallbackEndingStillArrivesForAPlayerWhoCommitsToNothing`，同一个策略。
+  它们仍然守住原来那件事：**不押任何一条立场也有收场**——只是"什么"变了（现在是"回答但不承诺"）。
+  `EndingTests` 的合成内容为此加了一个**中立选项**（不带立场）：单次表态里没法"摊开答案"，
+  这是它的等价写法；顺带记下一个真实结论：**每个选项都押立场时，兜底结局在新规则下走不到**。
+- **机器人重跑**：`PrestigeTests` 那条"一次自然游玩买得起永久线"（9 个包）、
+  `LabEndingTests` 与 `CompanyContentTests` 的跑图机器人从"报告看过"改成"**真的作答**"——
+  不然它们测的就不再是内容，而是"这份用例忘了把玩家该做的事做掉"。
+- **判别力（故障注入）**：把判据故意写回 1.5.0 的"看过就算"
+  （在 `blocking > 0` 时把"全都展示过"当成不拦），`EndingGraceTests` 立刻红 **4** 条，
+  红字就是新规则要说的那几句：
+  「**「画出来了」不等于「答完了」——结局仍然要等作答**」、
+  「看过但没有作答的表态会让结局一直等下去」、
+  「报告过展示不等于作答，结局不该落定」、
+  「上一次会话「看过」不等于这一次「答过」」；恢复后全绿（13/13）。
+  精确输出见 OPEN_WORK 的 K.6。
+- **一条自己踩到的坑（留档）**：`NineLivesEndingTests.AvoidingEveryCommitmentYieldsTheFallbackEnding`
+  的初版重写里保留了 `EndingSystem.IsReady(...)` 断言，却删掉了原来那次 `engine.CheckEnding()`
+  调用——而就绪时刻是 **Check 跑过之后**才写下的诊断计数器，于是它断言了一个从未被写下的值。
+  修法是**删掉那条不配套的断言**（不是改成 false），并把"六次都答完 ⇒ 立刻落定"验得更硬
+  （直接问 `CheckEnding()` 要结局）。**教训与这条机制无关，与本项目一贯那条有关：
+  断言必须与驱动它的那一步配套；`IsReady` 不是状态的同义词，它是一份"上次检查说了什么"的记录。**
+
+---
+
 ## [1.5.0] - 2026-10-02
 
 > 发布口径：**minor**——公开 API **只增不改**（新增 `GameEngine.MarkPendingChoicesShown()`）。

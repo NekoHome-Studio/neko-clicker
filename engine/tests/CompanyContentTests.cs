@@ -184,11 +184,39 @@ public static class CompanyContentTests
     [Test]
     public static void AvoidingEveryChoiceYieldsTheFallbackEnding()
     {
+        // 旧名字保留（这条一直叫这个）：1.5.0 时"回避"= 什么都不做 + 宿主报告看过；
+        // 1.6.0 起判据是**作答**，所以"回避"= 每次表态都答，但每次挑当前权重最低的那条立场
+        // ——六次摊成 6/4/2（门槛 7）谁都到不了，于是走兜底。不答的话永远没有结局。
         GameEngine engine = LoadFrom(PlayedSave.Value);
         Check.Equal(0, engine.State.ChoiceAnswers.Count, "前提：一次都不答。");
 
+        AnswerWithoutCommitting(engine);
+        Check.Equal(
+            engine.Content.Choices.Count,
+            engine.State.ChoiceAnswers.Count,
+            "前提：六次表态都被答掉了（不答就没有结局）。");
+
         FinishLastRound(engine);
         Check.Equal("end_fade", engine.ReachedEnding?.Id);
+    }
+
+    /// <summary>
+    /// 待答的每次都作答应答，但每次都挑<b>当前权重最低</b>的那条立场（同权取先声明的那一项）——
+    /// "回答，但不承诺任何一条路"。1.6.0 起不答就永远走不到结局，所以"回避表态"这条路
+    /// 只能这么走。
+    /// </summary>
+    private static void AnswerWithoutCommitting(GameEngine engine)
+    {
+        foreach (ChoiceDefinition choice in engine.Content.Choices)
+        {
+            if (!engine.State.PendingChoices.Contains(choice.Id)) continue;
+
+            ChoiceOption pick = choice.Options
+                .OrderBy(o => engine.State.StanceWeight(o.StanceId))
+                .First();
+
+            Check.True(engine.AnswerChoice(choice.Id, pick.Id), $"作答 {choice.Id}/{pick.Id} 失败。");
+        }
     }
 
     // ---------------------------------------------------------------- 辅助
@@ -271,16 +299,17 @@ public static class CompanyContentTests
     /// 把末轮主线推到完成：直接把"本轮累计"顶过门槛（成就数在跑图里已经够了），
     /// 然后让引擎自己跑一拍做终局判定。终局必须在末层完成后才成立——
     /// 这是实验室包那个坑的修复方式，公司包从内容上就要求同一条。<para>
-    /// 顺带报告"这批表态已经被展示过了"（1.5.0 起结局能否落定的唯一条件）：
-    /// 已答完的批次里它是空操作，而 <c>AvoidingEveryChoiceYieldsTheFallbackEnding</c>
-    /// 那条"一次都不答也有收场"靠的就是它——没被展示过的表态会让结局一直等下去。
+    /// <b>1.5.0 时这里还多一步"报告待答表态已经展示过"</b>，因为那时"看过"就是落定条件。
+    /// 1.6.0 起条件是<b>作答</b>，所以那一行已经删掉：调用它的两条路径要么早已把六次表态答完
+    /// （<c>EndingAfterChoosing</c>），要么在调用前刚刚答完
+    /// （<c>AvoidingEveryChoiceYieldsTheFallbackEnding</c>）——"报告看过"对判定毫无影响，
+    /// 留着只会让人以为它还是承重的。
     /// </para>
     /// </summary>
     private static void FinishLastRound(GameEngine engine)
     {
         engine.State.CookiesEarnedThisRun = 5e8;
         engine.MarkDirty();
-        engine.MarkPendingChoicesShown();
         engine.Simulate(60);
     }
 }

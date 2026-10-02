@@ -238,11 +238,18 @@ public static class Program
                 return await host.ExecuteAsync(engine =>
                 {
                     bool ok = engine.AnswerChoice(id, optionId);
-                    return new CommandOutcome(ok, ok ? "已表态。" : "这次表态不成立（可能已经答过，或那层已经过去了）。", host.Seq);
+                    // 失败原因只有两种（见 ChoiceSystem.Answer）：已经答过，或这条 id 根本不在
+                    // 待答队列里。**不要再写"那层已经过去了"**——实测（1.6.0）跨层之后待答表态
+                    // 仍然答得上：舍命不碰 PendingChoices，作答也不重判 EraId。
+                    // 引擎收不收下这次作答只取决于"它在不在待答清单里"。
+                    return new CommandOutcome(ok, ok ? "已表态。" : "这次表态不成立（可能已经答过，或它不在待答清单里）。", host.Seq);
                 }).ConfigureAwait(false);
 
-            // "待答表态已经展示给玩家看过了"——1.5.0 起这是结局能否落定的**唯一**条件
-            // （见 GameEngine.MarkPendingChoicesShown；它换掉了以前那段 30 模拟秒的宽限）。
+            // "待答表态已经展示给玩家看过了"——**诊断信号，不参与判定**。
+            // 1.6.0 起结局等的是玩家把表态**答完**（见 GameEngine.CheckEnding / EndingSystem.Check）；
+            // 1.5.0 那会儿这一发才是落定的唯一条件，那条规则已经被换掉了。
+            // 留着它是因为它记下的东西有用：**每条表态到底露过面没有**——新规则下"结局一直没落定"
+            // 是真实可能的事，而"从没看到"与"看到了却一直没答"是两种完全不同的原因。
             // 它是一条**状态**而不是前端的记忆：刷新、换标签页、换设备之后，"玩家看没看过"
             // 必须仍是同一个答案，所以真相在引擎里，前端每次渲染只负责报告"我把它画出来了"。
             // 幂等：客户端每渲染一帧都可能发一次，第二发不是错误。
@@ -252,7 +259,9 @@ public static class Program
                     int marked = engine.MarkPendingChoicesShown();
                     return new CommandOutcome(
                         true,
-                        marked > 0 ? $"已记下 {marked} 项表态看过。" : "这些表态已经记过了。",
+                        marked > 0
+                            ? $"已记下 {marked} 项表态的展示记录（诊断用；结局现在等的是作答）。"
+                            : "这些表态已经记过了。",
                         host.Seq);
                 }).ConfigureAwait(false);
 

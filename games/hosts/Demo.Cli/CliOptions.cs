@@ -49,10 +49,11 @@ internal sealed class CliOptions
 
     /// <summary>
     /// 终局作答宽限期（模拟秒）；<c>null</c> 表示用框架默认值。<para>
-    /// <b>1.5.0 起已退役</b>：结局的落定条件改成了"玩家被展示过那批待答表态"
-    /// （见 <see cref="GameEngine.MarkPendingChoicesShown"/>），不再按时间兜底，
-    /// 所以这个参数<b>不再改变任何落定时机</b>。命令行选项保留是为了不打断已有的脚本；
-    /// 引擎在收到非 <c>null</c> 的值时会发一条警告通知，宿主不会以为自己配好了一个期限。
+    /// <b>1.5.0 起已退役</b>：结局的落定条件改成了<b>条件</b>——现在（1.6.0）是
+    /// "还有答得上的待答表态就不落定"（见 <see cref="GameEngine.CheckEnding"/>），
+    /// 不再按时间兜底，所以这个参数<b>不再改变任何落定时机</b>。命令行选项保留是为了
+    /// 不打断已有的脚本；引擎在收到非 <c>null</c> 的值时会发一条警告通知，
+    /// 宿主不会以为自己配好了一个期限。
     /// </para>
     /// </summary>
     public double? EndingGraceSeconds { get; private set; }

@@ -5,12 +5,13 @@
 + #3《猫娘实验室》+ #10《猫娘公司》+ #6《猫娘末世》+ #9《猫娘图书馆》
 + #7《猫娘神明》+ #4《猫娘文明》+ #5《赛博猫娘》+ #8《猫娘梦境》）和一个可玩的终端 Demo。
 
-**当前版本 `1.5.0`**（`NekoClicker.Core` 的公开 API 版本）。从 `1.0.0` 起
+**当前版本 `1.6.0`**（`NekoClicker.Core` 的公开 API 版本）。从 `1.0.0` 起
 **公开 API 只增不改**，而且有测试守着——见 [版本与兼容性承诺](#版本与兼容性承诺)。
-语义层面的破坏性变更至今只有两处，而且是同一件事的两次决定：1.1.0 让结局条件成立后
-先等一段作答宽限期（默认 30 **模拟**秒）；**1.5.0 把那段时间换成条件**——只有玩家
-**被展示过**那批待答表态之后，结局才允许落定（新增 `GameEngine.MarkPendingChoicesShown()`，
-两个宿主都已接线）。**代价是刻意接受的：从不看到表态面板的玩家永远拿不到结局。**
+语义层面的破坏性变更至今有三处，而且是**同一件事的三次决定**：1.1.0 让结局条件成立后
+先等一段作答宽限期（默认 30 **模拟**秒）；1.5.0 把那段时间换成条件——玩家
+**被展示过**那批待答表态之后结局才允许落定；**1.6.0 又把条件收紧成"玩家把它们答完"**
+（`GameEngine.MarkPendingChoicesShown()` 保留但**不再参与判定**，只剩诊断用途）。
+**代价是刻意接受的，而且 1.6.0 起更宽：从不作答的玩家永远拿不到结局。**
 1.2.0 只新增了 `ContentText`（剧情散文的外部化载体），没有不兼容改动；
 1.2.1 是 patch：421 条散文铺满十个包、修掉 `ContentText` 的并发缺陷，公开 API 一行没动；
 1.3.0 是 minor：新增 `GameSnapshot.Offline` 一族（离线收益第一次能走到界面上）；1.4.0 也是 minor：`UpgradeView` 补上货币语义（前端不再解释枚举序数），Web 端多了「永久」面板。
@@ -325,7 +326,7 @@ Console.WriteLine(engine.Save());           // JSON 存档
 
 ## 版本与兼容性承诺
 
-**当前版本 `1.5.0`。从 `1.0.0` 起，`NekoClicker.Core` 的公开 API 只增不改。**
+**当前版本 `1.6.0`。从 `1.0.0` 起，`NekoClicker.Core` 的公开 API 只增不改。**
 
 | 改动 | 升哪一位 |
 |---|---|
@@ -333,18 +334,18 @@ Console.WriteLine(engine.Save());           // JSON 存档
 | 公开 API 有不兼容改动（删除、改签名、收紧可空标注、改语义） | major |
 | 公开 API 一行没动（内容数值、文案、修 bug） | patch |
 
-> **已知例外**：`1.1.0` 与 `1.5.0` 都改了一处**语义**（结局的落定时机）却按 minor 发布。
-> 两次都是有意为之，理由与影响面写在 [CHANGELOG](CHANGELOG.md) 与
+> **已知例外**：`1.1.0`、`1.5.0`、`1.6.0` 都改了**同一处**语义（结局的落定时机）却按 minor 发布。
+> 三次都是有意为之，理由与影响面写在 [CHANGELOG](CHANGELOG.md) 与
 > [VERSIONING §2](engine/docs/VERSIONING.md) 里——例外要被记录，否则下次就分不清
-> "决定"和"疏忽"，这张表也就退化成橡皮图章了。
+> "决定"和"疏忽"，这张表也就退化成橡皮图章了。**连着三次也说明：下次再动这里该考虑 major。**
 
 版本号的单一事实来源是 `Directory.Build.props` 的 `<Version>`，宿主可以在运行时读到它：
 
 ```csharp
 using NekoClicker.Core;
 
-Console.WriteLine(ApiVersion.Current);         // "1.5.0"
-Console.WriteLine(ApiVersion.AssemblyVersion);  // 1.5.0.0
+Console.WriteLine(ApiVersion.Current);         // "1.6.0"
+Console.WriteLine(ApiVersion.AssemblyVersion);  // 1.6.0.0
 ```
 
 ### 这条承诺是怎么被守住的
@@ -514,8 +515,9 @@ Console.WriteLine(ApiVersion.AssemblyVersion);  // 1.5.0.0
   ROADMAP 规划范围内的**十个内容包至此全部交付**，
   四个引擎能力里只有 S-A / S-B / S-C 动过核心（S-D 一行核心代码都没写）。
 
-**接下来做什么**：见 [STATUS.md 的 §8「下一步与交接」](STATUS.md)——工作树是 **1.5.0**
-（结局的落定条件：定时 → 条件，外加一次 minor 升版与快照再生成），**发布还没走**：
+**接下来做什么**：见 [STATUS.md 的 §8「下一步与交接」](STATUS.md)——工作树是 **1.6.0**
+（结局的落定条件：定时 → 被展示过 → **被答完**，三次改动各配一次 minor 升版与快照再生成），
+**发布还没走**：
 打包 / 打 tag / 推送 / 看 CI 是下一轮的第一件事；再往后是二周目界面（要先定语义）
 与 `PackageId` 打包元数据。1.2.1 / 1.3.0 / 1.4.0 是怎么发的（含发布流程与实际执行记录）
 见 [engine/docs/RELEASING.md](engine/docs/RELEASING.md)。

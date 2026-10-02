@@ -65,8 +65,16 @@ public static class NineLivesEndingTests
 
     // ---------------------------------------------------------------- ③ 兜底
 
+    /// <summary>
+    /// <b>一次都不答 = 永远没有结局。</b>这是 1.6.0 刻意接受的代价，在真实内容上钉一遍。<para>
+    /// 1.5.0 时这条路还有收场（宿主报告"画出来了"就行）；1.6.0 起判据是<b>作答</b>，
+    /// 所以"回避表态"不再等于"什么都不做"，而是"回答但不承诺"（见下一条）。
+    /// 时间与"画出来了"都不能替代作答——所以这条同时断言那条兜底结局<b>确实已经就绪</b>，
+    /// 只是被一条一直没人答的表态拦着（否则它可能只是条件没成立，那就说明不了任何事）。
+    /// </para>
+    /// </summary>
     [Test]
-    public static void AvoidingEveryChoiceYieldsTheFallbackEnding()
+    public static void NeverAnsweringMeansNoEndingAtAllAndThatIsDeliberate()
     {
         GameEngine engine = LoadFrom(PlayedSave.Value);
         Check.Equal(0, engine.State.ChoiceAnswers.Count, "前提：一次都不答。");
@@ -74,18 +82,73 @@ public static class NineLivesEndingTests
         engine.State.Era = 9;
         engine.MarkDirty();
 
-        // 结局条件成立时还有未作答的表态 → 1.5.0 起判定会一直等，直到玩家被展示过它们
-        // （原来是 30 模拟秒的定时宽限）。这正是"回避表态"这条路的玩家该得到的待遇：
-        // 他手上有六次没答的表态，想改主意还来得及——而只要他看过那批表态，结局就不必再等。
         Check.AtLeast(engine.State.PendingChoices.Count, 1, "前提：这份存档里挂着没答的表态。");
-        Check.Null(engine.CheckEnding(), "还有表态没答、玩家也还没看过，判定不该立刻锁死。");
-        Check.True(EndingSystem.IsReady(engine.Content, engine.State), "兜底结局的条件已经成立。");
 
-        // 宿主把表态画了出来（本用例不跑界面，直接报告这一点）；玩家仍然一次都不答。
-        Check.AtLeast(engine.MarkPendingChoicesShown(), 1, "应当至少有一条表态被标记为已展示。");
-        engine.Simulate(2);
+        // 像宿主那样报告"画出来了"，再让时间跑掉旧机制整整 120 倍（1 模拟小时）。
+        engine.MarkPendingChoicesShown();
+        engine.Simulate(EndingSystem.DefaultGraceSeconds * 120);
 
-        Check.Equal("end_blank", engine.ReachedEnding?.Id, "一次都不表态也必须有一个收场。");
+        Check.True(EndingSystem.IsReady(engine.Content, engine.State), "兜底结局的条件已经成立——它在等玩家作答。");
+        Check.Null(
+            engine.ReachedEnding,
+            "一条都不答就永远没有结局：这是 1.6.0 有意移除「不会永远悬着」的代价，不是漏了兜底。");
+    }
+
+    /// <summary>
+    /// <b>不押任何一条立场的玩家照样有兜底结局</b>——但前提是他<b>把每次表态都答掉</b>。<para>
+    /// <b>旧名字：<c>AvoidingEveryChoiceYieldsTheFallbackEnding</c></b>（1.5.0 的写法是
+    /// "一次都不答 + 宿主报告看过"）。1.6.0 起"回避表态"这条路只能这么走：
+    /// 每次都挑<b>当前权重最低</b>的那条立场，六次摊下来谁也到不了门槛（4/4/2/2 &lt; 5），
+    /// 于是走兜底。它同时是一条内容侧的可达性证据：兜底结局在真实内容里仍然走得到。
+    /// </para>
+    /// <para>
+    /// <b>这里刻意不写 <c>IsReady</c> 断言</b>（初版写过，是错的）：就绪时刻是
+    /// <c>EndingSystem.Check</c> 跑过之后才记下的诊断值，而待答队列空着时 Check 会<b>直接落定</b>
+    /// ——落定之后 <c>IsReady</c> 按定义就是 <c>false</c>（<c>EndingsReached</c> 非空）。
+    /// 所以这条直接问判定本身："全都答完了，它还等不等？"——答案必须是"不等"。
+    /// "就绪但一直没落定"那半在 <see cref="NeverAnsweringMeansNoEndingAtAllAndThatIsDeliberate"/> 里。
+    /// </para>
+    /// </summary>
+    [Test]
+    public static void AvoidingEveryCommitmentYieldsTheFallbackEnding()
+    {
+        GameEngine engine = LoadFrom(PlayedSave.Value);
+        AnswerWithoutCommitting(engine);
+        Check.Equal(engine.Content.Choices.Count, engine.State.ChoiceAnswers.Count, "前提：六次表态都答了。");
+
+        engine.State.Era = 9;
+        engine.MarkDirty();
+
+        Check.Equal(0, engine.State.PendingChoices.Count, "答完之后队列应当空了。");
+
+        EndingDefinition? reached = engine.CheckEnding();
+        Check.NotNull(
+            reached,
+            "六次表态都答完之后判定不该再等任何人（1.6.0 等的是作答，队列已经空了）。");
+        Check.Equal("end_blank", reached!.Id, "不押任何一条立场也必须有一个收场。");
+        Check.Equal("end_blank", engine.ReachedEnding?.Id, "落定的结局要能被读到。");
+    }
+
+    /// <summary>
+    /// 待答的每次都作答应答，但每次都挑<b>当前权重最低</b>的那条立场（同权取先声明的那一项）——
+    /// "回答，但不承诺任何一条路"。<para>
+    /// 这是 1.6.0 下"回避表态"唯一还能走的路：不答就永远没有结局（见上一条）。
+    /// </para>
+    /// </summary>
+    private static void AnswerWithoutCommitting(GameEngine engine)
+    {
+        foreach (ChoiceDefinition choice in engine.Content.Choices)
+        {
+            if (!engine.State.PendingChoices.Contains(choice.Id)) continue;
+
+            ChoiceOption pick = choice.Options
+                .OrderBy(o => engine.State.StanceWeight(o.StanceId))
+                .First();
+
+            Check.True(
+                engine.AnswerChoice(choice.Id, pick.Id),
+                $"作答 {choice.Id}/{pick.Id} 失败。");
+        }
     }
 
     // ---------------------------------------------------------------- 选项修饰符真的生效

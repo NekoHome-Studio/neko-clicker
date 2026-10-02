@@ -15,24 +15,31 @@ namespace NekoClicker.Core;
 /// <para>
 /// <b>落定前的等待</b>：结局条件成立时若还有未作答的表态，判定会先等一等——
 /// 因为"最后几次表态"往往就发生在结局条件成立前的几秒里，而那时候玩家很可能还没反应过来。
-/// <b>1.5.0 起这个等待是条件，不是定时</b>：只有玩家<b>被展示过</b>那批待答表态之后，
-/// 结局才允许落定（由宿主在真的渲染出表态时调
-/// <see cref="GameEngine.MarkPendingChoicesShown"/>）。在那之前，无论过多久都不落定。
+/// <b>1.5.0 起这个等待是条件，不是定时；1.6.0 起那个条件从"看过"改成"答过"</b>：
+/// 只要还有一条<b>答得上</b>的待答表态，结局就不落定——过多久都不落定。
+/// 判据是"答没答"，不是"玩家看过没有"（<see cref="GameEngine.MarkPendingChoicesShown"/>
+/// 那份展示记录现在<b>只作诊断</b>，见下）。
 /// </para>
 /// <para>
-/// <b>代价（刻意接受的，不是遗漏）</b>：没被展示过的待答表态会让结局<b>永远</b>悬着——
-/// 一个从不渲染表态面板的宿主永远拿不到结局。1.5.0 之前存在一条"最多等
-/// <see cref="DefaultGraceSeconds"/> 模拟秒"的兜底，那条兜底是<b>刻意移除</b>的
-/// （<see cref="DefaultGraceSeconds"/> / <see cref="Grace"/> / <see cref="GraceRemaining"/>
-/// 与 <see cref="GameEngineOptions.EndingGraceSeconds"/> 只为兼容保留，<b>不再参与判定</b>）。
-/// 换句话说："不会永远悬着"这条性质不是丢了，是决定不要了——别再顺手把它改回来。
+/// <b>代价（刻意接受的，不是遗漏）</b>：一个<b>从不作答</b>的玩家<b>永远</b>拿不到结局。
+/// 1.5.0 之前存在一条"最多等 <see cref="DefaultGraceSeconds"/> 模拟秒"的兜底，那条兜底是
+/// <b>刻意移除</b>的（<see cref="DefaultGraceSeconds"/> / <see cref="Grace"/> /
+/// <see cref="GraceRemaining"/> 与 <see cref="GameEngineOptions.EndingGraceSeconds"/> 只为兼容
+/// 保留，<b>不再参与判定</b>）。1.5.0 把条件放宽成"被展示过就算过"，1.6.0 收紧成"必须答过"——
+/// 于是"不会永远悬着"这条性质不但没有回来，覆盖的范围还更大了。别再顺手把它改回去。
+/// </para>
+/// <para>
+/// <b>不会卡死的那一半（1.6.0 明确处理的）</b>：只有<b>答得上</b>的待答表态拦结局。
+/// 一条永远答不上的（内容里已经不存在 / 已经答过却又挂在队列里）不拦，而且引擎会
+/// <b>发一条警告把它说出来</b>——静默忽略一批玩家看得见的待答项是不允许的。
+/// 判据与理由见 <see cref="ChoiceSystem.AnswerablePendingCount"/>。
 /// </para>
 /// </summary>
 public static class EndingSystem
 {
     /// <summary>
     /// 结局条件成立后、<b>落定之前</b>留给玩家作答的宽限的<b>历史默认值</b>（模拟秒）。<para>
-    /// <b>1.5.0 起它不再参与判定。</b>判定读的是"玩家被展示过那批待答表态没有"
+    /// <b>1.5.0 起它不再参与判定。</b>判定读的是"还有没有答得上的待答表态"
     /// （见 <see cref="Check"/>），不是"过了多久"。这个常量与
     /// <see cref="GameEngineOptions.EndingGraceSeconds"/> 一起保留，只为不破坏已经引用它们的
     /// 宿主与诊断输出（例如宿主那份作答延迟埋点会把它记进样本行）；
@@ -84,23 +91,42 @@ public static class EndingSystem
             state.SetCounter(ReadyAtCounterKey, readyAt);
         }
 
-        // 还有表态挂着没答，而且玩家还没被展示过它们 → 先等玩家**看到**。
+        // 还有**答得上**的表态挂着没答 → 先等玩家把它们答掉。
         //
-        // 1.5.0 起这是唯一会推迟落定的机制，而且它是**条件**不是定时：
-        // 只要那批待答表态没被展示过，过多久都不落定（代价见类注释——刻意接受）。
-        if (state.PendingChoices.Count > 0 && !ChoiceSystem.PendingAreAllShown(state))
+        // 1.6.0 起这是唯一会推迟落定的机制，判据是"答没答"（不是 1.5.0 的"看过没有"），
+        // 而且它是**条件**不是定时：只要还有一条答得上的待答表态，过多久都不落定
+        // （代价见类注释——刻意接受）。
+        //
+        // 为什么是"答得上"而不是"队列非空"：队列里可能躺着永远答不上的 id
+        // （内容改版删掉了它、换包读档、或它同时出现在已答表里），只数长度会把这一局永久卡死。
+        // 见 ChoiceSystem.AnswerablePendingCount 的注释。
+        int blocking = ChoiceSystem.AnswerablePendingCount(content, state);
+
+        if (justBecameReady)
         {
-            if (justBecameReady)
+            if (blocking > 0)
             {
                 engine.Notify(
-                    $"主线已经走完，但你还有 {state.PendingChoices.Count} 项表态没答。"
-                    + "它们会决定你落到哪个结局——结局会等你把这些表态看完。",
+                    $"主线已经走完，但你还有 {blocking} 项表态没答。"
+                    + "它们会决定你落到哪个结局——结局会等你把它们答完。",
                     NotificationKind.Warning,
                     "⏳");
             }
 
-            return null;
+            // 答不上的那些必须**说出来**：它们既画不出来也点不动，玩家会以为界面坏了，
+            // 而这一局其实是能收场的（结局不再等它们）。沉默地忽略是不允许的。
+            int unanswerable = ChoiceSystem.UnanswerablePendingCount(content, state);
+            if (unanswerable > 0)
+            {
+                engine.Notify(
+                    $"有 {unanswerable} 项待答表态在当前内容里已经答不上了（旧存档跨了内容改版，"
+                    + "或这条表态已经答过）——结局不再等它们。存档里的待答清单保持原样，不会被改写。",
+                    NotificationKind.Warning,
+                    "!");
+            }
         }
+
+        if (blocking > 0) return null;
 
         // 按 Priority 升序；同优先级按声明顺序（OrderBy 是稳定排序）。
         foreach (EndingDefinition ending in content.Endings.OrderBy(e => e.Priority))
@@ -120,8 +146,9 @@ public static class EndingSystem
 
     /// <summary>
     /// 是否已有结局条件成立、但还没落定（也就是"结局在等玩家"）。<para>
-    /// 1.5.0 起等的<b>不是</b>一段时间，而是"那批待答表态被展示过"——所以这个值为真时，
-    /// 结局可能无限期地等下去（见 <see cref="Check"/>）。
+    /// 1.6.0 起等的<b>不是</b>一段时间，也不只是"看过"，而是玩家把那批待答表态<b>答掉</b>——
+    /// 所以这个值为真时，只要有一条一直在等的表态没被作答，结局就可能无限期地等下去
+    /// （见 <see cref="Check"/>）。
     /// </para>
     /// </summary>
     /// <param name="content">内容定义。</param>
@@ -135,13 +162,13 @@ public static class EndingSystem
     /// 本存档配置的<b>历史</b>宽限期值（模拟秒）：取
     /// <see cref="GameEngineOptions.EndingGraceSeconds"/>，未配置则用
     /// <see cref="DefaultGraceSeconds"/>。<para>
-    /// <b>1.5.0 起判定不再读它</b>（<see cref="Check"/> 用的是"待答表态被展示过"这个条件）。
+    /// <b>1.5.0 起判定不再读它</b>（<see cref="Check"/> 用的是"还有没有答得上的待答表态"这个条件）。
     /// 保留这个成员是为了不破坏已经引用它的宿主与诊断输出——例如宿主那份作答延迟埋点会把
     /// 生效值记进每一行样本，好让"当时的参数是多少"在日后仍然对得上。
     /// </para>
     /// <para>
     /// <b>不是"生效值"了</b>：它现在只回答"宿主把那个已经退役的参数设成了多少"。
-    /// 真正会拦住结局落定的是"玩家有没有被展示过那些表态"，与这个数无关。
+    /// 真正会拦住结局落定的是"玩家把那些表态答完了没有"，与这个数无关。
     /// </para>
     /// </summary>
     /// <param name="engine">宿主引擎。</param>

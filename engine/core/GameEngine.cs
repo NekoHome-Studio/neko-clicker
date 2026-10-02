@@ -32,8 +32,9 @@ public sealed class GameEngineOptions
     /// 结局条件成立后留给玩家作答的宽限（<b>模拟</b>秒）。<see langword="null"/> 表示用
     /// <see cref="EndingSystem.DefaultGraceSeconds"/>。<para>
     /// <b>已退役：1.5.0 起它不再参与判定。</b>当年它是"结局最多等多久"，
-    /// 现在是"待答表态被展示给玩家之后才允许落定"（<see cref="GameEngine.MarkPendingChoicesShown"/>）——
-    /// 那个等待没有上界，所以没有任何秒数能表达它。
+    /// 现在是"还有答得上的待答表态就不落定"（<see cref="GameEngine.CheckEnding"/>）——
+    /// 那个等待没有上界，所以没有任何秒数能表达它。1.5.0 只是不再按时间兜底，
+    /// 1.6.0 又把条件从"玩家看过那些表态"收紧成"玩家把它们答完"。
     /// </para>
     /// <para>
     /// <b>为什么留着而不是删掉</b>：删公开成员要按 <c>engine/docs/VERSIONING.md</c> 升主版本，
@@ -113,8 +114,8 @@ public sealed class GameEngine
         if (Options.EndingGraceSeconds is not null)
         {
             Notify(
-                "EndingGraceSeconds 已不再生效：1.5.0 起结局改为「待答表态被展示给玩家之后」"
-                + "才允许落定，不再按时间兜底（见 GameEngine.MarkPendingChoicesShown）。",
+                "EndingGraceSeconds 已不再生效：1.6.0 起结局改为「还有答得上的待答表态就不落定」，"
+                + "要等玩家把它们答完，不按时间兜底（见 GameEngine.CheckEnding）。",
                 NotificationKind.Warning,
                 // 图标只用宽度确定的字符：⚠ 是 East Asian Ambiguous，在终端里按 1 列或 2 列渲染
                 // 都可能，会把那行日志顶歪（FrameRenderTests.FramesAvoidFontFallbackProneGlyphs 守这条）。
@@ -277,8 +278,8 @@ public sealed class GameEngine
 
         // 顺序有讲究，两条理由各不相同：
         //
-        // ① 表态的触发排在终局判定<b>之前</b>。终局判定要读"还有没有未作答、且没被展示过的
-        //    表态"来决定要不要推迟落定（EndingSystem.Check）；若它先跑，同一拍里刚够条件的
+        // ① 表态的触发排在终局判定<b>之前</b>。终局判定要读"还有没有**答得上的**待答表态"
+        //    来决定要不要推迟落定（EndingSystem.Check）；若它先跑，同一拍里刚够条件的
         //    表态就还不在待答队列里，判定会误以为"没有东西在等玩家"而立刻落定。
         //    这不是杞人忧天：表态门槛允许<b>等于</b>本层完成门槛（见 ValidateChoiceFitsItsEra
         //    只拦 >），此时表态与结局条件会在同一拍首次成立，顺序就是唯一的区别。
@@ -505,34 +506,41 @@ public sealed class GameEngine
     /// </summary>
     public IReadOnlyList<ChoiceDefinition> CheckChoices() => ChoiceSystem.Check(this);
 
-    /// <summary>作答一次选择。返回是否确实完成了这次作答（重复作答返回 <c>false</c>）。</summary>
+    /// <summary>
+    /// 作答一次选择。返回是否确实完成了这次作答（重复作答返回 <c>false</c>）。<para>
+    /// <b>1.6.0 起这是唯一能让结局解除等待的动作</b>：只要还有答得上的待答表态，结局就不落定
+    /// （见 <see cref="CheckEnding"/>）。返回 <c>false</c> 时表态仍然挂着——如果是"本来就没答上"
+    /// （内容里没有这个 id、或已经答过），那一条不拦结局。
+    /// </para>
+    /// </summary>
     /// <param name="choiceId">选择 id。</param>
     /// <param name="optionId">选中的选项 id。</param>
     public bool AnswerChoice(string choiceId, string optionId) => ChoiceSystem.Answer(this, choiceId, optionId);
 
     /// <summary>
-    /// 宣告"当前挂着的待答表态已经被展示给玩家看过了"。<b>由宿主在真的渲染出表态时调用。</b><para>
-    /// <b>为什么这条信号必须由宿主发出</b>：引擎不该去猜视图层（它连"屏幕上有什么"都不知道），
-    /// 而这条信息是结局能否落定的唯一依据——万一猜错的方向是"玩家没看到却当成了看到过的"，
-    /// 那是不可逆的：一份存档的结局只会落定一次。
+    /// 报告"当前挂着的待答表态已经被展示给玩家看过了"。<b>由宿主在真的渲染出表态时调用。</b><para>
+    /// <b>1.6.0 起它不参与任何判定。</b>结局等的是玩家把这些表态<b>答掉</b>
+    /// （见 <see cref="CheckEnding"/>），不是"看过"——所以这个调用<b>不会</b>让结局允许落定，
+    /// 也不再是宿主的必做动作。留着它是因为它记下的东西本身有用：<b>每条表态到底露过面没有</b>。
+    /// 在新规则下"结局一直没落定"是一件真实可能的事，而
+    /// <b>"玩家从没看到这条表态"与"看到了却一直没答"是两种完全不同的原因</b>，
+    /// 没有这份记录就分不出来。
     /// </para>
     /// <para>
-    /// <b>它换掉了什么</b>：1.5.0 之前，结局落定前有一段 30 模拟秒的宽限期
-    /// （<see cref="GameEngineOptions.EndingGraceSeconds"/>），到期就当作"放弃表态"照常落定。
-    /// 现在推迟落定的是这个信号：<b>玩家看过那批表态之后，结局才允许落定</b>；
-    /// 在那之前，过多久都不落定。
+    /// <b>记录在哪、怎么读</b>：逐条记在 <see cref="GameState.Counters"/> 的
+    /// <c>$choice_shown_&lt;选择 id&gt;</c> 上（与 <c>EraSystem.PeakCpsCounterKey</c>、
+    /// 就绪时刻 <c>$ending_ready_at_play_time</c> 同一个套路），因此<b>随存档往返</b>——
+    /// 问的是"这个存档里的表态露过面没有"，而玩家是跨会话的。要读它就直接读
+    /// <see cref="GameState.Counters"/>（键前缀是公开的约定，没有为此新增任何公开成员）。
     /// </para>
     /// <para>
-    /// <b>逐条记账，且随存档往返</b>：只标记<b>此刻</b>挂在待答队列里的表态
-    /// （之后才触发的不算"已经展示过"）；标记存在状态里的计数器上，因此读档回来仍然是
-    /// "已展示"——条件问的是"玩家有没有被展示过"，而玩家是跨会话的。反过来，
-    /// <b>没被展示过的表态不会因为读档而变成已展示</b>。
+    /// <b>逐条记账</b>：只标<b>此刻</b>挂在待答队列里的表态，之后才触发的不算"已经展示过"——
+    /// 存一个布尔值会把"看过第一批"误当成"看过之后所有批次"。
     /// </para>
     /// <para>
-    /// <b>代价（刻意接受的，不是遗漏）</b>：没有宿主来报，结局就<b>永远</b>不落定——
-    /// 一个从不渲染表态面板的宿主、一份从未被展示过的存档，都拿不到结局。
-    /// 这条"不会永远悬着"的性质是被有意移除的，见 <see cref="EndingSystem.Check"/>
-    /// 与 CHANGELOG 的 1.5.0：别再顺手把它改回来。
+    /// <b>1.5.0 到 1.6.0 之间它是什么</b>（留档，别按这段去改代码）：那段时间它是结局能否落定的
+    /// <b>唯一</b>依据——"玩家被展示过那批待答表态"之后结局才允许落定。那条规则已被
+    /// 1.6.0 换掉（看过 ⇒ 答过），因为"看过"只证明面板画出来了，证明不了玩家不再需要它。
     /// </para>
     /// </summary>
     /// <returns>本次新标记为"已展示"的表态条数；都已标记过（或当前没有待答表态）时为 <c>0</c>。</returns>
@@ -547,10 +555,22 @@ public sealed class GameEngine
     /// 想表达"走完主线"就在内容里写 <c>EraAtLeast(9)</c>。
     /// </para>
     /// <para>
-    /// 条件成立时若还有<b>没被展示给玩家看过</b>的待答表态，落定会一直推迟，直到宿主
-    /// 报告那些表态已经渲染出来了（<see cref="MarkPendingChoicesShown"/>）或玩家把它们答掉。
-    /// 1.5.0 起这是唯一会推迟落定的机制，而且它<b>没有时限</b>：没展示过就永远不落定。
-    /// （1.5.0 之前是"最多等 <see cref="GameEngineOptions.EndingGraceSeconds"/> 模拟秒"。）
+    /// 条件成立时若还有<b>还没被答掉、而且答得上</b>的待答表态，落定会一直推迟，直到玩家把它们
+    /// 答完。<b>1.6.0 起这是唯一会推迟落定的机制</b>，判据是作答而不是"看过"
+    /// （<see cref="MarkPendingChoicesShown"/> 那份展示记录现在只作诊断），
+    /// 而且它<b>没有时限</b>：只要还有一条在等作答，就永远不落定。
+    /// （1.5.0 之前是"最多等 <see cref="GameEngineOptions.EndingGraceSeconds"/> 模拟秒"，
+    /// 1.5.0 到 1.6.0 之间是"玩家被展示过就行"。）
+    /// </para>
+    /// <para>
+    /// <b>刻意接受的代价</b>：一个从不作答的玩家，永远拿不到结局。这是<b>有意移除</b>
+    /// "不会永远悬着"那条性质，不是疏漏——见 CHANGELOG 的 1.6.0。
+    /// </para>
+    /// <para>
+    /// <b>唯一不拦的情形是"答不上"</b>：队列里的 id 在当前内容里不存在（换包读档 / 内容改版
+    /// 删掉了它），或它已经出现在已答表里。那两种如果也算数，这一局就永久卡死了；
+    /// 所以它们不拦，而且引擎会发一条警告把这件事说出来。判据见
+    /// <see cref="EndingSystem.Check"/>。
     /// </para>
     /// </summary>
     public EndingDefinition? CheckEnding() => EndingSystem.Check(this);

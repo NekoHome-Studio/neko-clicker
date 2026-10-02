@@ -9,7 +9,7 @@
 #     · 增量推送的派生字段没处理干净 → 每帧 28KB，而"变化字段数 ≤ 4"的用例照样绿。
 #   所以这一层的判据只能是**真的通**：起宿主、发请求、读 SSE 流、看着它回话。
 #
-# 与单元测试的分工：`tools/build.ps1 -Strict` 守引擎（460 个用例 + 公开 API 快照），
+# 与单元测试的分工：`tools/build.ps1 -Strict` 守引擎（469 个用例 + 公开 API 快照），
 # 本脚本守"宿主 + 浏览器协议"那一段。CI 里两条都跑（.github/workflows/ci.yml）。
 #
 # 四段刻意为之的行为（都不是默认就该有的，是踩出来的）：
@@ -324,10 +324,16 @@ try {
     $permanentRender = [bool]($appScript.Body -and $appScript.Body.Contains('renderPermanent'))
     Check 'app.js 里有永久线渲染函数' ($appScript.Success -and $permanentRender) "含 <renderPermanent>: $permanentRender"
 
-    # 结局的落定条件（1.5.0）：宿主必须在**真的把表态画出来**时报告一声。
-    # 前端那一半的判据只能是"送到浏览器的文本里有这个命令"——本脚本不跑 JS（见上面的说明）。
+    # 「表态已经展示过」这条报告（1.5.0 那会儿是结局的落定条件；1.6.0 起只是诊断信号，
+    # 落定看的是作答）。前端那一半的判据只能是"送到浏览器的文本里有这个命令"
+    # ——本脚本不跑 JS（见上面的说明）。
     $choicesShownSend = [bool]($appScript.Body -and $appScript.Body.Contains('"choicesShown"'))
-    Check 'app.js 会报告「表态已经展示过」' ($appScript.Success -and $choicesShownSend) "含 <`"choicesShown`">: $choicesShownSend"
+    Check 'app.js 会报告「表态已经展示过」（诊断信号）' ($appScript.Success -and $choicesShownSend) "含 <`"choicesShown`">: $choicesShownSend"
+
+    # 前端必须能把表态答掉：1.6.0 起"还有答得上的待答表态"就是结局不落定的唯一原因，
+    # 所以"浏览器能不能发出 answer"是承重的（只测文本，不跑 JS）。
+    $answerSend = [bool]($appScript.Body -and $appScript.Body.Contains('"answer"'))
+    Check 'app.js 会发出 answer（作答才是解除等待的动作）' ($appScript.Success -and $answerSend) "含 <`"answer`">: $answerSend"
 
     # ------------------------------------------------------------ 元信息
     Write-Section '元信息'
@@ -468,10 +474,10 @@ try {
         Check '未知命令不崩（ok=false + 一句人话）' ($bad.Success -and $badResult.ok -eq $false) `
             "HTTP $($bad.Status)：$([string]$badResult.message)"
 
-        # "待答表态已经被展示过"这条命令（1.5.0 起结局能否落定的唯一条件）。
-        # 它必须**幂等**：前端每渲染一帧就可能发一次，第二发不是错误、也不该改坏状态。
-        # 这里刻意不要求"有表态挂着"——本脚本跑的是真实游玩的前几十秒，多半还没触发表态，
-        # 而那条命令在没有任何待答表态时也必须安全返回（这正是幂等的第一层含义）。
+        # 「表态已经被展示过」这条报告：1.5.0 那会儿它是结局的落定条件，1.6.0 起只是**诊断信号**
+        # （落定看的是作答）。它必须**幂等**：前端每渲染一帧就可能发一次，第二发不是错误、
+        # 也不该改坏状态。这里刻意不要求"有表态挂着"——本脚本跑的是真实游玩的前几十秒，
+        # 多半还没触发表态，而那条命令在没有任何待答表态时也必须安全返回（这正是幂等的第一层含义）。
         $shown1 = Invoke-PostJson "/api/command?package=$Package" @{ type = 'choicesShown' }
         $shown1Result = Convert-FromJsonSafe $shown1.Body
         $shown2 = Invoke-PostJson "/api/command?package=$Package" @{ type = 'choicesShown' }
@@ -479,6 +485,16 @@ try {
         Check 'POST choicesShown 可用且幂等' `
             ($shown1.Success -and $shown1Result.ok -eq $true -and $shown2.Success -and $shown2Result.ok -eq $true) `
             "第一次：$([string]$shown1Result.message)；第二次：$([string]$shown2Result.message)"
+
+        # 作答这条路必须真的通到引擎：**1.6.0 起它是唯一能解除结局等待的动作**，
+        # 而"回答一个不存在的表态"必须明确失败（ok=false）而不是静默当成功——
+        # 静默成功会让玩家以为处理完了，而结局照旧一直等着。
+        $badAnswer = Invoke-PostJson "/api/command?package=$Package" `
+            @{ type = 'answer'; id = '__no_such_choice__'; optionId = '__no_such_option__' }
+        $badAnswerResult = Convert-FromJsonSafe $badAnswer.Body
+        Check 'POST answer 对不存在的表态明确失败（ok=false + 一句人话）' `
+            ($badAnswer.Success -and $badAnswerResult.ok -eq $false -and ([string]$badAnswerResult.message).Length -gt 0) `
+            "HTTP $($badAnswer.Status)：ok=$($badAnswerResult.ok)；$([string]$badAnswerResult.message)"
     }
 
     # ------------------------------------------------------------ 负数

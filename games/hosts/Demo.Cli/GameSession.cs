@@ -61,8 +61,9 @@ internal sealed class GameSession : IDisposable
     /// <param name="savePath">存档路径；<c>null</c> 表示不落盘。</param>
     /// <param name="seed">随机种子。</param>
     /// <param name="endingGraceSeconds">终局宽限期（模拟秒）；<c>null</c> 表示用框架默认值。
-    /// 该参数 <b>1.5.0 起已退役</b>（落定条件改成了"玩家被展示过待答表态"），
-    /// 传非 <c>null</c> 只会让引擎发一条警告；保留形参是为了不打断已有的调用与脚本。</param>
+    /// 该参数 <b>1.5.0 起已退役</b>（落定条件改成了条件：现在是"还有答得上的待答表态就不落定"，
+    /// 见 <see cref="GameEngine.CheckEnding"/>），传非 <c>null</c> 只会让引擎发一条警告；
+    /// 保留形参是为了不打断已有的调用与脚本。</param>
     public GameSession(ContentPackage package, string? savePath, ulong seed, double? endingGraceSeconds = null)
     {
         Package = package;
@@ -339,6 +340,11 @@ internal sealed class GameSession : IDisposable
     /// 会话只负责转发，"这一帧到底画没画出表态"由渲染器回答
     /// （<see cref="TerminalUi.ShowsChoicesPanel"/>）——宿主这边再写一份近似，焦点规则、
     /// 过小窗口、帮助浮层任何一处变了自己这份就会悄悄过时。
+    /// </para>
+    /// <para>
+    /// <b>1.6.0 起它是诊断信号，不再是落定条件</b>：结局等的是玩家把表态<b>答完</b>。
+    /// 这份记录回答的是"这条表态到底露过面没有"——那正是"结局为什么一直没来"的两种
+    /// 完全不同的原因之一（另一种是"看到了却一直没答"）。
     /// </para>
     /// <para>
     /// <b>状态栏那行「🗣 N 项待答」不算</b>：它只说有几项在等，选择本身（谁在问、问什么、

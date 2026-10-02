@@ -248,12 +248,15 @@ internal static class InteractiveLoop
             int renderHeight = Math.Max(1, height - _safeMargin);
             List<string> lines = TerminalUi.Render(session, renderWidth, renderHeight);
 
-            // 这一帧里有没有把待答表态画给玩家看？有的话必须告诉引擎一声：
-            // 1.5.0 起"玩家被展示过那批表态"是结局能否落定的唯一条件
-            // （见 GameEngine.MarkPendingChoicesShown，它换掉了以前那段 30 模拟秒的宽限）。
+            // 这一帧里有没有把待答表态画给玩家看？有的话就告诉引擎一声。
+            // **1.6.0 起这是诊断信号，不是落定条件**：结局等的是玩家把表态答完
+            // （见 EndingSystem.Check / GameEngine.CheckEnding）；1.5.0 到 1.6.0 之间
+            // "被展示过"才是唯一条件，那条规则已经换掉了。记录留着是因为它回答
+            // "这条表态到底露过面没有"——新规则下"结局一直不落定"是真实可能的事，
+            // 而"从没看到"与"看到了却一直没答"是两种完全不同的原因。
             // 报告一律放在**写终端成功之后**（下面三处调用）：这一帧没写到屏幕上
             // （窗口已经没了）就不算"展示过"；而"画面没变、一个字节都没写"算——
-            // 屏幕上本来就是同一幅画，玩家仍然看着它。
+            // 屏幕上本来就是同一幅画，玩家仍然看着它。记录要可信，这两条就不能反。
             bool showsChoices = TerminalUi.ShowsChoicesPanel(session, renderWidth, renderHeight);
 
             // 终端不支持 VT 转义：没有定位 / 清屏 / 备用屏幕能力，全屏界面无从谈起。

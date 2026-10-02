@@ -73,12 +73,13 @@ dotnet build NekoClicker.sln     # 或者用仓库根的 .\tools\build.ps1
 
 ## 版本与兼容性
 
-**当前 `1.5.0`。从 `1.0.0` 起，`NekoClicker.Core` 的公开 API 只增不改**，
+**当前 `1.6.0`。从 `1.0.0` 起，`NekoClicker.Core` 的公开 API 只增不改**，
 由 `core/PublicApi.txt`（1931 行快照，**嵌进 dll**）加四条守卫强制执行。
-规矩见 [docs/VERSIONING.md](docs/VERSIONING.md)。1.5.0 只新增了一个公开成员
-（`GameEngine.MarkPendingChoicesShown()`），但它同时把结局的落定条件从"定时"换成了
-"玩家被展示过待答表态"——那处语义改动与它刻意移除的性质都记在
-[CHANGELOG](../CHANGELOG.md) 里。
+规矩见 [docs/VERSIONING.md](docs/VERSIONING.md)。1.6.0 **一个公开成员都没有增删**，
+却把结局的落定条件又一次收紧了：从 1.5.0 的"玩家**被展示过**那批待答表态"
+改成"玩家把它们**答完**"（`MarkPendingChoicesShown()` 因此退化成**诊断信号**，
+不再参与判定）——那处语义改动、它刻意移除的那条性质与"答不上的表态不拦结局"这条
+补丁规则都记在 [CHANGELOG](../CHANGELOG.md) 里。
 
 改了公开 API 之后要跑 `tools/public-api.ps1` 重新生成快照——
 **那是流程的最后一步，不是第一步**（先重生成会让守卫变成橡皮图章）。
