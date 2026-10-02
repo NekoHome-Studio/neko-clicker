@@ -631,6 +631,44 @@ private static LoreEntry Make(string id, int order, UnlockCondition reveal, Lore
 | 多条线要并行起步 | 九命首轮只释放 1 条，因为三条线的开场条件挤在同一处；把 3 个开场条目分别挂到点击 1 / 25 / 100 次上就解决了 |
 | 消耗方式 | `UnlockCondition.LoreAtLeast(n)` 做门控，`Scaling(ScalingSource.LoreCount, ...)` 做成长 |
 
+### 12.0.1 建筑的 name / description 也外置了（2026-10-02 起）
+
+§12.0 讲的是**剧情散文**（`storylines` / `lore`）。同一套机制现在也覆盖**建筑**：
+`BuildingDefinition.Name` 与 `Description` 搬进了同一个 `text.json` 的根节 `buildings`。
+
+- **形状**：`"<建筑 id>": { "name": …, "description": … }`——与 `storylines` / `lore` 同一份 id 空间、
+  同一份文件。
+- **代码侧**：`Name = Prose.Text("buildings", "<id>", "name")` /
+  `Description = Prose.Text("buildings", "<id>", "description")`。
+  **id 用建筑自己的 id**（也就是 `BuildingDefinition.Id`、存档键），不是序号。
+- **仍然留在代码里的**：`Icon` 与全部逻辑/数值字段（`BasePrice` / `BaseCps` / `PriceGrowth` /
+  `Unlock` / `Category` / `Tags` / `HiddenUntilUnlocked` / `SellRefundRate`）——它们是符号与逻辑，不是文案。
+
+#### ⚠️ 一个包只能有**一个** `ContentText` 实例
+
+这条是**负载性**的，不是风格问题：`EnsureNoOrphans` 会遍历**整个文件的所有类别**，所以两个实例会
+**互相把对方的条目报成孤儿**（`buildings` 说 `lore` 是孤儿，`lore` 说 `buildings` 是孤儿）。
+
+- 有 `Lore` 的包：`Lore.Prose` 由 `private` 改为 `internal`，再 `Buildings.Prose => Lore.Prose`。
+- 没有 `Lore` 的包（`Neko`）：自己持有一个 `Lazy`，并在 `NekoContent.Build()` 末尾调用
+  `Buildings.VerifyAllTextUsed()`——否则没有 `Lore` 那条路径替它做孤儿检查。
+
+#### 守卫
+
+`ContentTextFileTests` 里与建筑有关的两条：
+
+- `ExpectedBuildings`：**每包硬编码的建筑数**。这是唯一能发现"代码与 JSON **同时**删掉一座"的守卫
+  （纯双向比对发现不了：两边都少了一座，看起来仍然一致）。
+- `BuildingCountTable_CoversExactlyTheGuardTable`：新包**不可能忘记登记**期望数。
+
+#### ⚠️ 一处**已知的不一致**（待定，别照着抄）
+
+`storylines` 连 `icon` 一起外置了（见上面的 §12.0），**建筑没有**——`Icon` 还在代码里。
+两者不一致：要么把建筑的 `Icon` 也搬出去，要么把 `storylines` 的搬回来。
+**在决定之前，新写建筑就照现状**（`Icon` 留在代码里）。这条记在 `OPEN_WORK.md` 的未决项里。
+
+---
+
 ### 12.1 条件编排：三条硬规则
 
 叙事条目写得好不好是文笔问题，**能不能被按顺序读到**是条件编排问题。这两件事互不相干，

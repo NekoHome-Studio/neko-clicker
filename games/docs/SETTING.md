@@ -44,9 +44,15 @@
 （待填。这是**"建筑的设定集"**所在节——每座建筑的叙事定位、它在世界里的意义。）
 
 - 落地位置：`engine/content/<Pack>/Buildings.cs`（`BuildingDefinition[]`，顺序即 UI 展示顺序）。
-- **待办**：这一节的文本目前**只在 C# 里**。仓库已完成「剧情散文外置」（10 个包的
-  `engine/content/<Pack>/text.json`），**建筑描述尚未外置**——见
-  [../engine/docs/TEXT_AS_DATA_PLAN.md](../engine/docs/TEXT_AS_DATA_PLAN.md) 的同一套做法。
+- **文本已外置**：每座建筑的 `name` 与 `description` 现在住在
+  `engine/content/<Pack>/text.json` 的根节 `buildings` 里
+  （`"<建筑 id>": { "name": …, "description": … }`），C# 侧用
+  `Prose.Text("buildings", "<id>", "name")` 取值。**11 个包、104 座**全部迁完，
+  迁移前后运行时 dump 逐字节相同（13,567 字节，SHA-256 `BB40F11C…`）。
+  形状、方法与守卫见 `../engine/docs/TEXT_AS_DATA_PLAN.md` §9。
+- **仍留在代码里的**：`Icon` 以及全部逻辑/数值字段（`BasePrice` / `BaseCps` / `PriceGrowth` /
+  `Unlock` / `Category` / `Tags`）。⚠️ **`Icon` 是一处待定的不一致**：剧情那边连 icon 一起外置了，
+  建筑这边没有——见 `../engine/docs/OPEN_WORK.md` 的未决项。
 
 ## 六、阵营
 
