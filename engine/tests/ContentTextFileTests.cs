@@ -1323,6 +1323,72 @@ public static class ContentTextFileTests
         }
     }
 
+    /// <summary>
+    /// 自由文本表（<c>$tables</c>）的真实树横扫：<b>十一个包各用自己的那一份 <c>text.json</c></b>
+    /// 走一遍运行期的路（<c>ContentText.Load</c> → 按代码的 id 表读全十一类 → 孤儿检查），
+    /// 一条都不许抛。<para>
+    /// 守的是"新规则把现有文件吃掉了"：清单/重复键/非对象条目这三条新检查只要误伤一处，这里立刻红。
+    /// 它同时是"声明为 <c>free</c> 的表<b>没有</b>被任何代码读"的横扫证据——真被读了的话，
+    /// 包的 <c>Build()</c> 会当场抛（"声明与代码必须一致"那条）。
+    /// </para>
+    /// </summary>
+    [Test]
+    public static void EveryPack_PassesTheFreeTableRulesWithItsRealFile()
+    {
+        foreach ((string pack, Func<GameContent> build) in Externalized)
+        {
+            ContentText text = ContentText.Load(pack);
+            Check.Equal(
+                ShippedPath(pack),
+                text.Path,
+                $"{pack}: 读到的不是输出目录里那一份 text.json。");
+
+            GameContent content = build();
+            ReadAll(text, content);
+            text.EnsureNoOrphans();
+        }
+    }
+
+    /// <summary>
+    /// 清单与分区必须成对，而且<b>至少真有一张自由文本表</b>——否则上面那条横扫是假绿
+    /// （十一个包一张自由表都没有时，它一样全绿）。<para>
+    /// 这里刻意<b>不</b>写"每包应当有几张自由表"的写死条数表：自由表没有"代码那一侧"，
+    /// 所以"代码与文件同时少一条"这个盲区（<see cref="ExpectedBuildings"/> 那张表存在的理由）
+    /// 在结构上不成立。钉一张写死的表等于给"删掉一张表"这件事人为加一道必须改测试的门槛，
+    /// 而删表本来就该是自由的。这条守的只是"机制没有从真实树里悄悄消失"。
+    /// </para>
+    /// </summary>
+    [Test]
+    public static void EveryDeclaredTable_ExistsInTheFile_AndAtLeastOneFreeTableExists()
+    {
+        int freeTables = 0;
+
+        foreach ((string pack, Func<GameContent> _) in Externalized)
+        {
+            JsonObject file = ShippedJson(pack);
+
+            if (file["$tables"] is not JsonObject manifest) continue;
+
+            foreach ((string name, JsonNode? declaration) in manifest)
+            {
+                Check.True(
+                    file[name] is JsonObject,
+                    $"{pack}: $tables 声明了「{name}」，文件里却没有这个分区。");
+
+                Check.True(
+                    ((JsonObject)file[name]!).Count > 0,
+                    $"{pack}: $tables 声明了「{name}」，它却是空的。");
+
+                if (declaration is JsonObject row && (string?)row["kind"] == "free") freeTables++;
+            }
+        }
+
+        Check.AtLeast(
+            freeTables,
+            1,
+            "一个包都没有声明自由文本表——上面那条横扫就是假绿。示例见 Lab/text.json 的 rumours。");
+    }
+
     // ---------------------------------------------------------------- 辅助
     private static string ShippedPath(string pack) =>        Path.Combine(AppContext.BaseDirectory, "content", pack, "text.json");
 

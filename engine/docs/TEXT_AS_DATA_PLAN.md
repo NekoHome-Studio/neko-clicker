@@ -760,12 +760,27 @@ Description = Prose.Text("buildings", "incubator", "description"),
 另一轮（`1.7.0`，`GameSnapshot.ModeName`）持有未提交改动，动它们会把两轮工作搅在一起。
 这一条留在 §13.9 由人定。
 
-### 13.6 守卫（实现时落地）
+### 13.6 守卫（落地实况）
+
+`ContentTextTests`（**合成文件**，守加载器与"声明诚实性"的每条分支）**+9 条**：
 
 | 用例 | 守什么 |
 |---|---|
-| `ContentTextTests` 新增若干条（合成文件，守加载器每条分支） | 自由表**豁免孤儿检查**；**声明 free 却被代码读**要抛；**声明 consumed 却没人读**照旧抛孤儿；未知 `kind`、空表、非字符串 / 空 / 缺 `text`、多余字段、重复键、悬空声明、别的 `$XXX` 保留键、未声明的裸文本分区——**各一条**，都断言消息里出现表名与键 |
-| `ContentTextFileTests` 新增真实树横扫 | 十一个包**用真文件**各跑一遍 `Load` + 读全十一类 + `EnsureNoOrphans`（证明新规则不吃掉现有文件）；并断言**至少有一个包**声明了自由表且每个声明的表都在文件里（否则这条横扫是假绿） |
+| `DeclaredFreeTable_IsExemptFromTheOrphanCheck` | **正例**：声明 `free` + 没人读 ⇒ 孤儿检查放行 |
+| `FreeTableThatCodeReads_Throws` | **声明 free 却被代码读** ⇒ 抛，点名表与键 |
+| `DeclaredConsumedTable_NobodyReadsIt_StillThrows` | **声明 consumed 却没人读** ⇒ 声明换不来豁免，照旧孤儿 |
+| `FlippingToConsumed_NeedsNoNewApi_AndRestoresStrictness` | "自由 → 消费"只改数据：用 1.2.0 的 `Text()` 就能读，读不到的那条立刻变孤儿 |
+| `BrokenManifest_ThrowsForEachShape` | 清单 7 种坏法（不是对象 / 声明不是对象 / 缺 `kind` / `kind` 不认识 / 多字段 / 悬空声明 / 别的 `$XXX`） |
+| `BrokenFreeTableEntry_ThrowsForEachShape` | 条目 5 种坏法（空表 / 裸字符串 / 缺 `text` / `text` 非字符串 / 全空白） |
+| `UndeclaredTableOfPlainText_Throws` | 未声明分区里的**非对象条目**（老实现会静默跳过的那个洞） |
+| `DuplicateKey_IsRejectedAndNamed` | 任意层级的重复键，点名位置与键 |
+| `WithoutAManifest_EverythingBehavesAsBefore` | **反面对照**：没有清单时行为与以前一致 |
+
+`ContentTextFileTests`（**真实树**）**31 → 33 条**，新增两条：
+`EveryPack_PassesTheFreeTableRulesWithItsRealFile`（十一个包各用自己的那一份 `text.json`
+跑一遍 `Load` + 按代码的 id 表读全十一类 + `EnsureNoOrphans`）、
+`EveryDeclaredTable_ExistsInTheFile_AndAtLeastOneFreeTableExists`（清单与分区必须成对，
+且**至少真有一张自由表**——否则前一条横扫是假绿）。
 
 **故意不给自由表写条数表**，理由见 §13.9 第 3 条。
 
@@ -804,4 +819,40 @@ Description = Prose.Text("buildings", "incubator", "description"),
 4. **一个包能声明多少张表、名字要不要前缀**：v1 不限，只有 `$` 前缀属保留键这一条约束。
 5. **要不要给 `text.json` 加 schema 版本号**（`WEB_EXTENSION_PLAN` 的 D3）：同一个坑的另一面，
    本设计不顺手做。
+
+### 13.10 执行记录（2026-10-03，实际是怎么做的）
+
+| 项 | 结果 |
+|---|---|
+| 落地面 | `engine/core/Content/ContentText.cs` **一个文件**：`Load` 里三条新校验（重复键 / 清单 / 分区形状）+ `EnsureNoOrphans` 里两条（自由表豁免、声明的诚实性）。**公开签名一行未改** |
+| 示例 | `engine/content/Lab/text.json`：根节点新增 `$tables`（1 张表）与 `rumours`（3 条，作者自己写的短句）。试点仍选**实验室**，与前五轮一致 |
+| 用例 | **493 → 504**（`ContentTextTests` +9、`ContentTextFileTests` 31 → 33；`tools/build.ps1 -Strict` 两个 sln **0 警告**、退出码 0，2026-10-03 实测） |
+| 公开 API | `engine/core/PublicApi.txt` **逐字节未变**（`PublicApiTests` 四条照旧全绿）；`Directory.Build.props` 的版本号**没动**（理由见 §13.5） |
+| 行尾 | `Lab/text.json` 改动前后都是纯 CRLF（CRLF 数 == LF 数 == **1070**）；改动由 `edit` 工具完成（该工具按文件既有的行尾写新行——实测过，不是推断） |
+| 文档 | 本节 + `CONTENT_AUTHORING.md` §12.0.5（给作者的写法） |
+
+**判别力：三处故意改坏，都在真文件 / 真守卫上做**（先备份 + SHA-256 记账，逐处还原并核对哈希）：
+
+| # | 故意改坏 | 红在哪 | 原文（截取） |
+|---|---|---|---|
+| 1 | `Lab/text.json` 的 `$tables` 把 `rumours` 从 `free` 改成 `consumed`（= **声明 consumed 却没人读**） | 52 条里 **22 条**红 | `内容包「Lab」的剧情文本里有 3 条没人取用（孤儿条目）：rumours/rumour_41st、rumours/rumour_centrifuge、rumours/rumour_quiet_wing。它们要么是 id 与代码对不上，要么是代码里已经删掉了这段剧情。（自由文本表不走这条检查，但它必须在 $tables 里声明为「free」。）` |
+| 2 | `$tables` 里加一条 `"buffs": { "kind": "free" }`（把**代码消费的**分区声明成自由表） | **21 条**红 | `…\content\Lab\text.json：自由文本表「buffs」的条目「containment_breach」里多了一个字段「name」——这一版自由表的条目恰好一个字段「text」。` |
+| 3 | 在 `Lab/Lore.cs` 的 `VerifyAllTextUsed()` 里读一条自由表（= **声明 free 却被代码读**），重编 Lab 后跑 | **21 条**红 | `…\content\Lab\text.json：表「rumours」在 $tables 里声明为「free」（没有人读），但代码取用了「rumours/rumour_41st」——声明与代码必须一致：要么把它改成「consumed」并让包真的把整张表读完，要么别读它。` |
+
+三处都还原：`Lab/text.json` 与 `Lab/Lore.cs` 的 SHA-256 与改坏前逐一相同
+（`text.json` = `DF37AC98…`，`Lore.cs` 的 `git diff` 为空），还原后 `-Strict` **504/504 全绿**。
+
+> 第 2 处值得单独记一笔：它说明**两条检查的先后顺序是有意义的**——把一张
+> `{name, description, icon}` 形状的分区声明成自由表时，`Load` 的**形状**检查先响
+> （消息点名表、条目与那个多余的字段），轮不到 `EnsureNoOrphans` 的诚实性检查。
+> 诚实性检查真正管的是第 3 处那种情形：表**本来就是** `{text}` 形状（本来是自由表），
+> 后来有人开始读它却忘了改声明。这两条合起来覆盖"声明与实际不符"的两种方向。
+
+**没做 / 没能做**：
+
+- **没有给出"读自由表"的 API 或界面**（§13.4 的刻意留白）。
+- **没有随本轮更新"当前用例数"**（`README.md` / `STATUS.md` / `VERSIONING.md` 等处仍是 `493`）：
+  那几处此刻正被 `1.7.0` 那一轮的未提交改动持有（`git status` 里是 `M`），
+  动它们会把两轮工作搅在一起。**这是一处已知的文档漂移**，应由 `1.7.0` 那轮或之后一次收尾统一改。
+- **没有登记进 `OPEN_WORK.md`**：同一个理由（该文件也在那一轮手里）。
 

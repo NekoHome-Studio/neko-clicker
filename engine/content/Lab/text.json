@@ -1,4 +1,7 @@
 {
+  "$tables": {
+    "rumours": { "kind": "free" }
+  },
   "storylines": {
     "sample": { "name": "样本", "theme": "主线：她的编号、她的名字、她记得的东西。", "icon": "🧪" },
     "researcher": { "name": "研究员", "theme": "你签过的每一个字，以及你绕开的那些。", "icon": "🥼" },
@@ -1058,5 +1061,10 @@
       "description": "第三批的日志和第二十批的日志，中间缺的那一页有了轮廓。归档灵感 {duration}。",
       "icon": "💡"
     }
+  },
+  "rumours": {
+    "rumour_41st": { "text": "值班记录本上第 41 页被撕掉了，撕口是新的。" },
+    "rumour_centrifuge": { "text": "离心机停下来之后，走廊里安静了整整三分钟，没有人说话。" },
+    "rumour_quiet_wing": { "text": "东翼的灯从来不用修——没人记得它坏过，也没人记得它亮过。" }
   }
 }

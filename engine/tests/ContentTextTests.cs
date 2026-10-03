@@ -129,6 +129,216 @@ public static class ContentTextTests
         text.EnsureNoOrphans();
     }
 
+    // ------------------------------------------------------------ 自由文本表（$tables 清单）
+    //
+    // 这一组守的是本机制唯一的那个张力：EnsureNoOrphans 会把"文件里有、代码没取过"的条目
+    // 报成孤儿，而自由文本表的定义就是"代码还没读它"。于是"没人读"必须被**声明**出来
+    // （$tables 里 "kind": "free"），而且声明反过来也查：声明说没人读、代码却读了，
+    // 一样要当场抛。两边的用例都在下面。
+
+    /// <summary>
+    /// 正例：清单里声明 <c>free</c>、代码一眼都不看它，孤儿检查必须放它过去。
+    /// </summary>
+    [Test]
+    public static void DeclaredFreeTable_IsExemptFromTheOrphanCheck()
+    {
+        using var fixture = new Fixture("""
+            {
+              "$tables": { "rumours": { "kind": "free" } },
+              "lore": { "a": { "title": "标题", "body": "正文" } },
+              "rumours": {
+                "r1": { "text": "第一条传闻。" },
+                "r2": { "text": "第二条传闻。" }
+              }
+            }
+            """);
+
+        ContentText text = fixture.Load();
+        Check.Equal("正文", text.Text("lore", "a", "body"));
+
+        // 没有任何一行代码读过 rumours —— 它不该出现在孤儿名单里。
+        text.EnsureNoOrphans();
+    }
+
+    /// <summary>
+    /// <b>声明为 free 却被代码读了</b>：声明过期，必须当场抛，并点名表与键。<para>
+    /// 与上面那些"孤儿"用例方向相反：那边是文件多、代码少，这边是代码多、声明说"没人读"。
+    /// </para>
+    /// </summary>
+    [Test]
+    public static void FreeTableThatCodeReads_Throws()
+    {
+        using var fixture = new Fixture("""
+            {
+              "$tables": { "rumours": { "kind": "free" } },
+              "rumours": { "r1": { "text": "一条传闻。" } }
+            }
+            """);
+
+        ContentText text = fixture.Load();
+        Check.Equal("一条传闻。", text.Text("rumours", "r1", "text"));
+
+        InvalidOperationException ex =
+            Check.Throws<InvalidOperationException>(() => text.EnsureNoOrphans());
+        Check.Contains(ex.Message, "rumours");
+        Check.Contains(ex.Message, "r1");
+        Check.Contains(ex.Message, "free");
+    }
+
+    /// <summary>
+    /// <b>声明为 consumed 却没人读</b>：声明换不来豁免。与不声明完全一样，照样是孤儿——
+    /// "我声明过了"不是绕过孤儿检查的办法。
+    /// </summary>
+    [Test]
+    public static void DeclaredConsumedTable_NobodyReadsIt_StillThrows()
+    {
+        using var fixture = new Fixture("""
+            {
+              "$tables": { "rumours": { "kind": "consumed" } },
+              "rumours": { "r1": { "text": "一条传闻。" } }
+            }
+            """);
+
+        ContentText text = fixture.Load();
+
+        InvalidOperationException ex =
+            Check.Throws<InvalidOperationException>(() => text.EnsureNoOrphans());
+        Check.Contains(ex.Message, "rumours/r1");
+    }
+
+    /// <summary>
+    /// 将来"自由 → 消费"的那一步：把声明改成 <c>consumed</c>，<b>用 1.2.0 就有的 API</b>
+    /// 就能读，而且改完<b>立刻恢复严格</b>（没读到的条目当场变孤儿）。这条用例就是那个承诺的证据。
+    /// </summary>
+    [Test]
+    public static void FlippingToConsumed_NeedsNoNewApi_AndRestoresStrictness()
+    {
+        using var fixture = new Fixture("""
+            {
+              "$tables": { "rumours": { "kind": "consumed" } },
+              "rumours": {
+                "r1": { "text": "第一条传闻。" },
+                "r2": { "text": "第二条传闻。" }
+              }
+            }
+            """);
+
+        ContentText text = fixture.Load();
+        Check.Equal("第一条传闻。", text.Text("rumours", "r1", "text"));
+
+        InvalidOperationException ex =
+            Check.Throws<InvalidOperationException>(() => text.EnsureNoOrphans());
+        Check.Contains(ex.Message, "rumours/r2");
+        Check.False(
+            ex.Message.Contains("rumours/r1", StringComparison.Ordinal),
+            "读过的那一条不该进孤儿名单。");
+    }
+
+    /// <summary>清单本身写错的五种：不是对象 / 声明不是对象 / 缺 kind / kind 不认识 / 多字段 / 声明了不存在的表 / 别的保留键。</summary>
+    [Test]
+    public static void BrokenManifest_ThrowsForEachShape()
+    {
+        CheckRejectedByLoad("""{ "$tables": [], "lore": {} }""", "$tables");
+        CheckRejectedByLoad("""{ "$tables": { "rumours": "free" }, "rumours": {} }""", "rumours");
+        CheckRejectedByLoad("""{ "$tables": { "rumours": {} }, "rumours": {} }""", "kind");
+        CheckRejectedByLoad(
+            """{ "$tables": { "rumours": { "kind": "display" } }, "rumours": {} }""",
+            "display");
+        CheckRejectedByLoad(
+            """{ "$tables": { "rumours": { "kind": "free", "title": "传闻" } }, "rumours": {} }""",
+            "title");
+        CheckRejectedByLoad("""{ "$tables": { "rumours": { "kind": "free" } }, "lore": {} }""", "rumours");
+        CheckRejectedByLoad("""{ "$panels": {}, "lore": {} }""", "$panels");
+    }
+
+    /// <summary>
+    /// 自由表条目写错的五种：空表 / 裸字符串 / 缺 <c>text</c> / <c>text</c> 不是字符串 /
+    /// <c>text</c> 全空白。每一条都必须点名是哪个表的哪个键。
+    /// </summary>
+    [Test]
+    public static void BrokenFreeTableEntry_ThrowsForEachShape()
+    {
+        const string head = """{ "$tables": { "rumours": { "kind": "free" } }""";
+
+        CheckRejectedByLoad(head + """, "rumours": {} }""", "rumours");
+        CheckRejectedByLoad(head + """, "rumours": { "r1": "一条传闻。" } }""", "r1");
+        CheckRejectedByLoad(head + """, "rumours": { "r1": { "title": "传闻" } } }""", "title");
+        CheckRejectedByLoad(head + """, "rumours": { "r1": { "text": 42 } } }""", "r1");
+        CheckRejectedByLoad(head + """, "rumours": { "r1": { "text": "   " } } }""", "r1");
+    }
+
+    /// <summary>
+    /// 没声明过的分区里出现裸字符串条目 → 抛。这一条堵的是老实现的洞：
+    /// 非对象条目此前被孤儿检查<b>静默跳过</b>，于是"把一张自由表写成裸文本"能绕过全部守卫。
+    /// </summary>
+    [Test]
+    public static void UndeclaredTableOfPlainText_Throws()
+    {
+        CheckRejectedByLoad("""{ "rumours": { "r1": "一条传闻。" } }""", "rumours");
+        CheckRejectedByLoad("""{ "rumours": { "r1": "一条传闻。" } }""", "r1");
+        CheckRejectedByLoad("""{ "rumours": { "r1": "一条传闻。" } }""", "$tables");
+    }
+
+    /// <summary>
+    /// 重复键：任意层级都要抛，且点名是哪一层的哪个键。<para>
+    /// 本类的注释第三条早就承诺"id 重复（静默覆盖）"要变成抛异常，但实测
+    /// <c>JsonNode.Parse</c> / <c>JsonDocument.Parse</c> 都不把重复键当错，所以此前没有兑现。
+    /// </para>
+    /// </summary>
+    [Test]
+    public static void DuplicateKey_IsRejectedAndNamed()
+    {
+        using var freeDuplicate = new Fixture("""
+            {
+              "$tables": { "rumours": { "kind": "free" } },
+              "rumours": { "r1": { "text": "第一条。" }, "r1": { "text": "第二条。" } }
+            }
+            """);
+
+        InvalidOperationException inFree =
+            Check.Throws<InvalidOperationException>(() => freeDuplicate.Load());
+        Check.Contains(inFree.Message, "rumours");
+        Check.Contains(inFree.Message, "r1");
+
+        using var sectionDuplicate =
+            new Fixture("""{ "lore": { "a": { "title": "t" }, "a": { "title": "t2" } } }""");
+
+        InvalidOperationException inSection =
+            Check.Throws<InvalidOperationException>(() => sectionDuplicate.Load());
+        Check.Contains(inSection.Message, "lore");
+        Check.Contains(inSection.Message, "a");
+    }
+
+    /// <summary>
+    /// 反面对照：没有 <c>$tables</c> 的文件行为与以前一致——十一类分区不需要登记，
+    /// 孤儿检查照旧（豁免只认清单，不认"看起来像自由表"）。
+    /// </summary>
+    [Test]
+    public static void WithoutAManifest_EverythingBehavesAsBefore()
+    {
+        using var fixture = new Fixture("""
+            {
+              "lore": { "a": { "title": "标题", "body": "正文" } },
+              "endings": { "e": { "name": "名", "text": "正文" } }
+            }
+            """);
+
+        ContentText text = fixture.Load();
+        Check.Equal("正文", text.Text("lore", "a", "body"));
+
+        InvalidOperationException ex =
+            Check.Throws<InvalidOperationException>(() => text.EnsureNoOrphans());
+        Check.Contains(ex.Message, "endings/e");
+    }
+
+    /// <summary>喂一份坏文件，要求 <see cref="ContentText.Load"/> 抛，且消息里出现 <paramref name="named"/>。</summary>
+    private static void CheckRejectedByLoad(string json, string named)
+    {
+        using var fixture = new Fixture(json);
+        InvalidOperationException ex = Check.Throws<InvalidOperationException>(() => fixture.Load());
+        Check.Contains(ex.Message, named);
+    }
+
     /// <summary>不是合法 JSON → 抛，且带上路径。</summary>
     [Test]
     public static void MalformedJson_Throws()
