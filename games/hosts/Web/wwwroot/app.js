@@ -40,11 +40,25 @@ let offlineDismissed = false;
  * 观感就是一跳一跳——而挂机游戏的核心体验恰恰是"看着数字在涨"。
  * 所以这里改成**每帧按 cps 累加**，服务端来帧时只做一次对账。
  *
- * 不做瞬时吸附的理由：吸附会在"服务端比本地略慢"时让数字倒退一格，那比不精确更难看。
- * 只在本地明显领先时收敛一下（说明有买入之类的状态变化），于是显示值永远不会倒退，
- * 而且最迟 250ms 内会被服务端的真实速率纠正。
+ * 三条不变量（改这一段之前先读一遍）：
+ *   1. **只增不减**。唯一的例外是服务端自己倒退了（买入 / 转生 / 换存档）——
+ *      那时一次性落到新的真值，是一次干净的下降，不是"超调再拉回"的来回。
+ *   2. 领先服务端不超过 `tolerance`（半秒的产量 = 两个推送周期，见 animate 里的注释）。
+ *   3. 撞到上限时**停下来等**，绝不回拉：回拉就是倒退，而倒退正是"数字来回跳"的根因。
+ *
+ * 历史（别再写回去）：这里曾经是 `shownCookies = server + (shownCookies - server) * 0.5`——
+ * 每一拍先按 cps 外推冲过头，再只拉回一半，下一拍又冲出去。那是一个**阻尼振荡器**：
+ * 服务端每来一帧数字就往下弹一次、然后继续往上爬，看起来就是数字绕着真值来回跳。
  */
 let shownCookies = 0;
+
+/**
+ * 上一次从服务端收到的钱包值。判断"服务端自己倒退了"用它，**不要**用 `shownCookies > server`：
+ * 显示值本来就该领先服务端（那正是外推存在的意义），所以"显示值 > 服务端"是每一帧都成立的
+ * 常态，不是倒退的证据——按它收敛等于每 250ms 把数字往下按一次。
+ */
+let lastServerCookies = null;
+
 let lastTickAt = performance.now();
 let lastFrameAt = 0; // written but never read: the throttle/staleness indicator it was meant for was never finished
 
@@ -73,12 +87,10 @@ function connect() {
 
     if (frame.kind === "full") {
       state = frame.snapshot;
-      shownCookies = state.cookies; // 全量帧直接对齐：新连接 / 每 30 秒对账一次，从这里重新起算
+      reconcileCookies(); // 新连接 / 每 30 秒对账一次：从这里重新起算
     } else if (frame.kind === "delta") {
-      if (typeof frame.changed.cookies === "number" && shownCookies > frame.changed.cookies) {
-        shownCookies = frame.changed.cookies; // 只收敛、不吸附（吸附会看到倒退）
-      }
       Object.assign(state, frame.changed);
+      reconcileCookies();
     } else if (frame.kind === "event") {
       toast(frame.payload?.message ?? frame.name);
       return;
@@ -88,6 +100,28 @@ function connect() {
     recomputeAffordable();
     render();
   };
+}
+
+/**
+ * 服务端来帧时的对账。**只做两件事**，而且都不产生"局部回拉"：
+ *
+ *   1. 还没有历史（第一帧）：直接对齐真值。
+ *   2. 服务端自己倒退了（买入 / 转生 / 换了存档）：这是唯一被允许的倒退，
+ *      一步落到新的真值——一次干净的下降。
+ *
+ * 其余情况（服务端持平或前进）这里**什么都不做**：显示值归 animate() 管，
+ * 它只往前爬；领先太多时它停下来等，绝不回拉。
+ *
+ * 为什么不再照抄 `shownCookies > frame.changed.cookies` 那个判断：显示值本来就该领先
+ * 服务端（那正是外推的意义），所以"显示值 > 服务端"是**每一帧都成立的常态**，
+ * 不是"服务端倒退了"的证据。按它收敛，等于每 250ms 把已经画上去的数字往下按一次。
+ */
+function reconcileCookies() {
+  const server = state.cookies ?? 0;
+  const previous = lastServerCookies;
+  lastServerCookies = server;
+
+  if (previous === null || server < previous) shownCookies = server;
 }
 
 /**
@@ -711,6 +745,10 @@ function duration(seconds) {
  *
  * 与"追一个每 250ms 才动的目标"相比，这样每个帧都有变化，数字是**连续在跑**的；
  * 服务端来帧只负责纠正速率，不负责制造位移。
+ *
+ * 这里的所有修正都是**单向**的：向前跳（服务端更靠前时）、向前爬、以及由
+ * reconcileCookies() 在服务端自己倒退时落下去。除此之外一步都不往后走——
+ * 显示值领先服务端的量由 `tolerance` 封顶，撞到顶是**停下来等**，不是拉回来。
  */
 function animate(now) {
   const elapsed = Math.min(0.25, Math.max(0, (now - lastTickAt) / 1000));
@@ -718,16 +756,18 @@ function animate(now) {
 
   if (state) {
     const rate = state.cookiesPerSecond ?? 0;
-    if (rate > 0) shownCookies += rate * elapsed;
-
-    // 本地不能比服务端领先太多（可能刚买了东西 / 切了包）。
-    // 超过"两帧的量"就按比例收敛，避免长时间虚高；正常挂机时这个分支不会触发。
     const server = state.cookies ?? 0;
+
+    // 允许领先"半秒的产量"。服务端 4 Hz 推帧（GameHost.PushIntervalSeconds = 0.25），
+    // 所以这正好是**两帧的量**：够吸收 SSE 投递抖动、时钟量化和一帧的积压，
+    // 又不至于让数字长时间挂在明显高于真值的地方。
     const tolerance = Math.max(1e-6, rate * 0.5);
-    if (shownCookies > server + tolerance) {
-      shownCookies = server + (shownCookies - server) * 0.5;
-    } else if (shownCookies < server) {
-      shownCookies = server; // 服务端更靠前（点击、离线补发）：直接跟上，不倒退
+
+    if (shownCookies < server) {
+      shownCookies = server; // 服务端更靠前（点击、离线补发、重连）：直接跟上，不倒退
+    } else if (rate > 0 && shownCookies < server + tolerance) {
+      // 只往前爬，并且一步都不越过上限：越过上限的部分留给"下一拍停住"去消化。
+      shownCookies = Math.min(server + tolerance, shownCookies + rate * elapsed);
     }
 
     $("#cookies").textContent = formatCookies(shownCookies);

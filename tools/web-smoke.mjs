@@ -211,6 +211,7 @@ async function loadApp(moduleUrl, { hash = "" } = {}) {
   const commands = [];
   const sources = [];
   const frames = [];
+  let clock = 0;
 
   class StubEventSource {
     constructor(url) { this.url = url; sources.push(this); }
@@ -224,6 +225,9 @@ async function loadApp(moduleUrl, { hash = "" } = {}) {
     },
   };
   globalThis.EventSource = StubEventSource;
+  // 合成时钟（见 step 的注释）：app.js 只在模块顶层和 onmessage 里读 performance.now()，
+  // 真正决定动画步长的是喂给 animate(now) 的那个参数，所以换成一只由测试推进的钟即可。
+  globalThis.performance = { now: () => clock };
   globalThis.requestAnimationFrame = (callback) => { frames.push(callback); return frames.length; };
   globalThis.fetch = async (url, options = {}) => {
     const body = options.body ? JSON.parse(options.body) : null;
@@ -241,7 +245,21 @@ async function loadApp(moduleUrl, { hash = "" } = {}) {
     await flush();
   };
 
-  return { doc, location, commands, push, sources, frames, source };
+  /**
+   * 手动推进合成时钟，并跑掉这一拍排队的所有 animate 回调。
+   *
+   * 为什么必须由测试推进时钟：`animate(now)` 的步长是 `(now - lastTickAt)`，
+   * 用真时钟只能得到"约等于 0 的随机步长"，写不出可重复的断言——而"数字来回跳"
+   * 那个 bug 只在具体的步长 / 帧序下才现形。有了它，每调一次 `step(ms)`，
+   * animate 收到的 elapsed 就精确等于 ms / 1000。
+   */
+  const step = (deltaMs) => {
+    clock += deltaMs;
+    const callbacks = frames.splice(0, frames.length);
+    for (const callback of callbacks) callback(clock);
+  };
+
+  return { doc, location, commands, push, sources, frames, source, step };
 }
 
 const flush = () => new Promise((resolve) => setImmediate(resolve));
@@ -660,6 +678,110 @@ check(".sheet-layer 仍留着 overflow-y", () => {
   if (!block.includes("overflow-y: auto")) throw new Error("没有 overflow-y");
 });
 check("@keyframes sheet-in 还在（复用而不是新造动画）", () => /@keyframes sheet-in/.test(css));
+
+// 12. 计数器动画：单调、不振荡。这一条守的是 human 报的"数字来回跳"。
+//
+// 病灶有两处，都在 animate / onmessage 里：显示值**本来就该领先服务端**（那正是外推
+// 存在的意义），可旧代码拿"显示值 > 服务端"当"服务端倒退了"的证据，于是每来一帧就把
+// 已经画上去的数字往下按一次；另一处是把超出上限的部分只拉回一半（拉回就是倒退）。
+// 下面用可复现的合成时钟（loadApp 的 step）按真实的 4 Hz 推帧节奏把这两条路径走一遍。
+section("12. 计数器动画：只前进，只在服务端倒退时倒退");
+{
+  const anim = await loadApp(copyAs("app-anim.mjs", appSource));
+
+  const TICK_MS = 50;            // 一拍 50ms
+  const FRAME_TICKS = 5;         // 5 拍 = 250ms，与 GameHost.PushIntervalSeconds 一致
+  const RATE = 60;               // 每秒 60：一拍正好 +3，格式化后是纯整数，序列一眼可读
+  const TOLERANCE = RATE * 0.5;  // animate 里的上限：半秒的产量 = 两帧的量
+  const START = 100;
+  const PRICE = 40;              // 买入之后服务端的钱包落到这里
+  const LAG_MS = [20, 220];      // SSE 投递延迟在 20ms / 220ms 之间摆——抖动就是这个形状
+
+  const read = () => Number(el(anim, "cookies").textContent.replace(/,/g, ""));
+  const samples = [];            // 屏幕上真的画出来的值 + 那一刻最新的服务端值
+  let server = START;
+  const tap = () => samples.push({ shown: read(), server });
+  const ticks = (count) => { for (let i = 0; i < count; i++) { anim.step(TICK_MS); tap(); } };
+  const values = () => samples.map((sample) => sample.shown);
+  const trace = (list) => list.join(" → ");
+  const firstDrop = (list) => {
+    for (let i = 1; i < list.length; i++) if (list[i] < list[i - 1]) return i;
+    return -1;
+  };
+
+  await anim.push({ kind: "full", seq: 1, snapshot: snapshot({ cookies: server, cookiesPerSecond: RATE }) });
+  anim.step(0); // 步长 0：只让 animate 把首帧画进 DOM，不推进时钟
+  tap();
+  const ascentFrom = samples.length;
+
+  // 8 帧 = 2 秒，服务端每帧都在**前进**：它报的是采样于 (到达时刻 - 延迟) 的真值，
+  // 只是投递晚了；本地在这段时间里已经按 cps 外推过去了。现实中每 250ms 就是这样。
+  for (let frame = 1; frame <= 8; frame++) {
+    ticks(FRAME_TICKS);
+    const lag = LAG_MS[frame % LAG_MS.length] / 1000;
+    const arrival = (frame * FRAME_TICKS * TICK_MS) / 1000;
+    server = START + RATE * (arrival - lag);
+    await anim.push({ kind: "delta", seq: 1 + frame, changed: { cookies: server } });
+  }
+  ticks(FRAME_TICKS);
+  const ascent = samples.slice(ascentFrom);
+
+  check("服务端一直在前进时，数字一拍一拍往上爬，一次都不往回走", () => {
+    const list = ascent.map((sample) => sample.shown);
+    const i = firstDrop(list);
+    if (i !== -1) throw new Error(`第 ${i} 拍倒退了：${list[i - 1]} → ${list[i]}（整段：${trace(list)}）`);
+    const flat = list.findIndex((value, index) => index > 0 && value === list[index - 1]);
+    if (flat !== -1) throw new Error(`第 ${flat} 拍卡住不动了（外推应当每一拍都往上）：${trace(list)}`);
+  });
+  check("领先服务端的量始终不超过 tolerance（半秒产量 = 两帧）", () => {
+    let worst = 0;
+    for (const sample of ascent) worst = Math.max(worst, sample.shown - sample.server);
+    if (worst > TOLERANCE + 1e-9) throw new Error(`最多领先 ${worst}，超过上限 ${TOLERANCE}`);
+    if (worst <= 0) throw new Error("一次都没有领先过服务端——外推没在工作");
+  });
+
+  // 买入：服务端自己倒退了。这是唯一被允许的下降，而且必须是**一次干净**的下降。
+  const beforeDrop = samples[samples.length - 1].shown;
+  server = PRICE;
+  await anim.push({ kind: "delta", seq: 10, changed: { cookies: server } });
+  const dropFrom = samples.length;
+  ticks(3);
+  const afterDrop = samples.slice(dropFrom);
+
+  check("服务端自己倒退时只允许一次下降，而且一步落到新的真值上", () => {
+    const list = values();
+    const drops = [];
+    for (let i = 1; i < list.length; i++) if (list[i] < list[i - 1]) drops.push(i);
+    if (drops.length !== 1) throw new Error(`整段里下降了 ${drops.length} 次（只允许买入那一次）：${trace(list)}`);
+    const landed = list[drops[0]];
+    const ceiling = PRICE + RATE * (TICK_MS / 1000);
+    if (landed < PRICE || landed > ceiling) {
+      throw new Error(`落点 ${landed} 不在 [${PRICE}, ${ceiling}]：不是一步落到真值，而是在慢慢滑（整段：${trace(list)}）`);
+    }
+    if (beforeDrop <= landed) throw new Error(`没有真的下降：${beforeDrop} → ${landed}`);
+  });
+  check("倒退之后立刻恢复只增不减，落点以下再也没有出现过", () => {
+    const list = afterDrop.map((sample) => sample.shown);
+    const i = firstDrop(list);
+    if (i !== -1) throw new Error(`买入之后又来回：${trace(list)}`);
+    if (list.some((value) => value < PRICE)) throw new Error(`掉到落点以下：${trace(list)}`);
+  });
+
+  // 断流：SSE 掉了（EventSource 正在重连），服务端的值不再更新，但 rAF 还在跑。
+  // 显示值必须**停下来等**，而不是一直外推、再被拉回来。
+  const stallFrom = samples.length;
+  ticks(30);
+  const stall = samples.slice(stallFrom).map((sample) => sample.shown);
+
+  check("断流时数字收敛到一个定值，而不是绕着真值来回摆", () => {
+    const i = firstDrop(stall);
+    if (i !== -1) throw new Error(`断流期间倒退了：${trace(stall)}`);
+    const tail = stall.slice(-10);
+    if (tail.some((value) => value !== tail[0])) throw new Error(`最后 10 拍还在变：${trace(tail)}`);
+    const lead = tail[0] - PRICE;
+    if (lead > TOLERANCE + 1e-9) throw new Error(`停在真值上方 ${lead}，超过上限 ${TOLERANCE}`);
+  });
+}
 
 rmSync(scratch, { recursive: true, force: true });
 
