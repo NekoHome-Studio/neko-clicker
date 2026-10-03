@@ -90,7 +90,7 @@
 
 | 原登记 | 关掉它的提交 / 证据 |
 |---|---|
-| （新）**存档导出/导入的引擎侧**：`SaveTransfer`（信封 + 校验和 + 1 MiB 尺寸闸）、`SaveManager.PackId` / `Export()` / `Import()`、`SaveTransferTests` 17 条、`SAVE_TRANSFER_PLAN` 方案 | 本 worktree 的 `1.10.0` 提交（hash 见报告）。证据：公开表面 **+36 项 / -0 项**（只增不改 ⇒ minor）、`-Strict` **548/548** 绿（动手前基线 **531**）、两处故障注入各自把 1 条 / 3 条守卫变红后已还原（红色原文抄在 `SAVE_TRANSFER_PLAN` §5）、真实 `saves/*.json` 的导出体积实测 831→1495 … 3718→6203（§2.4）。**`SaveSerializer.CurrentVersion` 仍是 1、零迁移——D5 与 W9 没有被这次解决** |
+| （新）**存档导出/导入的引擎侧**：`SaveTransfer`（信封 + 校验和 + 1 MiB 尺寸闸）、`SaveManager.PackId` / `Export()` / `Import()`、`SaveTransferTests` 17 条、`SAVE_TRANSFER_PLAN` 方案 | 原提交 `9ee365a`，合并进 `main` 的提交 **`835f8df`**（三条分支合并后整棵树在 `7c75d35` 复测，见 §0.17）。证据：公开表面 **+36 项 / -0 项**（只增不改 ⇒ minor）、`-Strict` **548/548** 绿（动手前基线 **531**）、两处故障注入各自把 1 条 / 3 条守卫变红后已还原（红色原文抄在 `SAVE_TRANSFER_PLAN` §5）、真实 `saves/*.json` 的导出体积实测 831→1495 … 3718→6203（§2.4）。**`SaveSerializer.CurrentVersion` 仍是 1、零迁移——D5 与 W9 没有被这次解决** |
 
 #### 这次核对出**已经做完**的（所以不在上表；按登记册原编号）
 
@@ -1025,11 +1025,51 @@ S	2026-10-03T15:36:25.707Z	company	choice_first_order	order_take	3.833	0.004	30	
 
 ---
 
+## 0.17 三条分支一起合进 `main`（2026-10-04）：存档导出/导入 ＋ 冒烟闸门 ＋ 点击桥
+
+三条各自完成、各自量过的分支合进 `main`，合并顺序与每一次的冲突解法都记在这里
+（**本地合并，没有推送、没有打 tag**）：
+
+| 顺序 | 分支 | 合并提交 | 冲突 | 解法 |
+|---|---|---|---|---|
+| 1 | `tools/s1-s13` | `ba87cab` | 无（它的基点就是当时的 `main` HEAD `ab68d30`） | — |
+| 2 | `save-transfer-1.10.0` | `835f8df` | `engine/docs/OPEN_WORK.md` | 两边都在往本表加行：主树侧新增 **W12**（`engine/tests/` 对 `cpsEach` 的断言是 0 条）并把 **W11** 移进了「已经做完」表；存档侧仍把 W11 当开着，另加三行。**W11 只留在「已经做完」表里**（`618a46c`），存档那三行顺延成 **W13 / W14 / W15**。没有整文件覆盖 |
+| 3 | `click-power-bridge` | `7c75d35` | `engine/docs/OPEN_WORK.md` | 两边**各自新写了一节、都编号 §0.15**（主树侧＝S1/S13，click 侧＝点击 × 建筑的桥）。两节都留：主树那节保持 §0.15（`STRUCTURE_OPTIMIZATION` 的 §S1/§S13 与 H1 行按这个名字引用它），点击桥那节顺延为 **§0.16**，引用它的 5 处（`CHANGELOG`、`CONTENT_AUTHORING`、本文件 §1 两处、`BuildingUpgradeTests`、`ClickBridgeTests`）一起改到 §0.16 |
+
+**版本号**：只有存档那条分支动过 `<Version>`，所以合并后 `Version` / `AssemblyVersion` /
+`FileVersion` 三处一致为 **1.10.0**——一笔公开 API 新增（minor），另外两条（纯内容 / 工具）刻意没升。
+`CHANGELOG` 两边都在写：1.10.0 的带日期条目在最上面，click 那条 patch 级内容条目留在 `[未发布]` 里，
+**两条都在**。
+
+**合并后重新量了一遍**（2026-10-04，隔离 worktree `.tmp/wt-merge` ＝ 合并提交 `7c75d35`，
+不需要碰 5273 上那个试玩宿主占着的 `games/hosts/Web/bin`）：
+
+| 命令 | 合并前各自量的 | 合并后实测 |
+|---|---|---|
+| `tools/build.ps1 -Strict` | 548（save）/ 536（tools）/ 534（click） | **556 / 556 全绿、0 警告**（548 + S1/S13 的 5 条 + 点击桥的 3 条；**测出来的，不是加出来的**） |
+| `node tools/web-smoke.mjs` | 135（tools） | **135 / 135**（S1 起它就在 `-Strict` 里跑，上面那次是闸门内跑的） |
+| `tools/api-test.ps1` | 55（三条都是 55） | **55 / 55**（源码 55 处 ｜ 执行 55 处 ｜ 跳过 0） |
+
+**`PublicApi.txt` 是重新生成的，不是手改的**：按 `VERSIONING` §1 的顺序（版本字段 → 构建 →
+`tools/public-api.ps1`）跑完，生成的快照与合并前**逐字节相同**（`sha256` 同为
+`E0DAF6FF…8281`、**2026 行**、表头 `version=1.10.0`）——这正是"另两条分支一行公开 API 都没动"
+的证据。合并后的**用例数**没有写进本文件的 §1（那一节按惯例只给指针），
+上面这张表是这一次的实测记录。
+
+**这次顺手改掉的"现在时"漂移**（历史快照一处没动）：`README.md` ×4、`STATUS.md` ×4、
+`engine/README.md`、`games/README.md`、`RELEASING.md`、`VERSIONING.md`、`tools/api-test.ps1`
+的注释、`.github/workflows/ci.yml` 的注释——都是"当前几个用例 / 几条冒烟"这类会过期的话；
+`CHANGELOG` 里那些带日期的条目、`STATUS.md` 第 183 行那条 2026-10-03 的实测、
+`WEB_EXTENSION_PLAN` 的登记时表格**按惯例不追改**。另外把本文件 §1 的版本行从 1.9.0 改成 1.10.0
+（1.10.0 落地时漏了它），并把这条路径补进 `RELEASING` §2 的清单——那是它被漏掉的原因。
+
+---
+
 ## 1. 现在在哪（可核对的事实）
 
 | 项 | 值 | 怎么核对 |
 |---|---|---|
-| 版本 | **1.9.0** | `Directory.Build.props` 的 `<Version>`（1.9.0 是纪元内的阶段：`EraStage` + `EraDefinition.Stages` + `EraSystem.Stage` + `EraView` 的阶段六字段；见 `CONTENT_AUTHORING` §11.2 与 `TUNING_ANALYSIS` §4.10。上一版 1.8.0 是建筑升级系统，见 §0.11） |
+| 版本 | **1.10.0** | `Directory.Build.props` 的 `<Version>`（1.10.0 是**存档的导出 / 导入（引擎侧）**：`SaveTransfer` + `SaveTransferKind` + `SaveTransferResult` + `SaveManager.PackId/Export()/Import()`，公开 API 只增不改；见 `CHANGELOG` 的 1.10.0、`SAVE_TRANSFER_PLAN` 与 §0.17。上一版 1.9.0 是纪元内的阶段：`EraStage` + `EraDefinition.Stages` + `EraSystem.Stage` + `EraView` 的阶段六字段，见 `CONTENT_AUTHORING` §11.2 与 `TUNING_ANALYSIS` §4.10；再上一版 1.8.0 是建筑升级系统，见 §0.11） |
 | 当前基线 | **三条命令**（`-Strict` / `api-test` / `web-smoke`）在 **`b625dd5`** 上的实测记在 §0.12——**本节刻意不复写那几个数**（它们每加一条守卫就会变） | 复跑那三条命令；**不要从文档里的数字推** |
 | 文本外部化 | **11 / 11 个包**有 `text.json`；**十一类面向玩家的文案全部在文件里**：`storylines` / `lore`（10 包 421 条）、`buildings`（11 包 104 座 × name/description/icon）、`eras`（9 包 49 层 × 6 字段）、`endings`（9 包 29 个 ×3）、`stances`（3 包 11 条 ×4）、`choices`（3 包 18 次 ×2 + 36 选项 ×2）、`achievements`（11 包 712 条 ×3）、`buffs`（11 包 86 条 ×3）、`upgrades`（11 包 **545** 条 ×3，§0.16 加了 11 条）、`goldenCookies`（11 包 109 条 ×3）。C# 里 `Prose.Text(` 共 **1,317** 处（`Upgrades.cs` 732 / `Buffs.cs` 318 / `GoldenCookieOutcomes.cs` 267 三个文件族；全部 `*.cs` 实测 2,948）、`Name/Description/Icon = "` 0 处 | `Get-ChildItem engine\content -Recurse -Filter text.json`；见 §0.9（第五轮，收尾）与 §0.16（点击桥 +11） |
 | 加载器 | `ContentText` 已 **public** | `engine/core/Content/ContentText.cs` |

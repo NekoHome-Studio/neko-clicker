@@ -102,7 +102,7 @@
 engine/            自包含：搬走它 + 仓库根的 Directory.Build.props = 独立引擎仓库
   core/            引擎本体（平台中立，可在 Linux/macOS 直接构建）
   content/<包名>/  十一个内容包，一个包一个 csproj
-  engine/tests/    531 个用例 + 自研迷你运行器
+  engine/tests/    556 个用例 + 自研迷你运行器
   docs/            架构 / 内容作者指南 / 版本承诺 / 发布流程（RELEASING）
 games/             旗舰示例作品。依赖 engine/，反向不依赖
   hosts/Demo.Cli/  终端前端，同时是框架回归基线（FrameRenderTests 引用它）
@@ -132,7 +132,7 @@ start.cmd list               # 列出全部内容包
 走脚本的话：
 
 ```powershell
-.\tools\build.ps1 -Strict    # 一条命令：引擎 + 内容 + 531 用例 + Web 宿主（0 警告）
+.\tools\build.ps1 -Strict    # 一条命令：引擎 + 内容 + 556 用例 + Web 宿主 + 前端冒烟（0 警告）
 .\tools\play.ps1             # 终端 Demo；--package <id> 换包
 .\tools\play.ps1 --package lab --simulate 21600 --auto   # 无头跑图 + 数值报告
 .\tools\web.ps1 run          # Web 前端（开发期必须 dotnet run 起，见 §7）
@@ -172,9 +172,9 @@ start.cmd list               # 列出全部内容包
 
 | 命令 | 期望 |
 |---|---|
-| `.\tools\build.ps1 -Strict` | **531 个用例全绿**、0 警告（主 sln 与 Web sln 都编） |
+| `.\tools\build.ps1 -Strict` | **556 个用例全绿**、0 警告（主 sln 与 Web sln 都编，前端冒烟也在这条命令里跑）。2026-10-04 在三条分支（save / tools / click）合并后的树上实测；**这个数会随守卫增长**，权威出处永远是这条命令打印的那一行 |
 | `.\tools\api-test.ps1` | **55 项端到端检查全通过**——脚本自己会做**检查点覆盖审计**（源码里有几处 `Check`、这次就该执行到几处，少了就点名报红；见脚本头部 ⑤）：实测 **源码 55 处 ｜ 执行到 55 处 ｜ 跳过 0**。真起宿主（`dotnet run`）、真读 SSE 流、**最后再起一次宿主读档**，收尾自己清进程 |
-| `node tools\web-smoke.mjs` | **108 条全绿**——无头 DOM 桩**真的把 `app.js` 跑起来**（不抛异常、DOM 结构与状态），夹具是**从真宿主抓的快照**（`tools/fixtures/web-snapshot.json`，按公司包抓：它是第一个声明阶段的包）；没有真浏览器，布局与配色不在它射程内 |
+| `node tools\web-smoke.mjs` | **135 条全绿**——无头 DOM 桩**真的把 `app.js` 跑起来**（不抛异常、DOM 结构与状态），夹具是**从真宿主抓的快照**（`tools/fixtures/web-snapshot.json`，按公司包抓：它是第一个声明阶段的包）；没有真浏览器，布局与配色不在它射程内。**2026-10-04 起它也是 `-Strict` 里的一道闸门**（S1），单独跑这条命令仍然有效 |
 | `.\tools\web.ps1 build -Strict` | 只编 Web 宿主时用（0 警告） |
 
 **1.4.0 时代基线 441 的构成**（此后又长过多轮——1.5.0 / 1.6.0 两轮与文案外置第三~第六轮的

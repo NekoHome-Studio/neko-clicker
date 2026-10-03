@@ -77,7 +77,7 @@
 > 代价是画面右侧与底部各有一格空白——这是换「拖横向不崩」付出的代价。
 
 ```powershell
-# 构建 + 跑测试（531 个用例，零依赖迷你运行器）
+# 构建 + 跑测试（556 个用例，零依赖迷你运行器）
 .\tools\build.ps1
 
 # 逐条计时：打印最慢的一批与分档占比（想知道"什么变慢了"就用它）
@@ -185,7 +185,7 @@ engine/content/Cyber/   内容包 #5《赛博猫娘》（五层数字层，迁�
 engine/content/Dream/   内容包 #8《猫娘梦境》（五层梦，越睡越浓的梦境能量）
 games/hosts/Demo.Cli/        终端 UI 适配层（ANSI 全屏 + 键盘 + 无头模式 + --package）
 games/hosts/Web/         Web 前端宿主（本地 HTTP + wwwroot，浏览器里可玩）
-engine/tests/    531 个测试 + 自研迷你测试运行器（含架构不变量与全程可达测试）
+engine/tests/    556 个测试 + 自研迷你测试运行器（含架构不变量与全程可达测试）
 engine/docs/ARCHITECTURE.md             架构与设计决策
 engine/docs/CONTENT_AUTHORING.md        如何写内容（数值节奏、校验规则、常见坑）
 engine/docs/VERSIONING.md               版本与兼容性承诺：什么改动升哪一位、公开 API 快照怎么用
@@ -416,7 +416,7 @@ Console.WriteLine(ApiVersion.AssemblyVersion);  // 1.10.0.0
 一条命令就是全仓库的验收：
 
 ```powershell
-.\tools\build.ps1 -Strict   # 引擎 + 内容 + 531 条用例 + Web 宿主（0 警告）
+.\tools\build.ps1 -Strict   # 引擎 + 内容 + 556 条用例 + Web 宿主 + 前端冒烟（0 警告）
 .\tools\web.ps1   build -Strict   # 只编 Web 宿主时用它
 .\tools\api-test.ps1        # 再把宿主真起起来，打一遍端点（含 SSE 流）
 ```
@@ -430,7 +430,8 @@ Console.WriteLine(ApiVersion.AssemblyVersion);  // 1.10.0.0
 
 - 核心引擎、十一个内容包（猫咖物语 / 猫娘咖啡馆 / 九命轮回 / 猫娘实验室 / 猫娘公司 / 猫娘末世 /
   猫娘图书馆 / 猫娘神明 / 猫娘文明 / 赛博猫娘 / 猫娘梦境）、**两个前端宿主**（终端 Demo + Web），
-  **531 个测试**全部通过。
+  **556 个测试**全部通过（2026-10-04 三条分支合并后的实测；这个数会随守卫增长，权威出处永远是
+  `tools/build.ps1 -Strict` 打印的那一行——见 [OPEN_WORK](engine/docs/OPEN_WORK.md) 的 W1）。
 - **端到端回归与 CI 已落地**：`tools/api-test.ps1` 起真宿主打一遍全部端点（静态文件 / 前端面板 /
   元信息 / 快照 / 命令 / 通知 / 负数 / SSE 流 / **离线收益** / **永久线货币语义** /
   **建筑专属升级**，55 项检查——最后一段会带同一份存档
