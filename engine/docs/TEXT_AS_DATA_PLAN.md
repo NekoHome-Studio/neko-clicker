@@ -858,8 +858,14 @@ Description = Prose.Text("buildings", "incubator", "description"),
   **仍是 `493`**——**写这一轮时它们正被同一工作区里的另一轮改动持有（`git status` 里是 `M`）**，
   改它们会把两轮工作混进同一个提交。**这是一处已知的文档漂移**，留给一次收尾统一改。
 - **没有登记进 `OPEN_WORK.md`**：同一个理由（当时该文件也在那一轮手里）。
+  **后来补上了**：2026-10-03 的整合把它登记进 [OPEN_WORK](OPEN_WORK.md)——
+  §0.12.2 一句话 + §3 的 **P** 条（编号 P 而不是 O：**O 留给 `WEB_EXTENSION_PLAN`**，
+  那个号它自己写死了）。**上面那句"留给一次收尾统一改"的用例数漂移，也在同一次整合里改完了**
+  （`README.md` / `STATUS.md` 的现在时计数改为实测值，历史数字一处没动）。
 - **没有跑 `tools/api-test.ps1` / `tools/web-smoke.mjs`**：本轮不碰前端与协议
   （快照、命令白名单、`wwwroot/` 一行未动），而且宿主端口此刻可能被别的工作区活动占着。
   内容包在宿主启动时走的那条路（`Build()` → `EnsureNoOrphans`）已由
   `ContentTextFileTests` 的横扫用例覆盖。
+  **后来（同一次整合）也在 `b625dd5` 上跑过了**：`api-test` 55/55、`web-smoke` 103/103
+  （见 [OPEN_WORK](OPEN_WORK.md) §0.12.1）——但那是整合那一次的结果，不是本轮测的。
 
