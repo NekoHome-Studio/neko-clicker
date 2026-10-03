@@ -19,7 +19,9 @@ internal static class HeadlessRunner
     /// <summary>运行模拟并打印报告。</summary>
     public static int RunSimulation(CliOptions options)
     {
-        using var session = new GameSession(options.Package, options.SavePath, options.Seed, options.EndingGraceSeconds);
+        // humanPlay: false —— 这是**机器人**在作答，它的样本不是人类数据，
+        // 所以默认不写那份真人埋点文件（要写必须显式 --latency-log，见 GameSession.FromOptions）。
+        using var session = GameSession.FromOptions(options, humanPlay: false);
         GameEngine engine = session.Engine;
 
         Console.WriteLine($"内容包：{engine.Content.Title}（--package {options.Package.Id}）");
@@ -27,6 +29,12 @@ internal static class HeadlessRunner
             $"目标时长：{NumFormat.Duration(options.SimulateSeconds)}" +
             $"｜策略：{(options.AutoPlay ? "自动购买" : "纯挂机（不购买）")}" +
             $"｜种子：{(options.Seed == 0 ? "随机" : options.Seed.ToString())}");
+
+        // 接没接上埋点必须当场可查：机器人跑的样本默认不落盘，所以"没有数据"是预期行为——
+        // 不把这件事说出来，"埋点没接线"和"机器人没落盘"在现象上就分不开。
+        Console.WriteLine(session.LatencyLogPath is { } probe
+            ? $"作答延迟埋点：{probe}（只追加；机器人作答只在该路径被显式指定时才写）"
+            : "作答延迟埋点：本次不落盘（机器人作答不是人类数据；要写请给 --latency-log）");
         Console.WriteLine();
 
         var stopwatch = Stopwatch.StartNew();
@@ -42,7 +50,9 @@ internal static class HeadlessRunner
     /// <summary>渲染一帧界面并打印（用于验证布局，可重定向到文件）。</summary>
     public static int RunFrame(CliOptions options)
     {
-        using var session = new GameSession(options.Package, options.SavePath, options.Seed, options.EndingGraceSeconds);
+        // 同上：单帧渲染不是"玩"，默认不往真人埋点文件里写。输出里也**不加**任何额外行——
+        // 这一帧的内容是被人逐行读的。
+        using var session = GameSession.FromOptions(options, humanPlay: false);
 
         if (options.AutoPlay && options.SimulateSeconds > 0)
             Advance(session.Engine, options.SimulateSeconds, autoPlay: true, options.SimulateSeconds, options.Package);

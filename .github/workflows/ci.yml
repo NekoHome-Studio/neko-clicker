@@ -11,13 +11,21 @@
 #   powershell 跑，保证"CI 跑的就是开发者本机跑的那条路径"，
 #   而不是再引入一套解释器差异去解释。
 #
-# 两个作业：
-#   build-and-test  引擎侧：tools/build.ps1 -Strict（0 警告 + 531 用例 + 主/Web 两条 sln）
-#                   （这个数在 1.9.0 时刷新过一次；它会继续长——"当前几个"的权威来源
-#                     永远是 build.ps1 打印的那一行，见 engine/docs/OPEN_WORK.md 的 W1）
+# 三个作业：
+#   build-and-test  引擎侧：tools/build.ps1 -Strict（0 警告 + 536 用例 + 主/Web 两条 sln + 前端冒烟）
+#                   （这个数在 1.9.0 时刷成 531；本轮 S13 加了 5 条守卫 → 536。
+#                     它会继续长——"当前几个"的权威来源永远是 build.ps1 打印的那一行，
+#                     见 engine/docs/OPEN_WORK.md 的 W1）
+#   web-smoke       前端侧：node tools/web-smoke.mjs（无头 DOM 桩件把 wwwroot/app.js 真跑一遍）
 #   end-to-end      Web 宿主侧：tools/api-test.ps1（起真宿主，打全部端点）
-# 分开跑的理由是失败时的信号不同：前者红了说明引擎或公开 API 有问题，
-# 后者红了说明"宿主 + 浏览器协议"那一段有问题——这两类故障的排查方向完全不一样。
+# 分开跑的理由是失败时的信号不同：第一条红了说明引擎或公开 API 有问题，
+# 第二条红了说明**页面**那一层有问题（它不需要 .NET，也不需要宿主），
+# 第三条红了说明"宿主 + 浏览器协议"那一段有问题——这三类故障的排查方向完全不一样。
+#
+# 前端冒烟为什么单独一个作业、而且这里**必须显式装 node**：
+#   build-and-test 里的 build.ps1 也会跑它（gate 在场内），但那条路径在 CI 上依赖
+#   runner 自带的 node。这里单独跑一遍，是把"前端这一层的红"独立成一条明确的信号，
+#   也是把工具链版本钉住（build.ps1 那边只要求"有 node"）。
 
 name: CI
 
@@ -43,6 +51,22 @@ jobs:
       - name: tools/build.ps1 -Strict
         shell: powershell
         run: .\tools\build.ps1 -Strict
+
+  web-smoke:
+    name: 前端冒烟（wwwroot / app.js）
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # 这个作业不需要 .NET、不需要宿主、不需要网络——它把 app.js 真的 import 起来跑，
+      # DOM 是桩件。钉住 node 版本是为了让"本地过、CI 红"这种差异只可能来自代码。
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: node tools/web-smoke.mjs
+        shell: powershell
+        run: node .\tools\web-smoke.mjs
 
   end-to-end:
     name: Web 宿主端到端
