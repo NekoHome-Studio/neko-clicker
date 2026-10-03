@@ -12,7 +12,7 @@
 # 与单元测试的分工：`tools/build.ps1 -Strict` 守引擎（493 个用例 + 公开 API 快照），
 # 本脚本守"宿主 + 浏览器协议"那一段。CI 里两条都跑（.github/workflows/ci.yml）。
 #
-# 四段刻意为之的行为（都不是默认就该有的，是踩出来的）：
+# 五条刻意为之的行为（都不是默认就该有的，是踩出来的）：
 #   ① **自带临时存档目录**（--save-root）。探针会点击、会买入；跑在真实存档上等于
 #      把玩家的进度当测试夹具。旧版探针就是这么干的（.tmp/api-probe），收进仓库时必须改掉。
 #   ② **强制清掉 NEKO_DEBUG_KEY 再起子进程**，于是"缺省门是关着的"这条断言在任何开发机上
@@ -23,6 +23,13 @@
 #      没法在一次会话里伪造。所以那一段真的走一遍玩家的路——存档 → 把存档里的"上次保存时刻"
 #      改老 5 小时 → 重新起宿主——验"补发出现 → 没播报之前刷新不消失 → 收下之后消失"。
 #      它同时是"读档 + 存档格式 + 弹窗数据源"这三件事唯一的端到端证据。
+#   ⑤ **检查点覆盖审计**（脚本收尾自己跑）：源码里有几处 `Check` 调用点，这次就该执行到几处。
+#      "没执行到"的调用点会被**连行号点名**（红字）并让退出码非 0；确实跑不了的检查点用第 4 个
+#      参数**显式跳过**（打印 `[SKIP]` 与理由、计入总数）。为什么非有它不可：这份脚本曾经源码里
+#      写着 **52 处** `Check` 而运行器只报 **51 项**，而且**没有一处能指出少了哪个**——实测是
+#      **3 处调用点从来没执行过**（`if ($clickError)` 的一个面、`if ($laterDeltas…)` 的 `else` 里
+#      两处），同时 **1 处**写在 `foreach` 里跑了 3 次，一多一少正好相抵。计数对不上只是症状，
+#      "某条检查悄悄没跑"才是病——所以现在由机器来数，不靠这一行注释。
 #
 # 用法：
 #   powershell -File tools/api-test.ps1                 # 构建 + 起宿主 + 打全套 + 收尾
@@ -63,13 +70,24 @@ New-Item -ItemType Directory -Force -Path $env:DOTNET_CLI_HOME, $env:NUGET_PACKA
 # ---------------------------------------------------------------- 结果记账
 $script:Passed = 0
 $script:Failed = 0
+$script:Skipped = 0
+# 每个检查点被执行到的**调用点行号**，收尾的覆盖审计拿它跟本文件的语法树比对（见头部 ⑤）。
+$script:ReachedLines = New-Object System.Collections.Generic.HashSet[int]
 
 function Write-Section([string]$Title) {
     Write-Host ''
     Write-Host $Title -ForegroundColor Cyan
 }
 
-function Check([string]$Name, [bool]$Ok, [string]$Detail = '') {
+# 第 4 个参数 $Skip 非空 = **这条检查这次跑不了**，但要说出来：打印 `[SKIP]` + 理由、计入跳过数。
+# 为什么不是"跑不了就干脆不写这个 Check"：静默少一条检查正是本脚本要防的那类失败（见头部 ⑤）。
+function Check([string]$Name, [bool]$Ok, [string]$Detail = '', [string]$Skip = '') {
+    [void]$script:ReachedLines.Add($MyInvocation.ScriptLineNumber)
+    if ($Skip.Length -gt 0) {
+        $script:Skipped++
+        Write-Host "  [SKIP] $Name  — $Skip" -ForegroundColor DarkYellow
+        return
+    }
     if ($Ok) { $script:Passed++ } else { $script:Failed++ }
     $mark = if ($Ok) { ' OK ' } else { 'FAIL' }
     $suffix = if ($Detail.Length -gt 0) { "  — $Detail" } else { '' }
@@ -213,6 +231,29 @@ function Show-HostLogs([string]$OutLog, [string]$ErrLog) {
     }
 }
 
+# ---------------------------------------------------------------- 检查点覆盖审计
+# 拿本文件的语法树数出 `Check` 的调用点，跟运行时记下的调用点行号比：**少了的那几处点名报红**。
+# 判据是"调用点全都到达过"——不是"总数看起来对"。总数对了而某处没跑，正是这个审计要抓的形态
+# （所以每一处 Check 都写成无条件执行，条件性用第 4 个参数表达；循环里的检查点也拆成独立调用）。
+function Get-CheckPointCoverage {
+    $tokens = $null
+    $errors = $null
+    $ast = [System.Management.Automation.Language.Parser]::ParseFile($PSCommandPath, [ref]$tokens, [ref]$errors)
+    $sites = @($ast.FindAll({
+                param($node)
+                $node -is [System.Management.Automation.Language.CommandAst] -and $node.GetCommandName() -eq 'Check'
+            }, $true))
+    $unreached = @()
+    foreach ($site in $sites) {
+        $hit = $false
+        for ($line = $site.Extent.StartLineNumber; $line -le $site.Extent.EndLineNumber; $line++) {
+            if ($script:ReachedLines.Contains($line)) { $hit = $true; break }
+        }
+        if (-not $hit) { $unreached += $site }
+    }
+    return [pscustomobject]@{ Sites = $sites.Count; Unreached = $unreached }
+}
+
 # ================================================================ 主流程
 
 Write-Host '=== Web 宿主端到端（api-test） ===' -ForegroundColor Cyan
@@ -288,16 +329,24 @@ try {
 
     # ------------------------------------------------------------ 静态文件
     Write-Section '静态文件（首页 404 是这一层最经典的沉默失败）'
-    foreach ($item in @(
-            @{ Path = '/'; Needle = 'NekoClicker' },
-            @{ Path = '/app.js'; Needle = 'EventSource' },
-            @{ Path = '/app.css'; Needle = '--accent' }
-        )) {
-        $r = Invoke-Get $item.Path
-        $hit = [bool]($r.Body -and $r.Body.Contains($item.Needle))
-        $bytes = if ($r.Body) { [System.Text.Encoding]::UTF8.GetByteCount($r.Body) } else { 0 }
-        Check "GET $($item.Path)" ($r.Success -and $hit) "HTTP $($r.Status)，$bytes 字节，含 <$($item.Needle)>: $hit"
-    }
+    $staticFiles = @(foreach ($item in @(
+                @{ Path = '/'; Needle = 'NekoClicker' },
+                @{ Path = '/app.js'; Needle = 'EventSource' },
+                @{ Path = '/app.css'; Needle = '--accent' }
+            )) {
+            $r = Invoke-Get $item.Path
+            $hit = [bool]($r.Body -and $r.Body.Contains($item.Needle))
+            $bytes = if ($r.Body) { [System.Text.Encoding]::UTF8.GetByteCount($r.Body) } else { 0 }
+            [pscustomobject]@{
+                Ok     = ($r.Success -and $hit)
+                Detail = "HTTP $($r.Status)，$bytes 字节，含 <$($item.Needle)>: $hit"
+            }
+        })
+    # 三处**分开写**是刻意的：写在循环里的话，一处调用点会执行三次，覆盖审计的账就永远对不上
+    # （"源码 52 处 / 运行 51 项"就是这么来的）。
+    Check 'GET /' $staticFiles[0].Ok $staticFiles[0].Detail
+    Check 'GET /app.js' $staticFiles[1].Ok $staticFiles[1].Detail
+    Check 'GET /app.css' $staticFiles[2].Ok $staticFiles[2].Detail
 
     # 前端面板：浏览器拿到的东西里真的有那个挂载点与渲染函数。
     # 判据只能是"送到浏览器的那份文本里有它"——本脚本不跑 JS，"好不好看"没有守卫（STATUS §6）。
@@ -449,85 +498,103 @@ try {
         $r = Invoke-PostJson "/api/command?package=$Package" @{ type = 'click' }
         if (-not ($r.Ok -and $r.Success)) { $clickError = "第 $($i + 1) 次失败：HTTP $($r.Status) $($r.Body)"; break }
     }
-    if ($clickError) {
-        Check 'POST /api/command click ×40' $false $clickError
-    }
-    else {
+    # 成功 / 失败是**同一个检查点的两个面**：写成 if / else，两个面里必有一处 Check 永远不执行
+    # （实测就是这里，见头部 ⑤），所以合并成一处，把失败原因放进 detail。
+    Check 'POST /api/command click ×40 全部被接受' ($null -eq $clickError) $(if ($clickError) { $clickError } else { '40 / 40' })
+
+    $after = $null
+    if (-not $clickError) {
         Start-Sleep -Milliseconds 600 # 等下一帧推回来
         $after = Convert-FromJsonSafe (Invoke-Get "/api/snapshot?package=$Package").Body
-        Check '40 次点击让货币增长' ([double]$after.cookies -gt $before) `
-            "$([double]$before.ToString('F0')) → $([double]$after.cookies.ToString('F0'))"
+    }
+    $afterOk = ($null -ne $after)
+    Check '40 次点击让货币增长' ($afterOk -and [double]$after.cookies -gt $before) `
+        $(if ($afterOk) { "$([double]$before.ToString('F0')) → $([double]$after.cookies.ToString('F0'))" } else { '—' }) `
+        $(if ($afterOk) { '' } else { '点击批次失败，读不到点击后的快照' })
 
+    $buildingId = $null
+    if ($afterOk) {
         $firstBuilding = @($after.buildings | Where-Object { $_.isUnlocked } | Select-Object -First 1)
         $buildingId = if ($firstBuilding.Count -gt 0) { $firstBuilding[0].id } else { $null }
-        Check '至少有一座建筑已解锁' ($null -ne $buildingId) $(if ($buildingId) { $buildingId } else { '一座都没有' })
-
-        if ($buildingId) {
-            # 要一个大到买不起的数量：引擎会**把数量钳到预算允许的范围**（这是"买满"语义，不是错误），
-            # 所以断言的是"它给出的数量确实在预算内、并且回了一句人话"，而不是"它失败了"。
-            $rich = Invoke-PostJson "/api/command?package=$Package" @{ type = 'buy'; id = $buildingId; amount = 100000 }
-            $richResult = Convert-FromJsonSafe $rich.Body
-            $message = [string]$richResult.message
-            Check '超大数量被钳到预算内并回报结果' `
-                ($rich.Success -and $message.Length -gt 0 -and ($richResult.ok -eq $true -or $message.Contains('钱'))) `
-                $message
-
-            # 通知面板的数据源：脚本做过的这些动作应该已经让引擎往快照里推过消息了。
-            # 前端只能画它拿到的东西，所以这里守的是"消息真的从引擎走到了 JSON"。
-            # 刻意**不点名某一条文案**：买建筑不发通知（只有买升级 / 成就解锁 / 增益 /
-            # 金猫 / 舍命会发），而这里跑的是"点击 + 买建筑"，产出的多半是成就解锁。
-            Start-Sleep -Milliseconds 400
-            $afterBuy = Convert-FromJsonSafe (Invoke-Get "/api/snapshot?package=$Package").Body
-            $notes = @()
-            if ($null -ne $afterBuy -and $null -ne $afterBuy.notifications) { $notes = @($afterBuy.notifications) }
-            $noteDetail = if ($notes.Count -gt 0) {
-                ($notes | Select-Object -First 2 | ForEach-Object { $_.message }) -join ' ｜ '
-            } else { '（一条都没有）' }
-            Check '动作之后快照的 notifications 里有真消息' ($notes.Count -ge 1) "$($notes.Count) 条：$noteDetail"
-
-            if ($notes.Count -gt 0) {
-                $shaped = $true
-                foreach ($note in $notes) {
-                    $noteFields = @($note.PSObject.Properties.Name)
-                    foreach ($field in @('message', 'icon', 'kind', 'timestamp')) {
-                        if ($noteFields -cnotcontains $field) { $shaped = $false }
-                    }
-                    if ([int]$note.kind -lt 0 -or [int]$note.kind -gt 3) { $shaped = $false }
-                    # 时间戳是"产生时的游戏时间"，不该跑到当前游戏时间之后。
-                    if ([double]$note.timestamp -gt [double]$afterBuy.playTimeSeconds + 1) { $shaped = $false }
-                }
-                Check '每条通知字段齐全、kind ∈ 0..3、时间戳不超过当前游戏时间' $shaped `
-                    "$($notes.Count) 条；第一条 kind=$($notes[0].kind)（数字枚举，前端按序数上色），timestamp=$($notes[0].timestamp)"
-            }
-        }
-
-        $bad = Invoke-PostJson "/api/command?package=$Package" @{ type = '不存在的命令' }
-        $badResult = Convert-FromJsonSafe $bad.Body
-        Check '未知命令不崩（ok=false + 一句人话）' ($bad.Success -and $badResult.ok -eq $false) `
-            "HTTP $($bad.Status)：$([string]$badResult.message)"
-
-        # 「表态已经被展示过」这条报告：1.5.0 那会儿它是结局的落定条件，1.6.0 起只是**诊断信号**
-        # （落定看的是作答）。它必须**幂等**：前端每渲染一帧就可能发一次，第二发不是错误、
-        # 也不该改坏状态。这里刻意不要求"有表态挂着"——本脚本跑的是真实游玩的前几十秒，
-        # 多半还没触发表态，而那条命令在没有任何待答表态时也必须安全返回（这正是幂等的第一层含义）。
-        $shown1 = Invoke-PostJson "/api/command?package=$Package" @{ type = 'choicesShown' }
-        $shown1Result = Convert-FromJsonSafe $shown1.Body
-        $shown2 = Invoke-PostJson "/api/command?package=$Package" @{ type = 'choicesShown' }
-        $shown2Result = Convert-FromJsonSafe $shown2.Body
-        Check 'POST choicesShown 可用且幂等' `
-            ($shown1.Success -and $shown1Result.ok -eq $true -and $shown2.Success -and $shown2Result.ok -eq $true) `
-            "第一次：$([string]$shown1Result.message)；第二次：$([string]$shown2Result.message)"
-
-        # 作答这条路必须真的通到引擎：**1.6.0 起它是唯一能解除结局等待的动作**，
-        # 而"回答一个不存在的表态"必须明确失败（ok=false）而不是静默当成功——
-        # 静默成功会让玩家以为处理完了，而结局照旧一直等着。
-        $badAnswer = Invoke-PostJson "/api/command?package=$Package" `
-            @{ type = 'answer'; id = '__no_such_choice__'; optionId = '__no_such_option__' }
-        $badAnswerResult = Convert-FromJsonSafe $badAnswer.Body
-        Check 'POST answer 对不存在的表态明确失败（ok=false + 一句人话）' `
-            ($badAnswer.Success -and $badAnswerResult.ok -eq $false -and ([string]$badAnswerResult.message).Length -gt 0) `
-            "HTTP $($badAnswer.Status)：ok=$($badAnswerResult.ok)；$([string]$badAnswerResult.message)"
     }
+    Check '至少有一座建筑已解锁' ($afterOk -and $null -ne $buildingId) `
+        $(if ($afterOk) { $(if ($buildingId) { $buildingId } else { '一座都没有' }) } else { '—' }) `
+        $(if ($afterOk) { '' } else { '点击批次失败，拿不到建筑列表' })
+
+    # 要一个大到买不起的数量：引擎会**把数量钳到预算允许的范围**（这是"买满"语义，不是错误），
+    # 所以断言的是"它给出的数量确实在预算内、并且回了一句人话"，而不是"它失败了"。
+    $clampOk = $false
+    $clampDetail = '—'
+    if ($buildingId) {
+        $rich = Invoke-PostJson "/api/command?package=$Package" @{ type = 'buy'; id = $buildingId; amount = 100000 }
+        $richResult = Convert-FromJsonSafe $rich.Body
+        $clampDetail = [string]$richResult.message
+        $clampOk = ($rich.Success -and $clampDetail.Length -gt 0 -and ($richResult.ok -eq $true -or $clampDetail.Contains('钱')))
+    }
+    Check '超大数量被钳到预算内并回报结果' $clampOk $clampDetail `
+        $(if ($buildingId) { '' } else { '没有已解锁的建筑可买（上一条已经报了红）' })
+
+    # 通知面板的数据源：脚本做过的这些动作应该已经让引擎往快照里推过消息了。
+    # 前端只能画它拿到的东西，所以这里守的是"消息真的从引擎走到了 JSON"。
+    # 刻意**不点名某一条文案**：买建筑不发通知（只有买升级 / 成就解锁 / 增益 /
+    # 金猫 / 舍命会发），而这里跑的是"点击 + 买建筑"，产出的多半是成就解锁。
+    # 这里刻意**不看 $buildingId**：通知里那多半是"点击解锁的成就"，买不买得成建筑与它无关，
+    # 所以它只在"读不到快照"时才跳过。
+    $afterBuy = $null
+    $notes = @()
+    if ($afterOk) {
+        Start-Sleep -Milliseconds 400
+        $afterBuy = Convert-FromJsonSafe (Invoke-Get "/api/snapshot?package=$Package").Body
+        if ($null -ne $afterBuy -and $null -ne $afterBuy.notifications) { $notes = @($afterBuy.notifications) }
+    }
+    $noteDetail = if ($notes.Count -gt 0) {
+        ($notes | Select-Object -First 2 | ForEach-Object { $_.message }) -join ' ｜ '
+    } else { '（一条都没有）' }
+    Check '动作之后快照的 notifications 里有真消息' ($afterOk -and $notes.Count -ge 1) "$($notes.Count) 条：$noteDetail" `
+        $(if ($afterOk) { '' } else { '点击批次失败，读不到快照' })
+
+    $shaped = $true
+    foreach ($note in $notes) {
+        $noteFields = @($note.PSObject.Properties.Name)
+        foreach ($field in @('message', 'icon', 'kind', 'timestamp')) {
+            if ($noteFields -cnotcontains $field) { $shaped = $false }
+        }
+        if ([int]$note.kind -lt 0 -or [int]$note.kind -gt 3) { $shaped = $false }
+        # 时间戳是"产生时的游戏时间"，不该跑到当前游戏时间之后。
+        if ([double]$note.timestamp -gt [double]$afterBuy.playTimeSeconds + 1) { $shaped = $false }
+    }
+    Check '每条通知字段齐全、kind ∈ 0..3、时间戳不超过当前游戏时间' ($shaped -and $notes.Count -gt 0) `
+        "$($notes.Count) 条$(if ($notes.Count -gt 0) { "；第一条 kind=$($notes[0].kind)（数字枚举，前端按序数上色），timestamp=$($notes[0].timestamp)" })" `
+        $(if ($notes.Count -gt 0) { '' } else { '一条通知都没有，无形状可判（上一条已经报了红）' })
+
+    # 下面三条**不依赖点击 / 买入的结果**（只要宿主还在，它们就能跑），所以从原来的 if / else
+    # 里挪到外面：留在分支里的话，上游一失败它们就跟着从账上消失——那正是要防的静默。
+    $bad = Invoke-PostJson "/api/command?package=$Package" @{ type = '不存在的命令' }
+    $badResult = Convert-FromJsonSafe $bad.Body
+    Check '未知命令不崩（ok=false + 一句人话）' ($bad.Success -and $badResult.ok -eq $false) `
+        "HTTP $($bad.Status)：$([string]$badResult.message)"
+
+    # 「表态已经被展示过」这条报告：1.5.0 那会儿它是结局的落定条件，1.6.0 起只是**诊断信号**
+    # （落定看的是作答）。它必须**幂等**：前端每渲染一帧就可能发一次，第二发不是错误、
+    # 也不该改坏状态。这里刻意不要求"有表态挂着"——本脚本跑的是真实游玩的前几十秒，
+    # 多半还没触发表态，而那条命令在没有任何待答表态时也必须安全返回（这正是幂等的第一层含义）。
+    $shown1 = Invoke-PostJson "/api/command?package=$Package" @{ type = 'choicesShown' }
+    $shown1Result = Convert-FromJsonSafe $shown1.Body
+    $shown2 = Invoke-PostJson "/api/command?package=$Package" @{ type = 'choicesShown' }
+    $shown2Result = Convert-FromJsonSafe $shown2.Body
+    Check 'POST choicesShown 可用且幂等' `
+        ($shown1.Success -and $shown1Result.ok -eq $true -and $shown2.Success -and $shown2Result.ok -eq $true) `
+        "第一次：$([string]$shown1Result.message)；第二次：$([string]$shown2Result.message)"
+
+    # 作答这条路必须真的通到引擎：**1.6.0 起它是唯一能解除结局等待的动作**，
+    # 而"回答一个不存在的表态"必须明确失败（ok=false）而不是静默当成功——
+    # 静默成功会让玩家以为处理完了，而结局照旧一直等着。
+    $badAnswer = Invoke-PostJson "/api/command?package=$Package" `
+        @{ type = 'answer'; id = '__no_such_choice__'; optionId = '__no_such_option__' }
+    $badAnswerResult = Convert-FromJsonSafe $badAnswer.Body
+    Check 'POST answer 对不存在的表态明确失败（ok=false + 一句人话）' `
+        ($badAnswer.Success -and $badAnswerResult.ok -eq $false -and ([string]$badAnswerResult.message).Length -gt 0) `
+        "HTTP $($badAnswer.Status)：ok=$($badAnswerResult.ok)；$([string]$badAnswerResult.message)"
 
     # ------------------------------------------------------------ 负数
     Write-Section '负数（不该静默成功的地方必须明确失败）'
@@ -591,19 +658,15 @@ try {
         ($laterDeltas.Count -gt 0 -and $laterFulls.Count -le 1 -and ($laterDeltas.Count + $laterFulls.Count) -eq $later.Count) `
         "增量 $($laterDeltas.Count) 帧、全量对账 $($laterFulls.Count) 帧"
 
+    $fullBytes = if ($frames.Count -gt 0) { $frames[0].Bytes } else { 0 }
+    $deltaAvg = -1
+    $deltaMedian = -1
+    $deltaMax = -1
     if ($laterDeltas.Count -gt 0) {
-        $fullBytes = $frames[0].Bytes
         $sizes = @($laterDeltas | Select-Object -ExpandProperty Bytes)
         $deltaAvg = [int](($sizes | Measure-Object -Average).Average)
         $deltaMax = [int](($sizes | Measure-Object -Maximum).Maximum)
         $deltaMedian = [int](($sizes | Sort-Object)[[int]($sizes.Count / 2)])
-        $saved = 100 - $deltaAvg * 100 / [Math]::Max(1, $fullBytes)
-        # 判据是**均值**，不是最大值：嵌套列表（codex / buildings / notifications）一变，
-        # 协议是整条重发而不是逐元素打补丁（见 WebSnapshotProtocolTests.DiffDetectsNestedListChanges）。
-        # 一帧里同时动了若干张列表（点击爆发 / 买入 + 图鉴解锁）就会叠出一帧几乎和全量一样大的
-        # delta——那是设计，不是缺陷；要看的"常态带宽"是均值与中位数，所以最大值只报不判。
-        Check '增量远小于全量（均值 <10%）' ($deltaAvg * 10 -lt $fullBytes) `
-            "全量 $fullBytes 字节；增量 均 $deltaAvg / 中位 $deltaMedian / 最大 $deltaMax 字节（省 $([int]$saved)%）"
 
         # 增量里到底带了哪些字段——带宽异常时第一眼要看的就是这个
         $tally = @{}
@@ -617,14 +680,20 @@ try {
             $biggestFields = if ($biggest.Keys.Count -gt 0) { $biggest.Keys -join '、' } else { '（没有 changed 字段）' }
             Write-Host "         （最大那帧 $($biggest.Bytes) 字节带的是：$biggestFields —— 嵌套列表整条重发）" -ForegroundColor DarkGray
         }
+    }
 
-        Check 'seq 单调递增' ($frames.Count -gt 2 -and $frames[-1].Seq -gt $frames[0].Seq) `
-            "$($frames[0].Seq) → $($frames[-1].Seq)"
-    }
-    else {
-        Check '增量远小于全量（<10%）' $false '一帧增量都没有，无从比较'
-        Check 'seq 单调递增' $false '一帧增量都没有'
-    }
+    # 判据是**均值**，不是最大值：嵌套列表（codex / buildings / notifications）一变，
+    # 协议是整条重发而不是逐元素打补丁（见 WebSnapshotProtocolTests.DiffDetectsNestedListChanges）。
+    # 一帧里同时动了若干张列表（点击爆发 / 买入 + 图鉴解锁）就会叠出一帧几乎和全量一样大的
+    # delta——那是设计，不是缺陷；要看的"常态带宽"是均值与中位数，所以最大值只报不判。
+    # 两处 Check **都写在 if 外面**是刻意的：写好增量分支里的话，"一帧增量都没有"这种环境
+    # 就会把两处调用点整块从账上抹掉（实测这就是 52 / 51 里的那两处）。判据本身不需要那个前提：
+    # 没有增量时，均值这条会照着自己红，而 seq 单调性照样是可判的真话。
+    $saved = if ($deltaAvg -ge 0) { 100 - $deltaAvg * 100 / [Math]::Max(1, $fullBytes) } else { 0 }
+    Check '增量远小于全量（均值 <10%）' ($deltaAvg -ge 0 -and $deltaAvg * 10 -lt $fullBytes) `
+        $(if ($deltaAvg -ge 0) { "全量 $fullBytes 字节；增量 均 $deltaAvg / 中位 $deltaMedian / 最大 $deltaMax 字节（省 $([int]$saved)%）" } else { '一帧增量都没有，无从比较' })
+    Check 'seq 单调递增' ($frames.Count -gt 2 -and $frames[-1].Seq -gt $frames[0].Seq) `
+        $(if ($frames.Count -gt 0) { "$($frames[0].Seq) → $($frames[-1].Seq)" } else { '一帧都没有' })
 
     # ------------------------------------------------------------ 离线收益
     # 这一段刻意**重启一次宿主**：离线补发只在读档的那一刻发生，而"读档"没法在一次会话里伪造。
@@ -656,73 +725,102 @@ try {
     Stop-TestHost -Port $Port -Process $hostProcess | Out-Null
 
     $saveFiles = @(Get-ChildItem -Path $saveRoot -Filter *.json -File -ErrorAction SilentlyContinue)
-    Check '存档文件真的落在了临时目录里' ($saveFiles.Count -eq 1) "$($saveFiles.Count) 个 .json 在 $saveRoot"
+    $oneSave = ($saveFiles.Count -eq 1)
+    Check '存档文件真的落在了临时目录里' $oneSave "$($saveFiles.Count) 个 .json 在 $saveRoot"
 
-    if ($saveFiles.Count -eq 1) {
+    $agedAt = [DateTimeOffset]::Now.AddHours(-5).ToString('o')
+    $rawSave = $null
+    $patched = $null
+    if ($oneSave) {
         $savePath = $saveFiles[0].FullName
         $rawSave = Get-Content $savePath -Raw -Encoding UTF8
-        $agedAt = [DateTimeOffset]::Now.AddHours(-5).ToString('o')
         $patched = $rawSave -replace '"LastSavedAt":"[^"]*"', "`"LastSavedAt`":`"$agedAt`""
-        Check '存档里写着上次保存时刻（能被改老）' ($patched -ne $rawSave) "LastSavedAt → $agedAt"
         # 刻意用 .NET 写回（不带 BOM）：这是存档，不该由测试脚本顺手改掉它的字节形态。
         if ($patched -ne $rawSave) { [System.IO.File]::WriteAllText($savePath, $patched) }
+    }
+    $patchDetail = if (-not $oneSave) { '（没有唯一的存档文件可改）' }
+    elseif ($patched -ne $rawSave) { "LastSavedAt → $agedAt" }
+    else { '存档里没有可改的 LastSavedAt 字段' }
+    Check '存档里写着上次保存时刻（能被改老）' ($oneSave -and $patched -ne $rawSave) $patchDetail
 
-        $hostProcess = Start-TestHost -Port $Port -SaveRoot $saveRoot -OutLog $outLog2 -ErrLog $errLog2 -LatencyLog $latencyLog
-        $wait2 = Wait-TestHost -Port $Port -Process $hostProcess
-        Check '第二段宿主带着那份存档起来了' $wait2.Ready $wait2.Probe
+    # 第二段宿主**无条件起**：就算第一段没存下档，这条路也要走完——写得跟着"存档存在"走的话，
+    # 上游一失败，后面八处检查点会一起从账上消失（那是这个脚本最老的那种静默）。改老存档的
+    # 那一步仍然只在 $oneSave 时做，所以"没有存档"时这里起的是一个没有存档的宿主，如实报红。
+    $hostProcess = Start-TestHost -Port $Port -SaveRoot $saveRoot -OutLog $outLog2 -ErrLog $errLog2 -LatencyLog $latencyLog
+    $wait2 = Wait-TestHost -Port $Port -Process $hostProcess
+    Check '第二段宿主带着那份存档起来了' $wait2.Ready $wait2.Probe
 
-        if ($wait2.Ready) {
-            $afterLoad = Convert-FromJsonSafe (Invoke-Get "/api/snapshot?package=$Package").Body
-            $offline = if ($null -ne $afterLoad) { $afterLoad.offline } else { $null }
-            $offlineFields = if ($null -ne $offline) { @($offline.PSObject.Properties.Name) } else { @() }
-            $wanted = @('elapsedSeconds', 'creditedSeconds', 'cookiesGained', 'wasCapped', 'durationText', 'cookiesText')
-            $missingOffline = @($wanted | Where-Object { $offlineFields -cnotcontains $_ })
-            $shapeOk = ($null -ne $offline) -and ($missingOffline.Count -eq 0)
+    $host2Missing = if ($wait2.Ready) { '' } else { '第二段宿主没起来，这条路没走到' }
+    $afterLoad = if ($wait2.Ready) { Convert-FromJsonSafe (Invoke-Get "/api/snapshot?package=$Package").Body } else { $null }
+    $offline = if ($null -ne $afterLoad) { $afterLoad.offline } else { $null }
+    $offlineFields = if ($null -ne $offline) { @($offline.PSObject.Properties.Name) } else { @() }
+    $wanted = @('elapsedSeconds', 'creditedSeconds', 'cookiesGained', 'wasCapped', 'durationText', 'cookiesText')
+    $missingOffline = @($wanted | Where-Object { $offlineFields -cnotcontains $_ })
+    $shapeOk = ($null -ne $offline) -and ($missingOffline.Count -eq 0)
 
-            $shapeDetail = if ($null -eq $offline) { 'offline 是 null——补发根本没发生' }
-            elseif ($missingOffline.Count -gt 0) { "缺 $($missingOffline -join '、')" }
-            else { "补了 $($offline.cookiesText)，时长 $($offline.durationText)" }
-            Check '读档之后快照里出现待播报的离线收益' $shapeOk $shapeDetail
+    $shapeDetail = if (-not $wait2.Ready) { '第二段宿主没起来' }
+    elseif ($null -eq $offline) { 'offline 是 null——补发根本没发生' }
+    elseif ($missingOffline.Count -gt 0) { "缺 $($missingOffline -join '、')" }
+    else { "补了 $($offline.cookiesText)，时长 $($offline.durationText)" }
+    Check '读档之后快照里出现待播报的离线收益' $shapeOk $shapeDetail
 
-            if ($shapeOk) {
-                $elapsed = [double]$offline.elapsedSeconds
-                $credited = [double]$offline.creditedSeconds
-                # 改老了 5 小时，所以：确实离开了 5 小时上下、计入的不超过离开的、被标记为截断、
-                # 补发量为正。上限具体是多少归内容包管，这里不写死。
-                $sane = ([double]$offline.cookiesGained -gt 0) -and ($credited -gt 0) `
-                    -and ($credited -le $elapsed) -and ($elapsed -ge 4.5 * 3600) -and [bool]$offline.wasCapped
-                Check '离线时长与补发量自洽（5 小时超过上限，应标记被截断）' $sane `
-                    "离开 $([math]::Round($elapsed / 3600, 2))h、计入 $([math]::Round($credited / 3600, 2))h、补发 $($offline.cookiesGained)、wasCapped=$($offline.wasCapped)"
+    # 从这里往下，判据要用到"待播报的那份离线收益"本体：本体不在时**显式跳过**（`[SKIP]` +
+    # 理由 + 计入总数），而不是像老写法那样留在 if 里、悄悄从账上消失。"收下之后不再有它"
+    # 那一条尤其要跳：本体不存在时它会**空过**（假绿），而假绿比缺失更坏。
+    $offlineMissing = if ($shapeOk) { '' } else { '快照里没有待播报的离线收益，无从判定' }
+    $subjectMissing = if ($host2Missing) { $host2Missing } else { $offlineMissing }
 
-                # 刷新页面 = 重新取一份全量快照。没播报之前它必须还在（前端就是靠全量帧拿到它的）。
-                Start-Sleep -Milliseconds 300
-                $reloaded = Convert-FromJsonSafe (Invoke-Get "/api/snapshot?package=$Package").Body
-                Check '没播报之前刷新（再取一次全量）不会让它消失' ($null -ne $reloaded -and $null -ne $reloaded.offline) `
-                    $(if ($null -ne $reloaded.offline) { '再取一次仍在' } else { 'offline 已经没了' })
+    $elapsed = 0
+    $credited = 0
+    $sane = $false
+    $saneDetail = '—'
+    if ($shapeOk) {
+        $elapsed = [double]$offline.elapsedSeconds
+        $credited = [double]$offline.creditedSeconds
+        # 改老了 5 小时，所以：确实离开了 5 小时上下、计入的不超过离开的、被标记为截断、
+        # 补发量为正。上限具体是多少归内容包管，这里不写死。
+        $sane = ([double]$offline.cookiesGained -gt 0) -and ($credited -gt 0) `
+            -and ($credited -le $elapsed) -and ($elapsed -ge 4.5 * 3600) -and [bool]$offline.wasCapped
+        $saneDetail = "离开 $([math]::Round($elapsed / 3600, 2))h、计入 $([math]::Round($credited / 3600, 2))h、补发 $($offline.cookiesGained)、wasCapped=$($offline.wasCapped)"
+    }
+    Check '离线时长与补发量自洽（5 小时超过上限，应标记被截断）' $sane $saneDetail $subjectMissing
 
-                $dismiss = Invoke-PostJson "/api/command?package=$Package" @{ type = 'dismissOffline' }
-                $dismissResult = Convert-FromJsonSafe $dismiss.Body
-                Check 'POST /api/command dismissOffline 成功' ($dismiss.Success -and $dismissResult.ok -eq $true) `
-                    "HTTP $($dismiss.Status)：$([string]$dismissResult.message)"
+    # 刷新页面 = 重新取一份全量快照。没播报之前它必须还在（前端就是靠全量帧拿到它的）。
+    Start-Sleep -Milliseconds 300
+    $reloaded = if ($wait2.Ready) { Convert-FromJsonSafe (Invoke-Get "/api/snapshot?package=$Package").Body } else { $null }
+    $reloadDetail = if ($null -eq $reloaded) { '快照读不出来' }
+    elseif ($null -eq $reloaded.offline) { 'offline 已经没了（补发根本没发生，或被提前清掉了）' }
+    else { '再取一次仍在' }
+    Check '没播报之前刷新（再取一次全量）不会让它消失' ($null -ne $reloaded -and $null -ne $reloaded.offline) `
+        $reloadDetail $host2Missing
 
-                # 快照由游戏线程按 250ms 的节拍重算，所以这里轮询而不是立刻断言。
-                $cleared = $null
-                for ($i = 0; $i -lt 12; $i++) {
-                    Start-Sleep -Milliseconds 250
-                    $cleared = Convert-FromJsonSafe (Invoke-Get "/api/snapshot?package=$Package").Body
-                    if ($null -eq $cleared.offline) { break }
-                }
-                Check '收下之后快照里不再有它（刷新不会再弹）' ($null -ne $cleared -and $null -eq $cleared.offline) `
-                    $(if ($null -eq $cleared.offline) { 'offline 已是 null' } else { '收下之后它还在' })
+    $dismiss = if ($wait2.Ready) { Invoke-PostJson "/api/command?package=$Package" @{ type = 'dismissOffline' } } else { $null }
+    $dismissResult = if ($null -ne $dismiss) { Convert-FromJsonSafe $dismiss.Body } else { $null }
+    Check 'POST /api/command dismissOffline 成功' ($null -ne $dismiss -and $dismiss.Success -and $dismissResult.ok -eq $true) `
+        $(if ($null -ne $dismiss) { "HTTP $($dismiss.Status)：$([string]$dismissResult.message)" } else { '—' }) `
+        $host2Missing
 
-                # 两个标签页都会发这条命令，所以第二发必须是 ok，而不是"你已经点过了"这种错误。
-                $again = Invoke-PostJson "/api/command?package=$Package" @{ type = 'dismissOffline' }
-                $againResult = Convert-FromJsonSafe $again.Body
-                Check '重复收下是幂等的（第二个标签页也会发它）' ($again.Success -and $againResult.ok -eq $true) `
-                    "HTTP $($again.Status)：$([string]$againResult.message)"
-            }
+    # 快照由游戏线程按 250ms 的节拍重算，所以这里轮询而不是立刻断言。
+    $cleared = $null
+    if ($wait2.Ready) {
+        for ($i = 0; $i -lt 12; $i++) {
+            Start-Sleep -Milliseconds 250
+            $cleared = Convert-FromJsonSafe (Invoke-Get "/api/snapshot?package=$Package").Body
+            if ($null -eq $cleared.offline) { break }
         }
     }
+    $clearedDetail = if ($null -eq $cleared) { '快照读不出来' }
+    elseif ($null -eq $cleared.offline) { 'offline 已是 null' }
+    else { '收下之后它还在' }
+    Check '收下之后快照里不再有它（刷新不会再弹）' ($null -ne $cleared -and $null -eq $cleared.offline) `
+        $clearedDetail $subjectMissing
+
+    # 两个标签页都会发这条命令，所以第二发必须是 ok，而不是"你已经点过了"这种错误。
+    $again = if ($wait2.Ready) { Invoke-PostJson "/api/command?package=$Package" @{ type = 'dismissOffline' } } else { $null }
+    $againResult = if ($null -ne $again) { Convert-FromJsonSafe $again.Body } else { $null }
+    Check '重复收下是幂等的（第二个标签页也会发它）' ($null -ne $again -and $again.Success -and $againResult.ok -eq $true) `
+        $(if ($null -ne $again) { "HTTP $($again.Status)：$([string]$againResult.message)" } else { '—' }) `
+        $host2Missing
 }
 finally {
     Write-Host ''
@@ -736,13 +834,34 @@ finally {
 }
 
 # ---------------------------------------------------------------- 结论
+# 先跑覆盖审计，再报结论：**计数对不上不算通过**。源码里有几处 Check 调用点，这次就该执行到
+# 几处；少了的那几处连行号一起点名（见头部 ⑤）。跳过的那几条 `[SKIP]` 已经计进总数。
+$coverage = Get-CheckPointCoverage
+$unreached = @($coverage.Unreached)
 Write-Host ''
-if ($script:Failed -eq 0) {
-    Write-Host "全部通过：$($script:Passed) 项检查。" -ForegroundColor Green
+Write-Host "检查点覆盖：源码 $($coverage.Sites) 处 ｜ 执行到 $($coverage.Sites - $unreached.Count) 处 ｜ 通过 $($script:Passed) ｜ 失败 $($script:Failed) ｜ 跳过 $($script:Skipped)" `
+    -ForegroundColor $(if ($unreached.Count -gt 0) { 'Red' } else { 'DarkGray' })
+if ($unreached.Count -gt 0) {
+    Write-Host "有 $($unreached.Count) 处检查点这次**没有执行到**——不许静默发生（「源码 N 处 / 运行 M 项」就是这么来的）：" -ForegroundColor Red
+    foreach ($site in $unreached) {
+        Write-Host "    第 $($site.Extent.StartLineNumber) 行：$((($site.Extent.Text -split "`n")[0]).Trim())" -ForegroundColor Red
+    }
+}
+
+if ($script:Failed -eq 0 -and $unreached.Count -eq 0) {
+    # "N 项检查"报的是**检查点总数**（通过 + 跳过），不是只报通过数——这样跳过一条也不会让
+    # 别人以为这份脚本只有 51 项（"源码 52 处 / 运行 51 项"那个坑的另一半就在这里）。
+    $total = $script:Passed + $script:Failed + $script:Skipped
+    Write-Host "全部通过：$total 项检查（通过 $($script:Passed) ｜ 失败 0 ｜ 跳过 $($script:Skipped)）。" -ForegroundColor Green
     if (-not $KeepSave) { Remove-Item -Recurse -Force $workDir -ErrorAction SilentlyContinue }
     exit 0
 }
 
-Write-Host "$($script:Failed) 项失败（通过 $($script:Passed) 项）。" -ForegroundColor Red
+if ($unreached.Count -gt 0) {
+    Write-Host "$($script:Failed) 项失败、$($unreached.Count) 处检查点没有执行（通过 $($script:Passed) ｜ 跳过 $($script:Skipped)）。" -ForegroundColor Red
+}
+else {
+    Write-Host "$($script:Failed) 项失败（通过 $($script:Passed) ｜ 跳过 $($script:Skipped)）。" -ForegroundColor Red
+}
 Write-Host "宿主日志留在：$workDir" -ForegroundColor Yellow
 exit 1
