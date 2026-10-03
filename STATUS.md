@@ -72,7 +72,7 @@
 engine/            自包含：搬走它 + 仓库根的 Directory.Build.props = 独立引擎仓库
   core/            引擎本体（平台中立，可在 Linux/macOS 直接构建）
   content/<包名>/  十一个内容包，一个包一个 csproj
-  engine/tests/    469 个用例 + 自研迷你运行器
+  engine/tests/    472 个用例 + 自研迷你运行器
   docs/            架构 / 内容作者指南 / 版本承诺 / 发布流程（RELEASING）
 games/             旗舰示例作品。依赖 engine/，反向不依赖
   hosts/Demo.Cli/  终端前端，同时是框架回归基线（FrameRenderTests 引用它）
@@ -102,7 +102,7 @@ start.cmd list               # 列出全部内容包
 走脚本的话：
 
 ```powershell
-.\tools\build.ps1 -Strict    # 一条命令：引擎 + 内容 + 469 用例 + Web 宿主（0 警告）
+.\tools\build.ps1 -Strict    # 一条命令：引擎 + 内容 + 472 用例 + Web 宿主（0 警告）
 .\tools\play.ps1             # 终端 Demo；--package <id> 换包
 .\tools\play.ps1 --package lab --simulate 21600 --auto   # 无头跑图 + 数值报告
 .\tools\web.ps1 run          # Web 前端（开发期必须 dotnet run 起，见 §7）
@@ -125,13 +125,16 @@ start.cmd list               # 列出全部内容包
 密钥只来自环境变量 `NEKO_DEBUG_KEY`（不设就**不存在**这道门）；跳层会话**不写存档**。
 方案见 [WEB_DEBUG_GATE_PLAN](engine/docs/WEB_DEBUG_GATE_PLAN.md)。
 
-**剧情现在是可读文件**：十个有剧情的包（咖啡馆 / 九命 / 实验室 / 公司 / 末世 / 图书馆 /
+**剧情与建筑文案现在是可读文件**：十个有剧情的包（咖啡馆 / 九命 / 实验室 / 公司 / 末世 / 图书馆 /
 神明 / 文明 / 赛博 / 梦境）的**全部 421 条图鉴散文**住在各自目录下的 `text.json` 里，
 代码里只剩条件、序号、频道与条数——改一个错字不用重编，丢一条 / 多一条 / id 对不上
-都会在启动时当场抛。示例包「猫咖物语」没有图鉴，所以没有文本文件。
-搬迁的保真判据：迁移前后各把全部包的图鉴文字 dump 一次，**176,708 字节逐字节相同**。
-完整过程（含路上抓到的那个并发缺陷）见 [TEXT_AS_DATA_PLAN](engine/docs/TEXT_AS_DATA_PLAN.md) §8；
-写新包的形态见 [CONTENT_AUTHORING](engine/docs/CONTENT_AUTHORING.md) §12.0。
+都会在启动时当场抛。**同一份 `text.json` 现在还住着建筑的 `name` / `description` / `icon`
+（十一个包、104 座）与纪元的六个字段（九个包、49 层，根节 `eras`）**；
+示例包「猫咖物语」没有图鉴与纪元，它的 `text.json` 只有 `buildings` 一个分区。
+搬迁的保真判据都是"迁移前后各把运行期文字 dump 一次、逐字节比对"：
+图鉴 **176,708 字节**、建筑 **13,567 字节**、纪元 **45,621 字节**、建筑图标 **7,895 字节**。
+完整过程见 [TEXT_AS_DATA_PLAN](engine/docs/TEXT_AS_DATA_PLAN.md) §8 / §9 / §10；
+写新包的形态见 [CONTENT_AUTHORING](engine/docs/CONTENT_AUTHORING.md) §12.0 / §12.0.1 / §12.0.2。
 
 ---
 
@@ -139,11 +142,11 @@ start.cmd list               # 列出全部内容包
 
 | 命令 | 期望 |
 |---|---|
-| `.\tools\build.ps1 -Strict` | **469 个用例全绿**、0 警告（主 sln 与 Web sln 都编） |
+| `.\tools\build.ps1 -Strict` | **472 个用例全绿**、0 警告（主 sln 与 Web sln 都编） |
 | `.\tools\api-test.ps1` | **44 项端到端检查全通过**——真起宿主（`dotnet run`）、真读 SSE 流、**最后再起一次宿主读档**，收尾自己清进程 |
 | `.\tools\web.ps1 build -Strict` | 只编 Web 宿主时用（0 警告） |
 
-**1.4.0 时代基线 441 的构成**（此后又长过两轮，**当前 469**；1.5.0 / 1.6.0 两轮的用例增删见
+**1.4.0 时代基线 441 的构成**（此后又长过三轮，**当前 472**；1.5.0 / 1.6.0 两轮的用例增删见
 [OPEN_WORK](engine/docs/OPEN_WORK.md) 的 J、K 条——所以下面这份分解**只作历史**）：435（1.2.1 基线：
 404 阶段 6 + 7 合并守卫 + 10 Web 协议 + 9 `ContentText` 加载器
 + 1 并发读写 + 4 剧情文本运行期守卫）+ 4（离线报告：出现 / 短离线不弹 / 重开清掉
@@ -155,10 +158,12 @@ start.cmd list               # 列出全部内容包
   **协议口径下逐字节相同**、字段名必须 camelCase、`null` 补丁要应用而不是跳过、
   以及**按字节数**守住"一个 tick 的增量远小于全量"
   （派生字段翻转不能重发整表：`AffordabilityFlip_DoesNotResendTheWholeList`）。
-- `ContentTextFileTests` 守剧情外部化的装配（覆盖**全部**已外部化的包）：输出目录里的
-  `text.json` 与仓库里那份**逐字节相同**、代码里每条散文都等于文件里的对应字段、
+- `ContentTextFileTests` 守文本外部化的装配（覆盖**全部**已外部化的包）：输出目录里的
+  `text.json` 与仓库里那份**逐字节相同**、代码里每条散文 / 建筑字段 / 纪元字段都等于文件里的对应字段、
   把文件改坏（删一条 / 多一条）真的会红——而原样读一遍一条都不抛；
-  另有一条覆盖度用例盯着"有 text.json 的包"与"守卫表里的包"必须一致。
+  另有一条覆盖度用例盯着"有 text.json 的包"与"守卫表里的包"必须一致，
+  以及两张**写死的条数表**（每包几座建筑、每包几层纪元）——它们是唯一能发现
+  "代码与文件**同时**少一条"的守卫。
 - `ContentTextTests.ConcurrentReaders_DoNotCorruptTheUsedSet` 守 1.2.0 那个并发缺陷
   （同一份文本被多个线程同时读）。它自己第一版是橡皮图章（只两个键、撞不出扩容竞态），
   被故障注入抓出来后改成 200 条 × 16 线程 × 30 轮。

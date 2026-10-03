@@ -55,6 +55,10 @@ new BuildingDefinition
 }
 ```
 
+> ⚠️ 上面的 `Name` / `Description` / `Icon` **从 2026-10-02 起不写在 C# 里**——它们住在
+> `text.json` 的 `buildings` 节，代码里写 `Prose.Text("buildings", "<id>", "name")` 这样取（见 §12.0.1）。
+> 这里保留字面量写法，是为了让**数值与条件**那几行一眼看得全。
+
 **相邻层的两个倍率决定整个游戏的节奏**（这是 Cookie Clicker 的核心配方）：
 
 | 倍率 | 参考值 | 作用 |
@@ -498,6 +502,11 @@ builder.AddEras(
     /* …… 层号必须从 1 连续递增 …… */);
 ```
 
+> ⚠️ 上面那六个**文案**字段（`Name` / `Theme` / `Icon` / `EntryText` / `ExitText` / `CompletionHint`）
+> **从 2026-10-03 起不写在 C# 里**——它们住在 `text.json` 的 `eras` 节，代码里写
+> `Prose.Text("eras", "<id>", "entryText")` 这样取（见 §12.0.2）。这里保留字面量写法，
+> 是为了让**层号、条件树、数值规则**的写法一眼看得全。
+
 **规则**（构建期会替你拦住大部分错误）：
 
 | 事项 | 说明 |
@@ -631,18 +640,23 @@ private static LoreEntry Make(string id, int order, UnlockCondition reveal, Lore
 | 多条线要并行起步 | 九命首轮只释放 1 条，因为三条线的开场条件挤在同一处；把 3 个开场条目分别挂到点击 1 / 25 / 100 次上就解决了 |
 | 消耗方式 | `UnlockCondition.LoreAtLeast(n)` 做门控，`Scaling(ScalingSource.LoreCount, ...)` 做成长 |
 
-### 12.0.1 建筑的 name / description 也外置了（2026-10-02 起）
+### 12.0.1 建筑的 name / description / icon 也外置了（2026-10-02 起，icon 于 2026-10-03 补上）
 
 §12.0 讲的是**剧情散文**（`storylines` / `lore`）。同一套机制现在也覆盖**建筑**：
-`BuildingDefinition.Name` 与 `Description` 搬进了同一个 `text.json` 的根节 `buildings`。
+`BuildingDefinition.Name` / `Description` / `Icon` 搬进了同一个 `text.json` 的根节 `buildings`。
 
-- **形状**：`"<建筑 id>": { "name": …, "description": … }`——与 `storylines` / `lore` 同一份 id 空间、
-  同一份文件。
+- **形状**：`"<建筑 id>": { "name": …, "description": …, "icon": … }`——与 `storylines` / `lore`
+  同一份 id 空间、同一份文件。
 - **代码侧**：`Name = Prose.Text("buildings", "<id>", "name")` /
-  `Description = Prose.Text("buildings", "<id>", "description")`。
+  `Description = Prose.Text("buildings", "<id>", "description")` /
+  `Icon = Prose.Text("buildings", "<id>", "icon")`。
   **id 用建筑自己的 id**（也就是 `BuildingDefinition.Id`、存档键），不是序号。
-- **仍然留在代码里的**：`Icon` 与全部逻辑/数值字段（`BasePrice` / `BaseCps` / `PriceGrowth` /
-  `Unlock` / `Category` / `Tags` / `HiddenUntilUnlocked` / `SellRefundRate`）——它们是符号与逻辑，不是文案。
+- **`Icon` 一开始留在代码里，后来补搬了**：`storylines` 连 icon 一起外置、建筑却没有，
+  这处不一致当时记成 `OPEN_WORK.md` 的未决项 L。**结论是"搬出去"**（一切玩家可见的东西都进文件），
+  L 条已结案——`Icon` 不是"符号属于代码"的例外，它和剧情线的 icon 是同一类东西。
+  九命那 12 座走的是工厂 `Make(id, price, cps, era:)`，图标同样按 id 从文件取。
+- **仍然留在代码里的**：全部逻辑/数值字段（`BasePrice` / `BaseCps` / `PriceGrowth` /
+  `Unlock` / `Category` / `Tags` / `HiddenUntilUnlocked` / `SellRefundRate`）与 **id**——它们是逻辑，不是文案。
 
 #### ⚠️ 一个包只能有**一个** `ContentText` 实例
 
@@ -655,17 +669,35 @@ private static LoreEntry Make(string id, int order, UnlockCondition reveal, Lore
 
 #### 守卫
 
-`ContentTextFileTests` 里与建筑有关的两条：
+`ContentTextFileTests` 里与建筑有关的条目：
 
 - `ExpectedBuildings`：**每包硬编码的建筑数**。这是唯一能发现"代码与 JSON **同时**删掉一座"的守卫
   （纯双向比对发现不了：两边都少了一座，看起来仍然一致）。
 - `BuildingCountTable_CoversExactlyTheGuardTable`：新包**不可能忘记登记**期望数。
+- `EveryBuilding_ResolvesItsTextFromTheFile` 逐座比对 **name / description / icon** 三个字段
+  （代码值 == 文件值，两个方向）。
 
-#### ⚠️ 一处**已知的不一致**（待定，别照着抄）
+### 12.0.2 纪元的六个字段也外置了（2026-10-03 起）
 
-`storylines` 连 `icon` 一起外置了（见上面的 §12.0），**建筑没有**——`Icon` 还在代码里。
-两者不一致：要么把建筑的 `Icon` 也搬出去，要么把 `storylines` 的搬回来。
-**在决定之前，新写建筑就照现状**（`Icon` 留在代码里）。这条记在 `OPEN_WORK.md` 的未决项里。
+`EraDefinition` 里**给玩家读**的六个字符串搬进同一个 `text.json` 的根节 `eras`：
+`Name` / `Theme` / `Icon` / `EntryText` / `ExitText` / `CompletionHint`。
+
+- **形状**：`"<纪元 id>": { "name": …, "theme": …, "icon": …, "entryText": …, "exitText": …,
+  "completionHint": … }`。id 就是 `EraDefinition.Id`（存档与叙事引用用的那个）。
+- **代码侧**：六项一律 `Prose.Text("eras", "<id>", "<field>")`——字段名的规则是
+  "C# 属性名首字母小写"（`EntryText` → `entryText`）。
+- **没搬的**：`Index`（层号，必须连续的校验依据）、`Completion`（条件树）、`Balance` /
+  `Modifiers` / `MetaRewardMultiplier`（数值与规则）、`InheritBuildingRatio` /
+  `InheritBuildings` / `UnlocksBuildings` / `UnlocksUpgrades`（比例、白名单、id 清单）。
+  判据与 §12.0 同一条：**能进数据的只有散文**。
+- **`CompletionHint` 特殊**：它在 C# 里的默认是空串，**空 ⇒ 界面回退成条件树的自动描述**——
+  一条静默路径。所以搬过来时用 `Text(...)`（缺失即抛）而**不是** `TextOr`，
+  守卫里也断言六项**都非空**。
+- **`Neko` 与 `Cafe` 没有纪元**（连 `Eras.cs` 都没有），它们的 `text.json` 里**不许有** `eras` 分区：
+  期望条数表里这两个包写 **0**，守卫按"期望 0 ⇒ 文件里也不许有"检查。
+- **守卫**：`ExpectedEras`（写死每包层数）+ `EraCountTable_CoversExactlyTheGuardTable` +
+  `EveryEra_ResolvesItsTextFromTheFile`（六字段双向 + 非空）+
+  `EditingTheEraTextWrongly_FailsLoudly`（少一层 / 多一层都要响）。
 
 ---
 

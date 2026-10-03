@@ -19,6 +19,14 @@ namespace NekoClicker.Content.Apocalypse;
 /// </summary>
 internal static class Eras
 {
+    /// <summary>
+    /// 本包的 <c>text.json</c>：纪元文案与剧情散文、建筑文案<b>共用同一份实例</b>（<see cref="Lore.Prose"/>）。<para>
+    /// 必须共用：孤儿检查会遍历整份文件的每个 kind，而"哪些 id 已取用"是按实例记的——
+    /// 两个实例各记一半，就会把对方那些 id 全报成孤儿。
+    /// </para>
+    /// </summary>
+    private static ContentText Prose => Lore.Prose;
+
     /// <summary>五层定义。<paramref name="baseBalance"/> 是内容包的基准数值。</summary>
     public static EraDefinition[] All(GameBalance baseBalance) =>
     [
@@ -26,23 +34,23 @@ internal static class Eras
         {
             Index = 1,
             Id = "basement",
-            Name = "第 1 次重启 · 地下室",
-            Icon = "🕯️",
-            Theme = "文明已经结束很久了。她从一个塌掉的地下室里醒来，第一件事是找水。",
-            EntryText = "你醒了。没有电，没有信号，也没有别人。她把手在裤子上擦干净，说：「那就从今天算起。」",
-            ExitText = "地下室的墙被雨水泡透了。她收拾好东西往地面走——这一次她什么都没有带走。",
+            Name = Prose.Text("eras", "basement", "name"),
+            Icon = Prose.Text("eras", "basement", "icon"),
+            Theme = Prose.Text("eras", "basement", "theme"),
+            EntryText = Prose.Text("eras", "basement", "entryText"),
+            ExitText = Prose.Text("eras", "basement", "exitText"),
             Completion = UnlockCondition.EarnedThisRunAtLeast(1e5),
-            CompletionHint = "本轮累计挖到 100,000 物资。",
+            CompletionHint = Prose.Text("eras", "basement", "completionHint"),
         },
         new()
         {
             Index = 2,
             Id = "electric",
-            Name = "第 2 次重启 · 电",
-            Icon = "💡",
-            Theme = "她记得怎么发电——上一次她也用过发电机，只是那时候没觉得这件事值得记。",
-            EntryText = "这一次她先去东边那栋楼，二楼靠窗的位置。发电机还在原地，只是锈住了。",
-            ExitText = "灯亮了整晚。她第一次看清地下室到底有多大，然后开始数还有多少面墙没刷。",
+            Name = Prose.Text("eras", "electric", "name"),
+            Icon = Prose.Text("eras", "electric", "icon"),
+            Theme = Prose.Text("eras", "electric", "theme"),
+            EntryText = Prose.Text("eras", "electric", "entryText"),
+            ExitText = Prose.Text("eras", "electric", "exitText"),
             // 上一次留下四分之一：还记得路，记得水在哪，记得哪块地板能踩。
             InheritBuildingRatio = 0.25,
             Modifiers = [Modifier.GlobalMultiplier(1.5)],
@@ -50,17 +58,17 @@ internal static class Eras
             Completion = UnlockCondition.All(
                 UnlockCondition.EarnedThisRunAtLeast(2e7),
                 UnlockCondition.AchievementsAtLeast(4)),
-            CompletionHint = "本轮累计 20 million，并解锁 4 个成就。",
+            CompletionHint = Prose.Text("eras", "electric", "completionHint"),
         },
         new()
         {
             Index = 3,
             Id = "settlement",
-            Name = "第 3 次重启 · 聚集地",
-            Icon = "🏕️",
-            Theme = "有人来了。她们说，是看到灯光找过来的。",
-            EntryText = "天线上第一次收到人声。三公里外，有人在问：「那边是不是有电？」",
-            ExitText = "聚集地有了名字。名字是她们自己起的，她没参与投票。",
+            Name = Prose.Text("eras", "settlement", "name"),
+            Icon = Prose.Text("eras", "settlement", "icon"),
+            Theme = Prose.Text("eras", "settlement", "theme"),
+            EntryText = Prose.Text("eras", "settlement", "entryText"),
+            ExitText = Prose.Text("eras", "settlement", "exitText"),
             // 四成留了下来；发电机是保底的——她无论如何先去找那台发电机。
             InheritBuildingRatio = 0.4,
             InheritBuildings = ["generator"],
@@ -72,17 +80,17 @@ internal static class Eras
             Completion = UnlockCondition.All(
                 UnlockCondition.EarnedThisRunAtLeast(4e8),
                 UnlockCondition.AchievementsAtLeast(10)),
-            CompletionHint = "本轮累计 400 million，并解锁 10 个成就。",
+            CompletionHint = Prose.Text("eras", "settlement", "completionHint"),
         },
         new()
         {
             Index = 4,
             Id = "memory_net",
-            Name = "第 4 次重启 · 记忆网",
-            Icon = "🕸️",
-            Theme = "她开始把记忆写下来——因为这一次她发现，重启真的会忘掉东西。",
-            EntryText = "她在墙上写字，写完又擦掉，改成三个字：「挖出来」。",
-            ExitText = "第一座档案馆封顶。她说：「下一轮就不用重新学一遍了。」",
+            Name = Prose.Text("eras", "memory_net", "name"),
+            Icon = Prose.Text("eras", "memory_net", "icon"),
+            Theme = Prose.Text("eras", "memory_net", "theme"),
+            EntryText = Prose.Text("eras", "memory_net", "entryText"),
+            ExitText = Prose.Text("eras", "memory_net", "exitText"),
             // 五成五：她要开始赌"记得住"这件事本身。
             InheritBuildingRatio = 0.55,
             // 记忆开始反过来喂产量：越记得住，活着越容易。
@@ -97,24 +105,24 @@ internal static class Eras
             Completion = UnlockCondition.All(
                 UnlockCondition.EarnedThisRunAtLeast(8e9),
                 UnlockCondition.Counter(EraSystem.PeakCpsCounterKey, 5e7)),
-            CompletionHint = "本轮累计 8 billion，且峰值产量达到 50 million/s。",
+            CompletionHint = Prose.Text("eras", "memory_net", "completionHint"),
         },
         new()
         {
             Index = 5,
             Id = "last_ruin",
-            Name = "第 5 次重启 · 最后的遗迹",
-            Icon = "🏚️",
-            Theme = "最后一批人类遗迹就在城墙外。她必须决定，要不要把它挖出来。",
-            EntryText = "探地雷达上是一片一片的回波——城墙外埋着整座城市，完整地压在地下三米。",
-            ExitText = "她站在城墙上，看着下面那些还没被挖出来的东西。风很大，她没说话。",
+            Name = Prose.Text("eras", "last_ruin", "name"),
+            Icon = Prose.Text("eras", "last_ruin", "icon"),
+            Theme = Prose.Text("eras", "last_ruin", "theme"),
+            EntryText = Prose.Text("eras", "last_ruin", "entryText"),
+            ExitText = Prose.Text("eras", "last_ruin", "exitText"),
             // 七成：这一轮她几乎把整个文明搬了过来。
             InheritBuildingRatio = 0.7,
             InheritBuildings = ["ruins", "archive"],
             Modifiers = [Modifier.GlobalMultiplier(3)],
             UnlocksBuildings = ["relic_city"],
             Completion = FinalCompletion,
-            CompletionHint = "本轮累计 150 billion，并解锁 18 个成就。",
+            CompletionHint = Prose.Text("eras", "last_ruin", "completionHint"),
         },
     ];
 

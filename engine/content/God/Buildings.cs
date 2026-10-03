@@ -50,7 +50,7 @@ internal static class Buildings
         {
             Id = "house_shrine",
             Name = Prose.Text("buildings", "house_shrine", "name"),
-            Icon = "🏠",
+            Icon = Prose.Text("buildings", "house_shrine", "icon"),
             Description = Prose.Text("buildings", "house_shrine", "description"),
             BasePrice = 15,
             BaseCps = 0.1,
@@ -60,7 +60,7 @@ internal static class Buildings
         {
             Id = "stone_temple",
             Name = Prose.Text("buildings", "stone_temple", "name"),
-            Icon = "🏛️",
+            Icon = Prose.Text("buildings", "stone_temple", "icon"),
             Description = Prose.Text("buildings", "stone_temple", "description"),
             BasePrice = 100,
             BaseCps = 1,
@@ -71,7 +71,7 @@ internal static class Buildings
         {
             Id = "offering_altar",
             Name = Prose.Text("buildings", "offering_altar", "name"),
-            Icon = "🕯️",
+            Icon = Prose.Text("buildings", "offering_altar", "icon"),
             Description = Prose.Text("buildings", "offering_altar", "description"),
             BasePrice = 1_100,
             BaseCps = 8,
@@ -82,7 +82,7 @@ internal static class Buildings
         {
             Id = "sun_obelisk",
             Name = Prose.Text("buildings", "sun_obelisk", "name"),
-            Icon = "☀️",
+            Icon = Prose.Text("buildings", "sun_obelisk", "icon"),
             Description = Prose.Text("buildings", "sun_obelisk", "description"),
             BasePrice = 12_000,
             BaseCps = 47,
@@ -92,7 +92,7 @@ internal static class Buildings
         {
             Id = "oracle_grove",
             Name = Prose.Text("buildings", "oracle_grove", "name"),
-            Icon = "🌳",
+            Icon = Prose.Text("buildings", "oracle_grove", "icon"),
             Description = Prose.Text("buildings", "oracle_grove", "description"),
             BasePrice = 130_000,
             BaseCps = 260,
@@ -102,7 +102,7 @@ internal static class Buildings
         {
             Id = "thunder_hall",
             Name = Prose.Text("buildings", "thunder_hall", "name"),
-            Icon = "⚡",
+            Icon = Prose.Text("buildings", "thunder_hall", "icon"),
             Description = Prose.Text("buildings", "thunder_hall", "description"),
             BasePrice = 1_400_000,
             BaseCps = 1_400,
@@ -113,7 +113,7 @@ internal static class Buildings
         {
             Id = "stream_studio",
             Name = Prose.Text("buildings", "stream_studio", "name"),
-            Icon = "📹",
+            Icon = Prose.Text("buildings", "stream_studio", "icon"),
             Description = Prose.Text("buildings", "stream_studio", "description"),
             BasePrice = 20_000_000,
             BaseCps = 7_800,
@@ -124,7 +124,7 @@ internal static class Buildings
         {
             Id = "merch_factory",
             Name = Prose.Text("buildings", "merch_factory", "name"),
-            Icon = "🧸",
+            Icon = Prose.Text("buildings", "merch_factory", "icon"),
             Description = Prose.Text("buildings", "merch_factory", "description"),
             BasePrice = 330_000_000,
             BaseCps = 44_000,
@@ -134,7 +134,7 @@ internal static class Buildings
         {
             Id = "abyssal_cathedral",
             Name = Prose.Text("buildings", "abyssal_cathedral", "name"),
-            Icon = "🐙",
+            Icon = Prose.Text("buildings", "abyssal_cathedral", "icon"),
             Description = Prose.Text("buildings", "abyssal_cathedral", "description"),
             BasePrice = 5_100_000_000,
             BaseCps = 260_000,

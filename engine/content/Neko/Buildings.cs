@@ -46,7 +46,7 @@ internal static class Buildings
         {
             Id = "curled_cat",
             Name = Prose.Text("buildings", "curled_cat", "name"),
-            Icon = "🐈",
+            Icon = Prose.Text("buildings", "curled_cat", "icon"),
             Description = Prose.Text("buildings", "curled_cat", "description"),
             BasePrice = 15,
             BaseCps = 0.1,
@@ -56,7 +56,7 @@ internal static class Buildings
         {
             Id = "scratching_post",
             Name = Prose.Text("buildings", "scratching_post", "name"),
-            Icon = "🪵",
+            Icon = Prose.Text("buildings", "scratching_post", "icon"),
             Description = Prose.Text("buildings", "scratching_post", "description"),
             BasePrice = 100,
             BaseCps = 1,
@@ -67,7 +67,7 @@ internal static class Buildings
         {
             Id = "cat_bed",
             Name = Prose.Text("buildings", "cat_bed", "name"),
-            Icon = "🛏️",
+            Icon = Prose.Text("buildings", "cat_bed", "icon"),
             Description = Prose.Text("buildings", "cat_bed", "description"),
             BasePrice = 1_100,
             BaseCps = 8,
@@ -78,7 +78,7 @@ internal static class Buildings
         {
             Id = "auto_feeder",
             Name = Prose.Text("buildings", "auto_feeder", "name"),
-            Icon = "🍽️",
+            Icon = Prose.Text("buildings", "auto_feeder", "icon"),
             Description = Prose.Text("buildings", "auto_feeder", "description"),
             BasePrice = 12_000,
             BaseCps = 47,
@@ -89,7 +89,7 @@ internal static class Buildings
         {
             Id = "cat_cafe",
             Name = Prose.Text("buildings", "cat_cafe", "name"),
-            Icon = "☕",
+            Icon = Prose.Text("buildings", "cat_cafe", "icon"),
             Description = Prose.Text("buildings", "cat_cafe", "description"),
             BasePrice = 130_000,
             BaseCps = 260,
@@ -100,7 +100,7 @@ internal static class Buildings
         {
             Id = "catnip_field",
             Name = Prose.Text("buildings", "catnip_field", "name"),
-            Icon = "🌿",
+            Icon = Prose.Text("buildings", "catnip_field", "icon"),
             Description = Prose.Text("buildings", "catnip_field", "description"),
             BasePrice = 1_400_000,
             BaseCps = 1_400,
@@ -111,7 +111,7 @@ internal static class Buildings
         {
             Id = "cat_portal",
             Name = Prose.Text("buildings", "cat_portal", "name"),
-            Icon = "🌀",
+            Icon = Prose.Text("buildings", "cat_portal", "icon"),
             Description = Prose.Text("buildings", "cat_portal", "description"),
             BasePrice = 20_000_000,
             BaseCps = 7_800,
@@ -122,7 +122,7 @@ internal static class Buildings
         {
             Id = "time_cat",
             Name = Prose.Text("buildings", "time_cat", "name"),
-            Icon = "⏳",
+            Icon = Prose.Text("buildings", "time_cat", "icon"),
             Description = Prose.Text("buildings", "time_cat", "description"),
             BasePrice = 330_000_000,
             BaseCps = 44_000,
@@ -133,7 +133,7 @@ internal static class Buildings
         {
             Id = "cat_temple",
             Name = Prose.Text("buildings", "cat_temple", "name"),
-            Icon = "🏛️",
+            Icon = Prose.Text("buildings", "cat_temple", "icon"),
             Description = Prose.Text("buildings", "cat_temple", "description"),
             BasePrice = 5_100_000_000,
             BaseCps = 260_000,
@@ -144,7 +144,7 @@ internal static class Buildings
         {
             Id = "cat_universe",
             Name = Prose.Text("buildings", "cat_universe", "name"),
-            Icon = "🌌",
+            Icon = Prose.Text("buildings", "cat_universe", "icon"),
             Description = Prose.Text("buildings", "cat_universe", "description"),
             BasePrice = 75_000_000_000,
             BaseCps = 1_600_000,

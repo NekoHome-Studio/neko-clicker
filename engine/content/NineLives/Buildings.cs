@@ -26,31 +26,31 @@ internal static class Buildings
     /// <summary>全部建筑。</summary>
     public static BuildingDefinition[] All =>
     [
-        Make("cardboard_box", "📦", 15, 0.1, era: 1),
-        Make("cat_bed", "🛏️", 100, 1, era: 1),
+        Make("cardboard_box", 15, 0.1, era: 1),
+        Make("cat_bed", 100, 1, era: 1),
 
-        Make("cat_cafe", "☕", 1_100, 8, era: 2),
-        Make("catnip_field", "🌿", 12_000, 47, era: 2),
+        Make("cat_cafe", 1_100, 8, era: 2),
+        Make("catnip_field", 12_000, 47, era: 2),
 
-        Make("cat_tower", "🗼", 130_000, 260, era: 3),
-        Make("catgirl_lab", "🧪", 1_400_000, 1_400, era: 3),
+        Make("cat_tower", 130_000, 260, era: 3),
+        Make("catgirl_lab", 1_400_000, 1_400, era: 3),
 
-        Make("server_farm", "🖥️", 20_000_000, 7_800, era: 4),
-        Make("memory_vault", "🗄️", 330_000_000, 44_000, era: 5),
+        Make("server_farm", 20_000_000, 7_800, era: 4),
+        Make("memory_vault", 330_000_000, 44_000, era: 5),
 
-        Make("temple", "🏛️", 5_100_000_000, 260_000, era: 6),
-        Make("stream_studio", "📺", 75_000_000_000, 1_600_000, era: 7),
+        Make("temple", 5_100_000_000, 260_000, era: 6),
+        Make("stream_studio", 75_000_000_000, 1_600_000, era: 7),
 
-        Make("dream_library", "📚", 1_200_000_000_000, 9_000_000, era: 8),
-        Make("cat_universe", "🌌", 18_000_000_000_000, 54_000_000, era: 9),
+        Make("dream_library", 1_200_000_000_000, 9_000_000, era: 8),
+        Make("cat_universe", 18_000_000_000_000, 54_000_000, era: 9),
     ];
 
     private static BuildingDefinition Make(
-        string id, string icon, double price, double cps, int era) => new()
+        string id, double price, double cps, int era) => new()
         {
             Id = id,
             Name = Prose.Text("buildings", id, "name"),
-            Icon = icon,
+            Icon = Prose.Text("buildings", id, "icon"),
             Description = Prose.Text("buildings", id, "description"),
             BasePrice = price,
             BaseCps = cps,

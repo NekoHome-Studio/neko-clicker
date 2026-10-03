@@ -22,6 +22,14 @@ namespace NekoClicker.Content.Library;
 /// </summary>
 internal static class Eras
 {
+    /// <summary>
+    /// 本包的 <c>text.json</c>：纪元文案与剧情散文、建筑文案<b>共用同一份实例</b>（<see cref="Lore.Prose"/>）。<para>
+    /// 必须共用：孤儿检查会遍历整份文件的每个 kind，而"哪些 id 已取用"是按实例记的——
+    /// 两个实例各记一半，就会把对方那些 id 全报成孤儿。
+    /// </para>
+    /// </summary>
+    private static ContentText Prose => Lore.Prose;
+
     /// <summary>五层定义。<paramref name="baseBalance"/> 是内容包的基准数值。</summary>
     public static EraDefinition[] All(GameBalance baseBalance) =>
     [
@@ -29,40 +37,40 @@ internal static class Eras
         {
             Index = 1,
             Id = "book_1",
-            Name = "第 1 本 · 空白之书",
-            Icon = "📄",
-            Theme = "书架上有一本一个字都没有的书。她翻开它的时候，第一句话是自己掉下来的。",
-            EntryText = "她醒来的时候，手里握着一支笔，面前摊着一本空白的东西。她试着写了一个字，纸把它吃了。",
-            ExitText = "第一本写完了。最后一个句号落下的时候，整本书开始变厚——它长出了下一页。",
+            Name = Prose.Text("eras", "book_1", "name"),
+            Icon = Prose.Text("eras", "book_1", "icon"),
+            Theme = Prose.Text("eras", "book_1", "theme"),
+            EntryText = Prose.Text("eras", "book_1", "entryText"),
+            ExitText = Prose.Text("eras", "book_1", "exitText"),
             Modifiers = ReaderScaling,
             Completion = UnlockCondition.EarnedThisRunAtLeast(1e5),
-            CompletionHint = "本轮累计写到 100,000 页。",
+            CompletionHint = Prose.Text("eras", "book_1", "completionHint"),
         },
         new()
         {
             Index = 2,
             Id = "book_2",
-            Name = "第 2 本 · 第一个世界",
-            Icon = "🌍",
-            Theme = "书里开始有人住了。他们不知道自己是写出来的。",
-            EntryText = "第二个世界比第一个大。她这次先画了地图，再往里放人。",
-            ExitText = "她把第一个世界合上，放回书架。合上的声音比想象中轻。",
+            Name = Prose.Text("eras", "book_2", "name"),
+            Icon = Prose.Text("eras", "book_2", "icon"),
+            Theme = Prose.Text("eras", "book_2", "theme"),
+            EntryText = Prose.Text("eras", "book_2", "entryText"),
+            ExitText = Prose.Text("eras", "book_2", "exitText"),
             Modifiers = ReaderScaling,
             UnlocksBuildings = ["reading_room", "copier"],
             Completion = UnlockCondition.All(
                 UnlockCondition.EarnedThisRunAtLeast(1.5e7),
                 UnlockCondition.AchievementsAtLeast(4)),
-            CompletionHint = "本轮累计 15 million，并解锁 4 个成就。",
+            CompletionHint = Prose.Text("eras", "book_2", "completionHint"),
         },
         new()
         {
             Index = 3,
             Id = "book_3",
-            Name = "第 3 本 · 被禁的书",
-            Icon = "🔒",
-            Theme = "这一本被列进了禁书区。于是它成了唯一一本所有人都读过两遍的书。",
-            EntryText = "书脊上被人用红笔划过一道。她把它放进了铁栅栏后面，然后站在外面听。",
-            ExitText = "查禁的人来过三次，每次都带走一本，第三次之后书架反而空了——因为大家都藏了一本。",
+            Name = Prose.Text("eras", "book_3", "name"),
+            Icon = Prose.Text("eras", "book_3", "icon"),
+            Theme = Prose.Text("eras", "book_3", "theme"),
+            EntryText = Prose.Text("eras", "book_3", "entryText"),
+            ExitText = Prose.Text("eras", "book_3", "exitText"),
             // 查禁的年份：事件来得稀，但每次更狠。
             Balance = baseBalance with
             {
@@ -74,37 +82,37 @@ internal static class Eras
             Completion = UnlockCondition.All(
                 UnlockCondition.EarnedThisRunAtLeast(3e8),
                 UnlockCondition.AchievementsAtLeast(10)),
-            CompletionHint = "本轮累计 300 million，并解锁 10 个成就。",
+            CompletionHint = Prose.Text("eras", "book_3", "completionHint"),
         },
         new()
         {
             Index = 4,
             Id = "book_4",
-            Name = "第 4 本 · 合订本",
-            Icon = "📖",
-            Theme = "前三本的人物在同一本书里碰面了。他们互相不认识，但都觉得对方眼熟。",
-            EntryText = "她把三本书拆开，按时间顺序重新装订。装到一半她停手了——她发现自己也在里面。",
-            ExitText = "合订本厚得拿不动。她说这本不借出去，谁也不借。",
+            Name = Prose.Text("eras", "book_4", "name"),
+            Icon = Prose.Text("eras", "book_4", "icon"),
+            Theme = Prose.Text("eras", "book_4", "theme"),
+            EntryText = Prose.Text("eras", "book_4", "entryText"),
+            ExitText = Prose.Text("eras", "book_4", "exitText"),
             Modifiers = ReaderScaling,
             UnlocksBuildings = ["index_tower", "printing_house", "world_workshop"],
             Completion = UnlockCondition.All(
                 UnlockCondition.EarnedThisRunAtLeast(6e9),
                 UnlockCondition.Counter(EraSystem.PeakCpsCounterKey, 4e7)),
-            CompletionHint = "本轮累计 6 billion，且峰值产量达到 40 million/s。",
+            CompletionHint = Prose.Text("eras", "book_4", "completionHint"),
         },
         new()
         {
             Index = 5,
             Id = "book_5",
-            Name = "第 5 本 · 最后一页",
-            Icon = "🔖",
-            Theme = "最后一页写完之后，书会自己合上。合上之后还有没有人读，是她唯一没法控制的事。",
-            EntryText = "这一本她写得很慢。每写完一页就停下来摸一摸，像是在确认纸还在。",
-            ExitText = "最后一页落笔。笔尖抬起来的那一刻，整座图书馆安静得能听见别人翻页。",
+            Name = Prose.Text("eras", "book_5", "name"),
+            Icon = Prose.Text("eras", "book_5", "icon"),
+            Theme = Prose.Text("eras", "book_5", "theme"),
+            EntryText = Prose.Text("eras", "book_5", "entryText"),
+            ExitText = Prose.Text("eras", "book_5", "exitText"),
             Modifiers = ReaderScaling,
             UnlocksBuildings = ["endless_shelf"],
             Completion = FinalCompletion,
-            CompletionHint = "本轮累计 100 billion，并解锁 18 个成就。",
+            CompletionHint = Prose.Text("eras", "book_5", "completionHint"),
         },
     ];
 

@@ -24,6 +24,14 @@ namespace NekoClicker.Content.Dream;
 /// </summary>
 internal static class Eras
 {
+    /// <summary>
+    /// 本包的 <c>text.json</c>：纪元文案与剧情散文、建筑文案<b>共用同一份实例</b>（<see cref="Lore.Prose"/>）。<para>
+    /// 必须共用：孤儿检查会遍历整份文件的每个 kind，而"哪些 id 已取用"是按实例记的——
+    /// 两个实例各记一半，就会把对方那些 id 全报成孤儿。
+    /// </para>
+    /// </summary>
+    private static ContentText Prose => Lore.Prose;
+
     /// <summary>梦境能量成长曲线的门槛值（公开给测试与文案引用）。</summary>
     public const double DreamEnergySoftCap = 80_000;
 
@@ -34,25 +42,25 @@ internal static class Eras
         {
             Index = 1,
             Id = "sleep_1",
-            Name = "第 1 层 · 浅眠",
-            Icon = "🛏️",
-            Theme = "半梦半醒：床垫的纹路还压在小腿上，手指一动就能碰到现实。",
-            EntryText = "她侧过身，把脸埋进枕头。数到第七只猫的时候，楼下的街换成了她认得的字。",
-            ExitText = "她翻了个身，枕头凉了半边。这一层梦太薄，薄得能看见床单。她决定再往下睡一点。",
+            Name = Prose.Text("eras", "sleep_1", "name"),
+            Icon = Prose.Text("eras", "sleep_1", "icon"),
+            Theme = Prose.Text("eras", "sleep_1", "theme"),
+            EntryText = Prose.Text("eras", "sleep_1", "entryText"),
+            ExitText = Prose.Text("eras", "sleep_1", "exitText"),
             // 浅眠：一动就醒，所以点击强；梦还薄，所以梦层类建筑的倍率没起来。
             Modifiers = [.. DeepDream, Modifier.ClickFlat(10), Modifier.GlobalMultiplier(1.1)],
             Completion = UnlockCondition.EarnedThisRunAtLeast(1e5),
-            CompletionHint = "本轮累计睡出 100,000 点梦。",
+            CompletionHint = Prose.Text("eras", "sleep_1", "completionHint"),
         },
         new()
         {
             Index = 2,
             Id = "sleep_2",
-            Name = "第 2 层 · 深眠",
-            Icon = "😴",
-            Theme = "睡得更沉：梦层开始自己长，身体却越来越沉，离线的收益更好。",
-            EntryText = "第二层比第一层安静。她往下走的时候没有脚步声——梦里的地面不响。",
-            ExitText = "她在这层待了很久，久到忘了上面还有一层。醒来时手背上有个印子，像是被什么压过。",
+            Name = Prose.Text("eras", "sleep_2", "name"),
+            Icon = Prose.Text("eras", "sleep_2", "icon"),
+            Theme = Prose.Text("eras", "sleep_2", "theme"),
+            EntryText = Prose.Text("eras", "sleep_2", "entryText"),
+            ExitText = Prose.Text("eras", "sleep_2", "exitText"),
             // 深眠：梦层类建筑 ×1.6、全局 ×1.4，离线结算上限翻倍。
             // 离线是"睡得更沉"最直接的表达——原版的 3 小时在这里是 6 小时。
             Balance = baseBalance with
@@ -64,17 +72,17 @@ internal static class Eras
             Completion = UnlockCondition.All(
                 UnlockCondition.EarnedThisRunAtLeast(2.4e9),
                 UnlockCondition.AchievementsAtLeast(4)),
-            CompletionHint = "本轮累计 2.4 billion，并解锁 4 个成就。",
+            CompletionHint = Prose.Text("eras", "sleep_2", "completionHint"),
         },
         new()
         {
             Index = 3,
             Id = "sleep_3",
-            Name = "第 3 层 · 清明梦",
-            Icon = "💡",
-            Theme = "她意识到自己在做梦。从这一刻起，梦魇来得频繁——但梦里的一切都听她的。",
-            EntryText = "她在梦里停住，抬手看了看自己的手指，然后说：「这是我的梦。」整层梦安静了一秒，接着开始按她说的长。",
-            ExitText = "清明是有代价的：醒着的那部分她，再也没法完全睡过去。",
+            Name = Prose.Text("eras", "sleep_3", "name"),
+            Icon = Prose.Text("eras", "sleep_3", "icon"),
+            Theme = Prose.Text("eras", "sleep_3", "theme"),
+            EntryText = Prose.Text("eras", "sleep_3", "entryText"),
+            ExitText = Prose.Text("eras", "sleep_3", "exitText"),
             // 清明梦：全局 ×1.6，梦魇（金猫）来得更频繁。
             // 频率修饰符乘的是**间隔**，所以「更频繁」要写成小于 1 的数（0.75 → 间隔缩到 3/4）。
             Modifiers =
@@ -88,17 +96,17 @@ internal static class Eras
             Completion = UnlockCondition.All(
                 UnlockCondition.EarnedThisRunAtLeast(1.6e10),
                 UnlockCondition.AchievementsAtLeast(10)),
-            CompletionHint = "本轮累计 16 billion，并解锁 10 个成就。",
+            CompletionHint = Prose.Text("eras", "sleep_3", "completionHint"),
         },
         new()
         {
             Index = 4,
             Id = "sleep_4",
-            Name = "第 4 层 · 噩梦层",
-            Icon = "🕷️",
-            Theme = "梦的褶皱里全是没做完的坏事。但这里的梦最浓，浓到能拧出东西来。",
-            EntryText = "她往下走的时候，墙壁开始变软。有东西在深处呼吸，节奏和她一样。",
-            ExitText = "她从噩梦里爬出来，指甲断了半片。梦没赢，但也没输。",
+            Name = Prose.Text("eras", "sleep_4", "name"),
+            Icon = Prose.Text("eras", "sleep_4", "icon"),
+            Theme = Prose.Text("eras", "sleep_4", "theme"),
+            EntryText = Prose.Text("eras", "sleep_4", "entryText"),
+            ExitText = Prose.Text("eras", "sleep_4", "exitText"),
             // 噩梦层：梦境能量的成长曲线在这里陡增，梦层类建筑再抬一档。
             // 这一层的规则变化就是"第二资源终于开始决定产量"。
             Modifiers =
@@ -114,22 +122,22 @@ internal static class Eras
             Completion = UnlockCondition.All(
                 UnlockCondition.EarnedThisRunAtLeast(4.5e11),
                 UnlockCondition.Counter(EraSystem.PeakCpsCounterKey, 4e7)),
-            CompletionHint = "本轮累计 450 billion，且峰值产量达到 40 million/s。",
+            CompletionHint = Prose.Text("eras", "sleep_4", "completionHint"),
         },
         new()
         {
             Index = 5,
             Id = "sleep_5",
-            Name = "第 5 层 · 梦核",
-            Icon = "🔮",
-            Theme = "所有梦层套着的那一颗芯。走到这里只有两件事可做：把它叫醒，或者留下来。",
-            EntryText = "最里面没有房间，只有一颗慢慢转的东西。她把手放上去，整座梦认出了她。",
-            ExitText = "梦核安静下来。现在整座梦都在等她决定：是醒，还是再往下。",
+            Name = Prose.Text("eras", "sleep_5", "name"),
+            Icon = Prose.Text("eras", "sleep_5", "icon"),
+            Theme = Prose.Text("eras", "sleep_5", "theme"),
+            EntryText = Prose.Text("eras", "sleep_5", "entryText"),
+            ExitText = Prose.Text("eras", "sleep_5", "exitText"),
             // 梦核：全局 ×2.3，收尾。这一层不再有新的规则，只有"更大"。
             Modifiers = [.. DeepDream, Modifier.GlobalMultiplier(2.3)],
             UnlocksBuildings = ["dream_core"],
             Completion = FinalCompletion,
-            CompletionHint = "本轮累计 1 trillion，且睡满 6 小时。",
+            CompletionHint = Prose.Text("eras", "sleep_5", "completionHint"),
         },
     ];
 

@@ -19,6 +19,14 @@ namespace NekoClicker.Content.Company;
 /// </summary>
 internal static class Eras
 {
+    /// <summary>
+    /// 本包的 <c>text.json</c>：纪元文案与剧情散文、建筑文案<b>共用同一份实例</b>（<see cref="Lore.Prose"/>）。<para>
+    /// 必须共用：孤儿检查会遍历整份文件的每个 kind，而"哪些 id 已取用"是按实例记的——
+    /// 两个实例各记一半，就会把对方那些 id 全报成孤儿。
+    /// </para>
+    /// </summary>
+    private static ContentText Prose => Lore.Prose;
+
     /// <summary>三层定义。<paramref name="baseBalance"/> 是内容包的基准数值。</summary>
     public static EraDefinition[] All(GameBalance baseBalance) =>
     [
@@ -26,23 +34,23 @@ internal static class Eras
         {
             Index = 1,
             Id = "garage",
-            Name = "第 1 轮 · 车库创业",
-            Icon = "🚲",
-            Theme = "三个人，一台咖啡机，一个还没写进合同的承诺。",
-            EntryText = "车库的门是卷帘的，早上要手动摇上去。她把工位收拾好，问：「今天有活吗？」",
-            ExitText = "第一笔订单的钱到账了。你请所有人吃了顿火锅，然后开始想下一笔。",
+            Name = Prose.Text("eras", "garage", "name"),
+            Icon = Prose.Text("eras", "garage", "icon"),
+            Theme = Prose.Text("eras", "garage", "theme"),
+            EntryText = Prose.Text("eras", "garage", "entryText"),
+            ExitText = Prose.Text("eras", "garage", "exitText"),
             Completion = UnlockCondition.EarnedThisRunAtLeast(1e5),
-            CompletionHint = "完成第一笔订单：本轮累计赚到 100,000 营收。",
+            CompletionHint = Prose.Text("eras", "garage", "completionHint"),
         },
         new()
         {
             Index = 2,
             Id = "series_a",
-            Name = "第 2 轮 · A 轮",
-            Icon = "🚀",
-            Theme = "钱到了，人到了，加班也到了。",
-            EntryText = "投资人把这张桌子搬进了新办公室，然后问：「你们能跑多快？」",
-            ExitText = "第二轮结束。你签完了所有该签的字，包括几张你没细看的。",
+            Name = Prose.Text("eras", "series_a", "name"),
+            Icon = Prose.Text("eras", "series_a", "icon"),
+            Theme = Prose.Text("eras", "series_a", "theme"),
+            EntryText = Prose.Text("eras", "series_a", "entryText"),
+            ExitText = Prose.Text("eras", "series_a", "exitText"),
             // A 轮之后全员加班：士气模块会额外扣一笔（MoraleModule.OvertimeDrainPerSecond）。
             Modifiers = [Modifier.GlobalMultiplier(1.5)],
             // 投资人消息多：事件来得更密。
@@ -54,17 +62,17 @@ internal static class Eras
             Completion = UnlockCondition.All(
                 UnlockCondition.EarnedThisRunAtLeast(1e8),
                 UnlockCondition.AchievementsAtLeast(6)),
-            CompletionHint = "本轮累计 100 million，并解锁 6 个成就。",
+            CompletionHint = Prose.Text("eras", "series_a", "completionHint"),
         },
         new()
         {
             Index = 3,
             Id = "ipo",
-            Name = "第 3 轮 · 上市",
-            Icon = "🔔",
-            Theme = "敲钟之前，只剩最后一个问题：这家公司是谁的。",
-            EntryText = "路演厅的椅子摆好了。她站在台上替你调话筒，台下的人开始进场。",
-            ExitText = "钟声之后，一切都会写进财报——包括你没写进合同的那部分。",
+            Name = Prose.Text("eras", "ipo", "name"),
+            Icon = Prose.Text("eras", "ipo", "icon"),
+            Theme = Prose.Text("eras", "ipo", "theme"),
+            EntryText = Prose.Text("eras", "ipo", "entryText"),
+            ExitText = Prose.Text("eras", "ipo", "exitText"),
             // 上市冲刺：规模 ×1.5，且士气越高越快（每点士气 +1%，上限 +100%）。
             Modifiers =
             [
@@ -74,7 +82,7 @@ internal static class Eras
                     new Scaling(ScalingSource.CustomCounter, 0.01, Cap: 100, Id: MoraleModule.CounterKey)),
             ],
             Completion = FinalCompletion,
-            CompletionHint = "本轮累计 500 million，并解锁 12 个成就。",
+            CompletionHint = Prose.Text("eras", "ipo", "completionHint"),
         },
     ];
 

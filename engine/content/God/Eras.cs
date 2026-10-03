@@ -34,6 +34,14 @@ namespace NekoClicker.Content.God;
 /// </summary>
 internal static class Eras
 {
+    /// <summary>
+    /// 本包的 <c>text.json</c>：纪元文案与剧情散文、建筑文案<b>共用同一份实例</b>（<see cref="Lore.Prose"/>）。<para>
+    /// 必须共用：孤儿检查会遍历整份文件的每个 kind，而"哪些 id 已取用"是按实例记的——
+    /// 两个实例各记一半，就会把对方那些 id 全报成孤儿。
+    /// </para>
+    /// </summary>
+    private static ContentText Prose => Lore.Prose;
+
     /// <summary>五层定义。<paramref name="baseBalance"/> 是内容包的基准数值。</summary>
     public static EraDefinition[] All(GameBalance baseBalance) =>
     [
@@ -41,31 +49,27 @@ internal static class Eras
         {
             Index = 1,
             Id = "myth_house",
-            Name = "第 1 层 · 家猫神",
-            Icon = "🏠",
-            Theme = "最小规模的神：一块木板，半条鱼，一个不敢许愿的人。",
-            EntryText = "她上岗第一天，庙是一块搁在灶台边的木板。第一炷香是蚊子香，"
-                      + "第一位信徒是这家人养的仓鼠，它许的愿是「别被吃掉」。",
-            ExitText = "这家人搬走了，木板被小心地取下来带走。她第一次意识到"
-                     + "「被带着走」和「被供起来」是两件事。",
+            Name = Prose.Text("eras", "myth_house", "name"),
+            Icon = Prose.Text("eras", "myth_house", "icon"),
+            Theme = Prose.Text("eras", "myth_house", "theme"),
+            EntryText = Prose.Text("eras", "myth_house", "entryText"),
+            ExitText = Prose.Text("eras", "myth_house", "exitText"),
             Modifiers = FaithScaling,
             UnlocksBuildings = ["stone_temple", "offering_altar"],
             Completion = UnlockCondition.All(
                 UnlockCondition.EarnedThisRunAtLeast(1e5),
                 UnlockCondition.Counter(FaithModule.CounterKey, 6e4)),
-            CompletionHint = "本轮累计 100,000 香火，并积累 60,000 点信仰。",
+            CompletionHint = Prose.Text("eras", "myth_house", "completionHint"),
         },
         new()
         {
             Index = 2,
             Id = "myth_egypt",
-            Name = "第 2 层 · 埃及猫神",
-            Icon = "🐈",
-            Theme = "有组织的神：账本、祭司排班表，以及第一座会漏雨的方尖碑。",
-            EntryText = "换了神话体系，屋顶立刻高了三个数量级。祭司们说这是「应有的规格」，"
-                      + "她盯着账本看了很久，只问了一句：「香火能报销吗？」",
-            ExitText = "王朝更替，象形文字没人认得了。她把账本埋在沙里，"
-                     + "顺手埋了那杆用来称供品的秤。",
+            Name = Prose.Text("eras", "myth_egypt", "name"),
+            Icon = Prose.Text("eras", "myth_egypt", "icon"),
+            Theme = Prose.Text("eras", "myth_egypt", "theme"),
+            EntryText = Prose.Text("eras", "myth_egypt", "entryText"),
+            ExitText = Prose.Text("eras", "myth_egypt", "exitText"),
             // 本层规则：神殿类建筑 ×2（显式的五座——修饰符按 id 生效，没有"按标签"这种目标），
             // 外加模块里那张按层号查的信仰获取 ×1.5 表（见 FaithModule.EraRateMultiplier）。
             Modifiers =
@@ -81,20 +85,17 @@ internal static class Eras
             Completion = UnlockCondition.All(
                 UnlockCondition.EarnedThisRunAtLeast(1.5e7),
                 UnlockCondition.Counter(FaithModule.CounterKey, 3e5)),
-            CompletionHint = "本轮累计 15 million 香火，并积累 300,000 点信仰。"
-                           + "本层的神殿类建筑产量翻倍、信仰获取 ×1.5。",
+            CompletionHint = Prose.Text("eras", "myth_egypt", "completionHint"),
         },
         new()
         {
             Index = 3,
             Id = "myth_greece",
-            Name = "第 3 层 · 希腊猫神",
-            Icon = "🏺",
-            Theme = "话多的神：神谕天天有，八卦比预言准。",
-            EntryText = "这一套神话的规矩是「有问必答」。于是她每天要回三千条问题，"
-                      + "其中两千九百条是问今天晚饭吃什么。",
-            ExitText = "神话退化成故事，故事退化成星座。她发现自己被挂在天上，"
-                     + "形状还挺好看，就是有点挤。",
+            Name = Prose.Text("eras", "myth_greece", "name"),
+            Icon = Prose.Text("eras", "myth_greece", "icon"),
+            Theme = Prose.Text("eras", "myth_greece", "theme"),
+            EntryText = Prose.Text("eras", "myth_greece", "entryText"),
+            ExitText = Prose.Text("eras", "myth_greece", "exitText"),
             // 本层规则：随机事件间隔 ×0.5——神谕来得勤，金猫（神迹）也来得勤。
             Balance = baseBalance with
             {
@@ -106,20 +107,17 @@ internal static class Eras
             Completion = UnlockCondition.All(
                 UnlockCondition.EarnedThisRunAtLeast(3e8),
                 UnlockCondition.Counter(FaithModule.CounterKey, 9e5)),
-            CompletionHint = "本轮累计 300 million 香火，并积累 900,000 点信仰。"
-                           + "本层的神迹来得比别的层勤一倍。",
+            CompletionHint = Prose.Text("eras", "myth_greece", "completionHint"),
         },
         new()
         {
             Index = 4,
             Id = "myth_norse",
-            Name = "第 4 层 · 北欧猫神",
-            Icon = "⚡",
-            Theme = "加班的神：英灵殿不打烊，员工也不打卡。",
-            EntryText = "英灵殿的第一条规矩是「没有下班」。她试着问了一句加班费，"
-                      + "殿里的英灵们集体沉默，然后开始鼓掌。",
-            ExitText = "诸神黄昏如期而至，节目单比往年还长了半小时。她看完才动手收拾，"
-                     + "评价是「舞台调度不错」。",
+            Name = Prose.Text("eras", "myth_norse", "name"),
+            Icon = Prose.Text("eras", "myth_norse", "icon"),
+            Theme = Prose.Text("eras", "myth_norse", "theme"),
+            EntryText = Prose.Text("eras", "myth_norse", "entryText"),
+            ExitText = Prose.Text("eras", "myth_norse", "exitText"),
             // 本层规则：离线上限 ×2——英灵殿不打烊，你不在她也照收香火。
             Balance = baseBalance with
             {
@@ -130,20 +128,17 @@ internal static class Eras
             Completion = UnlockCondition.All(
                 UnlockCondition.EarnedThisRunAtLeast(6e9),
                 UnlockCondition.Counter(FaithModule.CounterKey, 2.2e6)),
-            CompletionHint = "本轮累计 6 billion 香火，并积累 2.2 million 点信仰。"
-                           + "本层的离线收益上限翻倍（英灵殿不打烊）。",
+            CompletionHint = Prose.Text("eras", "myth_norse", "completionHint"),
         },
         new()
         {
             Index = 5,
             Id = "myth_cthulhu",
-            Name = "第 5 层 · 克苏鲁猫",
-            Icon = "🐙",
-            Theme = "不可名状的神：全球同步直播，弹幕全是乱码，收视率爆了。",
-            EntryText = "最后一套神话没有名字，只有一个读音，念出来会让麦克风失灵。"
-                      + "她说没关系，反正观众听不清也会刷礼物。",
-            ExitText = "直播到最后一秒，在线人数停在一个谁也数不清的数上。"
-                     + "她关掉补光灯，屋子里第一次全是暗的。",
+            Name = Prose.Text("eras", "myth_cthulhu", "name"),
+            Icon = Prose.Text("eras", "myth_cthulhu", "icon"),
+            Theme = Prose.Text("eras", "myth_cthulhu", "theme"),
+            EntryText = Prose.Text("eras", "myth_cthulhu", "entryText"),
+            ExitText = Prose.Text("eras", "myth_cthulhu", "exitText"),
             // 本层规则：全局 ×3，但增益时长 ×0.5——理智是有代价的，看得越久越掉 san。
             Modifiers =
             [
@@ -153,8 +148,7 @@ internal static class Eras
             ],
             UnlocksBuildings = ["abyssal_cathedral"],
             Completion = FinalCompletion,
-            CompletionHint = "本轮累计 100 billion 香火，且「直播在线人数」峰值达到 200,000。"
-                           + "本层全局产量 ×3，但增益时长减半。",
+            CompletionHint = Prose.Text("eras", "myth_cthulhu", "completionHint"),
         },
     ];
 

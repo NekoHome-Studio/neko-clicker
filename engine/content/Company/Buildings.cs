@@ -30,7 +30,7 @@ internal static class Buildings
         {
             Id = "desk",
             Name = Prose.Text("buildings", "desk", "name"),
-            Icon = "🪑",
+            Icon = Prose.Text("buildings", "desk", "icon"),
             Description = Prose.Text("buildings", "desk", "description"),
             BasePrice = 15,
             BaseCps = 0.1,
@@ -40,7 +40,7 @@ internal static class Buildings
         {
             Id = "meeting_room",
             Name = Prose.Text("buildings", "meeting_room", "name"),
-            Icon = "🗣️",
+            Icon = Prose.Text("buildings", "meeting_room", "icon"),
             Description = Prose.Text("buildings", "meeting_room", "description"),
             BasePrice = 100,
             BaseCps = 1,
@@ -51,7 +51,7 @@ internal static class Buildings
         {
             Id = "outsourcing_base",
             Name = Prose.Text("buildings", "outsourcing_base", "name"),
-            Icon = "🧵",
+            Icon = Prose.Text("buildings", "outsourcing_base", "icon"),
             Description = Prose.Text("buildings", "outsourcing_base", "description"),
             BasePrice = 1_100,
             BaseCps = 8,
@@ -62,7 +62,7 @@ internal static class Buildings
         {
             Id = "server_room",
             Name = Prose.Text("buildings", "server_room", "name"),
-            Icon = "🖥️",
+            Icon = Prose.Text("buildings", "server_room", "icon"),
             Description = Prose.Text("buildings", "server_room", "description"),
             BasePrice = 12_000,
             BaseCps = 47,
@@ -73,7 +73,7 @@ internal static class Buildings
         {
             Id = "growth_team",
             Name = Prose.Text("buildings", "growth_team", "name"),
-            Icon = "📈",
+            Icon = Prose.Text("buildings", "growth_team", "icon"),
             Description = Prose.Text("buildings", "growth_team", "description"),
             BasePrice = 130_000,
             BaseCps = 260,
@@ -84,7 +84,7 @@ internal static class Buildings
         {
             Id = "roadshow_hall",
             Name = Prose.Text("buildings", "roadshow_hall", "name"),
-            Icon = "🎤",
+            Icon = Prose.Text("buildings", "roadshow_hall", "icon"),
             Description = Prose.Text("buildings", "roadshow_hall", "description"),
             BasePrice = 1_400_000,
             BaseCps = 1_400,
@@ -95,7 +95,7 @@ internal static class Buildings
         {
             Id = "data_center",
             Name = Prose.Text("buildings", "data_center", "name"),
-            Icon = "🗄️",
+            Icon = Prose.Text("buildings", "data_center", "icon"),
             Description = Prose.Text("buildings", "data_center", "description"),
             BasePrice = 20_000_000,
             BaseCps = 7_800,
@@ -106,7 +106,7 @@ internal static class Buildings
         {
             Id = "overseas_branch",
             Name = Prose.Text("buildings", "overseas_branch", "name"),
-            Icon = "🌏",
+            Icon = Prose.Text("buildings", "overseas_branch", "icon"),
             Description = Prose.Text("buildings", "overseas_branch", "description"),
             BasePrice = 330_000_000,
             BaseCps = 44_000,
@@ -117,7 +117,7 @@ internal static class Buildings
         {
             Id = "headquarters",
             Name = Prose.Text("buildings", "headquarters", "name"),
-            Icon = "🏢",
+            Icon = Prose.Text("buildings", "headquarters", "icon"),
             Description = Prose.Text("buildings", "headquarters", "description"),
             BasePrice = 5_100_000_000,
             BaseCps = 260_000,

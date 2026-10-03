@@ -44,15 +44,20 @@
 （待填。这是**"建筑的设定集"**所在节——每座建筑的叙事定位、它在世界里的意义。）
 
 - 落地位置：`engine/content/<Pack>/Buildings.cs`（`BuildingDefinition[]`，顺序即 UI 展示顺序）。
-- **文本已外置**：每座建筑的 `name` 与 `description` 现在住在
+- **文本已外置**：每座建筑的 `name` / `description` / `icon` 现在住在
   `engine/content/<Pack>/text.json` 的根节 `buildings` 里
-  （`"<建筑 id>": { "name": …, "description": … }`），C# 侧用
+  （`"<建筑 id>": { "name": …, "description": …, "icon": … }`），C# 侧用
   `Prose.Text("buildings", "<id>", "name")` 取值。**11 个包、104 座**全部迁完，
-  迁移前后运行时 dump 逐字节相同（13,567 字节，SHA-256 `BB40F11C…`）。
-  形状、方法与守卫见 `../engine/docs/TEXT_AS_DATA_PLAN.md` §9。
-- **仍留在代码里的**：`Icon` 以及全部逻辑/数值字段（`BasePrice` / `BaseCps` / `PriceGrowth` /
-  `Unlock` / `Category` / `Tags`）。⚠️ **`Icon` 是一处待定的不一致**：剧情那边连 icon 一起外置了，
-  建筑这边没有——见 `../engine/docs/OPEN_WORK.md` 的未决项。
+  迁移前后运行时 dump 逐字节相同（name+description 13,567 字节、SHA-256 `BB40F11C…`；
+  图标另有一份 7,895 字节的 dump，见 §10）。
+  形状、方法与守卫见 `../engine/docs/TEXT_AS_DATA_PLAN.md` §9 与 §10。
+- **纪元文案也已外置**：`EraDefinition` 的 `Name` / `Theme` / `Icon` / `EntryText` / `ExitText` /
+  `CompletionHint` 住在同一个 `text.json` 的根节 `eras`（**9 个包、49 层**；示例包「猫咖物语」
+  与「猫娘咖啡馆」没有纪元）。**这一节的"每座建筑的叙事定位"应当照 `buildings` 与 `eras`
+  两个节来写，不要照 C#。**
+- **仍留在代码里的**：全部逻辑/数值字段（`BasePrice` / `BaseCps` / `PriceGrowth` /
+  `Unlock` / `Category` / `Tags`）。⚠️ 曾经有一处"`Icon` 留在代码里、而剧情线的 icon 已外置"
+  的不一致，**2026-10-03 已按"搬出去"结案**（`OPEN_WORK.md` 的 L 条）——现在图标也在文件里。
 
 ## 六、阵营
 

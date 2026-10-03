@@ -38,7 +38,7 @@ internal static class Buildings
         {
             Id = "bookshelf",
             Name = Prose.Text("buildings", "bookshelf", "name"),
-            Icon = "📚",
+            Icon = Prose.Text("buildings", "bookshelf", "icon"),
             Description = Prose.Text("buildings", "bookshelf", "description"),
             BasePrice = 15,
             BaseCps = 0.1,
@@ -47,7 +47,7 @@ internal static class Buildings
         {
             Id = "reading_room",
             Name = Prose.Text("buildings", "reading_room", "name"),
-            Icon = "🪑",
+            Icon = Prose.Text("buildings", "reading_room", "icon"),
             Description = Prose.Text("buildings", "reading_room", "description"),
             BasePrice = 100,
             BaseCps = 1,
@@ -58,7 +58,7 @@ internal static class Buildings
         {
             Id = "copier",
             Name = Prose.Text("buildings", "copier", "name"),
-            Icon = "📠",
+            Icon = Prose.Text("buildings", "copier", "icon"),
             Description = Prose.Text("buildings", "copier", "description"),
             BasePrice = 1_100,
             BaseCps = 8,
@@ -69,7 +69,7 @@ internal static class Buildings
         {
             Id = "banned_section",
             Name = Prose.Text("buildings", "banned_section", "name"),
-            Icon = "🔒",
+            Icon = Prose.Text("buildings", "banned_section", "icon"),
             Description = Prose.Text("buildings", "banned_section", "description"),
             BasePrice = 12_000,
             BaseCps = 47,
@@ -80,7 +80,7 @@ internal static class Buildings
         {
             Id = "author_room",
             Name = Prose.Text("buildings", "author_room", "name"),
-            Icon = "🖋️",
+            Icon = Prose.Text("buildings", "author_room", "icon"),
             Description = Prose.Text("buildings", "author_room", "description"),
             BasePrice = 130_000,
             BaseCps = 260,
@@ -90,7 +90,7 @@ internal static class Buildings
         {
             Id = "index_tower",
             Name = Prose.Text("buildings", "index_tower", "name"),
-            Icon = "🗼",
+            Icon = Prose.Text("buildings", "index_tower", "icon"),
             Description = Prose.Text("buildings", "index_tower", "description"),
             BasePrice = 1_400_000,
             BaseCps = 1_400,
@@ -101,7 +101,7 @@ internal static class Buildings
         {
             Id = "printing_house",
             Name = Prose.Text("buildings", "printing_house", "name"),
-            Icon = "🖨️",
+            Icon = Prose.Text("buildings", "printing_house", "icon"),
             Description = Prose.Text("buildings", "printing_house", "description"),
             BasePrice = 20_000_000,
             BaseCps = 7_800,
@@ -112,7 +112,7 @@ internal static class Buildings
         {
             Id = "world_workshop",
             Name = Prose.Text("buildings", "world_workshop", "name"),
-            Icon = "🧩",
+            Icon = Prose.Text("buildings", "world_workshop", "icon"),
             Description = Prose.Text("buildings", "world_workshop", "description"),
             BasePrice = 330_000_000,
             BaseCps = 44_000,
@@ -122,7 +122,7 @@ internal static class Buildings
         {
             Id = "endless_shelf",
             Name = Prose.Text("buildings", "endless_shelf", "name"),
-            Icon = "♾️",
+            Icon = Prose.Text("buildings", "endless_shelf", "icon"),
             Description = Prose.Text("buildings", "endless_shelf", "description"),
             BasePrice = 5_100_000_000,
             BaseCps = 260_000,

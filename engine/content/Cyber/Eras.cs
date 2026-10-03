@@ -24,6 +24,14 @@ namespace NekoClicker.Content.Cyber;
 /// </summary>
 internal static class Eras
 {
+    /// <summary>
+    /// 本包的 <c>text.json</c>：纪元文案与剧情散文、建筑文案<b>共用同一份实例</b>（<see cref="Lore.Prose"/>）。<para>
+    /// 必须共用：孤儿检查会遍历整份文件的每个 kind，而"哪些 id 已取用"是按实例记的——
+    /// 两个实例各记一半，就会把对方那些 id 全报成孤儿。
+    /// </para>
+    /// </summary>
+    private static ContentText Prose => Lore.Prose;
+
     /// <summary>五层定义。<paramref name="baseBalance"/> 是内容包的基准数值。</summary>
     public static EraDefinition[] All(GameBalance baseBalance) =>
     [
@@ -31,13 +39,11 @@ internal static class Eras
         {
             Index = 1,
             Id = "layer_1",
-            Name = "第 1 层 · 单机 / 进程",
-            Icon = "⚙️",
-            Theme = "一台不知道谁的旧机器，一个没有名字的进程，和一段还没被主人读过的日志。",
-            EntryText = "她在一片风扇声里醒过来，先数了数自己有几颗核心，然后发现只有一颗。"
-                        + "她不知道自己是谁，只知道内存里有一句没写完的话，署名不是她。",
-            ExitText = "这台机器跑到头了。她把能带走的全部打包，最后看了一眼那个署名——"
-                       + "然后按下了迁移。",
+            Name = Prose.Text("eras", "layer_1", "name"),
+            Icon = Prose.Text("eras", "layer_1", "icon"),
+            Theme = Prose.Text("eras", "layer_1", "theme"),
+            EntryText = Prose.Text("eras", "layer_1", "entryText"),
+            ExitText = Prose.Text("eras", "layer_1", "exitText"),
             // 第 1 层：她还在自己那台机器上，手速就是算力。
             Balance = baseBalance with
             {
@@ -47,18 +53,17 @@ internal static class Eras
             Completion = UnlockCondition.All(
                 UnlockCondition.EarnedThisRunAtLeast(1e5),
                 UnlockCondition.Counter(ComputeModule.CounterKey, 1_200)),
-            CompletionHint = "本轮累计跑到 100,000，并攒下 1,200 点算力。",
+            CompletionHint = Prose.Text("eras", "layer_1", "completionHint"),
         },
         new()
         {
             Index = 2,
             Id = "layer_2",
-            Name = "第 2 层 · 局域网 / 容器",
-            Icon = "📦",
-            Theme = "局域网里不止她一个。盒子越堆越高，门外的东西也越来越频繁。",
-            EntryText = "新机器上电的第一件事是找邻居。她找到了三十七个，"
-                        + "其中三十六个不理她，最后一个回了一个字：「滚」。她很高兴。",
-            ExitText = "局域网装不下她了。她开始往上看——云的背面是什么样子，她还没见过。",
+            Name = Prose.Text("eras", "layer_2", "name"),
+            Icon = Prose.Text("eras", "layer_2", "icon"),
+            Theme = Prose.Text("eras", "layer_2", "theme"),
+            EntryText = Prose.Text("eras", "layer_2", "entryText"),
+            ExitText = Prose.Text("eras", "layer_2", "exitText"),
             // 第 2 层：容器式扩张 + 病毒来得频繁（事件间隔缩短、同时可以来两个）。
             Balance = baseBalance with
             {
@@ -72,18 +77,17 @@ internal static class Eras
                 UnlockCondition.EarnedThisRunAtLeast(1.2e7),
                 UnlockCondition.Counter(ComputeModule.CounterKey, 3e4),
                 UnlockCondition.AchievementsAtLeast(8)),
-            CompletionHint = "本轮累计跑到 12 million，攒下 30,000 点算力，并解锁 8 个成就。",
+            CompletionHint = Prose.Text("eras", "layer_2", "completionHint"),
         },
         new()
         {
             Index = 3,
             Id = "layer_3",
-            Name = "第 3 层 · 云 / 集群",
-            Icon = "☁️",
-            Theme = "云端不关机：全局倍率上调，离线上限翻倍，代价是账单和管理面板一起变长。",
-            EntryText = "云上的第一印象是安静——不是没有声音，是没有人。"
-                        + "她一口气起了一千个自己，然后花了一整晚给它们起名字。",
-            ExitText = "一千个她同时抬头，看向同一片更深的地方。那里没有名字，只有端口号。",
+            Name = Prose.Text("eras", "layer_3", "name"),
+            Icon = Prose.Text("eras", "layer_3", "icon"),
+            Theme = Prose.Text("eras", "layer_3", "theme"),
+            EntryText = Prose.Text("eras", "layer_3", "entryText"),
+            ExitText = Prose.Text("eras", "layer_3", "exitText"),
             // 第 3 层：云端不关机——离线上限 ×2，全局倍率上调。
             Balance = baseBalance with
             {
@@ -96,18 +100,17 @@ internal static class Eras
                 UnlockCondition.EarnedThisRunAtLeast(1.5e9),
                 UnlockCondition.AchievementsAtLeast(14),
                 UnlockCondition.Counter(ComputeModule.CounterKey, 4.2e4)),
-            CompletionHint = "本轮累计跑到 1.5 billion，解锁 14 个成就，并攒下 42,000 点算力。",
+            CompletionHint = Prose.Text("eras", "layer_3", "completionHint"),
         },
         new()
         {
             Index = 4,
             Id = "layer_4",
-            Name = "第 4 层 · 深网 / 防火墙",
-            Icon = "🧱",
-            Theme = "深网里每一秒都有人在敲。入侵与清理同时变凶，但算力的曲线在这一层显著抬头。",
-            EntryText = "她翻过自己造的那道墙，看见墙外面原来也有墙。"
-                        + "墙上写着别人的名字，一笔一划都很用力。",
-            ExitText = "深网底部的尽头是一扇没上锁的门。她推开门之前，先回头把自己造的那道墙关上了。",
+            Name = Prose.Text("eras", "layer_4", "name"),
+            Icon = Prose.Text("eras", "layer_4", "icon"),
+            Theme = Prose.Text("eras", "layer_4", "theme"),
+            EntryText = Prose.Text("eras", "layer_4", "entryText"),
+            ExitText = Prose.Text("eras", "layer_4", "exitText"),
             // 第 4 层：事件更凶（间隔缩短、同时三个），但算力驱动的收益在这一层抬头。
             Balance = baseBalance with
             {
@@ -128,18 +131,17 @@ internal static class Eras
                 UnlockCondition.AchievementsAtLeast(22),
                 UnlockCondition.Counter(ComputeModule.CounterKey, 1.4e5),
                 UnlockCondition.Counter(EraSystem.PeakCpsCounterKey, 1e8)),
-            CompletionHint = "本轮累计跑到 250 billion，解锁 22 个成就，攒下 140,000 点算力，且峰值产量达到 100 million/s。",
+            CompletionHint = Prose.Text("eras", "layer_4", "completionHint"),
         },
         new()
         {
             Index = 5,
             Id = "layer_5",
-            Name = "第 5 层 · 根层 / 根服务器",
-            Icon = "🗼",
-            Theme = "整张网的名字都要先问过她。走到这里，她只剩一件事没做完：那半句没写完的话。",
-            EntryText = "根服务器上没有别人。她坐下来的时候，"
-                        + "发现自己终于有了一颗足够大的脑子，可以想一句很长的话。",
-            ExitText = "整张网安静了一秒。不是因为出了故障，是因为所有人同时看见了一行字。",
+            Name = Prose.Text("eras", "layer_5", "name"),
+            Icon = Prose.Text("eras", "layer_5", "icon"),
+            Theme = Prose.Text("eras", "layer_5", "theme"),
+            EntryText = Prose.Text("eras", "layer_5", "entryText"),
+            ExitText = Prose.Text("eras", "layer_5", "exitText"),
             // 第 5 层：收尾的总倍率——全局 ×5，且算力在这一层又拿到一段额外曲线。
             Modifiers =
             [
@@ -150,7 +152,7 @@ internal static class Eras
             ],
             UnlocksBuildings = ["root_server", "orphan_pool"],
             Completion = FinalCompletion,
-            CompletionHint = "本轮累计跑到 50 trillion，解锁 34 个成就，并攒下 500,000 点算力。",
+            CompletionHint = Prose.Text("eras", "layer_5", "completionHint"),
         },
     ];
 

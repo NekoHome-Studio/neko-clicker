@@ -2,43 +2,53 @@
   "buildings": {
     "curled_cat": {
       "name": "蜷缩的猫",
-      "description": "一只愿意在你腿上打呼噜的猫。它自己不会做什么，但一切从这里开始。"
+      "description": "一只愿意在你腿上打呼噜的猫。它自己不会做什么，但一切从这里开始。",
+      "icon": "🐈"
     },
     "scratching_post": {
       "name": "猫抓板",
-      "description": "麻绳缠的柱子。猫抓得开心，掉下来的碎屑能换钱——别问怎么换的。"
+      "description": "麻绳缠的柱子。猫抓得开心，掉下来的碎屑能换钱——别问怎么换的。",
+      "icon": "🪵"
     },
     "cat_bed": {
       "name": "猫窝",
-      "description": "猫在里面睡 16 小时，剩下 8 小时思考要不要出来。"
+      "description": "猫在里面睡 16 小时，剩下 8 小时思考要不要出来。",
+      "icon": "🛏️"
     },
     "auto_feeder": {
       "name": "自动喂食器",
-      "description": "定时投喂。猫已经不记得你长什么样了，但它记得这个机器。"
+      "description": "定时投喂。猫已经不记得你长什么样了，但它记得这个机器。",
+      "icon": "🍽️"
     },
     "cat_cafe": {
       "name": "猫咪咖啡馆",
-      "description": "客人花钱来被猫无视。这是本店最畅销的体验。"
+      "description": "客人花钱来被猫无视。这是本店最畅销的体验。",
+      "icon": "☕"
     },
     "catnip_field": {
       "name": "猫薄荷田",
-      "description": "合法种植，非法上头。猫们在田里翻滚出一片经济学奇迹。"
+      "description": "合法种植，非法上头。猫们在田里翻滚出一片经济学奇迹。",
+      "icon": "🌿"
     },
     "cat_portal": {
       "name": "猫咪传送门",
-      "description": "猫从这个门进去，从另一个门出来，中间的部分没有人敢研究。"
+      "description": "猫从这个门进去，从另一个门出来，中间的部分没有人敢研究。",
+      "icon": "🌀"
     },
     "time_cat": {
       "name": "时间猫",
-      "description": "它同时存在于你打翻水杯之前和之后。主要是之后。"
+      "description": "它同时存在于你打翻水杯之前和之后。主要是之后。",
+      "icon": "⏳"
     },
     "cat_temple": {
       "name": "维度猫神殿",
-      "description": "供奉着那位从纸箱中创世的猫神。祭品是纸箱。"
+      "description": "供奉着那位从纸箱中创世的猫神。祭品是纸箱。",
+      "icon": "🏛️"
     },
     "cat_universe": {
       "name": "猫猫宇宙",
-      "description": "一个由猫构成、为猫运行、最终也会被猫推下桌的宇宙。"
+      "description": "一个由猫构成、为猫运行、最终也会被猫推下桌的宇宙。",
+      "icon": "🌌"
     }
   }
 }

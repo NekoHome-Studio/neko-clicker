@@ -267,3 +267,102 @@ Description = Prose.Text("buildings", "incubator", "description"),
 `Buffs.cs`（≈212）、`Eras.cs`（≈196）、`Endings.cs`（58）、`Choices.cs`（36）、
 `Achievements.cs`（36）、`Stances.cs`（33）。**建筑之外一个都没动。**
 写作形态还没有补进 [CONTENT_AUTHORING](CONTENT_AUTHORING.md) §12.0（图鉴那次补了）。
+
+> **第三轮补记（2026-10-03）**：上面这张清单里的 `Eras.cs` **已经做掉**，
+> 建筑**刻意跳过**的 `Icon` 也补上了（`OPEN_WORK.md` 的 L 条因此结案）——
+> 见下面的 §10。建筑与纪元的写作形态已补进 `CONTENT_AUTHORING.md` §12.0.1 / §12.0.2。
+
+---
+
+## 10. 执行记录：建筑的图标 + 纪元文案（第三轮，实际是怎么做的）
+
+> 本轮做的是上面 §9.4 那张清单的**前两项**：
+> ① 补上第二轮**刻意跳过**的建筑 `Icon`（11 个包、104 座）；
+> ② `EraDefinition` 的**六个面向玩家的字符串**（9 个包、49 层，≈196 处字面量）。
+> 两者都**没有**改 `engine/core`、没有动存档、没有升版本：`BuildingDefinition` 与
+> `EraDefinition` 两个记录**一行未改**，改的只是那些字符串**从哪里来**。
+
+### 10.1 交付与形状
+
+| 项 | 结果 |
+|---|---|
+| 建筑图标 | **11 个包、104 座** → `buildings.<建筑 id>.icon` |
+| 纪元文案 | **9 个包、49 层** → `eras.<纪元 id>.{name, theme, icon, entryText, exitText, completionHint}` |
+| 逐包层数 | 九命 9 / 实验室 7 / 公司 3 / 末世·图书馆·神明·文明·赛博·梦境 **各 5**；`Neko` 与 `Cafe` **没有纪元**（连 `Eras.cs` 都没有，文件里也**不许有** `eras` 分区） |
+| 代码侧 | `Icon = Prose.Text("buildings", id, "icon")`；纪元六项一律 `Prose.Text("eras", <id>, "<field>")` |
+| 文件 | 同一份 `content/<包>/text.json`，`eras` 是新加的根分区（追加在末尾，EOL 跟随原文件——这批文件里 LF / CRLF 两种都有，脚本按各自的原样保留） |
+| 用例 | **469 → 472**（`ContentTextFileTests` 7 → 10；2026-10-03 09:34 跑 `tools/build.ps1 -Strict`：两个 sln 0 警告、退出码 0） |
+| 版本 | **不动**（公开 API 一行未改，无 minor 可升） |
+
+**什么留在代码里、为什么**——这一栏是判断，不是机械搬运：
+
+| 字段 | 处置 | 为什么 |
+|---|---|---|
+| `EraDefinition.Index` | 留 | 层号是"必须从 1 连续"那条构建期校验的依据，是顺序而不是文案 |
+| `EraDefinition.Id` | 留 | 存档键与叙事引用键（与 `Buildings` / `Lore` 同一条划法） |
+| `EraDefinition.Completion` | 留 | `UnlockCondition` 条件树 = 逻辑（方案 §3③：条件是 DSL，不在本轮范围内） |
+| `EraDefinition.Balance` / `Modifiers` / `MetaRewardMultiplier` | 留 | 数值与规则 |
+| `EraDefinition.InheritBuildingRatio` / `InheritBuildings` / `UnlocksBuildings` / `UnlocksUpgrades` | 留 | 比例、白名单、**id 清单**（id 不是散文） |
+| `Name` / `Theme` / `Icon` / `EntryText` / `ExitText` / `CompletionHint` | **搬** | 六个都是给玩家读的字符串 |
+| `BuildingDefinition.Icon` | **搬** | 同上（本轮之前它是唯一一个"玩家看得见却留在代码里"的例外） |
+| `BasePrice` / `BaseCps` / `PriceGrowth` / `Unlock` / `Category` / `Tags` / `HiddenUntilUnlocked` / `SellRefundRate` | 留 | 逻辑与数值 |
+
+**`CompletionHint` 值得单独说**：它在 C# 里的默认值是**空串**，而空串 ⇒ 界面**静默回退**成
+条件树的自动描述。也就是说它是六个字段里**唯一自带静默降级路径**的那个。
+所以搬的时候用的是 `Text(...)`（缺失即抛）而**不是** `TextOr`，守卫里还额外断言六项**都非空**
+（"没写提示"从"悄悄换一套文案"变成"当场抛"）。
+
+### 10.2 方法：还是"判据落在运行期"
+
+与 §8.2 / §9.2 同一条，没有另写 C# 字符串解析器：
+
+1. **迁移前**：一次性探针 `.tmp/EraDump`（独立小工程，不在 sln 里）读**运行期**的
+   `GameContent.Eras` 与 `GameContent.Buildings`，dump 成两份 JSON：
+   `.tmp/baseline-before/eras-baseline.json`（**45,621 字节**，
+   SHA-256 `A6D8D08895194F7CBBA05302E928190A50CEBE5E6F4892206DDC12D3FEC4BEA7`）与
+   `building-icons-baseline.json`（**7,895 字节**，
+   SHA-256 `FB7973D8500C864A6886D1B7A331CEF682604ABBCF4A1FB1DBCDFF1AB3E3E0B2`）。
+2. **生成**：`text.json` 的两个分区**由这两份 dump 生成**——于是"文件里的文案"与
+   "引擎读到的文案"按定义就是同一批字符串；生成脚本每写一个包就**读回来逐字段核对**一遍。
+3. **改写源码**：扫描器把字面量换成 `Prose.Text(...)`；**每删一处都先断言
+   "它 == dump 里对应的值"**，任一处不符即整体中止、不写任何文件。
+   纪元那边要处理跨行 `+` 拼接（神明 / 赛博 / 文明 / 梦境 / 图书馆 / 末世都有）。
+4. **迁移后**：同一个探针再跑一次，两份 dump 与新产物**逐字节比对**：都是**完全相同**
+   （`identical=True`，字节数与 SHA-256 都没变）。这是本轮最硬的那条证据。
+
+**先把一个包走完再铺开**：试点是**实验室**（7 层纪元 + 9 座建筑 + 有图鉴，三类都在），
+试点后 dump 就已经逐字节相同；随后才铺其余 8 个纪元包与 11 个包的图标。
+（中途踩了一次：`git checkout` 还原"故意改坏"的文件时把试点包的迁移一起撤掉了——
+用 `.tmp` 里的快照还原，别用 `git checkout` 还原一个已经迁移过的文件。）
+
+### 10.3 守卫（`ContentTextFileTests`，7 → **10** 条）
+
+| 新增/扩写 | 守什么 |
+|---|---|
+| **新增** `ExpectedEras` + `EraCountTable_CoversExactlyTheGuardTable` | **写死每包层数**（两张表都是 11 个包，没有纪元的两个写 **0**）。这是唯一能发现"代码与文件**同时**少一层"的守卫；对应性用例保证新增包**不可能忘记登记** |
+| **新增** `EveryEra_ResolvesItsTextFromTheFile` | 代码 ↔ 文件**两个方向** × 六个字段逐字比对 + 六项非空；**期望 0 的包还要求文件里没有 `eras` 分区** |
+| **新增** `EditingTheEraTextWrongly_FailsLoudly` | 少一层（取它那刻抛、点名 id）/ 多一层（孤儿检查点名）两种坏文件都要响 |
+| **扩写** `EveryBuilding_ResolvesItsTextFromTheFile` | 从两个字段扩到 **name / description / icon** |
+| **扩写** `ReadAll` / `ReadAllExcept` / `ReadBuildings` + 新的 `ReadEras` | 夹具读法必须覆盖**整份文件**，否则孤儿检查会把新分区全报成孤儿——这本身就是 `EnsureNoOrphans` 遍历全文件的证据 |
+
+> `Icon` **没有**单独的字段级孤儿检查：`ContentText.IsUsed` 是**按条目**记的
+> （条目下任一字段被取过即算已用），所以"图标字段没人读"这件事在结构上不存在——
+> 座位的粒度就是"这座建筑有没有人读"，那条由既有的建筑双向比对与孤儿检查管。
+
+### 10.4 反例证明（三处故意改坏，都在**真文件/真守卫**上做）
+
+| 故意改坏 | 红在哪 | 原文 |
+|---|---|---|
+| 真文件里删掉 Lab 的 `batch_1` 整条 | 整个包 `Build()` 当场抛（6 条守卫红） | `...\content\Lab\text.json：eras 里没有 id「batch_1」。` |
+| 真文件里加一条 `zz_orphan_era` | 孤儿检查（6 条守卫红） | `内容包「Lab」的剧情文本里有 1 条没人取用（孤儿条目）：eras/zz_orphan_era。它们要么是 id 与代码对不上，要么是代码里已经删掉了这段剧情。` |
+| 期望层数 `Lab: 7` 改成 `6` | **只有** `EveryEra_ResolvesItsTextFromTheFile` 一条红 | `Lab: 代码里的纪元数与期望值对不上。｜期望 <6>，实际 <7>。` |
+
+第三处是这三条里最说明问题的：**双向比对全绿，只有写死的条数表响了**——
+正是"代码与 JSON 同时少一层"那个盲区。三处都还原，还原后 10 条全绿
+（`9 通过 / 1 失败` → `全部通过：10 个用例`）。
+
+### 10.5 这一轮之后还没做
+
+`Upgrades.cs`（≈444）、`Buffs.cs`（≈212）、`Endings.cs`（58）、`Choices.cs`（36）、
+`Achievements.cs`（36）、`Stances.cs`（33）。**纪元的六个字段与建筑的三个字段是全部已迁完的**
+（剧情散文 / 建筑 / 纪元）。

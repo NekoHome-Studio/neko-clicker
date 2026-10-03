@@ -16,10 +16,17 @@ namespace NekoClicker.Core.Tests;
 /// <c>engine/content/*/text.json</c> 有多少个，表里就必须有多少个，一个不多一个不少。
 /// </para>
 /// <para>
-/// <b>建筑文案也在这张表里</b>：<c>BuildingDefinition.Name</c>/<c>Description</c> 与剧情散文
-/// 同住一份 <c>text.json</c>（<c>buildings</c> 分区），所以守卫是同一组。
+/// <b>建筑文案也在这张表里</b>：<c>BuildingDefinition.Name</c>/<c>Description</c>/<c>Icon</c>
+/// 与剧情散文同住一份 <c>text.json</c>（<c>buildings</c> 分区），所以守卫是同一组。
 /// 示例包「猫咖物语」没有图鉴，只有 <c>buildings</c> 一个分区——这也正是"守卫不能假设
 /// 每个包都有 lore"的原因。
+/// </para>
+/// <para>
+/// <b>纪元文案同样在这张表里</b>：<c>EraDefinition</c> 的六个面向玩家的字符串
+/// （<c>Name</c> / <c>Theme</c> / <c>Icon</c> / <c>EntryText</c> / <c>ExitText</c> /
+/// <c>CompletionHint</c>）住在 <c>eras</c> 分区。<b>十一个包里只有九个层纪元</b>
+/// （<c>Neko</c> 与 <c>Cafe</c> 连 <c>Eras.cs</c> 都没有），所以这张表里那两个包的期望值是
+/// <b>0</b>，而不是"没有这一行"——"没有这一行"是沉默的，"期望 0"是响的。
 /// </para>
 /// </summary>
 public static class ContentTextFileTests
@@ -63,6 +70,31 @@ public static class ContentTextFileTests
     ];
 
     /// <summary>
+    /// 每个包应当有几层纪元。<para>
+    /// 与 <see cref="ExpectedBuildings"/> 同一条理由：它管的是"代码与文件<b>同时</b>少一层"——
+    /// 两边一致时双向比对看不出任何异常，而纪元少一层意味着整段叙事与一道门槛凭空消失。
+    /// </para>
+    /// <para>
+    /// <b>十一个包全在这张表里，没有纪元的两个写 0</b>：把 <c>Neko</c> / <c>Cafe</c> 漏掉，
+    /// 就等于"给它们加一层纪元"这件事没有守卫——而这两个包连 <c>Eras.cs</c> 都没有。
+    /// </para>
+    /// </summary>
+    private static readonly (string Pack, int Count)[] ExpectedEras =
+    [
+        ("Apocalypse", 5),
+        ("Cafe", 0),
+        ("Civ", 5),
+        ("Company", 3),
+        ("Cyber", 5),
+        ("Dream", 5),
+        ("God", 5),
+        ("Lab", 7),
+        ("Library", 5),
+        ("Neko", 0),
+        ("NineLives", 9),
+    ];
+
+    /// <summary>
     /// 覆盖度：仓库里有几个 <c>text.json</c>，这张表就得有几个包。<para>
     /// 这条守的是"守卫自己瞎掉"——新增一个包只加了文件没加守卫时，它会红。
     /// </para>
@@ -95,6 +127,21 @@ public static class ContentTextFileTests
             string.Join("、", Externalized.Select(p => p.Pack).OrderBy(name => name, StringComparer.Ordinal)),
             string.Join("、", ExpectedBuildings.Select(p => p.Pack).OrderBy(name => name, StringComparer.Ordinal)),
             "建筑条数表与守卫表里的包不一致——加一个包就要在两处各加一行。");
+    }
+
+    /// <summary>
+    /// 纪元条数表的对应性守卫——与 <see cref="BuildingCountTable_CoversExactlyTheGuardTable"/> 同构。<para>
+    /// 同样要覆盖<b>全部十一个包</b>（含两个期望 0 的）：纪元的期望值表漏掉一个包，
+    /// 就等于那个包"多了或少了整整一层"没人管。
+    /// </para>
+    /// </summary>
+    [Test]
+    public static void EraCountTable_CoversExactlyTheGuardTable()
+    {
+        Check.Equal(
+            string.Join("、", Externalized.Select(p => p.Pack).OrderBy(name => name, StringComparer.Ordinal)),
+            string.Join("、", ExpectedEras.Select(p => p.Pack).OrderBy(name => name, StringComparer.Ordinal)),
+            "纪元条数表与守卫表里的包不一致——加一个包就要在两处各加一行。");
     }
 
     /// <summary>
@@ -220,8 +267,75 @@ public static class ContentTextFileTests
                     (string?)row["description"],
                     building.Description,
                     $"{pack}:「{building.Id}」的说明不是从文件里读出来的。");
+                Check.Equal((string?)row["icon"], building.Icon, $"{pack}:「{building.Id}」的图标不是从文件里读出来的。");
                 Check.False(string.IsNullOrWhiteSpace(building.Name), $"{pack}:「{building.Id}」的名字是空的。");
                 Check.False(string.IsNullOrWhiteSpace(building.Description), $"{pack}:「{building.Id}」的说明是空的。");
+                Check.False(string.IsNullOrWhiteSpace(building.Icon), $"{pack}:「{building.Id}」的图标是空的。");
+            }
+        }
+    }
+
+    /// <summary>
+    /// <c>EraDefinition</c> 的六个面向玩家的字符串都从文件的 <c>eras</c> 分区读，
+    /// 条数与写死的期望值一致。<para>
+    /// 与建筑那条同构：代码 ↔ 文件<b>两个方向</b>都查，再叠一张写死的条数表
+    /// （它管的是"两边同时少一层"）。<b>没有纪元的包要求文件里也没有这个分区</b>——
+    /// 反过来（文件有、代码不读）会由孤儿检查抓住，这里先把"根本不该有"说清楚。
+    /// </para>
+    /// </summary>
+    [Test]
+    public static void EveryEra_ResolvesItsTextFromTheFile()
+    {
+        foreach ((string pack, Func<GameContent> build) in Externalized)
+        {
+            JsonObject file = ShippedJson(pack);
+            GameContent content = build();
+            int expected = ExpectedEras.Single(entry => entry.Pack == pack).Count;
+
+            Check.Equal(expected, content.Eras.Count, $"{pack}: 代码里的纪元数与期望值对不上。");
+
+            if (expected == 0)
+            {
+                Check.False(file["eras"] is JsonObject, $"{pack}: 代码里没有纪元，text.json 里却有 eras 分区。");
+                continue;
+            }
+
+            Check.True(file["eras"] is JsonObject, $"{pack}: text.json 里没有 eras 分区。");
+            JsonObject eras = (JsonObject)file["eras"]!;
+            Check.Equal(expected, eras.Count, $"{pack}: 文件里的纪元数与期望值对不上。");
+
+            foreach (EraDefinition era in content.Eras)
+            {
+                Check.True(
+                    eras.ContainsKey(era.Id),
+                    $"{pack}: text.json 的 eras 里没有「{era.Id}」——它会在构建内容时抛。");
+
+                JsonObject row = (JsonObject)eras[era.Id]!;
+                Check.Equal((string?)row["name"], era.Name, $"{pack}: 纪元「{era.Id}」的名称不是从文件里读出来的。");
+                Check.Equal((string?)row["theme"], era.Theme, $"{pack}: 纪元「{era.Id}」的主题不是从文件里读出来的。");
+                Check.Equal((string?)row["icon"], era.Icon, $"{pack}: 纪元「{era.Id}」的图标不是从文件里读出来的。");
+                Check.Equal(
+                    (string?)row["entryText"],
+                    era.EntryText,
+                    $"{pack}: 纪元「{era.Id}」的进入文本不是从文件里读出来的。");
+                Check.Equal(
+                    (string?)row["exitText"],
+                    era.ExitText,
+                    $"{pack}: 纪元「{era.Id}」的离开文本不是从文件里读出来的。");
+                Check.Equal(
+                    (string?)row["completionHint"],
+                    era.CompletionHint,
+                    $"{pack}: 纪元「{era.Id}」的完成提示不是从文件里读出来的。");
+
+                Check.False(string.IsNullOrWhiteSpace(era.Name), $"{pack}: 纪元「{era.Id}」的名称是空的。");
+                Check.False(string.IsNullOrWhiteSpace(era.Theme), $"{pack}: 纪元「{era.Id}」的主题是空的。");
+                Check.False(string.IsNullOrWhiteSpace(era.Icon), $"{pack}: 纪元「{era.Id}」的图标是空的。");
+                Check.False(string.IsNullOrWhiteSpace(era.EntryText), $"{pack}: 纪元「{era.Id}」的进入文本是空的。");
+                Check.False(string.IsNullOrWhiteSpace(era.ExitText), $"{pack}: 纪元「{era.Id}」的离开文本是空的。");
+                Check.False(
+                    string.IsNullOrWhiteSpace(era.CompletionHint),
+                    $"{pack}: 纪元「{era.Id}」的完成提示是空的——" +
+                    "它为空时界面会静默回退成条件树的自动描述，所以这里必须拦住。");
             }
         }
     }
@@ -257,7 +371,7 @@ public static class ContentTextFileTests
             {
                 ContentText text = bad.Load();
 
-                ReadAllExcept(text, content, skipLoreId: victim, skipBuildingId: null);
+                ReadAllExcept(text, content, skipLoreId: victim, skipBuildingId: null, skipEraId: null);
 
                 // 剩下的都被读过了，孤儿检查不该红——把"缺条目"与"多条目"两种错区分开。
                 text.EnsureNoOrphans();
@@ -315,7 +429,7 @@ public static class ContentTextFileTests
             using (var bad = new Fixture(pack, missing.ToJsonString()))
             {
                 ContentText text = bad.Load();
-                ReadAllExcept(text, content, skipLoreId: null, skipBuildingId: victim);
+                ReadAllExcept(text, content, skipLoreId: null, skipBuildingId: victim, skipEraId: null);
 
                 // 其余条目都读过了，孤儿检查不该红——把"缺条目"与"多条目"两种错区分开。
                 text.EnsureNoOrphans();
@@ -345,8 +459,72 @@ public static class ContentTextFileTests
         }
     }
 
-    // ---------------------------------------------------------------- 辅助
+    /// <summary>
+    /// 纪元文案被改坏的两种形态，每个有纪元的包都要当场炸。<para>
+    /// 与建筑那条同构，但独立成一条：纪元的 id 表来自 <c>Eras.cs</c>，
+    /// 剧情来自 <c>Lore.cs</c>、建筑来自 <c>Buildings.cs</c>——三边各有各的漏洞可能。
+    /// 没有纪元的包（<c>Neko</c> / <c>Cafe</c>）直接跳过，那件事由
+    /// <see cref="EveryEra_ResolvesItsTextFromTheFile"/> 的"期望 0"守着。
+    /// </para>
+    /// </summary>
+    [Test]
+    public static void EditingTheEraTextWrongly_FailsLoudly()
+    {
+        foreach ((string pack, Func<GameContent> build) in Externalized)
+        {
+            JsonObject real = ShippedJson(pack);
+            GameContent content = build();
 
+            if (content.Eras.Count == 0) continue;
+
+            // 基准：原样读一遍，一条都不该抛。
+            using (var baseline = new Fixture(pack, real.ToJsonString()))
+                ReadAll(baseline.Load(), content);
+
+            string victim = content.Eras[0].Id;
+
+            // ① 少一层：取它的那一刻抛，且点名是哪一层。
+            JsonObject missing = (JsonObject)real.DeepClone();
+            ((JsonObject)missing["eras"]!).Remove(victim);
+
+            using (var bad = new Fixture(pack, missing.ToJsonString()))
+            {
+                ContentText text = bad.Load();
+                ReadAllExcept(text, content, skipLoreId: null, skipBuildingId: null, skipEraId: victim);
+
+                // 其余条目都读过了，孤儿检查不该红——把"缺条目"与"多条目"两种错区分开。
+                text.EnsureNoOrphans();
+
+                InvalidOperationException ex = Check.Throws<InvalidOperationException>(
+                    () => text.Text("eras", victim, "completionHint"));
+                Check.Contains(ex.Message, victim);
+            }
+
+            // ② 多一层：孤儿检查点名报出来，而不是让它静静躺在文件里。
+            JsonObject extra = (JsonObject)real.DeepClone();
+            ((JsonObject)extra["eras"]!)["zz_orphan_era"] = new JsonObject
+            {
+                ["name"] = "无主纪元",
+                ["theme"] = "无主主题",
+                ["icon"] = "❓",
+                ["entryText"] = "无主进入文本",
+                ["exitText"] = "无主离开文本",
+                ["completionHint"] = "无主提示",
+            };
+
+            using (var bad = new Fixture(pack, extra.ToJsonString()))
+            {
+                ContentText text = bad.Load();
+                ReadAll(text, content);
+
+                InvalidOperationException ex =
+                    Check.Throws<InvalidOperationException>(() => text.EnsureNoOrphans());
+                Check.Contains(ex.Message, "zz_orphan_era");
+            }
+        }
+    }
+
+    // ---------------------------------------------------------------- 辅助
     private static string ShippedPath(string pack) =>
         Path.Combine(AppContext.BaseDirectory, "content", pack, "text.json");
 
@@ -358,21 +536,27 @@ public static class ContentTextFileTests
 
     /// <summary>按代码用到的 id 表把一份文本读一遍——即"包在启动时会走的那条路"。</summary>
     private static void ReadAll(ContentText text, GameContent content) =>
-        ReadAllExcept(text, content, skipLoreId: null, skipBuildingId: null);
+        ReadAllExcept(text, content, skipLoreId: null, skipBuildingId: null, skipEraId: null);
 
     /// <summary>
-    /// 同上，但可以跳过一条剧情条目和/或一座建筑。<para>
-    /// "文件里少了这一条"那两支要用它：先把其余条目全读过（这样孤儿检查不该红），
+    /// 同上，但可以跳过一条剧情条目 / 一座建筑 / 一层纪元。<para>
+    /// "文件里少了这一条"那几支要用它：先把其余条目全读过（这样孤儿检查不该红），
     /// 再单独去取被删掉的那一条，才能把"缺条目"与"多条目"两种错区分开。
-    /// 注意必须是"整份文件都读过"，少读一个分区（例如建筑）会立刻被孤儿检查抓成红——
+    /// 注意必须是"整份文件都读过"，少读一个分区（例如纪元）会立刻被孤儿检查抓成红——
     /// 这本身就是 <see cref="ContentText.EnsureNoOrphans"/> 覆盖整份文件的证据。
     /// </para>
     /// </summary>
-    private static void ReadAllExcept(ContentText text, GameContent content, string? skipLoreId, string? skipBuildingId)
+    private static void ReadAllExcept(
+        ContentText text,
+        GameContent content,
+        string? skipLoreId,
+        string? skipBuildingId,
+        string? skipEraId)
     {
         ReadStorylines(text, content);
         ReadLore(text, content, skipLoreId);
         ReadBuildings(text, content, skipBuildingId);
+        ReadEras(text, content, skipEraId);
     }
 
     /// <summary>按代码里的图鉴表读标题与正文（跳过 <paramref name="skipId"/> 那一条）。</summary>
@@ -387,7 +571,7 @@ public static class ContentTextFileTests
         }
     }
 
-    /// <summary>按代码里的建筑表读名字与说明（跳过 <paramref name="skipId"/> 那一座）。</summary>
+    /// <summary>按代码里的建筑表读名字、说明与图标（跳过 <paramref name="skipId"/> 那一座）。</summary>
     private static void ReadBuildings(ContentText text, GameContent content, string? skipId = null)
     {
         foreach (BuildingDefinition building in content.Buildings)
@@ -396,6 +580,23 @@ public static class ContentTextFileTests
 
             text.Text("buildings", building.Id, "name");
             text.Text("buildings", building.Id, "description");
+            text.Text("buildings", building.Id, "icon");
+        }
+    }
+
+    /// <summary>按代码里的纪元表读六个面向玩家的字段（跳过 <paramref name="skipId"/> 那一层）。</summary>
+    private static void ReadEras(ContentText text, GameContent content, string? skipId = null)
+    {
+        foreach (EraDefinition era in content.Eras)
+        {
+            if (era.Id == skipId) continue;
+
+            text.Text("eras", era.Id, "name");
+            text.Text("eras", era.Id, "theme");
+            text.Text("eras", era.Id, "icon");
+            text.Text("eras", era.Id, "entryText");
+            text.Text("eras", era.Id, "exitText");
+            text.Text("eras", era.Id, "completionHint");
         }
     }
 

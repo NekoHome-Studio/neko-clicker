@@ -31,6 +31,14 @@ namespace NekoClicker.Content.Civ;
 /// </summary>
 internal static class Eras
 {
+    /// <summary>
+    /// 本包的 <c>text.json</c>：纪元文案与剧情散文、建筑文案<b>共用同一份实例</b>（<see cref="Lore.Prose"/>）。<para>
+    /// 必须共用：孤儿检查会遍历整份文件的每个 kind，而"哪些 id 已取用"是按实例记的——
+    /// 两个实例各记一半，就会把对方那些 id 全报成孤儿。
+    /// </para>
+    /// </summary>
+    private static ContentText Prose => Lore.Prose;
+
     /// <summary>五层定义。<paramref name="baseBalance"/> 是内容包的基准数值。</summary>
     public static EraDefinition[] All(GameBalance baseBalance) =>
     [
@@ -38,12 +46,11 @@ internal static class Eras
         {
             Index = 1,
             Id = "stone",
-            Name = "第 1 时代 · 石堆",
-            Icon = "🪨",
-            Theme = "她只有爪子和一堆石头。所有文明都是从这堆石头开始的。",
-            EntryText = "她醒来的时候，世界只有雨、石头和她自己。她做的第一件事是用石头围出一个坑，"
-                        + "然后躺进去——那一夜她第一次没有被雨淋醒。",
-            ExitText = "石堆旁边长出了第二个石堆，第三个紧挨着它。她看着它们，第一次觉得「以后」是个真词。",
+            Name = Prose.Text("eras", "stone", "name"),
+            Icon = Prose.Text("eras", "stone", "icon"),
+            Theme = Prose.Text("eras", "stone", "theme"),
+            EntryText = Prose.Text("eras", "stone", "entryText"),
+            ExitText = Prose.Text("eras", "stone", "exitText"),
             // 这个时代只有爪子：点击的性价比必须够高，否则开局十分钟什么都推不动。
             Balance = baseBalance with
             {
@@ -55,17 +62,17 @@ internal static class Eras
             Completion = UnlockCondition.All(
                 UnlockCondition.EarnedThisRunAtLeast(1e5),
                 UnlockCondition.AchievementsAtLeast(3)),
-            CompletionHint = "本轮累计 100,000，并解锁 3 个成就。",
+            CompletionHint = Prose.Text("eras", "stone", "completionHint"),
         },
         new()
         {
             Index = 2,
             Id = "village",
-            Name = "第 2 时代 · 村庄",
-            Icon = "🏘️",
-            Theme = "猫窝挨着猫窝，路被踩出来了。第一次有人替别人干活。",
-            EntryText = "第二个时代从一条路开始。路不是谁修的，是走出来的——她只是第一个决定一直走同一条的人。",
-            ExitText = "村庄变成了城邦，城邦变成了不止一个。她开始需要一张地图才记得住自己有多少地方。",
+            Name = Prose.Text("eras", "village", "name"),
+            Icon = Prose.Text("eras", "village", "icon"),
+            Theme = Prose.Text("eras", "village", "theme"),
+            EntryText = Prose.Text("eras", "village", "entryText"),
+            ExitText = Prose.Text("eras", "village", "exitText"),
             Balance = baseBalance with
             {
                 ClickBasePower = 2.0,
@@ -79,18 +86,17 @@ internal static class Eras
                 UnlockCondition.EarnedThisRunAtLeast(1.5e7),
                 UnlockCondition.AchievementsAtLeast(5),
                 UnlockCondition.Counter(CultureModule.CounterKey, 4e4)),
-            CompletionHint = "本轮累计 15 million、解锁 5 个成就，并攒下 40,000 点文化。",
+            CompletionHint = Prose.Text("eras", "village", "completionHint"),
         },
         new()
         {
             Index = 3,
             Id = "empire",
-            Name = "第 3 时代 · 城墙",
-            Icon = "🧱",
-            Theme = "墙垒起来了，帝国也垒起来了。有墙就有墙外面的东西。",
-            EntryText = "第一个时代她想活下去，第二个时代她想活得好一点。这个时代她第一次想的是："
-                        + "「别人会不会来把它拆掉。」",
-            ExitText = "墙修到第三道的时候她停了手。她说再高下去，里面的人就看不见星星了。",
+            Name = Prose.Text("eras", "empire", "name"),
+            Icon = Prose.Text("eras", "empire", "icon"),
+            Theme = Prose.Text("eras", "empire", "theme"),
+            EntryText = Prose.Text("eras", "empire", "entryText"),
+            ExitText = Prose.Text("eras", "empire", "exitText"),
             // 战争与瘟疫：事件来得稀，但每次更狠——它的负面权重也更高。
             Balance = baseBalance with
             {
@@ -105,18 +111,17 @@ internal static class Eras
                 UnlockCondition.AchievementsAtLeast(8),
                 // 文化第一次成为瓶颈：文明不只是「更大」，还得「记得住」。
                 UnlockCondition.Counter(CultureModule.CounterKey, 6e5)),
-            CompletionHint = "本轮累计 300 million、解锁 8 个成就，并攒下 600,000 点文化。",
+            CompletionHint = Prose.Text("eras", "empire", "completionHint"),
         },
         new()
         {
             Index = 4,
             Id = "enlightenment",
-            Name = "第 4 时代 · 学院",
-            Icon = "🏛️",
-            Theme = "她把「为什么」写下来了。从这一天起，知识不必住在某一个脑子里。",
-            EntryText = "学院的第一堂课只有一句话：「你不必相信我，你可以自己算一遍。」"
-                        + "她说完这句话，愣了一下——这是她第一次把权力交出去。",
-            ExitText = "她合上讲义的时候，台下已经有人写出了她看不懂的公式。她很高兴。",
+            Name = Prose.Text("eras", "enlightenment", "name"),
+            Icon = Prose.Text("eras", "enlightenment", "icon"),
+            Theme = Prose.Text("eras", "enlightenment", "theme"),
+            EntryText = Prose.Text("eras", "enlightenment", "entryText"),
+            ExitText = Prose.Text("eras", "enlightenment", "exitText"),
             Balance = baseBalance with
             {
                 ClickBasePower = 0.5,
@@ -131,19 +136,17 @@ internal static class Eras
                 UnlockCondition.EarnedThisRunAtLeast(6e9),
                 UnlockCondition.Counter(CultureModule.CounterKey, 8e5),
                 UnlockCondition.Counter(EraSystem.PeakCpsCounterKey, 4e7)),
-            CompletionHint = "本轮累计 6 billion、文化 800,000，且峰值产量达到 40 million/s。",
+            CompletionHint = Prose.Text("eras", "enlightenment", "completionHint"),
         },
         new()
         {
             Index = 5,
             Id = "starport",
-            Name = "第 5 时代 · 星港",
-            Icon = "🚀",
-            Theme = "第一艘船往上飞了。文明的最后一道墙是天空，而她刚好够得着。",
-            EntryText = "星港的第一根柱子立起来那天，全城的人都来了。她站在最外面，"
-                        + "仰着头看那根柱子插进云里，看了很久没说话。",
-            ExitText = "船飞走之后，她在那块空地上蹲下来，用爪子划了一道痕——"
-                       + "和第一个时代石堆上那道一模一样。",
+            Name = Prose.Text("eras", "starport", "name"),
+            Icon = Prose.Text("eras", "starport", "icon"),
+            Theme = Prose.Text("eras", "starport", "theme"),
+            EntryText = Prose.Text("eras", "starport", "entryText"),
+            ExitText = Prose.Text("eras", "starport", "exitText"),
             Balance = baseBalance with
             {
                 ClickBasePower = 0.3,
@@ -155,7 +158,7 @@ internal static class Eras
             Modifiers = [.. CultureScaling, Modifier.GlobalMultiplier(5.5)],
             UnlocksBuildings = ["star_port", "spirit_bridge", "deep_space_relay"],
             Completion = FinalCompletion,
-            CompletionHint = "本轮累计 100 billion、文化 50,000，并解锁 20 个成就。",
+            CompletionHint = Prose.Text("eras", "starport", "completionHint"),
         },
     ];
 
