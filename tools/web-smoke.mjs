@@ -34,6 +34,11 @@ const wwwroot = join(root, "games", "hosts", "Web", "wwwroot");
 
 const html = readFileSync(join(wwwroot, "index.html"), "utf8");
 const css = readFileSync(join(wwwroot, "app.css"), "utf8");
+// 去掉注释之后再用来解析**声明**。这不是洁癖：这一版新加的那几条 CSS 常量断言第一次跑
+// 就踩了坑——`main` 的注释里写着「footer 早就有 max-width: 60rem」，于是"读 main 的
+// max-width"读到了注释里的那个数（60rem），把真声明改成 9999rem 那条用例照样全绿。
+// 注释在浏览器里不参与层叠，在这里也不该参与断言。
+const cssRules = css.replace(/\/\*[\s\S]*?\*\//g, "");
 const appSource = readFileSync(join(wwwroot, "app.js"), "utf8");
 
 // ---------------------------------------------------------------- 断言
@@ -105,6 +110,7 @@ class El {
   }
   setAttribute(name, value) { this._attrs.set(name, String(value)); }
   getAttribute(name) { return this._attrs.has(name) ? this._attrs.get(name) : null; }
+  removeAttribute(name) { this._attrs.delete(name); }
   closest(selector) { return matches(this, selector) ? this : (this.parent ? this.parent.closest(selector) : null); }
 }
 
@@ -150,6 +156,11 @@ function makeDom() {
     if (tab !== undefined) dataset.tab = tab;
 
     const el = new El(name, id, classes, dataset);
+    // index.html 上的**每一个**属性都收进 `_attrs`（不只 id / class / data-*）：
+    // 静态标记里写着的 aria 状态（例如建筑页签的 aria-current="true"）在真浏览器里
+    // 首帧就生效，桩里也必须读得到——否则"首帧的 aria-current 与 class=active 对齐"
+    // 这条只能靠 app.js 再写一遍才成立，而那是在替浏览器做事。
+    for (const attr of attrs.matchAll(/([\w:-]+)="([^"]*)"/g)) el.setAttribute(attr[1], attr[2]);
     all.push(el);
     if (id) byId.set(id, el);
     if (panel !== undefined) panels.push(el);
@@ -726,7 +737,7 @@ check("建筑行是「两个控件 + 卡片」三列，两个展开框都跨整�
   // 显式列号：少一个按钮时**空的 auto 轨道宽度是 0**，卡片不能因此掉进窄轨道里。
   if (!/\.story-toggle \{[\s\S]*?grid-column: 1;/.test(css)) throw new Error(".story-toggle 没有钉在第 1 列");
   if (!/\.upgrade-toggle \{[\s\S]*?grid-column: 2;/.test(css)) throw new Error(".upgrade-toggle 没有钉在第 2 列");
-  if (!/\.building > \.card \{ grid-column: 3; \}/.test(css)) throw new Error(".building > .card 没有钉在第 3 列");
+  if (!/\.building > \.card \{ grid-column: 3;/.test(css)) throw new Error(".building > .card 没有钉在第 3 列");
   const story = /\.story \{([\s\S]*?)\}/.exec(css)?.[1] ?? "";
   if (!story.includes("grid-column: 1 / -1")) throw new Error(".story 没有跨整行");
   const track = /\.track \{([\s\S]*?)\}/.exec(css)?.[1] ?? "";
@@ -736,10 +747,29 @@ check("展开按钮的「开着」状态有独立样式（只靠 aria-expanded �
   if (!/\.story-toggle\[aria-expanded="true"\]/.test(css)) throw new Error("没有 aria-expanded=true 的样式");
   if (!/\.upgrade-toggle\[aria-expanded="true"\]/.test(css)) throw new Error("⬆ 没有 aria-expanded=true 的样式");
 });
-check("展开按钮在窄屏上撑到 44px（📖 / ⬆ 只有一字符宽，按不到就等于没有）", () => {
-  const narrow = /@media \(max-width: 34rem\) \{([\s\S]*?)\n\}/.exec(css)?.[1] ?? "";
-  if (!/\.story-toggle \{ min-width: 44px; \}/.test(narrow)) throw new Error("窄屏那节里没有 .story-toggle 的 44px");
-  if (!/\.upgrade-toggle \{ min-width: 44px; \}/.test(narrow)) throw new Error("窄屏那节里没有 .upgrade-toggle 的 44px");
+check("展开按钮在**任何宽度**下都 ≥44px（基规则里就有，不是「窄屏才有」——原先只有 2rem = 32px）", () => {
+  const story = /\.story-toggle \{([\s\S]*?)\}/.exec(css)?.[1] ?? "";
+  if (!story.includes("min-width: 44px")) throw new Error(".story-toggle 的基规则里没有 44px");
+  const upgrade = /\.upgrade-toggle \{([\s\S]*?)\}/.exec(css)?.[1] ?? "";
+  if (!upgrade.includes("min-width: 44px")) throw new Error(".upgrade-toggle 的基规则里没有 44px");
+});
+
+// 面板里那两段说明（`#upgrade-hint` / `#permanent-hint`）与列表里的空态段此前只有
+// 浏览器默认的 `margin: 1em 0`：.85rem 字号下上下各 13.6px，比这块面板里其它所有间距
+// （.4~.75rem = 6.4~12px）都大一档。形状守卫：这两处必须自己写出 margin。
+check("面板说明段 / 列表空态段有显式 margin（不留 UA 默认的 1em = 13.6px）", () => {
+  if (!/\.panel > p\.muted \{ margin:/.test(css)) throw new Error("没有 .panel > p.muted 的 margin");
+  if (!/\.list > p\.muted \{ margin:/.test(css)) throw new Error("没有 .list > p.muted 的 margin");
+});
+
+// 折不断的长 token（长英文名 / 连写的 id）不许把卡片顶出面板。两条缺一不可：
+// `overflow-wrap: anywhere` 把 min-content 压到一个字符，`min-width: 0` 去掉网格项
+// 默认的 `min-width: auto`（= min-content，会把这个卡片所在的 1fr 轨道撑开）。
+check("卡片正文折得断：overflow-wrap: anywhere + min-width: 0", () => {
+  const block = /\.card \.name, \.card \.price, \.card \.share, \.card \.effect \{([\s\S]*?)\}/.exec(css)?.[1];
+  if (block === undefined) throw new Error("没有那一条合并的卡片正文规则");
+  if (!block.includes("overflow-wrap: anywhere")) throw new Error("没有 overflow-wrap: anywhere");
+  if (!block.includes("min-width: 0")) throw new Error("没有 min-width: 0");
 });
 
 // 12. 计数器动画：单调、不振荡。这一条守的是 human 报的"数字来回跳"。
@@ -1333,6 +1363,258 @@ section("16. 层内阶段：走到最后一段、没有阶段、老引擎三种�
   await stageApp.push({ kind: "delta", seq: 4, changed: { era: withStage({ stageIndex: 0, stageCount: 0 }) } });
   check("stageIndex 为 0（脏数据）时同样隐藏，不画「第 0 / 0 阶段」", () => {
     eq(hidden(stageApp, "era-stage"), true, "阶段那一行的可见性");
+  });
+}
+
+// 17. 触屏下限与 400px 水平预算（全部从 app.css 里的常量算出来，不看渲染）。
+//
+// 为什么要有这一节：本机结构性起不了浏览器（OPEN_WORK §0.6），于是「够不够得着」
+// 「会不会挤出去」这类问题只有两条活路——请真人看一眼，或者把写死在 CSS 里的常量
+// 拿出来算一遍。这一节走的是第二条：每个数字都明文写在 app.css 里，算出来的预算与
+// 阈值都进断言，红的时候差额直接印在消息里。
+section("17. 触屏下限与 400px 水平预算（CSS 常量算出来的）");
+{
+  const REM = 16;
+  /** 从某条规则里读一个尺寸（px 或 rem），读不到返回 null。 */
+  const sizeOf = (block, prop) => {
+    const m = new RegExp(`${prop}:\\s*([\\d.]+)(px|rem)`).exec(block);
+    return m ? Number(m[1]) * (m[2] === "rem" ? REM : 1) : null;
+  };
+  const blockOf = (selector) =>
+    new RegExp(selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + " \\{([\\s\\S]*?)\\}").exec(cssRules)?.[1] ?? "";
+
+  const TARGET = 44; // 这个仓库自己那条线（.choices-pill / .sheet-ok 都是 44px）
+
+  check("建筑行整行 ≥44px（两个 44px 宽的按钮 align-self: stretch，行高由卡片决定）", () => {
+    const height = sizeOf(blockOf(".building > .card"), "min-height");
+    if (height === null) throw new Error("`.building > .card` 没有 min-height——卡片会比它旁边的 📖 / ⬆ 矮");
+    if (height < TARGET) throw new Error(`卡片行只有 ${height}px，低于 ${TARGET}px`);
+  });
+
+  check("sheet 右上角 × 是 44×44（那张 sheet 唯一常驻的关闭控件）", () => {
+    const block = blockOf(".sheet-close");
+    const width = sizeOf(block, "min-width");
+    const height = sizeOf(block, "min-height");
+    if (width === null || height === null) throw new Error("没有 min-width / min-height");
+    if (width < TARGET || height < TARGET) throw new Error(`${width}×${height}，低于 ${TARGET}×${TARGET}`);
+  });
+
+  // 400px 视口下的横向预算。三个常量都来自 app.css：
+  //   · body 左右内边距 = clamp(1rem, 4vw, 3rem)，400px 时 4vw = 16px（正好取到 1rem 那一端）；
+  //   · main 在 ≤34rem 那节里的左右内边距 = .6rem；
+  //   · .building 的列间距 = .35rem，两处。
+  const bodyPad = Math.max(16, Math.min(0.04 * 400, 48));
+  const mainPad = 0.6 * REM;
+  const columnGap = 0.35 * REM;
+  const available = 400 - 2 * bodyPad - 2 * mainPad;
+  const toggles = 2 * TARGET + 2 * columnGap;
+
+  check("400px 下建筑行放得下：两个 44px 按钮之后，卡片还剩 ≥100px（附实际数字）", () => {
+    const left = available - toggles;
+    // 卡片自己的 min-content 上界：最长折不断的一段是价格里的 `×100`（4 个字符），
+    // 按 1em/字符这个对任何字体都成立的上界算，在最大的那一档卡片字号（.card .name = .92rem）下
+    // 是 58.9px，加上左右内边距 2×.7rem 与 2px 边框。
+    const bound = 4 * 0.92 * REM + 2 * 0.7 * REM + 2;
+    if (left < bound) throw new Error(`卡片只剩 ${left.toFixed(1)}px，而它最少要 ${bound.toFixed(1)}px`);
+    if (left < 100) throw new Error(`只剩 ${left.toFixed(1)}px（可用 ${available.toFixed(1)} − 按钮 ${toggles.toFixed(1)}），余量不足 100px`);
+  });
+
+  check("400px 下 sheet 里的立场轴：12rem 固定列之后，进度条还有 ≥96px", () => {
+    // .sheet { width: min(26rem, 100%) } 外面还套着 .sheet-layer 的 1rem 内边距。
+    const outer = Math.min(26 * REM, 400 - 2 * REM);
+    const inner = outer - 2 * 1.3 * REM;
+    const fixed = 9 * REM + 2.5 * REM + 2 * 0.5 * REM; // .stance 的 9rem + 2.5rem + 两处 .5rem 间隙
+    const bar = inner - fixed;
+    if (bar < 96) throw new Error(`进度条只剩 ${bar.toFixed(1)}px（sheet 内宽 ${inner.toFixed(1)}px − 固定列 ${fixed}px）`);
+  });
+}
+
+// 18. 超宽屏：正文行宽上限。
+//
+// 2K 屏上原先没有上限：main 的第二列有多少给多少，卡片正文一行能到约 1990px
+// （字号最小的 .effect 是 .75rem ≈ 135 个汉字）。这条把「上限存在」与「按它算出来的
+// 行宽不超过 80 个汉字」一起钉住——删掉 app.css 里那条 max-width，它会红。
+section("18. 超宽屏：正文行宽上限");
+{
+  const REM = 16;
+  const mainBlock = /main \{([\s\S]*?)\}/.exec(cssRules)?.[1] ?? "";
+  const capMatch = /max-width:\s*([\d.]+)rem/.exec(mainBlock);
+  const cap = capMatch ? Number(capMatch[1]) * REM : null;
+
+  check("main 声明了宽度上限（footer 早就有 max-width: 60rem，右栏此前没有）", () => {
+    if (cap === null) throw new Error("main 没有 max-width：2560px 屏上卡片正文一行约 1990px");
+  });
+
+  check("按这个上限算：最小一档卡片字号（.effect 的 .75rem）每行不超过 80 个汉字", () => {
+    if (cap === null) throw new Error("没有 max-width，无从计算");
+    const hero = 26 * REM;        // 第一列的上限 minmax(20rem, 26rem)
+    const gap = 1.5 * REM;
+    const panelPad = 2 * 1.1 * REM;
+    const cardPad = 2 * 0.7 * REM;
+    const text = cap - hero - gap - panelPad - cardPad - 2;
+    const glyphs = text / (0.75 * REM);
+    if (glyphs > 80) throw new Error(`一行 ${glyphs.toFixed(1)} 个汉字（正文栏 ${text.toFixed(0)}px），超过 80`);
+  });
+}
+
+// 19. 建筑卡片说得出「已有几个」。
+//
+// `buildings[].owned` 此前**一次都没显示过**：app.js 每帧把它写进一个 `<span class="owned">`，
+// 而 CSS 从第一个前端提交（d238825）起就是 `.card .owned { display: none }`——数字一直在被
+// 计算、被写进 DOM，然后被藏掉。终端宿主有这一列（TerminalUi.BuildingRow 的 Owned），
+// 这边没有。现在它并进本来就只在 owned > 0 时出现的那一行。
+section("19. 建筑卡片说得出「已有几个」");
+{
+  const own = await loadApp(copyAs("app-owned.mjs", appSource));
+  const bed = (count) => ({
+    id: "b1", isVisible: true, isUnlocked: true, canAfford: true, icon: "🏠", name: "猫窝",
+    owned: count, batchAmount: 10, batchPrice: 120, cpsContribution: 5.5, cpsShare: 0.12,
+    unlockHint: "", unlockProgress: 1, description: "猫在里面睡。", upgradeIds: [],
+  });
+  const partsOf = (cls) =>
+    el(own, "buildings").children[0].children
+      .find((child) => child.classList.contains("card")).children
+      .find((child) => child.classList.contains(cls));
+
+  await own.push({ kind: "full", seq: 1, snapshot: snapshot({ buildings: [bed(3)] }) });
+
+  check("owned > 0：卡片上写出「已有 3」，与价格行上的批次记号 `×10` 用两个词分开", () => {
+    const share = partsOf("share");
+    if (share.classList.contains("hidden")) throw new Error("share 那一行被藏起来了");
+    if (!share.textContent.includes("已有 3")) throw new Error(`那一行上没有「已有 3」：<${share.textContent}>`);
+    const price = partsOf("price").textContent;
+    if (!price.includes("×10")) throw new Error(`价格行上的批次记号不见了：<${price}>`);
+    if (share.textContent.includes("×3")) throw new Error(`「已有」写成了批次的记号：<${share.textContent}>`);
+  });
+
+  await own.push({ kind: "full", seq: 2, snapshot: snapshot({ buildings: [bed(0)] }) });
+
+  check("owned = 0：不写「已有 0」（那一行本来就不显示，0 不是信息）", () => {
+    const share = partsOf("share");
+    if (!share.classList.contains("hidden")) throw new Error("owned 为 0 时那一行还显示着");
+    if (share.textContent.includes("已有")) throw new Error(`写了「已有 0」：<${share.textContent}>`);
+  });
+}
+
+// 20. 状态要能被读屏读到。
+//
+// 页面此前没有一处 aria 状态：批量档位「哪一档生效」只写进 `.active` 这个类名，
+// 页签「在哪一页」也只写进 `.active`，而提示条（钱不够 / 存档失败 / 连不上宿主）
+// 根本没有实时区域——读屏用户既看不到颜色，也读不到类名，那些消息等于不存在。
+section("20. 状态要能被读屏读到（提示条 / 批量档位 / 页签）");
+{
+  check("提示条是页面上唯一的实时区域（role=status：隐含 aria-live=polite + atomic）", () => {
+    if (!/<div id="toast"[^>]*role="status"/.test(html)) throw new Error("#toast 上没有 role=status");
+  });
+
+  check("批量档位有一个组名（role=group + aria-label）——四个符号自己说不清是干什么的", () => {
+    if (!/<div id="batch"[^>]*role="group"/.test(html)) throw new Error("#batch 上没有 role=group");
+    if (!/<div id="batch"[^>]*aria-label="[^"]+"/.test(html)) throw new Error("#batch 上没有 aria-label");
+  });
+
+  const aria = await loadApp(copyAs("app-aria.mjs", appSource));
+  await aria.push({ kind: "full", seq: 1, snapshot: snapshot() });
+
+  check("批量档位里恰好一个 aria-pressed=true，且就是 modeName 那一个（夹具是 buy10）", () => {
+    const buttons = el(aria, "batch").children;
+    const pressed = buttons.filter((button) => button.getAttribute("aria-pressed") === "true");
+    eq(pressed.length, 1, "按下的个数");
+    eq(pressed[0].textContent, "×10", "按下的是哪一个");
+    const others = buttons.filter((button) => button.getAttribute("aria-pressed") === "false");
+    eq(others.length, 3, "其余三个显式写着 false");
+  });
+
+  check("首帧页签：恰好一个 aria-current=true，且与 index.html 里的 class=active 对齐", () => {
+    const current = aria.doc.tabs.filter((tab) => tab.getAttribute("aria-current") === "true");
+    eq(current.length, 1, "带 aria-current 的页签数");
+    eq(current[0].dataset.tab, "buildings", "标的是哪一页");
+  });
+
+  check("切页签之后 aria-current 跟着走（旧的那个要被摘掉，不能留下两个）", () => {
+    const upgrades = aria.doc.tabs.find((tab) => tab.dataset.tab === "upgrades");
+    upgrades.parent = el(aria, "tabs");
+    fire(el(aria, "tabs"), "click", { target: upgrades });
+    const current = aria.doc.tabs.filter((tab) => tab.getAttribute("aria-current") === "true");
+    eq(current.length, 1, "带 aria-current 的页签数");
+    eq(current[0].dataset.tab, "upgrades", "现在标的是哪一页");
+    return true;
+  });
+
+  check("Tab 顺序：离线那张 sheet 的按钮排在页面正文之前（模态先够得着）", () => {
+    const order = aria.doc.all.map((node) => node.id);
+    if (!(order.indexOf("offline-ok") < order.indexOf("big-cat"))) {
+      throw new Error("离线 sheet 的「收下」排到了大猫后面：Tab 要先走一遍背景才够得着那张窗口");
+    }
+  });
+
+  // 这一行必须**两样都齐**：有说明（才有 📖 与故事框）又有 upgradeIds（才有 ⬆ 与轨）。
+  // 夹具里那一座没有 description，所以这里先推一帧齐全的——否则测到的是"少了两个控件"的顺序。
+  // 用一个新的 id（节点的形状在**第一次见到那座建筑时**就定下来了：说明文本是内容里的静态
+  // 字段，同一个 id 中途长出说明文本不是线上会发生的事）。
+  await aria.push({
+    kind: "full", seq: 2,
+    snapshot: snapshot({
+      buildings: [{
+        id: "b9", isVisible: true, isUnlocked: true, canAfford: true, icon: "🏠", name: "猫窝",
+        owned: 3, batchAmount: 1, batchPrice: 120, cpsContribution: 5.5, cpsShare: 0.12,
+        unlockHint: "", unlockProgress: 1, description: "猫在里面睡。", upgradeIds: ["u1"],
+      }],
+    }),
+  });
+
+  check("建筑行内的 Tab 顺序：📖 → ⬆ → 买卡片，两个展开框排在卡片之后（视觉顺序 = DOM 顺序）", () => {
+    const row = el(aria, "buildings").children[0];
+    const order = row.children.map((child) =>
+      child.classList.contains("story-toggle") ? "story-toggle"
+        : child.classList.contains("upgrade-toggle") ? "upgrade-toggle"
+          : child.classList.contains("card") ? "card"
+            : child.classList.contains("story") ? "story" : "track");
+    eq(order.join(" > "), "story-toggle > upgrade-toggle > card > story > track", "行内的 DOM 顺序");
+  });
+}
+
+// 21. 阶段那一行 vs「再买 N 个解锁「X」」——两个概念不许读成同一件事。
+//
+// 里程碑那几个字段（`buildings[].nextMilestoneAt` / `NextMilestoneName`）**在快照里**，
+// 但今天只有终端宿主读它，措辞是「再买 N 个解锁「X」」（`Demo.Cli/TerminalUi.cs:457-460`）；
+// 页面上一个字符都没画过（`CONTENT_AUTHORING` §794 与 `BUILDING_UPGRADES_PLAN` §86 都写着
+// "语义一字未动"，但**没有一处守卫**）。这一节把"今天屏幕上只有阶段那一行"钉成事实，
+// 并禁止阶段那一行借用里程碑的措辞。将来真要在界面上画里程碑，这条会红——那时要做的
+// 是把它画成**另一个元素**，而不是把两句话并进同一行。
+section("21. 阶段那一行 vs 里程碑那一句（不许读成同一件事）");
+{
+  const words = await loadApp(copyAs("app-words.mjs", appSource));
+  const bed = {
+    id: "b1", isVisible: true, isUnlocked: true, canAfford: true, icon: "🏠", name: "猫窝",
+    owned: 3, batchAmount: 1, batchPrice: 120, cpsContribution: 5.5, cpsShare: 0.12,
+    unlockHint: "", unlockProgress: 1, description: "猫在里面睡。", upgradeIds: [],
+    // 线上形状：这两个字段一直随 buildings[] 推过来（见 tools/fixtures/web-snapshot.json）。
+    nextMilestoneAt: 10, nextMilestoneName: "正式配齐的猫窝",
+  };
+  await words.push({ kind: "full", seq: 1, snapshot: snapshot({ buildings: [bed] }) });
+
+  // 桩里的 textContent 是"自己的文字"（不聚合子节点），所以遍历一遍就是全页的可见文字。
+  const allText = [];
+  const collect = (node) => {
+    if (node.textContent) allText.push(node.textContent);
+    for (const child of node.children) collect(child);
+  };
+  for (const node of words.doc.all) collect(node);
+
+  check("阶段那一行说的是「第 k / n 阶段 · …」，而且没有借里程碑的措辞", () => {
+    const stage = el(words, "era-stage").textContent;
+    if (!/^第 \d+ \/ \d+ 阶段 · /.test(stage)) throw new Error(`阶段那一行不是那个形状：<${stage}>`);
+    if (stage.includes("解锁")) throw new Error(`阶段那一行借了里程碑的措辞：<${stage}>`);
+  });
+
+  check("页面上没有任何一处画出「再买 N 个解锁「X」」那一句（它今天只活在终端宿主里）", () => {
+    const hit = allText.find((text) => text.includes("解锁「"));
+    if (hit) throw new Error(`有人在页面上画了里程碑那一句：<${hit}>`);
+  });
+
+  check("里程碑的名字即使在快照里，也不会跑到阶段那一行上去", () => {
+    const stage = el(words, "era-stage").textContent;
+    if (stage.includes("正式配齐的猫窝")) throw new Error(`阶段那一行里出现了里程碑的名字：<${stage}>`);
   });
 }
 

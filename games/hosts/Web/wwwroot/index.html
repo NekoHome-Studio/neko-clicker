@@ -9,7 +9,11 @@
 <body>
   <!-- 金猫是浮层：它冒出来时页面别的地方不该重排 -->
   <div id="golden" class="golden-layer hidden"></div>
-  <div id="toast" class="toast"></div>
+
+  <!-- 提示条：buy 失败（"钱不够"）、存档失败、连不上宿主都只走这里。
+       `role="status"` 是页面上**唯一**的实时区域（隐含 aria-live=polite + aria-atomic）：
+       没有它，这些消息对读屏用户等于不存在——它们不是用户操作的结果，而是宿主回的话。 -->
+  <div id="toast" class="toast" role="status"></div>
 
   <!-- 离线收益：读档补发的那一笔（GameSnapshot.offline）。
        它是一次性**事件**而不是每秒都在的数值，所以做成压在画面之上的播报卡；
@@ -109,7 +113,10 @@
     <!-- 右栏：面板切换 -->
     <section class="panels">
       <nav class="tabs" id="tabs">
-        <button data-tab="buildings" class="active">建筑</button>
+        <!-- `aria-current` 由 app.js 的 selectTab 维护（"现在在哪一页"不能只靠 `.active` 这个类名
+             ——读屏读不到颜色，也读不到类名）。下面这一条是首帧的初值，与 class="active" 对齐：
+             render 之前 selectTab 只在 URL 带 #tab= 时才跑，没有它就没人写这个属性。 -->
+        <button data-tab="buildings" class="active" aria-current="true">建筑</button>
         <button data-tab="upgrades">升级</button>
         <!-- 永久线：内容包没有这条线时整个按钮会被隐藏（见 app.js 的 renderPermanent） -->
         <button data-tab="permanent" id="tab-permanent">永久 <b id="permanent-badge" class="badge hidden"></b></button>
@@ -121,7 +128,10 @@
       <div class="panel" data-panel="buildings">
         <div class="panel-head">
           <h2>建筑</h2>
-          <div id="batch" class="batch"></div>
+          <!-- 批量档位（×1 / ×10 / ×100 / 买满）：四个按钮自己说不清是干什么的
+               （"×10" 读出来只是一个符号），所以这里给它们一个组名；哪一个生效由
+               app.js 的 renderBatch 用 aria-pressed 说出去（`.active` 只是画出来的样子）。 -->
+          <div id="batch" class="batch" role="group" aria-label="购买数量"></div>
         </div>
         <!-- 建筑行由 app.js 逐条生成：一行 = [📖 故事][⬆ 升级轨][买卡片]，两个框展开在下面。
              卡片本体仍然是"点一下买"，展开是**另外两个控件**——取舍与展开状态的存放

@@ -62,6 +62,14 @@ main {
   grid-template-columns: minmax(20rem, 26rem) 1fr;
   gap: 1.5rem;
   align-items: start;
+  /* 超宽屏的行宽上限。原先这里没有上限，而 footer 早就有 max-width: 60rem——
+     于是 2560px 宽的屏上右栏卡片正文一行能到约 1964px（按 .card .name 的 .92rem 算是
+     ≈134 个汉字；按字号最小的 .effect（.75rem）算是 ≈164 个）。82rem 是按"最小那一档
+     字号一行不超过 80 个汉字"反推的：1312 − 26rem（hero）− 1.5rem（gap）− 2.2rem
+     （panel 左右内边距）− 1.4rem（卡片左右内边距）= 约 812px ≈ 68 字。
+     删掉这一条，web-smoke §18 会红。 */
+  max-width: 82rem;
+  margin-inline: auto;
 }
 
 @media (max-width: 62rem) {
@@ -191,6 +199,13 @@ kbd {
 
 .panel-head h2 { font-size: .95rem; margin: 0; letter-spacing: .04em; }
 
+/* 面板里的说明段（`#upgrade-hint` / `#permanent-hint`）与列表里的空态段此前只有
+   浏览器默认的 `margin: 1em 0`——.85rem 字号下上下各 13.6px，比这块面板里其它所有
+   间距（.4~.75rem = 6.4~12px，见 .panel-head / .wallet / .list 的 gap）都大一档。
+   在这里把它们拉回同一个尺度：说明段与下面列表之间 .6rem，空态段由 .list 的 gap 管。 */
+.panel > p.muted { margin: 0 0 .6rem; }
+.list > p.muted { margin: 0; }
+
 .batch { display: flex; gap: .3rem; }
 
 .batch button {
@@ -234,6 +249,16 @@ kbd {
 .card .share { grid-area: share; font-size: .75rem; color: var(--dim); font-variant-numeric: tabular-nums; }
 .card .effect { grid-area: share; font-size: .75rem; color: #a9a3c4; }
 
+/* 一个折不断的 token（长英文名、连写的 id、没有空格的数字串）不许把卡片顶出面板：
+   `overflow-wrap: anywhere` 让它就地折行（它同时把 min-content 压到一个字符），
+   `min-width: 0` 再去掉网格项默认的 `min-width: auto`（那等于 min-content，会把这个
+   卡片所在的 1fr 轨道撑开）。内容今天最长的名字是 12 个汉字（Company 的
+   `roadshow_hall_tier1`），所以这两条是形状守卫而不是活路径。 */
+.card .name, .card .price, .card .share, .card .effect {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
 .card.affordable { border-left-color: var(--ok); }
 .card.affordable .price { color: var(--ok); }
 
@@ -252,7 +277,6 @@ kbd {
   padding: .35rem .6rem;
 }
 .card.compact .name { font-size: .86rem; }
-.card .owned { display: none; }
 
 /* ---------------------------------------------------------------- 建筑行：卡片 + 可展开的故事
    一行 = [📖 展开按钮][⬆ 升级轨按钮][买卡片]，两个展开出来的框都占满整行。
@@ -274,7 +298,10 @@ kbd {
 .story-toggle {
   grid-column: 1;
   align-self: stretch;
-  min-width: 2rem;
+  /* 触屏下限 44px（这个仓库自己的那条线：.choices-pill / .sheet-ok 都是 44px）。
+     原先只写在小屏那节里（min-width: 2rem = 32px），于是宽一点的触屏设备拿到的是
+     32px 宽的目标；44px 让「任何宽度下都够得着」变成基规则里的事实。 */
+  min-width: 44px;
   border: 1px solid var(--line);
   border-radius: 9px;
   background: transparent;
@@ -299,7 +326,8 @@ kbd {
 .upgrade-toggle {
   grid-column: 2;
   align-self: stretch;
-  min-width: 2rem;
+  /* 与 📖 同规格、同一个下限（理由写在 .story-toggle 上）。 */
+  min-width: 44px;
   border: 1px solid var(--line);
   border-radius: 9px;
   background: transparent;
@@ -319,8 +347,12 @@ kbd {
 .upgrade-toggle.affordable { color: var(--ok); border-left: 3px solid var(--ok); }
 .upgrade-toggle .badge { display: block; margin: .15rem auto 0; }
 
-/* 买卡片钉在第 3 列（见 .building 的注释：空轨道宽度为 0，卡片不会被挤走）。 */
-.building > .card { grid-column: 3; }
+/* 买卡片钉在第 3 列（见 .building 的注释：空轨道宽度为 0，卡片不会被挤走）。
+   min-height 也在这里补上：两个展开按钮是 44px 宽且 align-self: stretch，行高由卡片
+   决定；没有这条，卡片会比它旁边的按钮矮（约 41px），一行里的三个东西就不一样高了。
+   注意 `.card.compact`（升级行）**不**吃这条——那是另一档密度，它只有 ≤34rem 时才有
+   44px 下限（见文件末尾「窄屏」一节）。 */
+.building > .card { grid-column: 3; min-height: 44px; }
 
 /* 建筑自己的说明文本。今天每条只有一行，但边界是"文案写多长都放得下"：
    段落由 app.js 按空行切开，段内的换行照原样保留（white-space: pre-line）。 */
@@ -682,20 +714,25 @@ footer code { background: #00000055; padding: .05rem .3rem; border-radius: 4px; 
 
   main { padding: 0 .6rem; }
 
-  /* 触屏目标下限：卡片整行可点，太矮就容易点错。44px 是常见的可点最小值。 */
+  /* 触屏目标下限（卡片整行可点、📖 / ⬆ 只有一字符宽）：44px。
+     ⚠️ 这三条**已经搬到基规则里**（`.building > .card` 的 min-height、
+     .story-toggle / .upgrade-toggle 的 min-width）——它们不是"窄屏才有"的规则，
+     留在这里第二遍只会让人以为宽屏没有下限。升级行（.card.compact）的 44px 仍是
+     这里独有：它在宽屏上保持更密的一档（约 35px/行）。 */
   .card { min-height: 44px; }
-  /* 展开按钮同理：它只有 📖 一个字符宽，窄屏上要自己撑到能点得到的宽度。
-     ⬆ 是同一类控件，同一个下限。 */
-  .story-toggle { min-width: 44px; }
-  .upgrade-toggle { min-width: 44px; }
   .tabs button { min-height: 40px; padding: .45rem .7rem; }
 
   /* 日志行：三列在窄屏会把正文挤成一条，时间挪到正文下面。 */
   .note { grid-template-columns: 1.2rem 1fr; }
   .note-time { grid-column: 2; }
 
-  /* 大数字在小屏上要收一点，否则会把自己挤出容器。 */
-  .counter { font-size: clamp(1.4rem, 7vw, 2rem); }
+  /* 大数字在小屏上要收一点，否则会把自己挤出容器。
+     ⚠️ 这一条原先写的是 `.counter { font-size: clamp(1.4rem, 7vw, 2rem) }`——它**一次都没生效过**：
+     `#cookies` 自己带 font-size（而且 id 选择器压得过 .counter），`.unit` / `.rates` 也各有各的
+     font-size，所以写在容器上的那条只影响一个没人继承的默认值。现在钉在真正画大数字的元素上：
+     400px 时基规则（clamp(2rem, 5vw, 2.9rem)）本来就给 32px，这一条管的是更窄的屏
+     （320px：32px → 8vw = 25.6px，clamp 后 27.2px）。 */
+  #cookies { font-size: clamp(1.7rem, 8vw, 2rem); }
 
   footer { font-size: .78rem; }
 }
@@ -754,8 +791,10 @@ footer code { background: #00000055; padding: .05rem .3rem; border-radius: 4px; 
 }
 
 .sheet-close {
-  min-width: 2rem;
-  min-height: 2rem;
+  /* 44px：这是"这张 sheet 怎么关掉"的唯一常驻控件（底部那两颗按钮可能落在折叠线以下），
+     32px 对触屏偏小。与 .choices-pill / .sheet-ok 同一个下限。 */
+  min-width: 44px;
+  min-height: 44px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: transparent;

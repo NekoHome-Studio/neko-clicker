@@ -1024,13 +1024,11 @@ function createBuildingRow(building) {
 
   const name = document.createElement("span");
   name.className = "name";
-  const owned = document.createElement("span");
-  owned.className = "owned";
   const price = document.createElement("span");
   price.className = "price";
   const share = document.createElement("span");
   share.className = "share hidden";
-  card.append(name, owned, price, share);
+  card.append(name, price, share);
 
   // 故事框：内联展开在卡片下面，**不是第二套弹窗**——形态沿用卡片那一套
   // （同底色 / 同圆角 / 同左边框语言，见 app.css 的「建筑行」一节）。
@@ -1061,7 +1059,7 @@ function createBuildingRow(building) {
 
   root.append(...[toggle, trackToggle, card, story, track].filter(Boolean));
   return {
-    root, card, toggle, story, name, owned, price, share,
+    root, card, toggle, story, name, price, share,
     trackToggle, track, badge,
     // 升级轨当前装着哪几条 id（成员或顺序变了才重建行；见 syncTrack）
     trackIds: [],
@@ -1080,7 +1078,6 @@ function updateBuildingRow(node, building) {
   node.card.classList.toggle("affordable", unlocked && Boolean(building.canAfford));
 
   setText(node.name, unlocked ? `${building.icon} ${building.name}` : `🔒 ${building.name}`);
-  setText(node.owned, building.owned);
 
   if (unlocked) {
     const bulk = building.batchAmount > 1 ? ` ×${building.batchAmount}` : "";
@@ -1089,10 +1086,21 @@ function updateBuildingRow(node, building) {
     setText(node.price, `${building.unlockHint}（${percent(building.unlockProgress)}）`);
   }
 
+  // 「已有几个」是这座建筑唯一说得出"你手里有多少"的地方，而它此前**一次都没画出来过**：
+  // `buildings[].owned` 每一帧都被写进一个 `<span class="owned">`，而 CSS 里 `.card .owned
+  // { display: none }` 从 d238825（第一个前端提交）起就在——于是 104 座建筑的数字一直在被
+  // 计算、被写进 DOM，然后被藏掉。终端宿主有这一列（`TerminalUi.BuildingRow` 的 Owned），
+  // 这边没有。所以并进本来就只在 owned > 0 时出现的那一行（share），用「已有 N」把它和
+  // 价格行上的批次记号 `×10`（那是"一次买几个"，不是"有几个"）在字面上分开。
   const showShare = unlocked && building.owned > 0;
   node.share.classList.toggle("hidden", !showShare);
   if (showShare) {
-    setText(node.share, `${number(building.cpsContribution)}/s · 占 ${percent(building.cpsShare)}`);
+    setText(node.share, `已有 ${building.owned} · ${number(building.cpsContribution)}/s · 占 ${percent(building.cpsShare)}`);
+  } else {
+    // 藏起来的那一行要清空（与 renderEraStage 对阶段那一行同一条规矩）：
+    // 留着上一帧的「已有 3」，DOM 里就是一句和状态对不上的话——今天它被 display:none
+    // 挡着没人读得到，但那是一句**假话**，不该留在树里（web-smoke §19 会读它）。
+    setText(node.share, "");
   }
 
   applyStoryState(node, building.id);
@@ -1472,7 +1480,11 @@ function renderBatch() {
     const button = document.createElement("button");
     button.textContent = labels[mode];
     // mode 是个枚举名（Buy1 / Buy10 …），服务端推来的是 camelCase
-    if (current === mode) button.className = "active";
+    const active = current === mode;
+    if (active) button.className = "active";
+    // 「哪一档生效」不能只写进类名：`.active` 只改颜色与字重，读屏读不到。
+    // 四个按钮是互斥的选项，用 aria-pressed 说"这一个按下了"（组名在 index.html 的 #batch 上）。
+    button.setAttribute("aria-pressed", active ? "true" : "false");
     button.addEventListener("click", () => send("mode", { mode }));
     host.append(button);
   }
@@ -1552,7 +1564,12 @@ function selectTab(name) {
   if (!panels.some((panel) => panel.dataset.panel === name)) name = "buildings";
 
   for (const button of document.querySelectorAll("#tabs button")) {
-    button.classList.toggle("active", button.dataset.tab === name);
+    const isCurrent = button.dataset.tab === name;
+    button.classList.toggle("active", isCurrent);
+    // 「现在在哪一页」也要能用读屏读出来：`.active` 只改颜色与边框，
+    // 屏幕阅读器既读不到类名，也读不到颜色。aria-current 是这件事的标准属性。
+    if (isCurrent) button.setAttribute("aria-current", "true");
+    else button.removeAttribute("aria-current");
   }
   for (const panel of panels) {
     panel.classList.toggle("hidden", panel.dataset.panel !== name);
