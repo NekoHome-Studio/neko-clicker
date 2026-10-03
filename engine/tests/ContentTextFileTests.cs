@@ -216,23 +216,23 @@ public static class ContentTextFileTests
     /// <summary>
     /// 每个包应当有几条升级。<para>
     /// <b>这一类是这张表最要紧的地方</b>：升级表大多由循环铺出来（"每座建筑三档"），
-    /// 源码里只有 233 个对象初始化器却展开成 534 条运行时升级——
+    /// 源码里只有 244 个对象初始化器却展开成 545 条运行时升级——
     /// "代码与文件同时少一档"完全可以由改一次循环边界造成，而双向比对看不见。
     /// </para>
     /// </summary>
     private static readonly (string Pack, int Count)[] ExpectedUpgrades =
     [
-        ("Apocalypse", 47),
-        ("Cafe", 48),
-        ("Civ", 51),
-        ("Company", 46),
-        ("Cyber", 47),
-        ("Dream", 51),
-        ("God", 49),
-        ("Lab", 44),
-        ("Library", 47),
-        ("Neko", 49),
-        ("NineLives", 55),
+        ("Apocalypse", 48),
+        ("Cafe", 49),
+        ("Civ", 52),
+        ("Company", 47),
+        ("Cyber", 48),
+        ("Dream", 52),
+        ("God", 50),
+        ("Lab", 45),
+        ("Library", 48),
+        ("Neko", 50),
+        ("NineLives", 56),
     ];
 
     /// <summary>每个包应当有几条金猫结果（<c>GoldenCookieOutcome</c>）。理由同 <see cref="ExpectedBuffs"/>。</summary>

@@ -21,7 +21,7 @@ public static class CafeContentTests
         GameContent content = TestGame.CafeContent;
 
         Check.Equal(10, content.Buildings.Count);
-        Check.Equal(48, content.Upgrades.Count);
+        Check.Equal(49, content.Upgrades.Count);
         Check.Equal(45, content.Achievements.Count);
         Check.Equal(5, content.Buffs.Count);
         Check.Equal(8, content.GoldenCookieOutcomes.Count);

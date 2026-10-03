@@ -139,6 +139,33 @@ internal static class Upgrades
             Tier = 5,
             Tags = ["touch"],
         };
+
+        // 「触摸 × 建筑」的桥：触摸线的五档清一色是**固定**倍率，与你这一世攒下多少身外之物无关。
+        // 这一条把点击收益接到**持有建筑总数**上（本包唯一使用 ScalingSource.TotalBuildings 的地方），
+        // 每座 +0.5%、最多算 120 座（+60%）——上限是作者手册 §3(b) 的硬规则。
+        // 门槛 80 座：实测本包一局（贪心机器人，11.8 游戏小时）最多持有 443 座建筑。
+        yield return new()
+        {
+            Id = "nine_lifetimes_of_practice",
+            Name = Prose.Text("upgrades", "nine_lifetimes_of_practice", "name"),
+            Icon = Prose.Text("upgrades", "nine_lifetimes_of_practice", "icon"),
+            Description = Prose.Text("upgrades", "nine_lifetimes_of_practice", "description"),
+            Price = 2_000_000_000,
+            Unlock = UnlockCondition.All(
+                UnlockCondition.TotalBuildingsAtLeast(80),
+                UnlockCondition.UpgradeOwned("both_hands")),
+            Modifiers =
+            [
+                new Modifier(
+                    ModifierTarget.ClickPower,
+                    ModifierOperation.AdditivePercent,
+                    0,
+                    new Scaling(ScalingSource.TotalBuildings, 0.005, Cap: 120)),
+            ],
+            Category = "touch",
+            Tier = 6,
+            Tags = ["touch"],
+        };
     }
 
     /// <summary>"呼噜线"：让成就数直接变成产量，多解锁永远划算。</summary>

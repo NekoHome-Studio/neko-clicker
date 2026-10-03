@@ -139,6 +139,33 @@ internal static class Upgrades
             Tier = 5,
             Tags = ["click"],
         };
+
+        // 「点击 × 建筑」的桥：点击线的五档清一色是**固定**倍率，与店里雇了多少"爪"无关。
+        // 这一条把点击收益接到**持有建筑总数**上（本包唯一使用 ScalingSource.TotalBuildings 的地方），
+        // 每座 +0.5%、最多算 120 座（+60%）——上限是作者手册 §3(b) 的硬规则。
+        // 门槛 80 座：实测本包一局（贪心机器人，6 游戏小时）最多持有 526 座建筑。
+        yield return new()
+        {
+            Id = "every_paw_in_the_cafe",
+            Name = Prose.Text("upgrades", "every_paw_in_the_cafe", "name"),
+            Icon = Prose.Text("upgrades", "every_paw_in_the_cafe", "icon"),
+            Description = Prose.Text("upgrades", "every_paw_in_the_cafe", "description"),
+            Price = 2_000_000_000,
+            Unlock = UnlockCondition.All(
+                UnlockCondition.TotalBuildingsAtLeast(80),
+                UnlockCondition.UpgradeOwned("latte_art")),
+            Modifiers =
+            [
+                new Modifier(
+                    ModifierTarget.ClickPower,
+                    ModifierOperation.AdditivePercent,
+                    0,
+                    new Scaling(ScalingSource.TotalBuildings, 0.005, Cap: 120)),
+            ],
+            Category = "click",
+            Tier = 6,
+            Tags = ["click"],
+        };
     }
 
     /// <summary>呼噜线：按成就数量给全局加成——追求任何目标都会顺带变成产量。</summary>

@@ -111,6 +111,35 @@ internal static class Upgrades
             Tier = 3,
             Tags = ["company", "click"],
         };
+
+        // 「点击 × 建筑」的桥：本包点击线只有三档，且清一色是**固定**倍率——
+        // 与公司开了多少工位无关。这一条把点击收益接到**持有建筑总数**上
+        // （本包唯一使用 ScalingSource.TotalBuildings 的地方），每座 +0.5%、最多算 120 座（+60%）。
+        // 上限是作者手册 §3(b) 的硬规则。门槛 80 座是**按实测包络压出来的**：
+        // 本包一局（贪心机器人，1.51 游戏小时）最多持有 133 座建筑，是本仓库里最小的那个包络，
+        // 所以门槛取 80 才能在"自然游玩里够得着"（133 / 80 ≈ 1.7 倍余量），而不是摆设。
+        yield return new()
+        {
+            Id = "shareholder_paws",
+            Name = Prose.Text("upgrades", "shareholder_paws", "name"),
+            Icon = Prose.Text("upgrades", "shareholder_paws", "icon"),
+            Description = Prose.Text("upgrades", "shareholder_paws", "description"),
+            Price = 5_000_000,
+            Unlock = UnlockCondition.All(
+                UnlockCondition.TotalBuildingsAtLeast(80),
+                UnlockCondition.UpgradeOwned("pitch_deck")),
+            Modifiers =
+            [
+                new Modifier(
+                    ModifierTarget.ClickPower,
+                    ModifierOperation.AdditivePercent,
+                    0,
+                    new Scaling(ScalingSource.TotalBuildings, 0.005, Cap: 120)),
+            ],
+            Category = "click",
+            Tier = 4,
+            Tags = ["company", "click"],
+        };
     }
 
     /// <summary>

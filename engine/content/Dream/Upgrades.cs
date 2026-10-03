@@ -149,6 +149,33 @@ internal static class Upgrades
             Tier = 5,
             Tags = ["dream", "click"],
         };
+
+        // 「点击 × 建筑」的桥：点击线五档清一色是**固定**倍率，与这一层梦里造了多少东西无关。
+        // 这一条把点击收益接到**持有建筑总数**上（本包唯一使用 ScalingSource.TotalBuildings 的地方），
+        // 每座 +0.5%、最多算 120 座（+60%）——上限是作者手册 §3(b) 的硬规则。
+        // 门槛 80 座：实测本包一局（贪心机器人，6.00 游戏小时）最多持有 2230 座建筑。
+        yield return new()
+        {
+            Id = "shared_dreaming",
+            Name = Prose.Text("upgrades", "shared_dreaming", "name"),
+            Icon = Prose.Text("upgrades", "shared_dreaming", "icon"),
+            Description = Prose.Text("upgrades", "shared_dreaming", "description"),
+            Price = 8e10,
+            Unlock = UnlockCondition.All(
+                UnlockCondition.TotalBuildingsAtLeast(80),
+                UnlockCondition.UpgradeOwned("half_asleep")),
+            Modifiers =
+            [
+                new Modifier(
+                    ModifierTarget.ClickPower,
+                    ModifierOperation.AdditivePercent,
+                    0,
+                    new Scaling(ScalingSource.TotalBuildings, 0.005, Cap: 120)),
+            ],
+            Category = "click",
+            Tier = 6,
+            Tags = ["dream", "click"],
+        };
     }
 
     /// <summary>

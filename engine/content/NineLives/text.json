@@ -1141,6 +1141,11 @@
       "name": "记得的自己",
       "description": "所有建筑产量 ×1.35、点击 ×5。九条命记住了同一个人。",
       "icon": "🪞"
+    },
+    "nine_lifetimes_of_practice": {
+      "name": "九辈子的手劲",
+      "description": "点击收益随建筑数成长：每座 +0.5%，最多算 120 座（即 +60%）。这一世你盖得越多，下一世手越稳。",
+      "icon": "🐾"
     }
   },
   "goldenCookies": {
