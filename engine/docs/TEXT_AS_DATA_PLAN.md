@@ -851,8 +851,15 @@ Description = Prose.Text("buildings", "incubator", "description"),
 **没做 / 没能做**：
 
 - **没有给出"读自由表"的 API 或界面**（§13.4 的刻意留白）。
-- **没有随本轮更新"当前用例数"**（`README.md` / `STATUS.md` / `VERSIONING.md` 等处仍是 `493`）：
-  那几处此刻正被 `1.7.0` 那一轮的未提交改动持有（`git status` 里是 `M`），
-  动它们会把两轮工作搅在一起。**这是一处已知的文档漂移**，应由 `1.7.0` 那轮或之后一次收尾统一改。
-- **没有登记进 `OPEN_WORK.md`**：同一个理由（该文件也在那一轮手里）。
+- **"当前用例数"只改干净的那几处**：`engine/README.md:21`、`engine/docs/VERSIONING.md:206`、
+  `engine/docs/RELEASING.md:25`、`engine/docs/FRONTEND_CHECKS.md:37`、`games/docs/ROADMAP.md:33`
+  已从 `493` 改成 **`504`**（按 `OPEN_WORK.md` M 条的做法带上下文定点改，历史数字不动）；
+  但 `README.md`（4 处）、`STATUS.md`（4 处）、`tools/api-test.ps1:12`、`games/README.md` 那几处
+  **仍是 `493`**——**写这一轮时它们正被同一工作区里的另一轮改动持有（`git status` 里是 `M`）**，
+  改它们会把两轮工作混进同一个提交。**这是一处已知的文档漂移**，留给一次收尾统一改。
+- **没有登记进 `OPEN_WORK.md`**：同一个理由（当时该文件也在那一轮手里）。
+- **没有跑 `tools/api-test.ps1` / `tools/web-smoke.mjs`**：本轮不碰前端与协议
+  （快照、命令白名单、`wwwroot/` 一行未动），而且宿主端口此刻可能被别的工作区活动占着。
+  内容包在宿主启动时走的那条路（`Build()` → `EnsureNoOrphans`）已由
+  `ContentTextFileTests` 的横扫用例覆盖。
 
