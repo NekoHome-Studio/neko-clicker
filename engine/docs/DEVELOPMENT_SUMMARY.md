@@ -345,7 +345,7 @@ A2 那四个接缝（`BalanceFor` / `ModifierResolver` 的来源表 / `NumericMe
 
 - **原子写**的形态与理由见 §2.3；代码在 `engine/core/Persistence/IStorage.cs` 第 84~125 行。
 - **测试不许碰真实存档**：`tools/api-test.ps1` 自带 `--save-root <临时目录>`
-  （脚本第 16~17 行把它列为**四条刻意为之的行为**的第一条：探针会点击和买入，
+  （脚本头部把它列为**刻意为之的行为**的第一条：探针会点击和买入，
   跑在玩家存档上等于拿进度当夹具）。
 - **证明方式固定为"大小 + mtime + sha256"逐个文件核对**（含 `.bak`）：
   [OPEN_WORK](OPEN_WORK.md) 第 848 行、[TEXT_AS_DATA_PLAN](TEXT_AS_DATA_PLAN.md) §12.5 第 622~623 行。

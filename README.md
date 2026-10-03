@@ -354,7 +354,7 @@ Console.WriteLine(ApiVersion.AssemblyVersion);  // 1.7.0.0
 
 不是靠自觉，是靠一份**快照**加四条守卫：
 
-- `engine/core/PublicApi.txt` —— 1930 行的公开表面逐项清单，
+- `engine/core/PublicApi.txt` —— 1933 行的公开表面逐项清单，
   **嵌进 `NekoClicker.Core.dll`**，随 dll 一起走。任何拿到这个 dll 的宿主都能自己断言
   "这份二进制的公开 API 与我预期的一致"，不需要把本仓库的测试代码也带走。
 - `PublicApiTests` —— 快照必须逐项一致；快照必须真的覆盖每个公开成员（防止守卫自己瞎掉）；
@@ -421,7 +421,7 @@ Console.WriteLine(ApiVersion.AssemblyVersion);  // 1.7.0.0
   猫娘图书馆 / 猫娘神明 / 猫娘文明 / 赛博猫娘 / 猫娘梦境）、**两个前端宿主**（终端 Demo + Web），
   **493 个测试**全部通过。
 - **端到端回归与 CI 已落地**：`tools/api-test.ps1` 起真宿主打一遍全部端点（静态文件 / 前端面板 /
-  元信息 / 快照 / 命令 / 通知 / 负数 / SSE 流 / **离线收益** / **永久线货币语义**，44 项检查——最后一段会带同一份存档
+  元信息 / 快照 / 命令 / 通知 / 负数 / SSE 流 / **离线收益** / **永久线货币语义**，52 项检查——最后一段会带同一份存档
   **再起一次宿主**，验"读档补发 → 没播报之前刷新不消失 → 收下之后消失"），自带临时存档目录、
   缺省把调试门关着、收尾按端口反查并清掉
   `dotnet run` 的子进程；`.github/workflows/ci.yml` 在每次 push / PR 上跑 `tools/build.ps1 -Strict`

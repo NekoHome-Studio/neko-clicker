@@ -49,7 +49,7 @@
   它只看得到**布局与配色**；"和真宿主配合得对不对"归 `tools/api-test.ps1`。
   预览脚本刻意留在 `.tmp/` 不进仓库：每轮要看的东西都不一样，等它被第二个人用第二次再固化。
 - 推送用 SSE 推「信封 + 变化字段」：全量 56.9 KB，增量均 1.99 KB（省 97%）。
-  契约测试在 `engine/tests/WebSnapshotProtocolTests.cs`（10 条，**按字节数**守，不是按字段数）。
+  契约测试在 `engine/tests/WebSnapshotProtocolTests.cs`（11 条，**按字节数**守，不是按字段数）。
 - 状态所有权：一条专用线程独占 `GameEngine`（引擎是单线程可变对象，ASP.NET Core 用的是线程池），
   HTTP 命令走 `Channel` 投递。
 - 换包走 URL（`?package=<id>`），包是运行时扫描输出目录发现的，宿主里没有包名字面量。
