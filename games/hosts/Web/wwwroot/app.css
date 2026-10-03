@@ -374,6 +374,10 @@ kbd {
 .era-name { font-weight: 600; font-size: .95rem; }
 .era-theme { margin: 0; font-size: .8rem; color: var(--dim); }
 
+/* 层内阶段那一行。用强调色而不是 --dim：它是这一层里唯一"刚刚往前走了"的信号，
+   而纪元主题（上一行）是背景设定。 */
+.era-stage { margin: 0; font-size: .78rem; color: var(--accent); }
+
 .bar {
   height: .4rem;
   border-radius: 999px;

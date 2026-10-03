@@ -83,6 +83,10 @@ public static class SnapshotProtocol
     private static readonly HashSet<string> ExcludedFromDelta = new(StringComparer.OrdinalIgnoreCase)
     {
         "canAfford", "progressText", "effectSummary",
+        // 阶段门槛的文本（`4.5 万 / 600 万（1%）`）与 `progressText` 完全同类：数值由
+        // `stageProgress` 承担，文本只在全量帧里给权威值。不排除它，`era` 会在**每一帧**
+        // 因为格式化后的钱数变动而整体重发。
+        "stageProgressText",
     };
 
     /// <summary>
@@ -106,6 +110,9 @@ public static class SnapshotProtocol
     {
         "progress", "unlockProgress",
         "cookiesForNextLevel", "cookiesToNextLevel", "cpsForNextLevel",
+        // 纪元内的阶段进度条：与 `era.progress` 一样是 0~1 的比例，产量一起来就每个 tick 都动。
+        // 不量化它，`era` 会因为这一条子字段在每一帧进增量帧。
+        "stageProgress",
     };
 
     /// <summary>

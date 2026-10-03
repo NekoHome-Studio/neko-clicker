@@ -155,6 +155,94 @@ public static class EraSystem
         };
     }
 
+    /// <summary>
+    /// 当前纪元的阶段状态（层内分段）。<para>
+    /// <b>派生，不存储</b>：当前阶段 = "声明过的边界里有几条已经成立" + 1。因此
+    /// 老存档天生带着自己的阶段进度（指标本来就在存档里），内容改版也不会让存档读不出来
+    /// ——最坏情况是少播报或多播报一条提示（见 <see cref="CheckStage"/>）。
+    /// </para>
+    /// <para>
+    /// 只数"成立了几条"而不逐条比较顺序，是因为阶段条件与纪元完成条件一样被强制单调
+    /// （构建期白名单）：成立过的永远成立，所以这个计数只增不减。
+    /// </para>
+    /// </summary>
+    public static EraStageGate Stage(GameEngine engine)
+    {
+        GameContent content = engine.Content;
+        if (!content.HasEras) return default;
+        if (!content.EraByIndex.TryGetValue(engine.State.Era, out EraDefinition? era)) return default;
+
+        IReadOnlyList<EraStage> stages = era.Stages;
+        if (stages.Count == 0) return default;
+
+        int met = 0;
+        foreach (EraStage stage in stages)
+            if (stage.At.IsMet(engine.Metrics, content)) met++;
+
+        int index = met + 1;                                   // 第 1 阶段 = 刚进这一层
+        EraStage? current = index >= 2 ? stages[index - 2] : null;
+        EraStage? next = index <= stages.Count ? stages[index - 1] : null;
+
+        // 进度条指向**下一条边界**：阶段是"还差多少进入下一段"，不是"这一层还差多少"。
+        double progress = next is null ? 1 : Progress(next.At, engine);
+
+        return new EraStageGate(index, stages.Count + 1, current, next, progress);
+    }
+
+    /// <summary>
+    /// 阶段提示的计数器键前缀：<c>$era_stage_&lt;纪元 id&gt;</c> 存<b>本层已经播报到第几阶段</b>。<para>
+    /// 与 <c>$choice_shown_&lt;id&gt;</c>、<c>$ending_ready_at_play_time</c> 同一个套路：
+    /// 键前缀是公开约定，不为此新增存档字段。<b>按纪元 id 分键</b>是必须的——计数器跨层保留
+    /// （<c>PrestigeSystem.ResetRun</c> 刻意不清空），只存一个"最高阶段"会让第 2 层一进层
+    /// 就以为自己已经播报过第 4 阶段。
+    /// </para>
+    /// </summary>
+    public const string StageCounterPrefix = "$era_stage_";
+
+    /// <summary>
+    /// 检查是否跨过了阶段边界，跨过就发一条通知。返回本次新播报的条数（0 或 1）。<para>
+    /// 与成就 / 叙事同频执行（<c>GameEngine.Step</c> 的检查块），<b>但不参与任何判定</b>——
+    /// 顺序对内容没有影响，所以它排在最后。
+    /// </para>
+    /// <para>
+    /// <b>第一次看见某一层时只记基线、不播报</b>：读档（或内容刚加上阶段）时可能已经站得很靠后，
+    /// 补发会让一次读档刷出一串通知。<b>代价是诚实的</b>：老存档读进来不会告诉你"你已经到第 5 阶段了"
+    /// ——那件事在面板上写着（<c>EraView.StageIndex</c> 是派生的），只是不会响一声。
+    /// 若一次检查跨过多条边界（检查周期内连跨），只播报最高的那一条。
+    /// </para>
+    /// </summary>
+    public static int CheckStage(GameEngine engine)
+    {
+        GameContent content = engine.Content;
+        EraStageGate gate = Stage(engine);
+        if (!gate.HasStages) return 0;
+        if (!content.EraByIndex.TryGetValue(engine.State.Era, out EraDefinition? era)) return 0;
+
+        // 记基线这一步必须**在"开场阶段"那个提前返回之前**：进层时 Current 是 null（第 1 阶段
+        // 没有边界名可报），若在那里就返回，基线永远记不上——于是玩家跨过第一条边界时
+        // 引擎才第一次「看见」这一层，把它当成基线悄悄记下，**那一条边界就永远不会被播报**。
+        // 这不是理论问题：本文档的作者就是这么写的第一版，而 EraStageTests 抓到了它。
+        string key = StageCounterPrefix + era.Id;
+        if (!engine.State.Counters.TryGetValue(key, out double announced))
+        {
+            engine.State.Counters[key] = gate.Index;
+            return 0;
+        }
+
+        if (gate.Index <= announced) return 0;
+
+        engine.State.Counters[key] = gate.Index;
+
+        // 开场阶段没有名字可报——"这一层开始了"由 EntryText 负责，不该再多一条通知。
+        if (gate.Current is not { } stage) return 0;
+
+        engine.Notify(
+            $"本层进入第 {gate.Index}/{gate.Count} 阶段：{stage.Name}",
+            NotificationKind.Success,
+            stage.Icon);
+        return 1;
+    }
+
     /// <summary>本层主线进度的显示文本（供 UI 在灰按钮旁展示）。</summary>
     public static string DescribeProgress(GameEngine engine)
     {
@@ -179,6 +267,14 @@ public static class EraSystem
         if (era.Completion.TryGetProgress(engine.Metrics, out double current, out double target) && target > 0)
             return Math.Clamp(current / target, 0, 1);
         return era.Completion.IsMet(engine.Metrics, engine.Content) ? 1 : 0;
+    }
+
+    /// <summary>任意条件的进度（阶段边界复用同一把尺子：与别处的进度条口径一致）。</summary>
+    private static double Progress(UnlockCondition condition, GameEngine engine)
+    {
+        if (condition.TryGetProgress(engine.Metrics, out double current, out double target) && target > 0)
+            return Math.Clamp(current / target, 0, 1);
+        return condition.IsMet(engine.Metrics, engine.Content) ? 1 : 0;
     }
 
     private static string BlockedReason(EraDefinition era, GameEngine engine)

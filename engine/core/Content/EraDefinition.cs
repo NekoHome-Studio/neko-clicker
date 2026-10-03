@@ -63,6 +63,20 @@ public sealed record EraDefinition
     /// <summary>进入下一层时无条件保留的建筑 id 白名单；非空时优先于 <see cref="InheritBuildingRatio"/>。</summary>
     public IReadOnlyList<string> InheritBuildings { get; init; } = [];
 
+    /// <summary>
+    /// 本层内部的<b>阶段边界</b>（按推进顺序排列）。<para>
+    /// 空（默认）= 这一层不分段，界面与行为与以前<b>完全一样</b>——所以给一个包加阶段
+    /// 不需要改任何一行核心代码，也不会影响别的包。跨过一条边界<b>什么都不清</b>：
+    /// 阶段的全部含义是"这一层里又有一段进度走完了"，加上它的门槛本来就是别的内容
+    /// （建筑 / 升级 / 叙事）的解锁线，于是玩家看到的是一层之内在往前推，而不是一直等一次重开。
+    /// </para>
+    /// <para>
+    /// 写法见 <c>CONTENT_AUTHORING.md</c> §11.2；阶段<b>不占存档位</b>，它由单调指标派生
+    /// （<see cref="EraSystem.Stage"/>），所以老存档天然带着自己的阶段进度。
+    /// </para>
+    /// </summary>
+    public IReadOnlyList<EraStage> Stages { get; init; } = [];
+
     /// <summary>本层解锁的建筑 id（供内容作者自查与图鉴展示；真正的门控写在各自的 <c>Unlock</c> 里）。</summary>
     public IReadOnlyList<string> UnlocksBuildings { get; init; } = [];
 

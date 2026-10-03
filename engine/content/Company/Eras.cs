@@ -27,6 +27,14 @@ internal static class Eras
     /// </summary>
     private static ContentText Prose => Lore.Prose;
 
+    /// <summary>第一轮（车库）的完成条件。</summary>
+    private static UnlockCondition GarageCompletion => UnlockCondition.EarnedThisRunAtLeast(1e5);
+
+    /// <summary>第二轮（A 轮）的完成条件。</summary>
+    private static UnlockCondition SeriesACompletion => UnlockCondition.All(
+        UnlockCondition.EarnedThisRunAtLeast(1e8),
+        UnlockCondition.AchievementsAtLeast(6));
+
     /// <summary>三层定义。<paramref name="baseBalance"/> 是内容包的基准数值。</summary>
     public static EraDefinition[] All(GameBalance baseBalance) =>
     [
@@ -39,8 +47,9 @@ internal static class Eras
             Theme = Prose.Text("eras", "garage", "theme"),
             EntryText = Prose.Text("eras", "garage", "entryText"),
             ExitText = Prose.Text("eras", "garage", "exitText"),
-            Completion = UnlockCondition.EarnedThisRunAtLeast(1e5),
+            Completion = GarageCompletion,
             CompletionHint = Prose.Text("eras", "garage", "completionHint"),
+            Stages = StagesWithin(GarageCompletion),
         },
         new()
         {
@@ -59,10 +68,9 @@ internal static class Eras
                 GoldenCookieMinDelay = baseBalance.GoldenCookieMinDelay * 0.7,
                 GoldenCookieMaxDelay = baseBalance.GoldenCookieMaxDelay * 0.7,
             },
-            Completion = UnlockCondition.All(
-                UnlockCondition.EarnedThisRunAtLeast(1e8),
-                UnlockCondition.AchievementsAtLeast(6)),
+            Completion = SeriesACompletion,
             CompletionHint = Prose.Text("eras", "series_a", "completionHint"),
+            Stages = StagesWithin(SeriesACompletion),
         },
         new()
         {
@@ -83,6 +91,7 @@ internal static class Eras
             ],
             Completion = FinalCompletion,
             CompletionHint = Prose.Text("eras", "ipo", "completionHint"),
+            Stages = StagesWithin(FinalCompletion),
         },
     ];
 
@@ -96,4 +105,53 @@ internal static class Eras
     public static UnlockCondition FinalCompletion => UnlockCondition.All(
         UnlockCondition.EarnedThisRunAtLeast(5e8),
         UnlockCondition.AchievementsAtLeast(12));
+
+    /// <summary>
+    /// 本层的阶段边界 = 「这一层里又能买到一座新建筑」的那些门槛，按门槛升序。<para>
+    /// <b>为什么是建筑解锁线</b>：<c>TUNING_ANALYSIS</c> §四量出来的"重走"痛点精确地是这个
+    /// ——第 2、3 轮把第 1 轮那四座按<b>同一顺序</b>再买一遍，而"第一次买到上一轮没有的东西"
+    /// 要等到本层的 24%~69%。所以"又有一座新的能买了"就是玩家真的感到这一轮往前走了的那一刻，
+    /// 也是这一层里唯一值得当阶段的线。
+    /// </para>
+    /// <para>
+    /// <b>阶段与解锁线是同一条线</b>：<see cref="EraStage.At"/> 直接取 <c>building.Unlock</c>
+    /// 那个对象，不是照抄一个数字——于是改解锁门槛就等于改阶段，两者不可能各自漂移。
+    /// 门槛<b>严格低于</b>本层完成门槛的才算：第 3 轮的 <c>headquarters</c> 解锁在 1e9，
+    /// 而第 3 轮的完成门槛是 5e8，把它写进阶段等于承诺一个正常流程里到不了的阶段。
+    /// </para>
+    /// </summary>
+    private static EraStage[] StagesWithin(UnlockCondition completion)
+    {
+        double ceiling = Ceiling(completion);
+
+        return
+        [
+            .. Buildings.All
+                .Select(building => (building, Threshold: Threshold(building.Unlock)))
+                .Where(x => x.Threshold is { } threshold && threshold < ceiling)
+                .OrderBy(x => x.Threshold)
+                .Select(x => new EraStage
+                {
+                    Id = x.building.Id,
+                    Name = x.building.Name,
+                    Icon = x.building.Icon,
+                    At = x.building.Unlock,
+                }),
+        ];
+    }
+
+    /// <summary>完成条件里的「本轮累计赚取」门槛；没有这条叶子时为 0（那就一个阶段都不声明）。</summary>
+    private static double Ceiling(UnlockCondition completion)
+        => completion.NumericLeaves()
+            .Where(leaf => leaf.Metric == NumericMetric.CookiesEarnedThisRun)
+            .Select(leaf => leaf.Target)
+            .DefaultIfEmpty(0)
+            .Min();
+
+    /// <summary>解锁条件里的「本轮累计赚取」门槛；不是这一类（例如无条件）时为 <c>null</c>。</summary>
+    private static double? Threshold(UnlockCondition unlock)
+        => unlock.NumericLeaves()
+            .Where(leaf => leaf.Metric == NumericMetric.CookiesEarnedThisRun)
+            .Select(leaf => (double?)leaf.Target)
+            .FirstOrDefault();
 }

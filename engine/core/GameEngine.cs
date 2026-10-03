@@ -291,6 +291,9 @@ public sealed class GameEngine
         CheckEnding();
         CheckAchievements();
         CheckLore();
+        // 阶段提示排在最后：它<b>不参与任何判定</b>（只发一条通知），谁先谁后对内容没有影响。
+        // 与上面两条不同，这一条的顺序故意不承担任何语义。
+        CheckEraStage();
     }
 
     // ---------------------------------------------------------------- 玩家动作
@@ -505,6 +508,20 @@ public sealed class GameEngine
     /// </para>
     /// </summary>
     public IReadOnlyList<ChoiceDefinition> CheckChoices() => ChoiceSystem.Check(this);
+
+    /// <summary>
+    /// 检查是否跨过了纪元内的<b>阶段</b>边界，跨过就发一条通知。返回本次新播报的条数（0 或 1）。<para>
+    /// 与成就 / 叙事 / 表态同频执行，且与它们共享
+    /// <see cref="GameEngineOptions.AutoCheckAchievements"/> 这个开关——都是"把条件树定期扫一遍"。
+    /// 它与其他检查有一个关键区别：<b>它不改变任何状态</b>（阶段是派生的，见
+    /// <see cref="EraSystem.Stage"/>），所以它只发通知、不参与判定，顺序无关紧要。
+    /// </para>
+    /// <para>
+    /// 内容包没声明阶段（<see cref="EraDefinition.Stages"/> 为空）时它什么都不做——
+    /// 没有阶段的包一个字节都不会因此多出来。
+    /// </para>
+    /// </summary>
+    public int CheckEraStage() => EraSystem.CheckStage(this);
 
     /// <summary>
     /// 作答一次选择。返回是否确实完成了这次作答（重复作答返回 <c>false</c>）。<para>

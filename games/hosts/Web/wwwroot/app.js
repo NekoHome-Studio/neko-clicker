@@ -253,6 +253,10 @@ function dismissOffline() {
  *
  * `era.progress` 由服务端算好（`AllCondition` 返回**最落后**的子条件），
  * 所以这里的进度条天然就是"最拖后腿的那一项"。
+ *
+ * 层内**阶段**（`era.stageCount > 0` 才有）是另一条线：它数的是"这一层里跨过了几条
+ * 声明过的边界"，跨过什么都不清、只说明又有一段进度走完了。没有阶段的包
+ * （8/9 个）`stageCount` 是 0，这一行整行隐藏——与以前完全一样。
  */
 function renderEra() {
   const host = $("#era");
@@ -268,6 +272,7 @@ function renderEra() {
   $("#era-index").textContent = `第 ${era.index} / ${era.total} 层`;
   $("#era-theme").textContent = era.theme;
   $("#era-bar").style.width = `${Math.round(era.progress * 100)}%`;
+  renderEraStage(era);
 
   const button = $("#ascend");
   if (era.canAdvance) {
@@ -281,6 +286,40 @@ function renderEra() {
     button.textContent = era.nextIndex ? "还不能舍命" : "已是最后一层";
     $("#era-reason").textContent = era.blockedReason ?? "";
   }
+}
+
+/**
+ * 层内阶段那一行。
+ *
+ * 三条判据都在服务端（`EraView.StageIndex` / `StageCount` / `StageNextName` /
+ * `StageProgress`），这里只排版——**前端不许自己算阶段**：那需要认识内容的门槛，
+ * 而门槛是内容的事（与"前端不许解释枚举序数 / 字符串"是同一条规矩）。
+ *
+ * · `stageCount` 为 0（没声明阶段的包，或服务端还是老版本）→ 整行隐藏。
+ *   老引擎 + 新前端因此**不会**显示半个阶段出来——这条对"宿主在旁边跑着"很要紧。
+ * · 走到最后一个阶段时不再说"下一阶段"（那时它不存在），改说这一层走完了。
+ * · 原始门槛（`stageProgressText`，例如 `4.5 万 / 600 万（1%）`）放进 title：
+ *   一行里塞不下，但它正是玩家想知道"还差多少"的那个数。
+ */
+function renderEraStage(era) {
+  const el = $("#era-stage");
+  const count = Number(era.stageCount ?? 0);
+
+  if (!(count > 0)) {
+    el.classList.add("hidden");
+    el.textContent = "";
+    return;
+  }
+
+  const index = Number(era.stageIndex ?? 1);
+  const next = era.stageNextName ?? "";
+  const percent = Math.round(Number(era.stageProgress ?? 0) * 100);
+
+  el.classList.remove("hidden");
+  el.textContent = next
+    ? `第 ${index} / ${count} 阶段 · 下一阶段：${next}（${percent}%）`
+    : `第 ${index} / ${count} 阶段 · 这一层的阶段走完了`;
+  el.title = era.stageProgressText ?? "";
 }
 
 /**

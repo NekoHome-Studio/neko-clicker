@@ -300,6 +300,32 @@ public sealed record EraView
     /// <summary>本层主线进度的文本形式，例如 <c>1.2 million / 1 billion（1%）</c>。</summary>
     public string ProgressText { get; init; } = string.Empty;
 
+    /// <summary>
+    /// 本层内部的<b>阶段</b>：当前第几段（1 起）。<c>0</c> = 这一层没有声明阶段
+    /// （<see cref="EraDefinition.Stages"/> 为空），界面应当整块隐藏——8 个没声明阶段的包
+    /// 因此一个像素都不会变。
+    /// <para>
+    /// 它是<b>派生量</b>（由单调指标算出来），不是存档里的一个计数器：所以阶段进度天然跨版本、
+    /// 跨存档，内容改版最多让提示少响一声（见 <c>EraSystem.CheckStage</c>）。
+    /// </para>
+    /// </summary>
+    public int StageIndex { get; init; }
+
+    /// <summary>本层共几个阶段（含开场那个）；没有阶段时为 <c>0</c>。</summary>
+    public int StageCount { get; init; }
+
+    /// <summary>当前阶段的显示名；开场阶段（还没有跨过任何边界）为空串。</summary>
+    public string StageName { get; init; } = string.Empty;
+
+    /// <summary>下一个阶段边界的显示名；已在最后一个阶段时为空串。</summary>
+    public string StageNextName { get; init; } = string.Empty;
+
+    /// <summary>向下一个阶段推进的比例 [0,1]；已在最后一个阶段时为 1。</summary>
+    public double StageProgress { get; init; }
+
+    /// <summary>下一个阶段门槛的文本形式（与 <see cref="ProgressText"/> 同一个格式），例如 <c>4.5 万 / 600 万（1%）</c>。</summary>
+    public string StageProgressText { get; init; } = string.Empty;
+
     /// <summary>下一层的层号；已是最后一层时为 <c>null</c>。</summary>
     public int? NextIndex { get; init; }
 

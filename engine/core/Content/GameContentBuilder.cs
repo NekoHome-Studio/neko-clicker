@@ -527,6 +527,53 @@ public sealed class GameContentBuilder
         ValidateModifiers(era.Modifiers, owner, buildings, buffs, errors);
         ValidateCondition(era.Completion, owner, buildings, upgrades, achievements, choices, endings, errors);
         ValidateCompletionIsMonotonic(era, errors);
+        ValidateStages(era, owner, buildings, upgrades, achievements, choices, endings, errors);
+    }
+
+    /// <summary>
+    /// 校验一层的阶段声明。<para>
+    /// 阶段是<b>纯内容</b>的结构（见 <see cref="EraStage"/>），所以它的错必须在这里被拦：
+    /// 运行期一条写坏的阶段线只会表现为"那一行一直没出现"——静默的谎，
+    /// 与 <c>LoreTests.EraGatedLore_StaysBelowItsEraCompletion</c> 要拦的是同一类东西。
+    /// </para>
+    /// <para>
+    /// 三条判据：id 层内唯一且非空；条件不能缺（缺了就是 <see cref="UnlockCondition.Never"/>，
+    /// 那个阶段永远打不开）；条件必须过单调白名单（阶段只进不退，界面上「第 k/n 阶段」不许回跳）。
+    /// <b>"门槛必须低于本层完成门槛"不在这里</b>：完成条件可以是 <c>All(...)</c>，
+    /// 与它比大小需要推断，放在通用守卫用例里（见 <c>EraStageTests</c>）。
+    /// </para>
+    /// </summary>
+    private static void ValidateStages(
+        EraDefinition era,
+        string owner,
+        Dictionary<string, BuildingDefinition> buildings,
+        Dictionary<string, UpgradeDefinition> upgrades,
+        Dictionary<string, AchievementDefinition> achievements,
+        Dictionary<string, ChoiceDefinition> choices,
+        Dictionary<string, EndingDefinition> endings,
+        List<string> errors)
+    {
+        HashSet<string> seen = new(StringComparer.Ordinal);
+
+        for (int i = 0; i < era.Stages.Count; i++)
+        {
+            EraStage stage = era.Stages[i];
+            string where = $"{owner} 的第 {i + 1} 条阶段边界";
+
+            if (string.IsNullOrWhiteSpace(stage.Id))
+                errors.Add($"{where}没有 id。");
+            else if (!seen.Add(stage.Id))
+                errors.Add($"{owner} 的阶段 id 重复：{stage.Id}（层内必须唯一）。");
+
+            if (string.IsNullOrWhiteSpace(stage.Name))
+                errors.Add($"{where}（{stage.Id}）没有名字——阶段提示里要显示它。");
+
+            if (ReferenceEquals(stage.At, UnlockCondition.Never))
+                errors.Add($"{where}（{stage.Id}）没有写 At 条件：这个阶段永远打不开，而运行期完全看不出来。");
+
+            ValidateCondition(stage.At, $"{where}（{stage.Id}）", buildings, upgrades, achievements, choices, endings, errors);
+            ValidateMonotonic(stage.At, $"{where}（{stage.Id}）", errors);
+        }
     }
 
     /// <summary>
@@ -537,21 +584,30 @@ public sealed class GameContentBuilder
     /// </para>
     /// </summary>
     private static void ValidateCompletionIsMonotonic(EraDefinition era, List<string> errors)
+        => ValidateMonotonic(era.Completion, $"纪元 「{era.Id}」 的完成条件", errors);
+
+    /// <summary>
+    /// 单调性白名单校验（完成条件与阶段边界共用同一把尺子）。<para>
+    /// <paramref name="what"/> 是被检查对象的完整称呼，直接进报错文本——
+    /// 阶段与完成条件走同一条路径，但报错必须指名道姓是哪一个。
+    /// </para>
+    /// </summary>
+    private static void ValidateMonotonic(UnlockCondition target, string what, List<string> errors)
     {
-        foreach (NumericCondition condition in era.Completion.NumericLeaves())
+        foreach (NumericCondition condition in target.NumericLeaves())
         {
             if (ForbiddenInCompletion.Contains(condition.Metric))
             {
                 errors.Add(
-                    $"纪元 「{era.Id}」 的完成条件用了会下降的指标 {condition.Metric}：" +
-                    $"灰按钮的进度会倒退，且可能让玩家卡在无法完成的状态。" +
+                    $"{what}用了会下降的指标 {condition.Metric}：" +
+                    $"进度会倒退，且可能让玩家卡在无法完成的状态。" +
                     $"请改用累计赚取 / 成就数 / 点击数 / 时长 / " +
                     $"{EraSystem.PeakCpsCounterKey} 计数器这类单调不减的指标。");
             }
             else if (!MonotonicMetrics.Contains(condition.Metric))
             {
                 errors.Add(
-                    $"纪元 「{era.Id}」 的完成条件用了未经白名单确认的指标 {condition.Metric}：" +
+                    $"{what}用了未经白名单确认的指标 {condition.Metric}：" +
                     $"请先确认它单调不减，再把它加进 GameContentBuilder.MonotonicMetrics。");
             }
         }

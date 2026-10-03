@@ -85,6 +85,9 @@
           <span id="era-index" class="muted"></span>
         </div>
         <p id="era-theme" class="era-theme"></p>
+        <!-- 层内阶段：服务端派生（`era.stageIndex` / `stageCount`），没声明阶段的包整行隐藏。
+             它回答的是"这一层里我走到哪一段了"，与上面那条"这一层还差多少"是两个问题。 -->
+        <p id="era-stage" class="era-stage hidden"></p>
         <div class="bar"><i id="era-bar"></i></div>
         <p id="era-reason" class="era-reason"></p>
         <button id="ascend" class="ascend">舍一命</button>

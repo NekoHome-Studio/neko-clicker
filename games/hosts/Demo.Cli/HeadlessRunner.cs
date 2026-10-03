@@ -223,6 +223,19 @@ internal static class HeadlessRunner
                     ? $"已完成，可以{session.Package.PrestigeActionName}"
                     : eraView.BlockedReason ?? "—");
             Field("进度", eraView.ProgressText);
+            // 层内阶段：只有内容声明了阶段时才报这一行——没声明的包（8/9 个）一个字段都不多，
+            // 而报了阶段的包在无头报告里就能验收"这一层分了几段、现在在哪一段"。
+            if (eraView.StageCount > 0)
+            {
+                Field(
+                    "本层阶段",
+                    $"第 {eraView.StageIndex} / {eraView.StageCount} 阶段"
+                    + (eraView.StageName.Length > 0 ? $"（刚越过「{eraView.StageName}」）" : "（开场）")
+                    + (eraView.StageNextName.Length > 0
+                        ? $"　下一阶段：{eraView.StageNextName}（{NumFormat.Percent(eraView.StageProgress, 0)}）"
+                        : "　这一层的阶段走完了"));
+            }
+
             Field("下一层", eraView.NextIndex is { } next ? $"第 {next} 层 · {eraView.NextName}" : "已是最后一层");
             Field("本层规则", eraView.ModifierSummary.Length > 0 ? eraView.ModifierSummary : "无额外倍率");
         }

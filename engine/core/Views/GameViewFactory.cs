@@ -420,6 +420,7 @@ public static class GameViewFactory
 
         GameState state = engine.State;
         EraGate gate = EraSystem.CanAdvance(engine);
+        EraStageGate stage = EraSystem.Stage(engine);
         content.EraByIndex.TryGetValue(state.Era, out EraDefinition? current);
 
         List<EraSummary> all = new(content.Eras.Count);
@@ -447,6 +448,14 @@ public static class GameViewFactory
             BlockedReason = gate.BlockedReason,
             Progress = gate.Progress,
             ProgressText = EraSystem.DescribeProgress(engine),
+            // 阶段：派生量，直接来自 EraSystem.Stage。没声明阶段时 StageCount 为 0，
+            // 前端与终端据此整块隐藏（8 个没声明阶段的包因此行为不变）。
+            StageIndex = stage.Index,
+            StageCount = stage.Count,
+            StageName = stage.Name,
+            StageNextName = stage.NextName,
+            StageProgress = stage.Progress,
+            StageProgressText = DescribeStageProgress(stage, engine),
             NextIndex = gate.NextIndex,
             NextName = gate.NextIndex is { } next ? content.FindEra(next)?.Name : null,
             ChipsOnAdvance = EraSystem.ChipsOnAdvance(engine),
@@ -454,6 +463,26 @@ public static class GameViewFactory
             IsFinalEra = gate.NextIndex is null,
             All = all,
         };
+    }
+
+    /// <summary>
+    /// 下一个阶段门槛的显示文本，例如 <c>4.5 万 / 600 万（1%）</c>。<para>
+    /// 与 <c>EraSystem.DescribeProgress</c> 同一套格式（都走 <see cref="NumFormat"/>）：
+    /// 终端与浏览器上这必须是同一句话里的同一个词。已在最后一个阶段时为空串——
+    /// 这时候该说的是"这一层的阶段走完了"，而不是编一个 100% 出来。
+    /// </para>
+    /// </summary>
+    private static string DescribeStageProgress(EraStageGate stage, GameEngine engine)
+    {
+        if (!stage.HasStages || stage.Next is not { } next) return string.Empty;
+
+        if (next.At.TryGetProgress(engine.Metrics, out double current, out double target) && target > 0)
+        {
+            return $"{NumFormat.FormatLong(Math.Min(current, target))} / {NumFormat.FormatLong(target)}" +
+                   $"（{NumFormat.Percent(Math.Clamp(current / target, 0, 1), 0)}）";
+        }
+
+        return next.At.Describe(engine.Content);
     }
 
     /// <summary>把一组修饰符压成一行摘要（最多 3 条，其余折叠成"+N 项"）。</summary>

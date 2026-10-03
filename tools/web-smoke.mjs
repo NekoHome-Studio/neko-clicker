@@ -304,6 +304,11 @@ function snapshot(overrides = {}) {
       icon: "🌱", name: "第一层", index: 1, total: 4, theme: "开张", progress: 0.42,
       progressText: "42%", canAdvance: false, isFinalEra: false, nextName: "第二层",
       nextIndex: 2, chipsOnAdvance: 0, blockedReason: "还差一点",
+      // 层内**阶段**（1.9.0）。形状必须与真快照一致——`tools/fixtures/web-snapshot.json`
+      // 现在是从**公司包**抓的（它是第一个声明阶段的包），§14 盯着这六个字段。
+      // `stageIndex` 从 1 起且含开场那一个，所以走到最后一个阶段时 `stageNextName` 是空串。
+      stageIndex: 2, stageCount: 4, stageName: "猫窝扩建", stageNextName: "第二间房",
+      stageProgress: 0.42, stageProgressText: "4.5 万 / 600 万（1%）",
     },
     goldenCookies: [{ instanceId: "g1", x: 0.4, y: 0.6, remainingSeconds: 5 }],
     buffs: [{ isDebuff: false, icon: "☕", name: "精神", stacks: 2, remainingSeconds: 30, description: "更快" }],
@@ -478,6 +483,12 @@ check("被移走的建筑升级**说出去**了（静默少内容是这个仓库
 });
 check("选择器全部落在 index.html 真实存在的元素上（没有任何落空）", () => {
   if (app.doc.missedSelectors.length > 0) throw new Error(`落空：${app.missedSelectors.join(", ")}`);
+});
+check("纪元面板里那行「第 k/n 阶段」画出来了（层内进度不再是空白）", () => {
+  eq(hidden(app, "era-stage"), false, "阶段那一行的可见性");
+  eq(el(app, "era-stage").textContent, "第 2 / 4 阶段 · 下一阶段：第二间房（42%）", "阶段那一行的文字");
+  // 原始门槛（还差多少）塞不进一行，放在 title 里——它是玩家真正想看的那个数。
+  eq(el(app, "era-stage").title, "4.5 万 / 600 万（1%）", "阶段那一行的 title");
 });
 
 // 3. 待答表态来了：sheet 自己冒出来，并且报告"已展示"。
@@ -1268,6 +1279,54 @@ section("15. 建筑自己的升级：⬆ 展开、点一下买那一条（不是
       handler({ code: "Space", target: { tagName: "BUTTON" }, preventDefault() {} });
     }
     return commandsOf(track, "click").length === before;
+  });
+}
+
+// 16. 层内阶段那一行的边界情形。
+//
+// 这一节守的是三条**静默**失效：
+//   ① 服务端说"阶段走完了"（stageNextName 空）时，前端如果照旧拼"下一阶段：（100%）"，
+//      就是把一个不存在的阶段画给玩家看——而它不会报错。
+//   ② 没有声明阶段的包（8/9 个）必须整行隐藏，而不是显示"第 0 / 0 阶段"。
+//   ③ **老引擎 + 新前端**：宿主的 wwwroot 是源码目录，所以页面可能比引擎先更新。
+//      那时快照里根本没有 stageCount 这几个字段，前端必须当作"没有阶段"处理。
+//      这条不是假想：改这一版的同一天，就有一个 play-test 宿主正在别处跑着旧引擎。
+section("16. 层内阶段：走到最后一段、没有阶段、老引擎三种情形");
+{
+  const stageApp = await loadApp(copyAs("app-stage.mjs", appSource));
+
+  const withStage = (eraFields) => {
+    const snap = snapshot();
+    snap.era = { ...snap.era, ...eraFields };
+    return snap;
+  };
+
+  await stageApp.push({ kind: "full", seq: 1, snapshot: withStage({ stageIndex: 4, stageCount: 4, stageNextName: "" }) });
+  check("走到最后一个阶段时说「这一层的阶段走完了」，不再编一个下一阶段", () => {
+    eq(el(stageApp, "era-stage").textContent, "第 4 / 4 阶段 · 这一层的阶段走完了", "最后一阶段的文字");
+  });
+
+  await stageApp.push({ kind: "delta", seq: 2, changed: { era: withStage({ stageIndex: 1, stageCount: 0, stageName: "", stageNextName: "" }).era } });
+  check("stageCount 为 0 时整行隐藏（没有声明阶段的包不许多出一行）", () => {
+    eq(hidden(stageApp, "era-stage"), true, "阶段那一行的可见性");
+    eq(el(stageApp, "era-stage").textContent, "", "隐藏时文字要清空");
+  });
+
+  const oldEngineEra = {
+    icon: "🌱", name: "第一层", index: 1, total: 4, theme: "开张", progress: 0.42,
+    progressText: "42%", canAdvance: false, isFinalEra: false, nextName: "第二层",
+    nextIndex: 2, chipsOnAdvance: 0, blockedReason: "还差一点",
+  };
+  await stageApp.push({ kind: "delta", seq: 3, changed: { era: oldEngineEra } });
+  check("老引擎的快照里没有阶段字段：当作没有阶段，不抛异常也不显示半行", () => {
+    eq(hidden(stageApp, "era-stage"), true, "阶段那一行的可见性");
+    eq(hidden(stageApp, "era"), false, "纪元面板本身照常显示");
+  });
+
+  // 阶段字段是"有值但为 0"的那种脏数据（服务端理论上不会给，但前端不该因此把它画出来）
+  await stageApp.push({ kind: "delta", seq: 4, changed: { era: withStage({ stageIndex: 0, stageCount: 0 }) } });
+  check("stageIndex 为 0（脏数据）时同样隐藏，不画「第 0 / 0 阶段」", () => {
+    eq(hidden(stageApp, "era-stage"), true, "阶段那一行的可见性");
   });
 }
 

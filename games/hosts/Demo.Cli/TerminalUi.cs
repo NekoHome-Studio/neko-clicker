@@ -176,16 +176,33 @@ internal static class TerminalUi
         .Add("   点击 ", Ansi.S(Style.Gray))
         .Add(snap.ClickPowerText, Ansi.S(Style.Bold + Style.Green));
 
-    private static UiLine HeaderRight(GameSession session, GameSnapshot snap) => UiLine.New()
-        .Add(" ")
-        .Add($"{snap.PrestigeCurrencyIcon} ", Ansi.S(Style.Green))
-        .Add(NumFormat.FormatPlain(snap.PrestigeChips), Ansi.S(Style.Bold + Style.Green))
-        .Add($" {snap.PrestigeCurrencyName}", Ansi.S(Style.Gray))
-        .Add($" Lv{snap.PrestigeLevel}", Ansi.S(Style.Bold + Style.Magenta))
-        .Add($"  {session.Package.PrestigeActionName} {ProgressBar(snap.Prestige.Progress, 8)} ", Ansi.S(Style.Gray))
-        .Add(NumFormat.Percent(snap.Prestige.Progress, 0), Ansi.S(Style.Gray))
-        .Add($"  成就 {snap.AchievementCount}/{snap.AchievementTotal}", Ansi.S(Style.Gray))
-        .Add($"  建筑 {NumFormat.FormatPlain(snap.TotalBuildings)}", Ansi.S(Style.Gray));
+    private static UiLine HeaderRight(GameSession session, GameSnapshot snap)
+    {
+        var line = UiLine.New()
+            .Add(" ")
+            .Add($"{snap.PrestigeCurrencyIcon} ", Ansi.S(Style.Green))
+            .Add(NumFormat.FormatPlain(snap.PrestigeChips), Ansi.S(Style.Bold + Style.Green))
+            .Add($" {snap.PrestigeCurrencyName}", Ansi.S(Style.Gray))
+            .Add($" Lv{snap.PrestigeLevel}", Ansi.S(Style.Bold + Style.Magenta))
+            .Add($"  {session.Package.PrestigeActionName} {ProgressBar(snap.Prestige.Progress, 8)} ", Ansi.S(Style.Gray))
+            .Add(NumFormat.Percent(snap.Prestige.Progress, 0), Ansi.S(Style.Gray));
+
+        // 层内阶段：只在内容真的声明了阶段时出现（8/9 个包这一段完全不存在）。
+        // 放在"这一层还差多少"（上面的转生进度条）<b>之后</b>：阶段是同一件事的更细粒度版本，
+        // 挨着放玩家才对得上"我在这一层的哪一段"。宽度由 FrameRenderTests 守着
+        // （公司包在 40 列下也要装得下），所以这里不自己截断。
+        if (snap.Era is { StageCount: > 0 } era)
+        {
+            line.Add("  阶段 ", Ansi.S(Style.Gray))
+                .Add($"{era.StageIndex}/{era.StageCount}", Ansi.S(Style.Bold + Style.BrightYellow));
+            if (era.StageNextName.Length > 0)
+                line.Add($" → {era.StageNextName}", Ansi.S(Style.Gray));
+        }
+
+        return line
+            .Add($"  成就 {snap.AchievementCount}/{snap.AchievementTotal}", Ansi.S(Style.Gray))
+            .Add($"  建筑 {NumFormat.FormatPlain(snap.TotalBuildings)}", Ansi.S(Style.Gray));
+    }
 
     // 立场轴刻意不放进顶栏：顶栏那一半本来就快占满了，塞进去会把"建筑"之类的尾部挤掉。
     // 完整立场轴在「表态」面板里展示，主导立场变化时也会进日志。
