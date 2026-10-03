@@ -5,7 +5,17 @@
 > 一句话版本：**从 1.0.0 起，公开 API 只增不改。** 删改任何公开成员都必须升主版本号，
 > 而且这条规矩不是靠自觉——有测试守着。
 >
-> 当前版本 **1.8.0**：minor——公开 API **只增不改**：新增 `UpgradeCategories` 类型、
+> 当前版本 **1.9.0**：minor——公开 API **只增不改**：新增 `EraStage` / `EraStageGate` 两个类型、
+> `EraDefinition.Stages`、`EraSystem.Stage(GameEngine)` / `CheckStage(GameEngine)` /
+> `StageCounterPrefix`、`GameEngine.CheckEraStage()`，以及 `EraView` 上阶段那六个只读字段。
+> 它是这张表里最标准的一格：**给"一层之内的第几段"一个公开的形状**，而阶段本身是
+> **派生**的（由单调指标算出来，不占存档位、不动存档格式）。老成员的语义
+> （`BuildingView.NextMilestoneAt` 指的是**单座建筑**的下一档）**一字未动**，
+> 线上老字段一个都没改，所以没有一个消费者被打断。
+> 细节与判别力见 [CHANGELOG](../../CHANGELOG.md) 的 1.9.0、
+> [CONTENT_AUTHORING](CONTENT_AUTHORING.md) §11.2 与 [TUNING_ANALYSIS](TUNING_ANALYSIS.md) §4.10。
+>
+> 上一版 **1.8.0**：minor——公开 API **只增不改**：新增 `UpgradeCategories` 类型、
 > `GameContent.UpgradesByBuilding` / `UpgradesForBuilding(string)`、`BuildingView.UpgradeIds`。
 > 它不是语义例外，是这张表里最标准的一格：把 `UpgradeDefinition.Category` 上那条
 > `"building:<id>"` 约定（"这条升级属于哪座建筑"）从"没人校验、没人读"变成
@@ -51,9 +61,9 @@
 单一事实来源是 **`Directory.Build.props` 里的 `<Version>`**：
 
 ```xml
-<Version>1.8.0</Version>
-<AssemblyVersion>1.8.0.0</AssemblyVersion>
-<FileVersion>1.8.0.0</FileVersion>
+<Version>1.9.0</Version>
+<AssemblyVersion>1.9.0.0</AssemblyVersion>
+<FileVersion>1.9.0.0</FileVersion>
 ```
 
 这个值会同时成为程序集版本、文件版本，以及 `ApiVersion.Current` 报告的版本。
@@ -69,8 +79,8 @@
 ```csharp
 using NekoClicker.Core;
 
-Console.WriteLine(ApiVersion.Current);        // "1.8.0"
-Console.WriteLine(ApiVersion.AssemblyVersion); // 1.8.0.0
+Console.WriteLine(ApiVersion.Current);        // "1.9.0"
+Console.WriteLine(ApiVersion.AssemblyVersion); // 1.9.0.0
 Console.WriteLine(ApiVersion.Major);           // 1
 ```
 
@@ -134,9 +144,10 @@ Console.WriteLine(ApiVersion.Major);           // 1
 光有规矩没有守卫，规矩会在第一次赶工时失效。所以有一份**快照**：
 
 ```
-engine/core/PublicApi.txt     ← 公开表面的逐项清单（行数随公开成员增减；1.8.0 新增
-                                UpgradeCategories 与 GameContent.UpgradesByBuilding /
-                                UpgradesForBuilding、BuildingView.UpgradeIds，所以行数涨了）
+engine/core/PublicApi.txt     ← 公开表面的逐项清单（行数随公开成员增减：1.8.0 加了
+                                UpgradeCategories / UpgradesForBuilding / UpgradeIds；
+                                1.9.0 又加了 EraStage / EraStageGate / EraDefinition.Stages /
+                                EraSystem.Stage 一族 + EraView 的阶段六字段，所以现在是 1983 行）
 ```
 
 它被**嵌进 `NekoClicker.Core.dll`**，随 dll 一起走。任何拿到这个 dll 的宿主都能断言
@@ -213,8 +224,9 @@ git tag -a v1.0.0 -m "NekoClicker.Core 1.0.0"
 > [RELEASING](RELEASING.md)。下面是判据清单。
 
 - [ ] `pwsh -File tools/build.ps1 -Strict` 退出码 0，0 警告
-- [ ] 全部用例通过（当前 **516** 个）
+- [ ] 全部用例通过（当前 **531** 个）
 - [ ] 若这次动了 Web 宿主：`pwsh -File tools/api-test.ps1` 全部端到端检查通过（当前 55 项；脚本收尾自己核对"源码几处检查点 / 这次执行到几处"）
+- [ ] 若这次动了 Web 前端：`node tools/web-smoke.mjs` 全绿（当前 **108** 条）
 - [ ] `Directory.Build.props` 的 `Version` / `AssemblyVersion` / `FileVersion` 三处一致
 - [ ] `CHANGELOG.md` 有当前版本的带日期条目，写清了兼容性影响
 - [ ] 若公开 API 有变动：快照已更新，且**确实**是有意为之

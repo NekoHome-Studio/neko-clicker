@@ -5,13 +5,18 @@
 + #3《猫娘实验室》+ #10《猫娘公司》+ #6《猫娘末世》+ #9《猫娘图书馆》
 + #7《猫娘神明》+ #4《猫娘文明》+ #5《赛博猫娘》+ #8《猫娘梦境》）和一个可玩的终端 Demo。
 
-**当前版本 `1.8.0`**（`NekoClicker.Core` 的公开 API 版本）。从 `1.0.0` 起
+**当前版本 `1.9.0`**（`NekoClicker.Core` 的公开 API 版本）。从 `1.0.0` 起
 **公开 API 只增不改**，而且有测试守着——见 [版本与兼容性承诺](#版本与兼容性承诺)。
-1.8.0 是纯新增：**建筑升级系统**——把 `UpgradeDefinition.Category` 上那条
+1.9.0 是纯新增：**纪元内的阶段**——一层之内分段推进，跨过一段什么都不清
+（新增 `EraStage`、`EraDefinition.Stages`、`EraStageGate`、`EraSystem.Stage` /
+`EraSystem.CheckStage`，以及 `EraView` 上的六个只读字段）。
+阶段是**内容声明的边界**（试点：公司包三层的 5 / 8 / 8 段），引擎按单调指标**派生**出当前
+在第几段，所以它**不占存档位**、老存档天生带着阶段进度；没有声明阶段的包行为一个字节不变。
+前一版 1.8.0 是**建筑升级系统**——把 `UpgradeDefinition.Category` 上那条
 `"building:<id>"` 约定（"这条升级属于哪座建筑"）变成**被校验、被索引、也被界面用上**的
 （新增 `UpgradeCategories`、`GameContent.UpgradesForBuilding`、`BuildingView.UpgradeIds`；
-前一版 1.7.0 是 `GameSnapshot.ModeName` + `PurchaseModes.WireName()`，修掉"前端拿枚举序数
-当档位名用"那条线上故障）。两版都是**只增不改**：老字段原样留着，没有破坏任何消费者。
+再前一版 1.7.0 是 `GameSnapshot.ModeName` + `PurchaseModes.WireName()`，修掉"前端拿枚举序数
+当档位名用"那条线上故障）。这四版都是**只增不改**：老字段原样留着，没有破坏任何消费者。
 语义层面的破坏性变更至今有三处，而且是**同一件事的三次决定**：1.1.0 让结局条件成立后
 先等一段作答宽限期（默认 30 **模拟**秒）；1.5.0 把那段时间换成条件——玩家
 **被展示过**那批待答表态之后结局才允许落定；**1.6.0 又把条件收紧成"玩家把它们答完"**
@@ -69,7 +74,7 @@
 > 代价是画面右侧与底部各有一格空白——这是换「拖横向不崩」付出的代价。
 
 ```powershell
-# 构建 + 跑测试（516 个用例，零依赖迷你运行器）
+# 构建 + 跑测试（531 个用例，零依赖迷你运行器）
 .\tools\build.ps1
 
 # 逐条计时：打印最慢的一批与分档占比（想知道"什么变慢了"就用它）
@@ -177,7 +182,7 @@ engine/content/Cyber/   内容包 #5《赛博猫娘》（五层数字层，迁�
 engine/content/Dream/   内容包 #8《猫娘梦境》（五层梦，越睡越浓的梦境能量）
 games/hosts/Demo.Cli/        终端 UI 适配层（ANSI 全屏 + 键盘 + 无头模式 + --package）
 games/hosts/Web/         Web 前端宿主（本地 HTTP + wwwroot，浏览器里可玩）
-engine/tests/    516 个测试 + 自研迷你测试运行器（含架构不变量与全程可达测试）
+engine/tests/    531 个测试 + 自研迷你测试运行器（含架构不变量与全程可达测试）
 engine/docs/ARCHITECTURE.md             架构与设计决策
 engine/docs/CONTENT_AUTHORING.md        如何写内容（数值节奏、校验规则、常见坑）
 engine/docs/VERSIONING.md               版本与兼容性承诺：什么改动升哪一位、公开 API 快照怎么用
@@ -331,7 +336,7 @@ Console.WriteLine(engine.Save());           // JSON 存档
 
 ## 版本与兼容性承诺
 
-**当前版本 `1.8.0`。从 `1.0.0` 起，`NekoClicker.Core` 的公开 API 只增不改。**
+**当前版本 `1.9.0`。从 `1.0.0` 起，`NekoClicker.Core` 的公开 API 只增不改。**
 
 | 改动 | 升哪一位 |
 |---|---|
@@ -349,8 +354,8 @@ Console.WriteLine(engine.Save());           // JSON 存档
 ```csharp
 using NekoClicker.Core;
 
-Console.WriteLine(ApiVersion.Current);         // "1.8.0"
-Console.WriteLine(ApiVersion.AssemblyVersion);  // 1.8.0.0
+Console.WriteLine(ApiVersion.Current);         // "1.9.0"
+Console.WriteLine(ApiVersion.AssemblyVersion);  // 1.9.0.0
 ```
 
 ### 这条承诺是怎么被守住的
@@ -408,7 +413,7 @@ Console.WriteLine(ApiVersion.AssemblyVersion);  // 1.8.0.0
 一条命令就是全仓库的验收：
 
 ```powershell
-.\tools\build.ps1 -Strict   # 引擎 + 内容 + 516 条用例 + Web 宿主（0 警告）
+.\tools\build.ps1 -Strict   # 引擎 + 内容 + 531 条用例 + Web 宿主（0 警告）
 .\tools\web.ps1   build -Strict   # 只编 Web 宿主时用它
 .\tools\api-test.ps1        # 再把宿主真起起来，打一遍端点（含 SSE 流）
 ```
@@ -422,7 +427,7 @@ Console.WriteLine(ApiVersion.AssemblyVersion);  // 1.8.0.0
 
 - 核心引擎、十一个内容包（猫咖物语 / 猫娘咖啡馆 / 九命轮回 / 猫娘实验室 / 猫娘公司 / 猫娘末世 /
   猫娘图书馆 / 猫娘神明 / 猫娘文明 / 赛博猫娘 / 猫娘梦境）、**两个前端宿主**（终端 Demo + Web），
-  **516 个测试**全部通过。
+  **531 个测试**全部通过。
 - **端到端回归与 CI 已落地**：`tools/api-test.ps1` 起真宿主打一遍全部端点（静态文件 / 前端面板 /
   元信息 / 快照 / 命令 / 通知 / 负数 / SSE 流 / **离线收益** / **永久线货币语义** /
   **建筑专属升级**，55 项检查——最后一段会带同一份存档
@@ -521,10 +526,12 @@ Console.WriteLine(ApiVersion.AssemblyVersion);  // 1.8.0.0
   ROADMAP 规划范围内的**十个内容包至此全部交付**，
   四个引擎能力里只有 S-A / S-B / S-C 动过核心（S-D 一行核心代码都没写）。
 
-**接下来做什么**：见 [STATUS.md 的 §8「下一步与交接」](STATUS.md)——工作树是 **1.8.0**
+**接下来做什么**：见 [STATUS.md 的 §8「下一步与交接」](STATUS.md)——工作树是 **1.9.0**
 （结局的落定条件：定时 → 被展示过 → **被答完**，三次改动各配一次 minor 升版与快照再生成；
 1.7.0 是那条线之外的纯新增 `GameSnapshot.ModeName`，1.8.0 是**建筑升级系统**：
-`UpgradeCategories` + `GameContent.UpgradesForBuilding` + `BuildingView.UpgradeIds`），
+`UpgradeCategories` + `GameContent.UpgradesForBuilding` + `BuildingView.UpgradeIds`；
+1.9.0 是**纪元内的阶段**：`EraStage` + `EraDefinition.Stages` + `EraSystem.Stage` +
+`EraView` 的阶段六字段，试点只有公司包 5/8/8 段，**一行数值都没改**），
 **发布还没走**：
 打包 / 打 tag / 推送 / 看 CI 是下一轮的第一件事；再往后是二周目界面（要先定语义）
 与 `PackageId` 打包元数据。1.2.1 / 1.3.0 / 1.4.0 是怎么发的（含发布流程与实际执行记录）

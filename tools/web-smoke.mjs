@@ -992,8 +992,14 @@ section("13. 建筑：卡片买、📖 看故事（两个手势互不触发）")
 // **而 82 条用例全绿**。判据只有一条：夹具里前端会用到的每个路径，形状必须与真快照一致。
 //
 // 真快照 = tools/fixtures/web-snapshot.json，就是从起着的宿主上抓的**原始响应**：
-//   curl.exe -s "http://127.0.0.1:5299/api/snapshot?package=apocalypse"
-// 它是**形状**的参照，不是数值的参照：重生成时数值（金币、时长、通知时间戳）会变，
+//   <在隔离 worktree 里起宿主> neko-clicker-web.exe --urls http://127.0.0.1:5398 \
+//       --save-root <临时目录> --latency-log <临时文件>
+//   （起之前先 POST 几十次 click，让通知日志非空）
+// 它现在是**按公司包**抓的（`?package=company`，60,859 字节）——公司是第一个声明阶段
+// （`era.stageIndex` / `stageCount` / `stageName` / `stageNextName` / `stageProgress` /
+// `stageProgressText`）的包，所以这份夹具同时是那六个字段"真的在线上"的判据。
+// 它以前是按末世包抓的：那次切换是为了让新字段有**真实取值**可比，而不是一个空数组。
+// 它是**形状**的参照，不是数值的参照：重生成时数值（金币、时长、通知时间戳、阶段号）会变，
 // 那是预期的；这里比的是类型，所以数值漂移不会让它红。
 section("14. 夹具形状 vs 真宿主快照");
 {

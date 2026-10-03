@@ -1,4 +1,4 @@
-# NekoClicker 公开 API 快照 format=1 assembly=NekoClicker.Core version=1.8.0
+# NekoClicker 公开 API 快照 format=1 assembly=NekoClicker.Core version=1.9.0
 
 public static class NekoClicker.Core.AchievementSystem
   method static System.Collections.Generic.List<NekoClicker.Core.Content.AchievementDefinition>! Check(NekoClicker.Core.Content.GameContent! content, NekoClicker.Core.GameState! state, NekoClicker.Core.IGameMetrics! metrics, NekoClicker.Core.Events.GameEventBus! events)
@@ -275,6 +275,7 @@ public sealed class NekoClicker.Core.Content.EraDefinition : System.IEquatable<N
   method virtual System.String! ToString()
   prop NekoClicker.Core.Content.GameBalance? Balance { get; init; }
   prop NekoClicker.Core.Content.UnlockCondition! Completion { get; init; }
+  prop System.Collections.Generic.IReadOnlyList<NekoClicker.Core.Content.EraStage>! Stages { get; init; }
   prop System.Collections.Generic.IReadOnlyList<NekoClicker.Core.Content.Modifier>! Modifiers { get; init; }
   prop System.Collections.Generic.IReadOnlyList<System.String>! InheritBuildings { get; init; }
   prop System.Collections.Generic.IReadOnlyList<System.String>! UnlocksBuildings { get; init; }
@@ -304,6 +305,37 @@ public struct NekoClicker.Core.Content.EraGate : System.IEquatable<NekoClicker.C
   prop System.Int32 CurrentIndex { get; init; }
   prop System.Nullable<System.Int32> NextIndex { get; init; }
   prop System.String? BlockedReason { get; init; }
+
+public sealed class NekoClicker.Core.Content.EraStage : System.IEquatable<NekoClicker.Core.Content.EraStage>
+  ctor NekoClicker.Core.Content.EraStage()
+  method System.Boolean Equals(NekoClicker.Core.Content.EraStage? other)
+  method static System.Boolean op_Equality(NekoClicker.Core.Content.EraStage? left, NekoClicker.Core.Content.EraStage? right)
+  method static System.Boolean op_Inequality(NekoClicker.Core.Content.EraStage? left, NekoClicker.Core.Content.EraStage? right)
+  method virtual System.Boolean Equals(System.Object? obj)
+  method virtual System.Int32 GetHashCode()
+  method virtual System.String! ToString()
+  prop NekoClicker.Core.Content.UnlockCondition! At { get; init; }
+  prop System.String! Icon { get; init; }
+  prop System.String! Id { get; init; }
+  prop System.String! Name { get; init; }
+
+public struct NekoClicker.Core.Content.EraStageGate : System.IEquatable<NekoClicker.Core.Content.EraStageGate>
+  ctor NekoClicker.Core.Content.EraStageGate(System.Int32 Index, System.Int32 Count, NekoClicker.Core.Content.EraStage? Current, NekoClicker.Core.Content.EraStage? Next, System.Double Progress)
+  method System.Boolean Equals(NekoClicker.Core.Content.EraStageGate other)
+  method System.Void Deconstruct(out System.Int32 Index, out System.Int32 Count, out NekoClicker.Core.Content.EraStage Current, out NekoClicker.Core.Content.EraStage Next, out System.Double Progress)
+  method static System.Boolean op_Equality(NekoClicker.Core.Content.EraStageGate left, NekoClicker.Core.Content.EraStageGate right)
+  method static System.Boolean op_Inequality(NekoClicker.Core.Content.EraStageGate left, NekoClicker.Core.Content.EraStageGate right)
+  method virtual System.Boolean Equals(System.Object obj)
+  method virtual System.Int32 GetHashCode()
+  method virtual System.String ToString()
+  prop NekoClicker.Core.Content.EraStage? Current { get; init; }
+  prop NekoClicker.Core.Content.EraStage? Next { get; init; }
+  prop System.Boolean HasStages { get; }
+  prop System.Double Progress { get; init; }
+  prop System.Int32 Count { get; init; }
+  prop System.Int32 Index { get; init; }
+  prop System.String! Name { get; }
+  prop System.String! NextName { get; }
 
 public sealed class NekoClicker.Core.Content.GameBalance : System.IEquatable<NekoClicker.Core.Content.GameBalance>
   ctor NekoClicker.Core.Content.GameBalance()
@@ -794,9 +826,12 @@ public sealed class NekoClicker.Core.EraRecord
 
 public static class NekoClicker.Core.EraSystem
   field const System.String! PeakCpsCounterKey = "peak_cps"
+  field const System.String! StageCounterPrefix = "$era_stage_"
   method static NekoClicker.Core.AscensionResult! Advance(NekoClicker.Core.GameEngine! engine)
   method static NekoClicker.Core.Content.EraGate CanAdvance(NekoClicker.Core.GameEngine! engine)
+  method static NekoClicker.Core.Content.EraStageGate Stage(NekoClicker.Core.GameEngine! engine)
   method static System.Double ChipsOnAdvance(NekoClicker.Core.GameEngine! engine)
+  method static System.Int32 CheckStage(NekoClicker.Core.GameEngine! engine)
   method static System.String! DescribeProgress(NekoClicker.Core.GameEngine! engine)
 
 public sealed class NekoClicker.Core.Events.AchievementUnlockedEvent : NekoClicker.Core.Events.IGameEvent, System.IEquatable<NekoClicker.Core.Events.AchievementUnlockedEvent>
@@ -1120,6 +1155,7 @@ public sealed class NekoClicker.Core.GameEngine
   method System.Collections.Generic.IReadOnlyList<NekoClicker.Core.Content.LoreEntry>! CheckLore()
   method System.Double GetPriceMultiplier(System.String! buildingId)
   method System.Double Update(System.Double deltaSeconds)
+  method System.Int32 CheckEraStage()
   method System.Int32 DismissAllLorePopups()
   method System.Int32 MarkPendingChoicesShown()
   method System.Nullable<NekoClicker.Core.OfflineProgress> ApplyOfflineProgress(System.TimeSpan elapsed)
@@ -1754,7 +1790,10 @@ public sealed class NekoClicker.Core.Views.EraView : System.IEquatable<NekoClick
   prop System.Collections.Generic.IReadOnlyList<NekoClicker.Core.Views.EraSummary>! All { get; init; }
   prop System.Double ChipsOnAdvance { get; init; }
   prop System.Double Progress { get; init; }
+  prop System.Double StageProgress { get; init; }
   prop System.Int32 Index { get; init; }
+  prop System.Int32 StageCount { get; init; }
+  prop System.Int32 StageIndex { get; init; }
   prop System.Int32 Total { get; init; }
   prop System.Nullable<System.Int32> NextIndex { get; init; }
   prop System.String! EntryText { get; init; }
@@ -1763,6 +1802,9 @@ public sealed class NekoClicker.Core.Views.EraView : System.IEquatable<NekoClick
   prop System.String! ModifierSummary { get; init; }
   prop System.String! Name { get; init; }
   prop System.String! ProgressText { get; init; }
+  prop System.String! StageName { get; init; }
+  prop System.String! StageNextName { get; init; }
+  prop System.String! StageProgressText { get; init; }
   prop System.String! Theme { get; init; }
   prop System.String? BlockedReason { get; init; }
   prop System.String? NextName { get; init; }

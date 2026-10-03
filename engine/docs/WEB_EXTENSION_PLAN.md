@@ -3,8 +3,9 @@
 > 状态：**已搁置（2026-10-03，父会话决定）**——本文只作为方案与决策记录留存，**不实施**。
 > 搁置的两个理由：① 十一个包**没有一个**需要扩展机制；② 本文写作期间唯一的真实动因
 > （"把建筑的剧情内容画出来"）已经用**引擎既有字段**落地了（提交 `f9044ec`，见 §0.2.1）——
-> 它**没有**碰快照协议、**没有**升版本。真要落地时版本号从 **`1.8.0`** 起算：
-> `1.7.0` 已被 `GameSnapshot.ModeName` 占用（见 `OPEN_WORK` 的 N 条）；
+> 它**没有**碰快照协议、**没有**升版本。真要落地时版本号从 **`1.9.0`** 起算：
+> `1.8.0` 已被"纪元内的阶段"（`EraStage` / `EraDefinition.Stages`，见 `CONTENT_AUTHORING` §11.2）
+> 占用，`1.7.0` 更早被 `GameSnapshot.ModeName` 占用（见 `OPEN_WORK` 的 N 条）；
 > 本文若将来要登记进 `OPEN_WORK` §3，编号是 **O**（N 已经是那条修复了）。
 >
 > 原文（保留）：**待定，未动一行代码**（2026-10-04）。本文只定怎么做，以及**要先定哪几件事**。
@@ -328,7 +329,7 @@
 | `Directory.Build.props:81` 旁 | 加一条 `ItemGroup Condition="Exists('$(MSBuildProjectDirectory)\ui.json')"` | 不是 |
 | `games/hosts/Web/UiExtensions.cs` | **新增**：读 + 校验 + 折算成视图模型（纯静态、无状态，照 `SnapshotProtocol.cs` 的形态，便于在 engine/tests 里逐条断言） | 不是 |
 | `games/hosts/Web/GameHost.cs` | 会话创建时读一次 `ui.json`，把结果交给快照生成 | 不是（宿主内部） |
-| **`engine/core/Views/Views.cs`** | **方案 A 的最小版本**：`BuildingView` 加一个 `string? UiSectionId`（用例二）。**方案 A 的完整版本**：`GameSnapshot` 加 `IReadOnlyList<UiPanelView> Ui` | **是**。加公开成员 = 按 `VERSIONING.md:69` 走 **minor**（`1.7.0` → `1.8.0`；`1.7.0` 已被 `ModeName` 占用，见 §0.2.1），且必须：改 `Directory.Build.props` 版本、写 `CHANGELOG`、跑 `tools/public-api.ps1` 重生成快照（顺序见 `VERSIONING.md:166`~`:176`） |
+| **`engine/core/Views/Views.cs`** | **方案 A 的最小版本**：`BuildingView` 加一个 `string? UiSectionId`（用例二）。**方案 A 的完整版本**：`GameSnapshot` 加 `IReadOnlyList<UiPanelView> Ui` | **是**。加公开成员 = 按 `VERSIONING.md:69` 走 **minor**（落地时的版本号从**当前版本**往上取一格；写这份方案时是 `1.7.0` → `1.8.0`，`1.8.0` 与 `1.9.0` 之后都已被占用，见本文头部），且必须：改 `Directory.Build.props` 版本、写 `CHANGELOG`、跑 `tools/public-api.ps1` 重生成快照（顺序见 `VERSIONING.md:166`~`:176`） |
 | `games/hosts/Web/wwwroot/index.html` | 加一个**空**挂载点（`<div id="ui-root">`）与（可选）一个动态页签的容器 | 不是 |
 | `games/hosts/Web/wwwroot/app.js` | 新增 `renderUi()` 与白名单原语建 DOM 的代码；`render()`（`app.js:172`）里加一行调用 | 不是 |
 | `games/hosts/Web/wwwroot/app.css` | 面板/展开区的样式（复用既有的 `.panel` / `.card` 类，别新造一套） | 不是 |
@@ -565,7 +566,7 @@ missing panel"。逐类：
 | **D6** | 要不要**可见性条件**（"只在第 3 层显示这个面板"）？ | **(a) v1 不做（推荐）**：条件树一旦成为扩展语法，就要配校验器、单调性讨论与可达性分析——**那是引擎那一整套的复制品**。**(b) 只支持"某个快照字段为真"**：够用且便宜，代价是它是个**特例语法**，之后必然被要求扩展。**(c) 用完整的 `UnlockCondition`**：最强，也最贵，且把 UI 与游戏规则绑死 |
 | **D7** | **要不要接受"各包的界面可以长得不一样"** | 这是**产品判断，不是技术判断**：今天十一个包界面统一（换包不用重学）。**(a) 接受**：包的作者能表达更多。**(b) 不接受，只允许在固定的几个位置插内容**（如只允许"建筑展开区"与"一个额外页签"）：自由度小，但界面不会散。**这一条会直接决定 A 的白名单宽度** |
 | **D8** | 一次坏的 `ui.json`：**拒绝开这一局**，还是**只报错并用无扩展的界面继续**？ | **(a) 拒绝开这一局（推荐）**：与"failures must be loud"一致，作者当场看到。**(b) 继续跑**：玩家能玩，但**他看到的界面与作者以为的不是同一个**——这正是 `FRONTEND_CHECKS.md` 那次"整页静默停摆"的同一种病 |
-| **D9** | 引擎侧要不要动（§6 的两条路） | **(a) 引擎加公开字段（推荐）**：契约只有一份、可承诺，代价是 **minor + 快照 + CHANGELOG**（`1.7.0` → `1.8.0`）。**(b) 宿主侧 JSON 注入**：零版本成本、零快照变更，代价是"快照 + 宿主附加字段"两份契约，且附加字段**不在 `VERSIONING.md` 的承诺范围内** |
+| **D9** | 引擎侧要不要动（§6 的两条路） | **(a) 引擎加公开字段（推荐）**：契约只有一份、可承诺，代价是 **minor + 快照 + CHANGELOG**（落地时往上取一格；写这份方案时是 `1.7.0` → `1.8.0`，那两个号后来都被占用了）。**(b) 宿主侧 JSON 注入**：零版本成本、零快照变更，代价是"快照 + 宿主附加字段"两份契约，且附加字段**不在 `VERSIONING.md` 的承诺范围内** |
 
 ---
 

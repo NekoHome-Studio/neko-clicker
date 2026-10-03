@@ -1,7 +1,7 @@
 # 现状
 
-> 记录时间：**2026-10-02**（版本行 / 整合补记 **2026-10-03**）｜ 分支 `main` ｜ 工作树版本 **1.8.0**
-> （`b625dd5` 落地，**未打 tag / 未推送**；已发布的最后一个 tag 仍是 `v1.4.0`）
+> 记录时间：**2026-10-02**（版本行 / 整合补记 **2026-10-03**）｜ 分支 `main` ｜ 工作树版本 **1.9.0**
+> （`stage-work` 分支上落地，**未打 tag / 未推送**；已发布的最后一个 tag 仍是 `v1.4.0`）
 >
 > 这份文档只回答一个问题：**现在是什么状况**。它不重复别处已有的内容——
 > 架构看 [ARCHITECTURE](engine/docs/ARCHITECTURE.md)，规划与决策看 [ROADMAP](games/docs/ROADMAP.md)，
@@ -16,7 +16,7 @@
 
 | 分支 / tag | 内容 | 状态 |
 |---|---|---|
-| `main` | **唯一的开发线** | 工作树 = **1.8.0**（`b625dd5` 落地，**未打 tag / 未推送**） |
+| `main` | **唯一的开发线** | 工作树 = **1.9.0**（`stage-work` 分支上落地，**未打 tag / 未推送**） |
 | `v1.4.0` | 1.3.0 + 升级行的货币语义（`UpgradeView` 三字段）+ Web 的「永久」面板 | 已发布（tag 已推送）——**已发布的最新版** |
 | `v1.3.0` | 1.2.1 + 离线收益进快照（`GameSnapshot.Offline`）+ Web 弹窗 + 打包产物内容根修复 | 已发布 |
 | `v1.2.1` | 1.2.0 + 421 条散文铺满十个包 + `ContentText` 并发修复 | 已发布 |
@@ -25,7 +25,20 @@
 | `v1.0.0` | 首个承诺公开 API 稳定的版本 | 已发布 |
 | `feature/web-frontend-ui` | 旧分支，已并入 `main` | **作废**（远端还在，可删） |
 
-**工作树版本 `1.8.0`**（`NekoClicker.Core` 的公开 API 版本）：**minor**——公开 API **只增不改**：
+**工作树版本 `1.9.0`**（`NekoClicker.Core` 的公开 API 版本）：**minor**——公开 API **只增不改**：
+新增 `EraStage` / `EraStageGate` 两个类型、`EraDefinition.Stages`、
+`EraSystem.Stage(GameEngine)` / `CheckStage(GameEngine)` / `StageCounterPrefix`、
+`GameEngine.CheckEraStage()`，以及 `EraView` 上阶段那六个只读字段
+（`engine/core/PublicApi.txt` **1941 → 1983 行**）。内容是"**一层之内的第几段**"第一次有名字：
+阶段是**派生**的（由单调指标算出，**不占存档位、不动存档格式、不需要迁移**），
+试点只有公司包（三层 = 5 / 8 / 8 段），没声明阶段的包行为逐字节不变。
+**一行数值都没改**；"重来两次"那另一半（减层）**没有做**，理由与前置测量见
+[TUNING_ANALYSIS](engine/docs/TUNING_ANALYSIS.md) §4.10 与
+[CONTENT_AUTHORING](engine/docs/CONTENT_AUTHORING.md) §11.2。
+**未打 tag、未推送**——放行前的打包 / tag / 推送是子代理**没做**的事（本会话约定）；
+要精确到当前提交，用 `git log -1`（本文不写 HEAD，见上）。
+
+**`1.8.0`（已并入 `main`；下面这段只作历史）**：**minor**——公开 API **只增不改**：
 新增 `UpgradeCategories`（`BuildingPrefix` / `ForBuilding` / `TryGetBuildingId`）、
 `GameContent.UpgradesByBuilding` / `UpgradesForBuilding(id)` 与 `BuildingView.UpgradeIds`
 （`engine/core/PublicApi.txt` **1933 → 1941 行**，`--numstat` = `9 1`：那 1 行删除只是快照头的版本行）。
@@ -34,8 +47,6 @@
 于是 **312 条建筑强化档在界面上根本不存在**，而两端都不报错。方案、三条构建期校验、
 五条故障注入与"这次没做什么"见 [OPEN_WORK](engine/docs/OPEN_WORK.md) §0.11、
 [BUILDING_UPGRADES_PLAN](engine/docs/BUILDING_UPGRADES_PLAN.md) 与 [CHANGELOG](CHANGELOG.md) 的 1.8.0。
-**未打 tag、未推送**——放行前的打包 / tag / 推送是子代理**没做**的事（本会话约定）；
-要精确到当前提交，用 `git log -1`（本文不写 HEAD，见上）。
 
 **`1.7.0`（已并入 `main`；下面这段只作历史）**：**minor**——公开 API **只增不改**：
 新增 `GameSnapshot.ModeName`（`string`）与 `PurchaseModes.WireName()`，数字形的 `mode` **原样留着**
@@ -91,7 +102,7 @@
 engine/            自包含：搬走它 + 仓库根的 Directory.Build.props = 独立引擎仓库
   core/            引擎本体（平台中立，可在 Linux/macOS 直接构建）
   content/<包名>/  十一个内容包，一个包一个 csproj
-  engine/tests/    516 个用例 + 自研迷你运行器
+  engine/tests/    531 个用例 + 自研迷你运行器
   docs/            架构 / 内容作者指南 / 版本承诺 / 发布流程（RELEASING）
 games/             旗舰示例作品。依赖 engine/，反向不依赖
   hosts/Demo.Cli/  终端前端，同时是框架回归基线（FrameRenderTests 引用它）
@@ -121,7 +132,7 @@ start.cmd list               # 列出全部内容包
 走脚本的话：
 
 ```powershell
-.\tools\build.ps1 -Strict    # 一条命令：引擎 + 内容 + 516 用例 + Web 宿主（0 警告）
+.\tools\build.ps1 -Strict    # 一条命令：引擎 + 内容 + 531 用例 + Web 宿主（0 警告）
 .\tools\play.ps1             # 终端 Demo；--package <id> 换包
 .\tools\play.ps1 --package lab --simulate 21600 --auto   # 无头跑图 + 数值报告
 .\tools\web.ps1 run          # Web 前端（开发期必须 dotnet run 起，见 §7）
@@ -161,15 +172,15 @@ start.cmd list               # 列出全部内容包
 
 | 命令 | 期望 |
 |---|---|
-| `.\tools\build.ps1 -Strict` | **516 个用例全绿**、0 警告（主 sln 与 Web sln 都编） |
+| `.\tools\build.ps1 -Strict` | **531 个用例全绿**、0 警告（主 sln 与 Web sln 都编） |
 | `.\tools\api-test.ps1` | **55 项端到端检查全通过**——脚本自己会做**检查点覆盖审计**（源码里有几处 `Check`、这次就该执行到几处，少了就点名报红；见脚本头部 ⑤）：实测 **源码 55 处 ｜ 执行到 55 处 ｜ 跳过 0**。真起宿主（`dotnet run`）、真读 SSE 流、**最后再起一次宿主读档**，收尾自己清进程 |
-| `node tools\web-smoke.mjs` | **103 条全绿**——无头 DOM 桩**真的把 `app.js` 跑起来**（不抛异常、DOM 结构与状态），夹具是**从真宿主抓的快照**（`tools/fixtures/web-snapshot.json`）；没有真浏览器，布局与配色不在它射程内 |
+| `node tools\web-smoke.mjs` | **108 条全绿**——无头 DOM 桩**真的把 `app.js` 跑起来**（不抛异常、DOM 结构与状态），夹具是**从真宿主抓的快照**（`tools/fixtures/web-snapshot.json`，按公司包抓：它是第一个声明阶段的包）；没有真浏览器，布局与配色不在它射程内 |
 | `.\tools\web.ps1 build -Strict` | 只编 Web 宿主时用（0 警告） |
 
 **1.4.0 时代基线 441 的构成**（此后又长过多轮——1.5.0 / 1.6.0 两轮与文案外置第三~第六轮的
 用例增删见 [OPEN_WORK](engine/docs/OPEN_WORK.md) 的 J、K 条与
 [TEXT_AS_DATA_PLAN](engine/docs/TEXT_AS_DATA_PLAN.md) 的 §9~§13；**"当前几个"不写死在这一段**——
-以 `tools\build.ps1 -Strict` 打印的那一行为准，2026-10-03 在 `b625dd5` 上实测 **516**。
+以 `tools\build.ps1 -Strict` 打印的那一行为准，2026-10-03 在 `stage-work`（1.9.0）上实测 **531**。
 所以下面这份分解**只作历史**）：435（1.2.1 基线：
 404 阶段 6 + 7 合并守卫 + 10 Web 协议 + 9 `ContentText` 加载器
 + 1 并发读写 + 4 剧情文本运行期守卫）+ 4（离线报告：出现 / 短离线不弹 / 重开清掉
