@@ -42,7 +42,7 @@ NekoClicker.Core
 │   ├── GoldenCookieSystem.cs  随机事件：刷新、抽取、结算
 │   └── ActionResults.cs       动作结果类型（PurchaseResult 等）
 ├── Events/                    事件总线 + 领域事件
-├── Persistence/               IStorage / SaveData / SaveSerializer / SaveManager
+├── Persistence/               IStorage / SaveData / SaveSerializer / SaveManager / SaveTransfer
 └── Views/                     UI 只读视图 + GameSnapshot
 ```
 
@@ -123,6 +123,11 @@ GameState  ←→  SaveData（DTO）  ←→  JSON / base64 分享码
   见 `ISaveMigration` 与 `SaveSerializer.Parse`。
 - 未知的内容 id **不会被丢弃**：内容包临时下线某个建筑时，存档依然无损。
 - `SaveManager` 通过订阅 `TickEvent` 计时，引擎完全不知道"存档"这件事存在。
+- **玩家侧的导出 / 导入**走 `SaveManager.Export()` / `Import()`：外面包一层
+  **信封**（`SaveTransfer`：格式标签 + 包 id + 存档格式版本 + 校验和 + 尺寸闸），
+  存档本体与 `SaveData` 一个字段都没动。导入的顺序是"全部校验 → 落盘 → 应用到会话"，
+  坏输入在碰磁盘之前就被拦下。**它不能回头改存档格式**——那仍然要 `ISaveMigration`。
+  方案与两个宿主里的窗口见 [SAVE_TRANSFER_PLAN](SAVE_TRANSFER_PLAN.md)。
 
 ## 离线收益
 

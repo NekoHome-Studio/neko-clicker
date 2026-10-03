@@ -73,16 +73,23 @@ dotnet build NekoClicker.sln     # 或者用仓库根的 .\tools\build.ps1
 
 ## 版本与兼容性
 
-**当前 `1.9.0`。从 `1.0.0` 起，`NekoClicker.Core` 的公开 API 只增不改**，
+**当前 `1.10.0`。从 `1.0.0` 起，`NekoClicker.Core` 的公开 API 只增不改**，
 由 `core/PublicApi.txt`（快照，**嵌进 dll**）加四条守卫强制执行。
-规矩见 [docs/VERSIONING.md](docs/VERSIONING.md)。1.9.0 是**纯新增**：
+规矩见 [docs/VERSIONING.md](docs/VERSIONING.md)。1.10.0 是**纯新增**：
+`SaveTransfer`（信封格式：格式标签 + 包 id + 存档格式版本 + 校验和 + 尺寸闸）+
+`SaveTransferKind` + `SaveTransferResult` + `SaveManager.PackId` / `Export()` / `Import()`——
+把"玩家自己复制粘贴一份存档"变成一条**坏输入绝不弄坏能用的存档**的路。
+**存档格式一个字都没改**（`CurrentVersion` 仍是 `1`，没有迁移）：信封在存档**外面**。
+方案与第二、三刀（Web 窗口 / 终端路径提示）见
+[docs/SAVE_TRANSFER_PLAN.md](docs/SAVE_TRANSFER_PLAN.md)。
+上一个版本 1.9.0 也是纯新增：
 `EraStage` + `EraStageGate` + `EraDefinition.Stages` + `EraSystem.Stage` /
 `CheckStage` / `StageCounterPrefix` + `GameEngine.CheckEraStage()` +
 `EraView` 上阶段那六个只读字段——把"**一层之内的第几段**"变成内容可以声明、
 构建期会校验、两个宿主都读得到的形状；阶段是**派生**的（不占存档位、不动存档格式），
 没声明阶段的包行为一个字节不变。方案见
 [docs/CONTENT_AUTHORING.md](docs/CONTENT_AUTHORING.md) §11.2。
-上一个版本 1.8.0 也是纯新增：
+再上一个版本 1.8.0 也是纯新增：
 `UpgradeCategories` + `GameContent.UpgradesByBuilding` / `UpgradesForBuilding` +
 `BuildingView.UpgradeIds`——把 `UpgradeDefinition.Category` 上那条 `"building:<id>"` 约定
 （"这条升级属于哪座建筑"）从"没人校验、没人读"变成**构建期校验 + 索引 + 快照字段 + 界面**，

@@ -5,7 +5,17 @@
 > 一句话版本：**从 1.0.0 起，公开 API 只增不改。** 删改任何公开成员都必须升主版本号，
 > 而且这条规矩不是靠自觉——有测试守着。
 >
-> 当前版本 **1.9.0**：minor——公开 API **只增不改**：新增 `EraStage` / `EraStageGate` 两个类型、
+> 当前版本 **1.10.0**：minor——公开 API **只增不改**：新增 `SaveTransfer` 类型、
+> `SaveTransferKind` 枚举、`SaveTransferResult` 记录，以及 `SaveManager` 上的
+> `PackId` 属性、`Export()` / `Import(string)` 两个方法。
+> **它同时是一处与"版本"有关的事实澄清**：这次新增的 `SaveTransfer.FormatVersion`
+> 是**信封自己**的格式版本，与存档格式版本（`SaveSerializer.CurrentVersion`，仍然 `1`）
+> 是两条独立的轴；**存档格式一个字都没改、没有新增任何 `ISaveMigration`**，
+> 所以 §6 第 3 条（存档兼容由迁移机制负责）在这次改动里**没有被动过**。
+> 细节与判别力见 [CHANGELOG](../../CHANGELOG.md) 的 1.10.0、
+> [SAVE_TRANSFER_PLAN](SAVE_TRANSFER_PLAN.md)。
+>
+> 上一版 **1.9.0**：minor——公开 API **只增不改**：新增 `EraStage` / `EraStageGate` 两个类型、
 > `EraDefinition.Stages`、`EraSystem.Stage(GameEngine)` / `CheckStage(GameEngine)` /
 > `StageCounterPrefix`、`GameEngine.CheckEraStage()`，以及 `EraView` 上阶段那六个只读字段。
 > 它是这张表里最标准的一格：**给"一层之内的第几段"一个公开的形状**，而阶段本身是
@@ -61,9 +71,9 @@
 单一事实来源是 **`Directory.Build.props` 里的 `<Version>`**：
 
 ```xml
-<Version>1.9.0</Version>
-<AssemblyVersion>1.9.0.0</AssemblyVersion>
-<FileVersion>1.9.0.0</FileVersion>
+<Version>1.10.0</Version>
+<AssemblyVersion>1.10.0.0</AssemblyVersion>
+<FileVersion>1.10.0.0</FileVersion>
 ```
 
 这个值会同时成为程序集版本、文件版本，以及 `ApiVersion.Current` 报告的版本。
@@ -79,8 +89,8 @@
 ```csharp
 using NekoClicker.Core;
 
-Console.WriteLine(ApiVersion.Current);        // "1.9.0"
-Console.WriteLine(ApiVersion.AssemblyVersion); // 1.9.0.0
+Console.WriteLine(ApiVersion.Current);        // "1.10.0"
+Console.WriteLine(ApiVersion.AssemblyVersion); // 1.10.0.0
 Console.WriteLine(ApiVersion.Major);           // 1
 ```
 
@@ -147,7 +157,10 @@ Console.WriteLine(ApiVersion.Major);           // 1
 engine/core/PublicApi.txt     ← 公开表面的逐项清单（行数随公开成员增减：1.8.0 加了
                                 UpgradeCategories / UpgradesForBuilding / UpgradeIds；
                                 1.9.0 又加了 EraStage / EraStageGate / EraDefinition.Stages /
-                                EraSystem.Stage 一族 + EraView 的阶段六字段，所以现在是 1983 行）
+                                EraSystem.Stage 一族 + EraView 的阶段六字段；
+                                1.10.0 加了 SaveTransfer / SaveTransferKind /
+                                SaveTransferResult + SaveManager 的三个成员，
+                                所以现在是 2026 行）
 ```
 
 它被**嵌进 `NekoClicker.Core.dll`**，随 dll 一起走。任何拿到这个 dll 的宿主都能断言
@@ -224,7 +237,7 @@ git tag -a v1.0.0 -m "NekoClicker.Core 1.0.0"
 > [RELEASING](RELEASING.md)。下面是判据清单。
 
 - [ ] `pwsh -File tools/build.ps1 -Strict` 退出码 0，0 警告
-- [ ] 全部用例通过（当前 **531** 个）
+- [ ] 全部用例通过（当前 **548** 个）
 - [ ] 若这次动了 Web 宿主：`pwsh -File tools/api-test.ps1` 全部端到端检查通过（当前 55 项；脚本收尾自己核对"源码几处检查点 / 这次执行到几处"）
 - [ ] 若这次动了 Web 前端：`node tools/web-smoke.mjs` 全绿（当前 **108** 条）
 - [ ] `Directory.Build.props` 的 `Version` / `AssemblyVersion` / `FileVersion` 三处一致

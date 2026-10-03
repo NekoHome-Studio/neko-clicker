@@ -51,14 +51,14 @@
     否则 tools/build.ps1 -Strict 会红（PublicApiTests + VersionTests 两条守卫）。
   -->
   <PropertyGroup>
-    <Version>1.9.0</Version>
+    <Version>1.10.0</Version>
     <!--
       程序集版本 = 完整语义版本（而不是只取 major）。
       消费者可能把 NekoClicker.Core.dll 直接拷进宿主目录（Unity / Mono 场景），
       同目录覆盖升级时，只取 major 会让 1.1.0 和 1.0.0 的文件版本号无法区分。
     -->
-    <AssemblyVersion>1.9.0.0</AssemblyVersion>
-    <FileVersion>1.9.0.0</FileVersion>
+    <AssemblyVersion>1.10.0.0</AssemblyVersion>
+    <FileVersion>1.10.0.0</FileVersion>
     <Product>NekoClicker</Product>
   </PropertyGroup>
 
