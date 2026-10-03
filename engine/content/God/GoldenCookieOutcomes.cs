@@ -15,15 +15,23 @@ namespace NekoClicker.Content.God;
 /// </summary>
 internal static class GoldenCookieOutcomes
 {
+    /// <summary>
+    /// 本包的 <c>text.json</c>：增益 / 升级 / 金猫结果的文案与其它分区<b>共用同一份实例</b>（<see cref="Lore.Prose"/>）。<para>
+    /// 必须共用：孤儿检查会遍历整份文件的每个 kind，而"哪些 id 已取用"是按实例记的——
+    /// 两个实例各记一半，就会把对方那些 id 全报成孤儿。
+    /// </para>
+    /// </summary>
+    private static ContentText Prose => Lore.Prose;
+
     /// <summary>全部结果。</summary>
     public static GoldenCookieOutcome[] All =>
     [
         new()
         {
             Id = "forgotten_offering",
-            Name = "有人偷偷补了供品",
-            Icon = "🍥",
-            Description = "祭坛上多了一盘还热着的鱼，旁边没有脚印。她没有去查是谁放的。获得 {amount} 香火。",
+            Name = Prose.Text("goldenCookies", "forgotten_offering", "name"),
+            Icon = Prose.Text("goldenCookies", "forgotten_offering", "icon"),
+            Description = Prose.Text("goldenCookies", "forgotten_offering", "description"),
             Weight = 48,
             CookiesFromBankFraction = 0.15,
             CookiesFromBankFractionCapSecondsOfCps = 900,
@@ -32,9 +40,9 @@ internal static class GoldenCookieOutcomes
         new()
         {
             Id = "divine_frenzy",
-            Name = "神恩降临",
-            Icon = "✨",
-            Description = "云裂开一条缝，光正好打在她的神龛上，围观的人开始拍照。神恩降临 {duration}。",
+            Name = Prose.Text("goldenCookies", "divine_frenzy", "name"),
+            Icon = Prose.Text("goldenCookies", "divine_frenzy", "icon"),
+            Description = Prose.Text("goldenCookies", "divine_frenzy", "description"),
             Weight = 32,
             BuffId = "divine_frenzy",
             BuffSeconds = 77,
@@ -42,9 +50,9 @@ internal static class GoldenCookieOutcomes
         new()
         {
             Id = "manifest_frenzy",
-            Name = "显灵停不下来",
-            Icon = "🙌",
-            Description = "三十七个愿望一口气满足完，她喘了口气说「下一个」。显灵停不下来 {duration}。",
+            Name = Prose.Text("goldenCookies", "manifest_frenzy", "name"),
+            Icon = Prose.Text("goldenCookies", "manifest_frenzy", "icon"),
+            Description = Prose.Text("goldenCookies", "manifest_frenzy", "description"),
             Weight = 10,
             BuffId = "manifest_frenzy",
             BuffSeconds = 13,
@@ -52,26 +60,26 @@ internal static class GoldenCookieOutcomes
         new()
         {
             Id = "snatched_offering",
-            Name = "供品被顺走了",
-            Icon = "🥷",
-            Description = "案板是空的，供盘是热的，猫是装睡的。损失 {amount} 香火。",
+            Name = Prose.Text("goldenCookies", "snatched_offering", "name"),
+            Icon = Prose.Text("goldenCookies", "snatched_offering", "icon"),
+            Description = Prose.Text("goldenCookies", "snatched_offering", "description"),
             Weight = 6,
             StealBankFraction = 0.05,
         },
         new()
         {
             Id = "nothing",
-            Name = "什么也没发生",
-            Icon = "🕳️",
-            Description = "她在神龛前坐了一整个下午，只等到一只路过的猫，那只猫看了她一眼就走了。",
+            Name = Prose.Text("goldenCookies", "nothing", "name"),
+            Icon = Prose.Text("goldenCookies", "nothing", "icon"),
+            Description = Prose.Text("goldenCookies", "nothing", "description"),
             Weight = 3,
         },
         new()
         {
             Id = "pilgrim_flood",
-            Name = "朝圣潮",
-            Icon = "🚶",
-            Description = "路上全是人，队伍从山脚排到门口。有人问她能不能插队，她说「你问后面的人」。朝圣潮 {duration}。",
+            Name = Prose.Text("goldenCookies", "pilgrim_flood", "name"),
+            Icon = Prose.Text("goldenCookies", "pilgrim_flood", "icon"),
+            Description = Prose.Text("goldenCookies", "pilgrim_flood", "description"),
             Weight = 5,
             BuffId = "pilgrim_flood",
             BuffSeconds = 60,
@@ -79,9 +87,9 @@ internal static class GoldenCookieOutcomes
         new()
         {
             Id = "sutra_reading",
-            Name = "诵经",
-            Icon = "📿",
-            Description = "整座神殿同时开口，声音居然是对齐的，她愣了两秒然后跟着念。诵经 {duration}。",
+            Name = Prose.Text("goldenCookies", "sutra_reading", "name"),
+            Icon = Prose.Text("goldenCookies", "sutra_reading", "icon"),
+            Description = Prose.Text("goldenCookies", "sutra_reading", "description"),
             Weight = 6,
             BuffId = "sutra_reading",
             BuffSeconds = 20,
@@ -89,9 +97,9 @@ internal static class GoldenCookieOutcomes
         new()
         {
             Id = "double_miracle",
-            Name = "两套神话同时显灵",
-            Icon = "🔀",
-            Description = "两边的祭司都说是自己请来的，她两边都点了点头——这种场面，点头最省事。",
+            Name = Prose.Text("goldenCookies", "double_miracle", "name"),
+            Icon = Prose.Text("goldenCookies", "double_miracle", "icon"),
+            Description = Prose.Text("goldenCookies", "double_miracle", "description"),
             Weight = 2,
             BuffId = "divine_frenzy",
             BuffSeconds = 77,
@@ -101,9 +109,9 @@ internal static class GoldenCookieOutcomes
         new()
         {
             Id = "offering_shortage",
-            Name = "供品荒",
-            Icon = "📉",
-            Description = "今年收成不好，塑料水果摆了整整一季。供品荒 {duration}。",
+            Name = Prose.Text("goldenCookies", "offering_shortage", "name"),
+            Icon = Prose.Text("goldenCookies", "offering_shortage", "icon"),
+            Description = Prose.Text("goldenCookies", "offering_shortage", "description"),
             Weight = 22,
             BuffId = "offering_shortage",
             BuffSeconds = 66,
@@ -111,9 +119,9 @@ internal static class GoldenCookieOutcomes
         new()
         {
             Id = "prime_time",
-            Name = "黄金档",
-            Icon = "📹",
-            Description = "平台把她排进了首页推荐位，补光灯全开。她对着镜头说了句「大家好」，弹幕炸了。黄金档 {duration}。",
+            Name = Prose.Text("goldenCookies", "prime_time", "name"),
+            Icon = Prose.Text("goldenCookies", "prime_time", "icon"),
+            Description = Prose.Text("goldenCookies", "prime_time", "description"),
             Weight = 6,
             BuffId = "prime_time",
             BuffSeconds = 30,

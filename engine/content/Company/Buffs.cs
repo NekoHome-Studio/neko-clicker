@@ -11,15 +11,23 @@ namespace NekoClicker.Content.Company;
 /// </summary>
 internal static class Buffs
 {
+    /// <summary>
+    /// 本包的 <c>text.json</c>：增益 / 升级 / 金猫结果的文案与其它分区<b>共用同一份实例</b>（<see cref="Lore.Prose"/>）。<para>
+    /// 必须共用：孤儿检查会遍历整份文件的每个 kind，而"哪些 id 已取用"是按实例记的——
+    /// 两个实例各记一半，就会把对方那些 id 全报成孤儿。
+    /// </para>
+    /// </summary>
+    private static ContentText Prose => Lore.Prose;
+
     /// <summary>全部增益。</summary>
     public static BuffDefinition[] All =>
     [
         new()
         {
             Id = "requirement_change",
-            Name = "需求变更",
-            Icon = "🌀",
-            Description = "甲方半夜发来新需求，所有排期作废，所有人都在动。全部产量 ×7。",
+            Name = Prose.Text("buffs", "requirement_change", "name"),
+            Icon = Prose.Text("buffs", "requirement_change", "icon"),
+            Description = Prose.Text("buffs", "requirement_change", "description"),
             Duration = 77,
             StackMode = BuffStackMode.Refresh,
             Modifiers = [Modifier.GlobalMultiplier(7)],
@@ -27,9 +35,9 @@ internal static class Buffs
         new()
         {
             Id = "all_nighter",
-            Name = "通宵冲刺",
-            Icon = "☕",
-            Description = "咖啡机第三次见底，交付日期提前了一天。点击收益 ×777。",
+            Name = Prose.Text("buffs", "all_nighter", "name"),
+            Icon = Prose.Text("buffs", "all_nighter", "icon"),
+            Description = Prose.Text("buffs", "all_nighter", "description"),
             Duration = 13,
             StackMode = BuffStackMode.Refresh,
             Modifiers = [Modifier.ClickMultiplier(777)],
@@ -37,9 +45,9 @@ internal static class Buffs
         new()
         {
             Id = "funding_round",
-            Name = "融资到账",
-            Icon = "💸",
-            Description = "钱到了，账上第一次有了不用算着花的数字。全部产量 ×15。",
+            Name = Prose.Text("buffs", "funding_round", "name"),
+            Icon = Prose.Text("buffs", "funding_round", "icon"),
+            Description = Prose.Text("buffs", "funding_round", "description"),
             Duration = 60,
             StackMode = BuffStackMode.Refresh,
             Modifiers = [Modifier.GlobalMultiplier(15)],
@@ -47,9 +55,9 @@ internal static class Buffs
         new()
         {
             Id = "server_outage",
-            Name = "服务器宕机",
-            Icon = "🔥",
-            Description = "线上全挂，客诉涌进来，所有人都在等一个人修好它。全部产量 ×0.5。",
+            Name = Prose.Text("buffs", "server_outage", "name"),
+            Icon = Prose.Text("buffs", "server_outage", "icon"),
+            Description = Prose.Text("buffs", "server_outage", "description"),
             Duration = 66,
             StackMode = BuffStackMode.Refresh,
             Modifiers = [Modifier.GlobalMultiplier(0.5)],
@@ -58,9 +66,9 @@ internal static class Buffs
         new()
         {
             Id = "viral_post",
-            Name = "意外出圈",
-            Icon = "📣",
-            Description = "她随手发的一条动态上了热门，服务器差点没扛住。全部产量 ×25。",
+            Name = Prose.Text("buffs", "viral_post", "name"),
+            Icon = Prose.Text("buffs", "viral_post", "icon"),
+            Description = Prose.Text("buffs", "viral_post", "description"),
             Duration = 45,
             StackMode = BuffStackMode.Refresh,
             Modifiers = [Modifier.GlobalMultiplier(25)],
@@ -68,9 +76,9 @@ internal static class Buffs
         new()
         {
             Id = "poached",
-            Name = "被挖角",
-            Icon = "🚪",
-            Description = "两个核心同事递了辞呈，理由写的是「想换个环境」。全部产量 ×0.7。",
+            Name = Prose.Text("buffs", "poached", "name"),
+            Icon = Prose.Text("buffs", "poached", "icon"),
+            Description = Prose.Text("buffs", "poached", "description"),
             Duration = 90,
             StackMode = BuffStackMode.Refresh,
             Modifiers = [Modifier.GlobalMultiplier(0.7)],
@@ -79,9 +87,9 @@ internal static class Buffs
         new()
         {
             Id = "team_offsite",
-            Name = "团建",
-            Icon = "🏕️",
-            Description = "两天一夜，山里没有信号。回来后大家说话的语气不一样了。工位产量 ×30。",
+            Name = Prose.Text("buffs", "team_offsite", "name"),
+            Icon = Prose.Text("buffs", "team_offsite", "icon"),
+            Description = Prose.Text("buffs", "team_offsite", "description"),
             Duration = 30,
             StackMode = BuffStackMode.Extend,
             Modifiers = [Modifier.BuildingMultiplier("desk", 30)],
@@ -89,9 +97,9 @@ internal static class Buffs
         new()
         {
             Id = "year_end_bonus",
-            Name = "年终奖",
-            Icon = "🧧",
-            Description = "红包发下去的那一刻，办公室安静了三秒，然后掌声。点击收益 ×50。",
+            Name = Prose.Text("buffs", "year_end_bonus", "name"),
+            Icon = Prose.Text("buffs", "year_end_bonus", "icon"),
+            Description = Prose.Text("buffs", "year_end_bonus", "description"),
             Duration = 20,
             StackMode = BuffStackMode.Refresh,
             Modifiers = [Modifier.ClickMultiplier(50)],

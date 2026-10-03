@@ -14,15 +14,23 @@ namespace NekoClicker.Content.Lab;
 /// </summary>
 internal static class GoldenCookieOutcomes
 {
+    /// <summary>
+    /// 本包的 <c>text.json</c>：增益 / 升级 / 金猫结果的文案与其它分区<b>共用同一份实例</b>（<see cref="Lore.Prose"/>）。<para>
+    /// 必须共用：孤儿检查会遍历整份文件的每个 kind，而"哪些 id 已取用"是按实例记的——
+    /// 两个实例各记一半，就会把对方那些 id 全报成孤儿。
+    /// </para>
+    /// </summary>
+    private static ContentText Prose => Lore.Prose;
+
     /// <summary>全部结果。</summary>
     public static GoldenCookieOutcome[] All =>
     [
         new()
         {
             Id = "data_surge",
-            Name = "数据涌入",
-            Icon = "📈",
-            Description = "一次失败的反应意外产出了三个月的数据。获得 {amount} 条数据。",
+            Name = Prose.Text("goldenCookies", "data_surge", "name"),
+            Icon = Prose.Text("goldenCookies", "data_surge", "icon"),
+            Description = Prose.Text("goldenCookies", "data_surge", "description"),
             Weight = 42,
             CookiesFromBankFraction = 0.15,
             CookiesFromBankFractionCapSecondsOfCps = 900,
@@ -31,9 +39,9 @@ internal static class GoldenCookieOutcomes
         new()
         {
             Id = "breach",
-            Name = "收容失效",
-            Icon = "🚨",
-            Description = "三号舱的门开着。所有人都被叫去追，而产出翻了七倍——因为没人再记录。收容失效 {duration}。",
+            Name = Prose.Text("goldenCookies", "breach", "name"),
+            Icon = Prose.Text("goldenCookies", "breach", "icon"),
+            Description = Prose.Text("goldenCookies", "breach", "description"),
             Weight = 30,
             BuffId = "containment_breach",
             BuffSeconds = 77,
@@ -41,9 +49,9 @@ internal static class GoldenCookieOutcomes
         new()
         {
             Id = "purge",
-            Name = "误触格式化",
-            Icon = "🧹",
-            Description = "实习生手抖了。她在数据消失前把想说的话一次说完。数据清空 {duration}。",
+            Name = Prose.Text("goldenCookies", "purge", "name"),
+            Icon = Prose.Text("goldenCookies", "purge", "icon"),
+            Description = Prose.Text("goldenCookies", "purge", "description"),
             Weight = 8,
             BuffId = "data_purge",
             BuffSeconds = 13,
@@ -51,26 +59,26 @@ internal static class GoldenCookieOutcomes
         new()
         {
             Id = "blackout",
-            Name = "全楼停电",
-            Icon = "🔌",
-            Description = "保险丝烧了。你摸黑走到观察室，发现玻璃后面的她也在看你。损失 {amount} 条数据。",
+            Name = Prose.Text("goldenCookies", "blackout", "name"),
+            Icon = Prose.Text("goldenCookies", "blackout", "icon"),
+            Description = Prose.Text("goldenCookies", "blackout", "description"),
             Weight = 5,
             StealBankFraction = 0.05,
         },
         new()
         {
             Id = "glance",
-            Name = "她看了你一眼",
-            Icon = "👁️",
-            Description = "什么都没发生。记录表上什么都没多，什么都没少——只有你记得那一秒。",
+            Name = Prose.Text("goldenCookies", "glance", "name"),
+            Icon = Prose.Text("goldenCookies", "glance", "icon"),
+            Description = Prose.Text("goldenCookies", "glance", "description"),
             Weight = 2,
         },
         new()
         {
             Id = "gene_expression",
-            Name = "表达率异常",
-            Icon = "🧬",
-            Description = "这一批的表达率好得不像话。基因批次 {duration}。",
+            Name = Prose.Text("goldenCookies", "gene_expression", "name"),
+            Icon = Prose.Text("goldenCookies", "gene_expression", "icon"),
+            Description = Prose.Text("goldenCookies", "gene_expression", "description"),
             Weight = 3,
             BuffId = "gene_batch",
             BuffSeconds = 30,
@@ -78,9 +86,9 @@ internal static class GoldenCookieOutcomes
         new()
         {
             Id = "budget",
-            Name = "预算批下来了",
-            Icon = "💰",
-            Description = "你要 100 万，他们给了 1000 万。你猜他们没细看你的方案。拨款通过 {duration}。",
+            Name = Prose.Text("goldenCookies", "budget", "name"),
+            Icon = Prose.Text("goldenCookies", "budget", "icon"),
+            Description = Prose.Text("goldenCookies", "budget", "description"),
             Weight = 3,
             BuffId = "grant_approved",
             BuffSeconds = 60,
@@ -88,9 +96,9 @@ internal static class GoldenCookieOutcomes
         new()
         {
             Id = "cascade",
-            Name = "连锁事故",
-            Icon = "💥",
-            Description = "一台机器倒了，砸到第二台，第二台砸到第三台。之后整层楼的效率反而高了。",
+            Name = Prose.Text("goldenCookies", "cascade", "name"),
+            Icon = Prose.Text("goldenCookies", "cascade", "icon"),
+            Description = Prose.Text("goldenCookies", "cascade", "description"),
             Weight = 1,
             BuffId = "containment_breach",
             BuffSeconds = 77,
@@ -100,9 +108,9 @@ internal static class GoldenCookieOutcomes
         new()
         {
             Id = "hearing",
-            Name = "被叫去听证",
-            Icon = "⚖️",
-            Description = "委员会终于想起来有你这个人。听证会 {duration}。",
+            Name = Prose.Text("goldenCookies", "hearing", "name"),
+            Icon = Prose.Text("goldenCookies", "hearing", "icon"),
+            Description = Prose.Text("goldenCookies", "hearing", "description"),
             Weight = 6,
             BuffId = "ethics_hearing",
             BuffSeconds = 90,
@@ -110,9 +118,9 @@ internal static class GoldenCookieOutcomes
         new()
         {
             Id = "insight",
-            Name = "两份档案对上了",
-            Icon = "💡",
-            Description = "第三批的日志和第二十批的日志，中间缺的那一页有了轮廓。归档灵感 {duration}。",
+            Name = Prose.Text("goldenCookies", "insight", "name"),
+            Icon = Prose.Text("goldenCookies", "insight", "icon"),
+            Description = Prose.Text("goldenCookies", "insight", "description"),
             Weight = 2,
             BuffId = "archive_insight",
             BuffSeconds = 45,

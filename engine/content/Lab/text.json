@@ -742,5 +742,321 @@
       "icon": "📄",
       "description": "抵达结局「没有结论」。"
     }
+  },
+  "buffs": {
+    "containment_breach": {
+      "name": "收容失效",
+      "description": "三号舱的门开着，里面是空的，走廊里全是脚印。全部产量 ×7。",
+      "icon": "🚨"
+    },
+    "data_purge": {
+      "name": "数据清空",
+      "description": "有人误触了格式化。她趁机把想说的话一次说完了。点击收益 ×777。",
+      "icon": "🧹"
+    },
+    "grant_approved": {
+      "name": "拨款通过",
+      "description": "预算批下来了，数字比你要的多一个零。全部产量 ×15。",
+      "icon": "💰"
+    },
+    "power_fluctuation": {
+      "name": "电压不稳",
+      "description": "整层楼闪了三次。全部产量 ×0.5。",
+      "icon": "🔌"
+    },
+    "gene_batch": {
+      "name": "基因批次",
+      "description": "这一批的表达率异常地好。基因库产量 ×30。",
+      "icon": "🧬"
+    },
+    "awake_window": {
+      "name": "清醒窗口",
+      "description": "脑电波出现了十七秒的完全清醒。点击收益 ×50。",
+      "icon": "🌅"
+    },
+    "ethics_hearing": {
+      "name": "听证会",
+      "description": "你被叫去解释了三小时。全部产量 ×0.7。",
+      "icon": "⚖️"
+    },
+    "archive_insight": {
+      "name": "归档灵感",
+      "description": "两份旧档案对上了，中间缺的那一页忽然有了轮廓。全部产量 ×25。",
+      "icon": "💡"
+    }
+  },
+  "upgrades": {
+    "incubator_tier1": {
+      "name": "校准过的培养舱",
+      "description": "「培养舱」的产量翻倍。",
+      "icon": "🧪"
+    },
+    "incubator_tier10": {
+      "name": "成批的培养舱",
+      "description": "「培养舱」的产量翻倍。",
+      "icon": "🧪"
+    },
+    "incubator_tier25": {
+      "name": "停不下来的培养舱",
+      "description": "「培养舱」的产量翻倍。",
+      "icon": "🧪"
+    },
+    "feeding_arm_tier1": {
+      "name": "校准过的喂食臂",
+      "description": "「喂食臂」的产量翻倍。",
+      "icon": "🦾"
+    },
+    "feeding_arm_tier10": {
+      "name": "成批的喂食臂",
+      "description": "「喂食臂」的产量翻倍。",
+      "icon": "🦾"
+    },
+    "feeding_arm_tier25": {
+      "name": "停不下来的喂食臂",
+      "description": "「喂食臂」的产量翻倍。",
+      "icon": "🦾"
+    },
+    "gene_bank_tier1": {
+      "name": "校准过的基因库",
+      "description": "「基因库」的产量翻倍。",
+      "icon": "🧬"
+    },
+    "gene_bank_tier10": {
+      "name": "成批的基因库",
+      "description": "「基因库」的产量翻倍。",
+      "icon": "🧬"
+    },
+    "gene_bank_tier25": {
+      "name": "停不下来的基因库",
+      "description": "「基因库」的产量翻倍。",
+      "icon": "🧬"
+    },
+    "observation_room_tier1": {
+      "name": "校准过的观察室",
+      "description": "「观察室」的产量翻倍。",
+      "icon": "🔭"
+    },
+    "observation_room_tier10": {
+      "name": "成批的观察室",
+      "description": "「观察室」的产量翻倍。",
+      "icon": "🔭"
+    },
+    "observation_room_tier25": {
+      "name": "停不下来的观察室",
+      "description": "「观察室」的产量翻倍。",
+      "icon": "🔭"
+    },
+    "awakening_zone_tier1": {
+      "name": "校准过的觉醒区",
+      "description": "「觉醒区」的产量翻倍。",
+      "icon": "🌅"
+    },
+    "awakening_zone_tier10": {
+      "name": "成批的觉醒区",
+      "description": "「觉醒区」的产量翻倍。",
+      "icon": "🌅"
+    },
+    "awakening_zone_tier25": {
+      "name": "停不下来的觉醒区",
+      "description": "「觉醒区」的产量翻倍。",
+      "icon": "🌅"
+    },
+    "ethics_board_tier1": {
+      "name": "校准过的伦理委员会",
+      "description": "「伦理委员会」的产量翻倍。",
+      "icon": "⚖️"
+    },
+    "ethics_board_tier10": {
+      "name": "成批的伦理委员会",
+      "description": "「伦理委员会」的产量翻倍。",
+      "icon": "⚖️"
+    },
+    "ethics_board_tier25": {
+      "name": "停不下来的伦理委员会",
+      "description": "「伦理委员会」的产量翻倍。",
+      "icon": "⚖️"
+    },
+    "memory_workshop_tier1": {
+      "name": "校准过的记忆作坊",
+      "description": "「记忆作坊」的产量翻倍。",
+      "icon": "🪡"
+    },
+    "memory_workshop_tier10": {
+      "name": "成批的记忆作坊",
+      "description": "「记忆作坊」的产量翻倍。",
+      "icon": "🪡"
+    },
+    "memory_workshop_tier25": {
+      "name": "停不下来的记忆作坊",
+      "description": "「记忆作坊」的产量翻倍。",
+      "icon": "🪡"
+    },
+    "sample_farm_tier1": {
+      "name": "校准过的样本农场",
+      "description": "「样本农场」的产量翻倍。",
+      "icon": "🏭"
+    },
+    "sample_farm_tier10": {
+      "name": "成批的样本农场",
+      "description": "「样本农场」的产量翻倍。",
+      "icon": "🏭"
+    },
+    "sample_farm_tier25": {
+      "name": "停不下来的样本农场",
+      "description": "「样本农场」的产量翻倍。",
+      "icon": "🏭"
+    },
+    "archive_tier1": {
+      "name": "校准过的归档室",
+      "description": "「归档室」的产量翻倍。",
+      "icon": "🗄️"
+    },
+    "archive_tier10": {
+      "name": "成批的归档室",
+      "description": "「归档室」的产量翻倍。",
+      "icon": "🗄️"
+    },
+    "archive_tier25": {
+      "name": "停不下来的归档室",
+      "description": "「归档室」的产量翻倍。",
+      "icon": "🗄️"
+    },
+    "gloved_hand": {
+      "name": "戴上手套",
+      "description": "每次记录额外获得 1 条数据。规范要求，不是为了她。",
+      "icon": "🧤"
+    },
+    "two_hands_log": {
+      "name": "双手记录",
+      "description": "点击收益 ×2。左手的字比右手好看。",
+      "icon": "✍️"
+    },
+    "eye_contact": {
+      "name": "对视",
+      "description": "点击收益 ×3，但她会记住你看了她多久。",
+      "icon": "👁️"
+    },
+    "ethics_charter": {
+      "name": "伦理章程",
+      "description": "全局产量 +8%／每 100 点伦理值（上限 +80%）。终于有人把规矩写下来了。",
+      "icon": "📜"
+    },
+    "fifth_seat": {
+      "name": "第五把椅子",
+      "description": "伦理值产出 +50%／每 1000 点（上限 +300%）。委员会终于坐满了。",
+      "icon": "🪑"
+    },
+    "independent_watch": {
+      "name": "独立监察",
+      "description": "全局产量 +120%。多了一个不归你管的部门。",
+      "icon": "🕊️"
+    },
+    "decommission_protocol": {
+      "name": "停机协议",
+      "description": "设备价格 ×0.7，但事故奖励 ×0.8。你开始准备退场了。",
+      "icon": "🛑"
+    },
+    "card_index": {
+      "name": "卡片索引",
+      "description": "全局产量 +5%／每个成就。整理过的东西才算数。",
+      "icon": "🗂️"
+    },
+    "cross_reference": {
+      "name": "交叉索引",
+      "description": "设备产量 +3%／每个成就。两条记录对上的一瞬间，你会觉得值得。",
+      "icon": "🔗"
+    },
+    "final_report": {
+      "name": "结题报告",
+      "description": "事故奖励 ×1.6、事故频率 +30%。最后一次，你想把话说完整。",
+      "icon": "📕"
+    },
+    "single_blind": {
+      "name": "单盲流程",
+      "description": "全局产量 ×1.8。她不知道你在记录什么。",
+      "icon": "🕶️"
+    },
+    "batch_standardization": {
+      "name": "批次标准化",
+      "description": "全局产量 ×2.5。所有个体长得一样，档案好写多了。",
+      "icon": "📐"
+    },
+    "informed_consent": {
+      "name": "知情同意书",
+      "description": "全局产量 ×3，但增益持续时间 ×0.7。她签了，字很好看。",
+      "icon": "✒️"
+    },
+    "muscle_memory": {
+      "name": "肌肉记忆",
+      "description": "全局产量 +25%。手比脑子先想起来。",
+      "icon": "💪"
+    },
+    "protocol_memory": {
+      "name": "流程记忆",
+      "description": "设备价格 ×0.8。你知道哪一步可以省。",
+      "icon": "🧠"
+    },
+    "first_batch": {
+      "name": "第一批",
+      "description": "点击收益 ×5、事故奖励 ×1.5。你还记得她第一次睁眼的样子。",
+      "icon": "🥚"
+    },
+    "seventh_batch": {
+      "name": "第七批",
+      "description": "全局产量 ×2。你只做过六批——这个名字是留给还没做的那一批的。",
+      "icon": "🗄️"
+    }
+  },
+  "goldenCookies": {
+    "data_surge": {
+      "name": "数据涌入",
+      "description": "一次失败的反应意外产出了三个月的数据。获得 {amount} 条数据。",
+      "icon": "📈"
+    },
+    "breach": {
+      "name": "收容失效",
+      "description": "三号舱的门开着。所有人都被叫去追，而产出翻了七倍——因为没人再记录。收容失效 {duration}。",
+      "icon": "🚨"
+    },
+    "purge": {
+      "name": "误触格式化",
+      "description": "实习生手抖了。她在数据消失前把想说的话一次说完。数据清空 {duration}。",
+      "icon": "🧹"
+    },
+    "blackout": {
+      "name": "全楼停电",
+      "description": "保险丝烧了。你摸黑走到观察室，发现玻璃后面的她也在看你。损失 {amount} 条数据。",
+      "icon": "🔌"
+    },
+    "glance": {
+      "name": "她看了你一眼",
+      "description": "什么都没发生。记录表上什么都没多，什么都没少——只有你记得那一秒。",
+      "icon": "👁️"
+    },
+    "gene_expression": {
+      "name": "表达率异常",
+      "description": "这一批的表达率好得不像话。基因批次 {duration}。",
+      "icon": "🧬"
+    },
+    "budget": {
+      "name": "预算批下来了",
+      "description": "你要 100 万，他们给了 1000 万。你猜他们没细看你的方案。拨款通过 {duration}。",
+      "icon": "💰"
+    },
+    "cascade": {
+      "name": "连锁事故",
+      "description": "一台机器倒了，砸到第二台，第二台砸到第三台。之后整层楼的效率反而高了。",
+      "icon": "💥"
+    },
+    "hearing": {
+      "name": "被叫去听证",
+      "description": "委员会终于想起来有你这个人。听证会 {duration}。",
+      "icon": "⚖️"
+    },
+    "insight": {
+      "name": "两份档案对上了",
+      "description": "第三批的日志和第二十批的日志，中间缺的那一页有了轮廓。归档灵感 {duration}。",
+      "icon": "💡"
+    }
   }
 }

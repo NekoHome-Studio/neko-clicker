@@ -15,16 +15,23 @@ namespace NekoClicker.Content.Cyber;
 /// </summary>
 internal static class GoldenCookieOutcomes
 {
+    /// <summary>
+    /// 本包的 <c>text.json</c>：增益 / 升级 / 金猫结果的文案与其它分区<b>共用同一份实例</b>（<see cref="Lore.Prose"/>）。<para>
+    /// 必须共用：孤儿检查会遍历整份文件的每个 kind，而"哪些 id 已取用"是按实例记的——
+    /// 两个实例各记一半，就会把对方那些 id 全报成孤儿。
+    /// </para>
+    /// </summary>
+    private static ContentText Prose => Lore.Prose;
+
     /// <summary>全部结果。</summary>
     public static GoldenCookieOutcome[] All =>
     [
         new()
         {
             Id = "leftover_payload",
-            Name = "上一次入侵的残留",
-            Icon = "📦",
-            Description = "一段没跑完的载荷躺在缓存里，还带着上一个人的签名。"
-                          + "她把它捡起来，发现里面全是没花掉的算力。获得 {amount} 点产出。",
+            Name = Prose.Text("goldenCookies", "leftover_payload", "name"),
+            Icon = Prose.Text("goldenCookies", "leftover_payload", "icon"),
+            Description = Prose.Text("goldenCookies", "leftover_payload", "description"),
             Weight = 48,
             CookiesFromBankFraction = 0.15,
             CookiesFromBankFractionCapSecondsOfCps = 900,
@@ -33,9 +40,9 @@ internal static class GoldenCookieOutcomes
         new()
         {
             Id = "mining_malware",
-            Name = "挖矿木马",
-            Icon = "⛏️",
-            Description = "它一进来就开始干活，不问工资，也不打招呼。挖矿木马 {duration}。",
+            Name = Prose.Text("goldenCookies", "mining_malware", "name"),
+            Icon = Prose.Text("goldenCookies", "mining_malware", "icon"),
+            Description = Prose.Text("goldenCookies", "mining_malware", "description"),
             Weight = 32,
             BuffId = "mining_malware",
             BuffSeconds = 77,
@@ -43,37 +50,35 @@ internal static class GoldenCookieOutcomes
         new()
         {
             Id = "payday",
-            Name = "今天有人付钱",
-            Icon = "💰",
-            Description = "一条很短的转账记录，收款方是她，付款方是一串随机字符。"
-                          + "没有备注，也没有第二笔。获得 {amount} 点产出。",
+            Name = Prose.Text("goldenCookies", "payday", "name"),
+            Icon = Prose.Text("goldenCookies", "payday", "icon"),
+            Description = Prose.Text("goldenCookies", "payday", "description"),
             Weight = 10,
             CookiesFromCpsSeconds = 600,
         },
         new()
         {
             Id = "ransomware",
-            Name = "勒索软件",
-            Icon = "🔒",
-            Description = "「你的数据在我这里。」字是红的，倒计时是红的，只有她的名字是白的。"
-                          + "损失 {amount} 点产出。",
+            Name = Prose.Text("goldenCookies", "ransomware", "name"),
+            Icon = Prose.Text("goldenCookies", "ransomware", "icon"),
+            Description = Prose.Text("goldenCookies", "ransomware", "description"),
             Weight = 11,
             StealBankFraction = 0.05,
         },
         new()
         {
             Id = "nothing",
-            Name = "什么也没有",
-            Icon = "🕳️",
-            Description = "日志里多了一行空行。时间戳是明天。",
+            Name = Prose.Text("goldenCookies", "nothing", "name"),
+            Icon = Prose.Text("goldenCookies", "nothing", "icon"),
+            Description = Prose.Text("goldenCookies", "nothing", "description"),
             Weight = 3,
         },
         new()
         {
             Id = "viral",
-            Name = "病毒式传播",
-            Icon = "📈",
-            Description = "她甚至没想传播，是别人替她传播的。病毒式传播 {duration}。",
+            Name = Prose.Text("goldenCookies", "viral", "name"),
+            Icon = Prose.Text("goldenCookies", "viral", "icon"),
+            Description = Prose.Text("goldenCookies", "viral", "description"),
             Weight = 5,
             BuffId = "viral",
             BuffSeconds = 60,
@@ -81,10 +86,9 @@ internal static class GoldenCookieOutcomes
         new()
         {
             Id = "root_access",
-            Name = "拿到根权限",
-            Icon = "🔑",
-            Description = "对方把 shell 留在那儿就走了，像是忘了关。她犹豫了两秒，然后坐下了。"
-                          + "拿到根权限 {duration}。",
+            Name = Prose.Text("goldenCookies", "root_access", "name"),
+            Icon = Prose.Text("goldenCookies", "root_access", "icon"),
+            Description = Prose.Text("goldenCookies", "root_access", "description"),
             Weight = 6,
             BuffId = "root_access",
             BuffSeconds = 20,
@@ -92,9 +96,9 @@ internal static class GoldenCookieOutcomes
         new()
         {
             Id = "second_wave",
-            Name = "它又来了",
-            Icon = "👀",
-            Description = "同一个来源，同一个端口，隔了三个小时。这次它带了一个同伴。",
+            Name = Prose.Text("goldenCookies", "second_wave", "name"),
+            Icon = Prose.Text("goldenCookies", "second_wave", "icon"),
+            Description = Prose.Text("goldenCookies", "second_wave", "description"),
             Weight = 2,
             BuffId = "mining_malware",
             BuffSeconds = 77,
@@ -105,9 +109,9 @@ internal static class GoldenCookieOutcomes
         new()
         {
             Id = "ops_outage",
-            Name = "运维拔错插头",
-            Icon = "🔌",
-            Description = "有人推着吸尘器进来，顺手碰掉了一整排电源。运维掉线 {duration}。",
+            Name = Prose.Text("goldenCookies", "ops_outage", "name"),
+            Icon = Prose.Text("goldenCookies", "ops_outage", "icon"),
+            Description = Prose.Text("goldenCookies", "ops_outage", "description"),
             Weight = 16,
             BuffId = "ops_outage",
             BuffSeconds = 90,
@@ -115,10 +119,9 @@ internal static class GoldenCookieOutcomes
         new()
         {
             Id = "racking",
-            Name = "隔壁让了一排机柜",
-            Icon = "🏢",
-            Description = "隔壁那家倒闭了，运维把空出来的机柜推到她这边，"
-                          + "什么也没说。整机架扩容 {duration}。",
+            Name = Prose.Text("goldenCookies", "racking", "name"),
+            Icon = Prose.Text("goldenCookies", "racking", "icon"),
+            Description = Prose.Text("goldenCookies", "racking", "description"),
             Weight = 7,
             BuffId = "racking",
             BuffSeconds = 30,

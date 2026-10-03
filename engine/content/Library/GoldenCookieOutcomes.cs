@@ -11,15 +11,23 @@ namespace NekoClicker.Content.Library;
 /// </summary>
 internal static class GoldenCookieOutcomes
 {
+    /// <summary>
+    /// 本包的 <c>text.json</c>：增益 / 升级 / 金猫结果的文案与其它分区<b>共用同一份实例</b>（<see cref="Lore.Prose"/>）。<para>
+    /// 必须共用：孤儿检查会遍历整份文件的每个 kind，而"哪些 id 已取用"是按实例记的——
+    /// 两个实例各记一半，就会把对方那些 id 全报成孤儿。
+    /// </para>
+    /// </summary>
+    private static ContentText Prose => Lore.Prose;
+
     /// <summary>全部结果。</summary>
     public static GoldenCookieOutcome[] All =>
     [
         new()
         {
             Id = "unsold_stock",
-            Name = "库房里还有一箱",
-            Icon = "📦",
-            Description = "最里面那排架子上翻出一整箱没拆过的初版，纸边还是白的。获得 {amount} 页。",
+            Name = Prose.Text("goldenCookies", "unsold_stock", "name"),
+            Icon = Prose.Text("goldenCookies", "unsold_stock", "icon"),
+            Description = Prose.Text("goldenCookies", "unsold_stock", "description"),
             Weight = 48,
             CookiesFromBankFraction = 0.15,
             CookiesFromBankFractionCapSecondsOfCps = 900,
@@ -28,9 +36,9 @@ internal static class GoldenCookieOutcomes
         new()
         {
             Id = "swarm",
-            Name = "蠹虫成群",
-            Icon = "🐛",
-            Description = "它们从没人翻的那一头开始啃，啃到一半被光吸引过来了。蠹虫成群 {duration}。",
+            Name = Prose.Text("goldenCookies", "swarm", "name"),
+            Icon = Prose.Text("goldenCookies", "swarm", "icon"),
+            Description = Prose.Text("goldenCookies", "swarm", "description"),
             Weight = 32,
             BuffId = "bookworm_swarm",
             BuffSeconds = 77,
@@ -38,9 +46,9 @@ internal static class GoldenCookieOutcomes
         new()
         {
             Id = "deadline",
-            Name = "交稿日就在今晚",
-            Icon = "🌙",
-            Description = "她看了一眼钟，把茶凉在桌上，重新摊开纸。通宵赶稿 {duration}。",
+            Name = Prose.Text("goldenCookies", "deadline", "name"),
+            Icon = Prose.Text("goldenCookies", "deadline", "icon"),
+            Description = Prose.Text("goldenCookies", "deadline", "description"),
             Weight = 10,
             BuffId = "overnight_draft",
             BuffSeconds = 13,
@@ -48,26 +56,26 @@ internal static class GoldenCookieOutcomes
         new()
         {
             Id = "stolen_pages",
-            Name = "被人撕走了几页",
-            Icon = "✂️",
-            Description = "归还的时候书是热的，但中间缺了三页，撕口很整齐。损失 {amount} 页。",
+            Name = Prose.Text("goldenCookies", "stolen_pages", "name"),
+            Icon = Prose.Text("goldenCookies", "stolen_pages", "icon"),
+            Description = Prose.Text("goldenCookies", "stolen_pages", "description"),
             Weight = 6,
             StealBankFraction = 0.05,
         },
         new()
         {
             Id = "nothing",
-            Name = "什么也没有",
-            Icon = "🕳️",
-            Description = "书页之间夹着一张借阅卡，上面只有日期，没有名字。",
+            Name = Prose.Text("goldenCookies", "nothing", "name"),
+            Icon = Prose.Text("goldenCookies", "nothing", "icon"),
+            Description = Prose.Text("goldenCookies", "nothing", "description"),
             Weight = 3,
         },
         new()
         {
             Id = "bestseller",
-            Name = "畅销",
-            Icon = "📈",
-            Description = "加印第三次的时候，印坊的师傅说这辈子没见过这样的。畅销 {duration}。",
+            Name = Prose.Text("goldenCookies", "bestseller", "name"),
+            Icon = Prose.Text("goldenCookies", "bestseller", "icon"),
+            Description = Prose.Text("goldenCookies", "bestseller", "description"),
             Weight = 5,
             BuffId = "bestseller",
             BuffSeconds = 60,
@@ -75,9 +83,9 @@ internal static class GoldenCookieOutcomes
         new()
         {
             Id = "proofread",
-            Name = "校稿",
-            Icon = "🔍",
-            Description = "她自己从头读了一遍，在页边改掉十七个错字，然后坐在那儿把那三页又读了一次。校稿 {duration}。",
+            Name = Prose.Text("goldenCookies", "proofread", "name"),
+            Icon = Prose.Text("goldenCookies", "proofread", "icon"),
+            Description = Prose.Text("goldenCookies", "proofread", "description"),
             Weight = 6,
             BuffId = "proofread",
             BuffSeconds = 20,
@@ -85,9 +93,9 @@ internal static class GoldenCookieOutcomes
         new()
         {
             Id = "second_worm",
-            Name = "又来一只",
-            Icon = "👀",
-            Description = "两只蠹虫在书脊上并排待着，一大一小，都朝她看。",
+            Name = Prose.Text("goldenCookies", "second_worm", "name"),
+            Icon = Prose.Text("goldenCookies", "second_worm", "icon"),
+            Description = Prose.Text("goldenCookies", "second_worm", "description"),
             Weight = 2,
             BuffId = "bookworm_swarm",
             BuffSeconds = 77,
@@ -97,9 +105,9 @@ internal static class GoldenCookieOutcomes
         new()
         {
             Id = "paper_shortage",
-            Name = "纸荒",
-            Icon = "📉",
-            Description = "印坊的仓库空了，订单排到了明年。纸荒 {duration}。",
+            Name = Prose.Text("goldenCookies", "paper_shortage", "name"),
+            Icon = Prose.Text("goldenCookies", "paper_shortage", "icon"),
+            Description = Prose.Text("goldenCookies", "paper_shortage", "description"),
             Weight = 22,
             BuffId = "paper_shortage",
             BuffSeconds = 66,
@@ -107,9 +115,9 @@ internal static class GoldenCookieOutcomes
         new()
         {
             Id = "night_reading_room",
-            Name = "闭馆之后",
-            Icon = "🪑",
-            Description = "灯还亮着，靠窗那张桌子边坐着一个人，面前的茶已经凉了。深夜阅览室 {duration}。",
+            Name = Prose.Text("goldenCookies", "night_reading_room", "name"),
+            Icon = Prose.Text("goldenCookies", "night_reading_room", "icon"),
+            Description = Prose.Text("goldenCookies", "night_reading_room", "description"),
             Weight = 6,
             BuffId = "night_reading_room",
             BuffSeconds = 30,

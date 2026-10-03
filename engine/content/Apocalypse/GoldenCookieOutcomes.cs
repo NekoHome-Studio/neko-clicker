@@ -11,15 +11,23 @@ namespace NekoClicker.Content.Apocalypse;
 /// </summary>
 internal static class GoldenCookieOutcomes
 {
+    /// <summary>
+    /// 本包的 <c>text.json</c>：增益 / 升级 / 金猫结果的文案与其它分区<b>共用同一份实例</b>（<see cref="Lore.Prose"/>）。<para>
+    /// 必须共用：孤儿检查会遍历整份文件的每个 kind，而"哪些 id 已取用"是按实例记的——
+    /// 两个实例各记一半，就会把对方那些 id 全报成孤儿。
+    /// </para>
+    /// </summary>
+    private static ContentText Prose => Lore.Prose;
+
     /// <summary>全部结果。</summary>
     public static GoldenCookieOutcome[] All =>
     [
         new()
         {
             Id = "buried_warehouse",
-            Name = "挖到仓库",
-            Icon = "📦",
-            Description = "凿开一堵墙，后面是整排货架，箱子上的日期是灾前。获得 {amount} 物资。",
+            Name = Prose.Text("goldenCookies", "buried_warehouse", "name"),
+            Icon = Prose.Text("goldenCookies", "buried_warehouse", "icon"),
+            Description = Prose.Text("goldenCookies", "buried_warehouse", "description"),
             Weight = 48,
             CookiesFromBankFraction = 0.15,
             CookiesFromBankFractionCapSecondsOfCps = 900,
@@ -28,9 +36,9 @@ internal static class GoldenCookieOutcomes
         new()
         {
             Id = "mutation",
-            Name = "变异",
-            Icon = "🧬",
-            Description = "它比昨天大了一圈，而且不躲人了。变异潮 {duration}。",
+            Name = Prose.Text("goldenCookies", "mutation", "name"),
+            Icon = Prose.Text("goldenCookies", "mutation", "icon"),
+            Description = Prose.Text("goldenCookies", "mutation", "description"),
             Weight = 32,
             BuffId = "mutation_wave",
             BuffSeconds = 77,
@@ -38,9 +46,9 @@ internal static class GoldenCookieOutcomes
         new()
         {
             Id = "frenzy",
-            Name = "停不下来",
-            Icon = "⛏️",
-            Description = "她从天亮挖到天黑，中间只喝过一次水。翻找狂热 {duration}。",
+            Name = Prose.Text("goldenCookies", "frenzy", "name"),
+            Icon = Prose.Text("goldenCookies", "frenzy", "icon"),
+            Description = Prose.Text("goldenCookies", "frenzy", "description"),
             Weight = 10,
             BuffId = "scavenge_frenzy",
             BuffSeconds = 13,
@@ -48,26 +56,26 @@ internal static class GoldenCookieOutcomes
         new()
         {
             Id = "raid",
-            Name = "被人趁夜搬空",
-            Icon = "🥷",
-            Description = "早上起床，西边的仓房空了一半。地上留着两行不属于这里的鞋印。损失 {amount} 物资。",
+            Name = Prose.Text("goldenCookies", "raid", "name"),
+            Icon = Prose.Text("goldenCookies", "raid", "icon"),
+            Description = Prose.Text("goldenCookies", "raid", "description"),
             Weight = 6,
             StealBankFraction = 0.05,
         },
         new()
         {
             Id = "nothing",
-            Name = "什么也没有",
-            Icon = "🕳️",
-            Description = "挖开之后是一个空房间。角落里有一把椅子，是面朝门摆着的。",
+            Name = Prose.Text("goldenCookies", "nothing", "name"),
+            Icon = Prose.Text("goldenCookies", "nothing", "icon"),
+            Description = Prose.Text("goldenCookies", "nothing", "description"),
             Weight = 3,
         },
         new()
         {
             Id = "cache",
-            Name = "战前缓存",
-            Icon = "🗝️",
-            Description = "钥匙就插在锁上，好像主人只是出门一趟。战前缓存 {duration}。",
+            Name = Prose.Text("goldenCookies", "cache", "name"),
+            Icon = Prose.Text("goldenCookies", "cache", "icon"),
+            Description = Prose.Text("goldenCookies", "cache", "description"),
             Weight = 5,
             BuffId = "prewar_cache",
             BuffSeconds = 60,
@@ -75,9 +83,9 @@ internal static class GoldenCookieOutcomes
         new()
         {
             Id = "salvage",
-            Name = "拆解有序",
-            Icon = "🔧",
-            Description = "她第一次把一台机器完整地拆成了能用的零件，一颗螺丝都没剩。拆解有序 {duration}。",
+            Name = Prose.Text("goldenCookies", "salvage", "name"),
+            Icon = Prose.Text("goldenCookies", "salvage", "icon"),
+            Description = Prose.Text("goldenCookies", "salvage", "description"),
             Weight = 6,
             BuffId = "salvage_order",
             BuffSeconds = 20,
@@ -85,9 +93,9 @@ internal static class GoldenCookieOutcomes
         new()
         {
             Id = "double_mutation",
-            Name = "两只",
-            Icon = "👥",
-            Description = "洞里有两只，一大一小。小的那只学着大的样子朝她龇牙。",
+            Name = Prose.Text("goldenCookies", "double_mutation", "name"),
+            Icon = Prose.Text("goldenCookies", "double_mutation", "icon"),
+            Description = Prose.Text("goldenCookies", "double_mutation", "description"),
             Weight = 2,
             BuffId = "mutation_wave",
             BuffSeconds = 77,
@@ -97,9 +105,9 @@ internal static class GoldenCookieOutcomes
         new()
         {
             Id = "blackout",
-            Name = "全城断电",
-            Icon = "🌑",
-            Description = "所有灯同时灭掉的那一瞬间，整座废墟安静得像一张纸。全城断电 {duration}。",
+            Name = Prose.Text("goldenCookies", "blackout", "name"),
+            Icon = Prose.Text("goldenCookies", "blackout", "icon"),
+            Description = Prose.Text("goldenCookies", "blackout", "description"),
             Weight = 22,
             BuffId = "blackout",
             BuffSeconds = 66,
@@ -107,9 +115,9 @@ internal static class GoldenCookieOutcomes
         new()
         {
             Id = "rain_night",
-            Name = "雨夜",
-            Icon = "🌧️",
-            Description = "雨下了一整夜，没人出去。锅里炖着东西，几个人靠在墙上睡着了。避难所之夜 {duration}。",
+            Name = Prose.Text("goldenCookies", "rain_night", "name"),
+            Icon = Prose.Text("goldenCookies", "rain_night", "icon"),
+            Description = Prose.Text("goldenCookies", "rain_night", "description"),
             Weight = 6,
             BuffId = "shelter_night",
             BuffSeconds = 30,

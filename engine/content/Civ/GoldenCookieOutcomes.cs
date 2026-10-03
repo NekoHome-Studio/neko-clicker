@@ -15,15 +15,23 @@ namespace NekoClicker.Content.Civ;
 /// </summary>
 internal static class GoldenCookieOutcomes
 {
+    /// <summary>
+    /// 本包的 <c>text.json</c>：增益 / 升级 / 金猫结果的文案与其它分区<b>共用同一份实例</b>（<see cref="Lore.Prose"/>）。<para>
+    /// 必须共用：孤儿检查会遍历整份文件的每个 kind，而"哪些 id 已取用"是按实例记的——
+    /// 两个实例各记一半，就会把对方那些 id 全报成孤儿。
+    /// </para>
+    /// </summary>
+    private static ContentText Prose => Lore.Prose;
+
     /// <summary>全部结果。</summary>
     public static GoldenCookieOutcome[] All =>
     [
         new()
         {
             Id = "old_granary",
-            Name = "老粮仓里还有半仓",
-            Icon = "🌾",
-            Description = "最里面那间仓的钥匙丢了很久，撬开之后发现种子都还活着。获得 {amount}。",
+            Name = Prose.Text("goldenCookies", "old_granary", "name"),
+            Icon = Prose.Text("goldenCookies", "old_granary", "icon"),
+            Description = Prose.Text("goldenCookies", "old_granary", "description"),
             Weight = 40,
             CookiesFromBankFraction = 0.15,
             CookiesFromBankFractionCapSecondsOfCps = 900,
@@ -32,9 +40,9 @@ internal static class GoldenCookieOutcomes
         new()
         {
             Id = "harvest",
-            Name = "丰收年",
-            Icon = "🌾",
-            Description = "一整个季节什么都没坏。她把多出来的那部分全留成了种子。丰收年 {duration}。",
+            Name = Prose.Text("goldenCookies", "harvest", "name"),
+            Icon = Prose.Text("goldenCookies", "harvest", "icon"),
+            Description = Prose.Text("goldenCookies", "harvest", "description"),
             Weight = 28,
             BuffId = "harvest_year",
             BuffSeconds = 77,
@@ -42,9 +50,9 @@ internal static class GoldenCookieOutcomes
         new()
         {
             Id = "late_night",
-            Name = "她一个人干到天亮",
-            Icon = "🌙",
-            Description = "第二天早上大家来的时候，昨天剩下的活已经没有了。她的爪子上全是新的口子。通宵 {duration}。",
+            Name = Prose.Text("goldenCookies", "late_night", "name"),
+            Icon = Prose.Text("goldenCookies", "late_night", "icon"),
+            Description = Prose.Text("goldenCookies", "late_night", "description"),
             Weight = 8,
             BuffId = "all_nighter",
             BuffSeconds = 13,
@@ -52,9 +60,9 @@ internal static class GoldenCookieOutcomes
         new()
         {
             Id = "invention",
-            Name = "技术突破",
-            Icon = "💡",
-            Description = "她盯着一块烧过的石头看了三天，然后明白了：火不只是用来取暖的。技术突破 {duration}。",
+            Name = Prose.Text("goldenCookies", "invention", "name"),
+            Icon = Prose.Text("goldenCookies", "invention", "icon"),
+            Description = Prose.Text("goldenCookies", "invention", "description"),
             Weight = 4,
             BuffId = "breakthrough",
             BuffSeconds = 60,
@@ -62,9 +70,9 @@ internal static class GoldenCookieOutcomes
         new()
         {
             Id = "flood",
-            Name = "洪水",
-            Icon = "🌊",
-            Description = "水从低处涨上来，第一层的东西全泡了。她站在屋顶上看着，没有下水去捞。洪水 {duration}。",
+            Name = Prose.Text("goldenCookies", "flood", "name"),
+            Icon = Prose.Text("goldenCookies", "flood", "icon"),
+            Description = Prose.Text("goldenCookies", "flood", "description"),
             Weight = 14,
             BuffId = "flood",
             BuffSeconds = 66,
@@ -72,9 +80,9 @@ internal static class GoldenCookieOutcomes
         new()
         {
             Id = "plague",
-            Name = "瘟疫",
-            Icon = "🦠",
-            Description = "集市先静下来，然后是整条街。她把「不要聚在一起」写在了墙上——那时候字还没几个人认得。瘟疫 {duration}。",
+            Name = Prose.Text("goldenCookies", "plague", "name"),
+            Icon = Prose.Text("goldenCookies", "plague", "icon"),
+            Description = Prose.Text("goldenCookies", "plague", "description"),
             Weight = 12,
             BuffId = "plague",
             BuffSeconds = 90,
@@ -82,9 +90,9 @@ internal static class GoldenCookieOutcomes
         new()
         {
             Id = "long_winter",
-            Name = "长冬",
-            Icon = "❄️",
-            Description = "冬天长到所有人都开始怀疑还有没有春天。她把最后一批种子分成了三份，藏在了三个地方。长冬 {duration}。",
+            Name = Prose.Text("goldenCookies", "long_winter", "name"),
+            Icon = Prose.Text("goldenCookies", "long_winter", "icon"),
+            Description = Prose.Text("goldenCookies", "long_winter", "description"),
             Weight = 9,
             BuffId = "long_winter",
             BuffSeconds = 72,
@@ -92,9 +100,9 @@ internal static class GoldenCookieOutcomes
         new()
         {
             Id = "meteor",
-            Name = "陨石",
-            Icon = "☄️",
-            Description = "天上掉下来一块，砸掉了半个广场。她是最先跑过去的人——因为那块石头能用。陨石 {duration}。",
+            Name = Prose.Text("goldenCookies", "meteor", "name"),
+            Icon = Prose.Text("goldenCookies", "meteor", "icon"),
+            Description = Prose.Text("goldenCookies", "meteor", "description"),
             Weight = 7,
             BuffId = "meteor",
             BuffSeconds = 54,
@@ -102,9 +110,9 @@ internal static class GoldenCookieOutcomes
         new()
         {
             Id = "night_academy",
-            Name = "灯一盏都没熄",
-            Icon = "🕯️",
-            Description = "半夜路过的猫看见学院那几扇窗全亮着，里面有人在小声争论一个她没听懂的问题。夜里的学院 {duration}。",
+            Name = Prose.Text("goldenCookies", "night_academy", "name"),
+            Icon = Prose.Text("goldenCookies", "night_academy", "icon"),
+            Description = Prose.Text("goldenCookies", "night_academy", "description"),
             Weight = 4,
             BuffId = "night_shift",
             BuffSeconds = 30,
@@ -112,9 +120,9 @@ internal static class GoldenCookieOutcomes
         new()
         {
             Id = "golden_age",
-            Name = "黄金时代",
-            Icon = "✨",
-            Description = "整整一代人没打过仗、没饿过肚子。她站在城墙上往下看，第一次觉得这些东西真的留得住。黄金时代 {duration}。",
+            Name = Prose.Text("goldenCookies", "golden_age", "name"),
+            Icon = Prose.Text("goldenCookies", "golden_age", "icon"),
+            Description = Prose.Text("goldenCookies", "golden_age", "description"),
             Weight = 3,
             BuffId = "golden_age",
             BuffSeconds = 45,
@@ -122,9 +130,9 @@ internal static class GoldenCookieOutcomes
         new()
         {
             Id = "two_winters",
-            Name = "连着两个长冬",
-            Icon = "🥶",
-            Description = "第二个冬天来的时候，没人说话了。她把囤的柴分了一半给隔壁，然后自己开始烧家具。",
+            Name = Prose.Text("goldenCookies", "two_winters", "name"),
+            Icon = Prose.Text("goldenCookies", "two_winters", "icon"),
+            Description = Prose.Text("goldenCookies", "two_winters", "description"),
             Weight = 2,
             BuffId = "long_winter",
             BuffSeconds = 72,

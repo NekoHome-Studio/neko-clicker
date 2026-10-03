@@ -21,8 +21,13 @@ namespace NekoClicker.Core.Content;
 /// </para>
 /// <para>
 /// 文件布局：<c>content/&lt;包名&gt;/text.json</c>，随内容包一起复制到输出目录。
-/// 一棵树按 kind 分区（<c>lore</c> / <c>eras</c> / <c>choices</c> / <c>endings</c>），
+/// 一棵树按 kind 分区，目前的十一个分区是
+/// <c>storylines</c> / <c>lore</c> / <c>buildings</c> / <c>eras</c> / <c>endings</c> /
+/// <c>stances</c> / <c>choices</c> / <c>achievements</c> / <c>buffs</c> / <c>upgrades</c> /
+/// <c>goldenCookies</c>，
 /// 每个条目是 <c>id → { 字段: 文本 }</c>。选项那类是两层：<c>choices → id → options → 选项 id</c>。
+/// <b>分区的清单以内容包的文件为准</b>（这里列的是 2026-10-03 第五轮之后的全部），
+/// 本类不认识任何具体分区：新增一类文案不需要改这个文件，但这份注释列漏了一类就是文档在说谎。
 /// </para>
 /// </summary>
 public sealed class ContentText
@@ -98,7 +103,9 @@ public sealed class ContentText
     /// 取一条文本；没有就抛。<paramref name="id"/> 支持两级：
     /// <c>"choice_archive"</c> 或 <c>"choice_archive/utopia"</c>（选项那一层）。
     /// </summary>
-    /// <param name="kind">分区：<c>lore</c> / <c>eras</c> / <c>choices</c> / <c>endings</c>。</param>
+    /// <param name="kind">分区：<c>storylines</c> / <c>lore</c> / <c>buildings</c> / <c>eras</c> /
+    /// <c>endings</c> / <c>stances</c> / <c>choices</c> / <c>achievements</c> / <c>buffs</c> /
+    /// <c>upgrades</c> / <c>goldenCookies</c>。</param>
     /// <param name="id">条目 id（选项用 <c>选择id/选项id</c>）。</param>
     /// <param name="field">字段名，例如 <c>title</c> / <c>body</c> / <c>text</c>。</param>
     public string Text(string kind, string id, string field)

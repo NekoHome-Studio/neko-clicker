@@ -207,6 +207,48 @@ K 条覆盖；§5 第 3 条（J 条里「Web 宿主在表态面板显示时上�
 
 **这一轮之后还没做**：`Upgrades.cs`（≈444）与 `Buffs.cs`（≈212）——"面向玩家的文案"就剩这两个。
 
+---
+
+## 0.9 第五轮文案外置：增益 / 升级 / 金猫结果（2026-10-03）——**"面向玩家的文案"到此收尾**
+
+`BuffDefinition` / `UpgradeDefinition` / `GoldenCookieOutcome` 三个记录里**给玩家读的**三个字符串
+（`Name` / `Description` / `Icon`）全部搬进各自的 `text.json`（新根节 `buffs` / `upgrades` /
+`goldenCookies`）。范围与形状：增益 11 包 86 条 ×3、升级 11 包 **534 条** ×3、金猫结果 11 包 109 条 ×3。
+`engine/core` **只改了 `ContentText.cs` 的 XML 注释**（签名/行为/成员一行未动），存档与快照协议未动，
+**没有升版本**。
+
+| 项 | 结果 |
+|---|---|
+| 量出来的规模 | 源码字面量赋值点 **1,284**（`Upgrades.cs` 699 / `Buffs.cs` 318 / `GoldenCookieOutcomes.cs` 267）——任务书的"≈444 / ≈212" **低估了一半以上**；运行期条目 **729**（86 + 534 + 109） |
+| 第三类内容 | `GoldenCookieOutcomes.cs` 不在任务书点名的两个文件里，但它是**同一类散文**，且 `Neko` / `NineLives` 的那一份就写在 `Buffs.cs` 里——不做它，"文案已全部外置"就是假话。**本轮一并做了** |
+| 保真判据 | 迁移前后**运行期 dump 逐字节相同**，三份共 **524,163 字节**：增益 46,720（`3C2BD4EF…`）、升级 401,690（`F9A314FC…`）、金猫结果 75,753（`0C38C9D5…`）。dump 含**不搬的**字段（`Duration`、`StackMode`、`Modifiers.Describe`、`Price`、`Unlock.Describe`、`Tags`、`Category`、`Tier`、`Weight`、全部 `Cookies*`），所以它同时证明逻辑没被顺手改掉 |
+| 盲区兜底 | 漏改一个赋值点时那个字面量会留在代码里、而 dump 仍逐字节相同——所以改写脚本最后重扫三个文件，要求 `Name/Description/Icon = "` **一处不剩**（实测 0）；`Prose.Text(` 实测 **1,284** 次 |
+| 守卫 | `ContentTextFileTests` **22 → 31**（三张写死条数表 + 三条对应性 + 三条双向/非空 + 三条坏文件两态；夹具新增 `ReadBuffs` / `ReadUpgrades` / `ReadGoldenCookieOutcomes`） |
+| 判别力 | **三处故意改坏**：删 Lab 的 `containment_breach`（`Build()` 点名 id，20 条红）、加孤儿 `zz_orphan_buff`（孤儿检查点名，20 条红）、期望升级数 44→43（**31 条里只有条数守卫一条红**——"代码与文件同时少一档"那个盲区的唯一守卫） |
+| 行尾 | 所有改动的文件行尾与改动前逐一相同（CRLF 计数 == LF 计数；`Neko/text.json` 仍是纯 LF） |
+| 用例 | **493/493 全绿**（`-Strict`，两个 sln 0 警告，2026-10-03 实测） |
+| 公开 API | `PublicApiTests` 四条全绿，`engine/core/PublicApi.txt` 逐字节未变（注释改动不影响快照） |
+| 详细记录 | [TEXT_AS_DATA_PLAN](TEXT_AS_DATA_PLAN.md) §12、`CONTENT_AUTHORING.md` §12.0.4（新增） |
+
+⚠️ **用例数又变了（484 → 493）**，所以 §0.8 那次刚改好的"当前计数"**又**变成旧数。
+这次仍按 M 的同一条做法改（带上下文逐处改、**历史数字一律不动**），改到的 11 处是：
+`README.md` 67 / 175 / 406 / 420、`STATUS.md` 75 / 105 / 145 / 149（"当前 484"那句，
+并把"长过四轮"改成"五轮"）、`engine/README.md` 21、`engine/docs/FRONTEND_CHECKS.md` 37、
+`engine/docs/RELEASING.md` 25、`engine/docs/VERSIONING.md` 198、`games/README.md` 79、
+`games/docs/ROADMAP.md` 33。
+`tools/api-test.ps1` 第 12 行那个 `484` 同样是按**字节替换**写回（带 BOM 的 `.ps1`；
+BOM 保留、长度不变、diff 只有那一行）。
+
+**没动的历史数字**（改它们就是在改历史）：`TEXT_AS_DATA_PLAN.md` §11 的 `472 → 484` 与
+"22 条守卫里 14 条红"、`OPEN_WORK.md` §0.7 / §0.8 的 `469 → 472` / `472 → 484`、
+`STATUS.md` 里的"1.4.0 时代基线 441"、`games/docs/ROADMAP.md` 的"回归 236 个用例"。
+
+**这一轮之后还剩什么**：**"面向玩家的文案"这一类已经全部迁完**（十一类：`storylines` /
+`lore` / `buildings` / `eras` / `endings` / `stances` / `choices` / `achievements` /
+`buffs` / `upgrades` / `goldenCookies`）。仍然留在 C# 里的中文**不属于**这一类：
+条件树与修饰符的 `Describe` 文案、引擎的通知/报错消息、内容包自己的构建期校验消息——
+要外置它们是**另一个方案**，不是本方案的收尾。
+
 
 
 ## 1. 现在在哪（可核对的事实）
@@ -214,7 +256,7 @@ K 条覆盖；§5 第 3 条（J 条里「Web 宿主在表态面板显示时上�
 | 项 | 值 | 怎么核对 |
 |---|---|---|
 | 版本 | **1.6.0** | `Directory.Build.props` 的 `<Version>` |
-| 文本外部化 | **11 / 11 个包**有 `text.json`；已覆盖**图鉴散文**（10 包 421 条）、**建筑**（11 包 104 座的 name/description/icon）、**纪元**（9 包 49 层 × 6 字段，根节 `eras`） | `Get-ChildItem engine\content -Recurse -Filter text.json`；见 §0.7 |
+| 文本外部化 | **11 / 11 个包**有 `text.json`；**十一类面向玩家的文案全部在文件里**：`storylines` / `lore`（10 包 421 条）、`buildings`（11 包 104 座 × name/description/icon）、`eras`（9 包 49 层 × 6 字段）、`endings`（9 包 29 个 ×3）、`stances`（3 包 11 条 ×4）、`choices`（3 包 18 次 ×2 + 36 选项 ×2）、`achievements`（11 包 712 条 ×3）、`buffs`（11 包 86 条 ×3）、`upgrades`（11 包 534 条 ×3）、`goldenCookies`（11 包 109 条 ×3）。C# 里 `Prose.Text(` 共 1,284 处、`Name/Description/Icon = "` 0 处 | `Get-ChildItem engine\content -Recurse -Filter text.json`；见 §0.9（第五轮，收尾） |
 | 加载器 | `ContentText` 已 **public** | `engine/core/Content/ContentText.cs` |
 | Web 端点 | `/`、`/app.js`、`/app.css`、`/?package=lab`、`/api/packs`(11 包) 全 200 | 起宿主后直接打 |
 | 调试门 | 未设 `NEKO_DEBUG_KEY` 时 `?epoch=7` → **403** | 同上 |

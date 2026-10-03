@@ -15,6 +15,14 @@ namespace NekoClicker.Content.Apocalypse;
 /// </summary>
 internal static class Upgrades
 {
+    /// <summary>
+    /// 本包的 <c>text.json</c>：增益 / 升级 / 金猫结果的文案与其它分区<b>共用同一份实例</b>（<see cref="Lore.Prose"/>）。<para>
+    /// 必须共用：孤儿检查会遍历整份文件的每个 kind，而"哪些 id 已取用"是按实例记的——
+    /// 两个实例各记一半，就会把对方那些 id 全报成孤儿。
+    /// </para>
+    /// </summary>
+    private static ContentText Prose => Lore.Prose;
+
     /// <summary>全部升级。</summary>
     public static UpgradeDefinition[] All =>
     [
@@ -40,12 +48,13 @@ internal static class Upgrades
         {
             foreach ((int required, double priceFactor, string prefix) in tiers)
             {
+                string id = $"{building.Id}_tier{required}";
                 yield return new UpgradeDefinition
                 {
-                    Id = $"{building.Id}_tier{required}",
-                    Name = $"{prefix}{building.Name}",
-                    Icon = building.Icon,
-                    Description = $"「{building.Name}」的产量翻倍。",
+                    Id = id,
+                    Name = Prose.Text("upgrades", id, "name"),
+                    Icon = Prose.Text("upgrades", id, "icon"),
+                    Description = Prose.Text("upgrades", id, "description"),
                     Price = building.BasePrice * priceFactor,
                     Unlock = UnlockCondition.BuildingsAtLeast(building.Id, required),
                     Modifiers = [Modifier.BuildingMultiplier(building.Id, 2)],
@@ -63,9 +72,9 @@ internal static class Upgrades
         yield return new()
         {
             Id = "scavenger_hands",
-            Name = "翻找的手套",
-            Icon = "🧤",
-            Description = "每次翻找额外获得 1 点物资。手指头上的口子终于有人管了。",
+            Name = Prose.Text("upgrades", "scavenger_hands", "name"),
+            Icon = Prose.Text("upgrades", "scavenger_hands", "icon"),
+            Description = Prose.Text("upgrades", "scavenger_hands", "description"),
             Price = 200,
             Unlock = UnlockCondition.ClicksAtLeast(20),
             Modifiers = [Modifier.ClickFlat(1)],
@@ -77,9 +86,9 @@ internal static class Upgrades
         yield return new()
         {
             Id = "metal_detector",
-            Name = "金属探测仪",
-            Icon = "🔔",
-            Description = "点击收益 ×2。从那以后她不再凭手感挖。",
+            Name = Prose.Text("upgrades", "metal_detector", "name"),
+            Icon = Prose.Text("upgrades", "metal_detector", "icon"),
+            Description = Prose.Text("upgrades", "metal_detector", "description"),
             Price = 20_000,
             Unlock = UnlockCondition.ClicksAtLeast(200),
             Modifiers = [Modifier.ClickMultiplier(2)],
@@ -91,9 +100,9 @@ internal static class Upgrades
         yield return new()
         {
             Id = "drone_eye",
-            Name = "无人机眼",
-            Icon = "🛩️",
-            Description = "点击收益 ×3。它飞一圈要二十分钟，比她自己走一天看到的多。",
+            Name = Prose.Text("upgrades", "drone_eye", "name"),
+            Icon = Prose.Text("upgrades", "drone_eye", "icon"),
+            Description = Prose.Text("upgrades", "drone_eye", "description"),
             Price = 5_000_000,
             Unlock = UnlockCondition.All(
                 UnlockCondition.ClicksAtLeast(1_000),
@@ -107,9 +116,9 @@ internal static class Upgrades
         yield return new()
         {
             Id = "ruin_sense",
-            Name = "废墟直觉",
-            Icon = "🧭",
-            Description = "点击收益 ×4，且每次翻找额外获得 1e4 点物资。有些地方她就是知道下面有东西。",
+            Name = Prose.Text("upgrades", "ruin_sense", "name"),
+            Icon = Prose.Text("upgrades", "ruin_sense", "icon"),
+            Description = Prose.Text("upgrades", "ruin_sense", "description"),
             Price = 2_000_000_000,
             Unlock = UnlockCondition.All(
                 UnlockCondition.ClicksAtLeast(5_000),
@@ -133,9 +142,9 @@ internal static class Upgrades
         yield return new()
         {
             Id = "shard_lens",
-            Name = "残片镜",
-            Icon = "🔍",
-            Description = "全局产量 +0.05%／每片记忆残片（最多 1,500 片，+75%）。把碎片举到光底下，能看见上面还有字。",
+            Name = Prose.Text("upgrades", "shard_lens", "name"),
+            Icon = Prose.Text("upgrades", "shard_lens", "icon"),
+            Description = Prose.Text("upgrades", "shard_lens", "description"),
             Price = 8_000_000,
             Unlock = UnlockCondition.Counter(ShardsModule.CounterKey, 200),
             Modifiers =
@@ -152,9 +161,9 @@ internal static class Upgrades
         yield return new()
         {
             Id = "memory_weave",
-            Name = "记忆编织",
-            Icon = "🧶",
-            Description = "全局产量 ×2，增益时长 ×1.3。她知道哪几片应该接在一起——接错了会疼。",
+            Name = Prose.Text("upgrades", "memory_weave", "name"),
+            Icon = Prose.Text("upgrades", "memory_weave", "icon"),
+            Description = Prose.Text("upgrades", "memory_weave", "description"),
             Price = 400_000_000,
             Unlock = UnlockCondition.Counter(ShardsModule.CounterKey, 2_000),
             Modifiers =
@@ -170,9 +179,9 @@ internal static class Upgrades
         yield return new()
         {
             Id = "inherited_voice",
-            Name = "继承者的声音",
-            Icon = "🗣️",
-            Description = "全局产量 ×2.5、变异体奖励 ×2。她开始用别人的语气说话，然后道歉。",
+            Name = Prose.Text("upgrades", "inherited_voice", "name"),
+            Icon = Prose.Text("upgrades", "inherited_voice", "icon"),
+            Description = Prose.Text("upgrades", "inherited_voice", "description"),
             Price = 3e10,
             Unlock = UnlockCondition.Counter(ShardsModule.CounterKey, 20_000),
             Modifiers = [Modifier.GlobalMultiplier(2.5), Modifier.GoldenCookieReward(2)],
@@ -193,9 +202,9 @@ internal static class Upgrades
         yield return new()
         {
             Id = "ruins_to_tower",
-            Name = "从废墟里架起来的天线",
-            Icon = "📡",
-            Description = "数据塔产量 +2%／每座废墟（最多 100 座，+200%）。天线是拿拆下来的钢筋搭的。",
+            Name = Prose.Text("upgrades", "ruins_to_tower", "name"),
+            Icon = Prose.Text("upgrades", "ruins_to_tower", "icon"),
+            Description = Prose.Text("upgrades", "ruins_to_tower", "description"),
             Price = 60_000_000,
             Unlock = UnlockCondition.BuildingsAtLeast("ruins", 100),
             Modifiers =
@@ -213,9 +222,9 @@ internal static class Upgrades
         yield return new()
         {
             Id = "water_to_greenhouse",
-            Name = "水浇出来的绿",
-            Icon = "🚿",
-            Description = "温室产量 +1.5%／每台净水器（最多 100 台，+150%）。干净的水先给能长东西的地方。",
+            Name = Prose.Text("upgrades", "water_to_greenhouse", "name"),
+            Icon = Prose.Text("upgrades", "water_to_greenhouse", "icon"),
+            Description = Prose.Text("upgrades", "water_to_greenhouse", "description"),
             Price = 900_000_000,
             Unlock = UnlockCondition.BuildingsAtLeast("water_purifier", 75),
             Modifiers =
@@ -233,9 +242,9 @@ internal static class Upgrades
         yield return new()
         {
             Id = "reactor_to_city",
-            Name = "整座城的电",
-            Icon = "🔋",
-            Description = "遗迹之城产量 +1%／每座聚变堆（最多 300 座，+300%）。她给整座废墟通了电，只为了让灯替她守着。",
+            Name = Prose.Text("upgrades", "reactor_to_city", "name"),
+            Icon = Prose.Text("upgrades", "reactor_to_city", "icon"),
+            Description = Prose.Text("upgrades", "reactor_to_city", "description"),
             Price = 4e11,
             Unlock = UnlockCondition.All(
                 UnlockCondition.BuildingsAtLeast("fusion_reactor", 50),
@@ -259,9 +268,9 @@ internal static class Upgrades
         yield return new()
         {
             Id = "oil_lamp",
-            Name = "油灯",
-            Icon = "🪔",
-            Description = "全局产量 ×1.5。没有电的晚上也得干活，这是第一件她自己做的东西。",
+            Name = Prose.Text("upgrades", "oil_lamp", "name"),
+            Icon = Prose.Text("upgrades", "oil_lamp", "icon"),
+            Description = Prose.Text("upgrades", "oil_lamp", "description"),
             Price = 5_000,
             Unlock = UnlockCondition.EraAtLeast(1),
             Modifiers = [Modifier.GlobalMultiplier(1.5)],
@@ -273,9 +282,9 @@ internal static class Upgrades
         yield return new()
         {
             Id = "grid",
-            Name = "局域电网",
-            Icon = "🗼",
-            Description = "全局产量 ×2。把三台发电机接在一起，报废任何一台都不至于全黑。",
+            Name = Prose.Text("upgrades", "grid", "name"),
+            Icon = Prose.Text("upgrades", "grid", "icon"),
+            Description = Prose.Text("upgrades", "grid", "description"),
             Price = 30_000_000,
             Unlock = UnlockCondition.All(
                 UnlockCondition.EraAtLeast(2),
@@ -289,9 +298,9 @@ internal static class Upgrades
         yield return new()
         {
             Id = "wall",
-            Name = "围墙",
-            Icon = "🧱",
-            Description = "全局产量 ×2，建筑价格 ×0.9。墙是把「我们」和「外面」分开的第一件东西。",
+            Name = Prose.Text("upgrades", "wall", "name"),
+            Icon = Prose.Text("upgrades", "wall", "icon"),
+            Description = Prose.Text("upgrades", "wall", "description"),
             Price = 2_000_000_000,
             Unlock = UnlockCondition.All(
                 UnlockCondition.EraAtLeast(3),
@@ -305,9 +314,9 @@ internal static class Upgrades
         yield return new()
         {
             Id = "ark",
-            Name = "方舟图纸",
-            Icon = "📐",
-            Description = "全局产量 ×2.5、增益时长 ×1.2。图纸上是一套能装下四千人的地下结构，只画完了一半。",
+            Name = Prose.Text("upgrades", "ark", "name"),
+            Icon = Prose.Text("upgrades", "ark", "icon"),
+            Description = Prose.Text("upgrades", "ark", "description"),
             Price = 8e10,
             Unlock = UnlockCondition.All(
                 UnlockCondition.EraAtLeast(4),
@@ -325,9 +334,9 @@ internal static class Upgrades
         yield return new()
         {
             Id = "last_light",
-            Name = "最后的灯",
-            Icon = "🔆",
-            Description = "全局产量 ×3，但增益时长 ×0.8。全城的灯都亮着，她一个人站在最高的那盏下面。",
+            Name = Prose.Text("upgrades", "last_light", "name"),
+            Icon = Prose.Text("upgrades", "last_light", "icon"),
+            Description = Prose.Text("upgrades", "last_light", "description"),
             Price = 5e11,
             Unlock = UnlockCondition.All(
                 UnlockCondition.EraAtLeast(5),
@@ -353,9 +362,9 @@ internal static class Upgrades
         yield return new()
         {
             Id = "ember_hands",
-            Name = "余烬之手",
-            Icon = "🤲",
-            Description = "全局产量 +25%。手上的茧是上一世留下的，这一世不用重新长。",
+            Name = Prose.Text("upgrades", "ember_hands", "name"),
+            Icon = Prose.Text("upgrades", "ember_hands", "icon"),
+            Description = Prose.Text("upgrades", "ember_hands", "description"),
             Price = 2,
             Currency = UpgradeCurrency.PrestigeChips,
             Persistence = UpgradePersistence.Permanent,
@@ -369,9 +378,9 @@ internal static class Upgrades
         yield return new()
         {
             Id = "ember_blueprint",
-            Name = "余烬图纸",
-            Icon = "📜",
-            Description = "建筑价格 ×0.8。图纸边角被烧掉了，剩下的部分够用。",
+            Name = Prose.Text("upgrades", "ember_blueprint", "name"),
+            Icon = Prose.Text("upgrades", "ember_blueprint", "icon"),
+            Description = Prose.Text("upgrades", "ember_blueprint", "description"),
             Price = 4,
             Currency = UpgradeCurrency.PrestigeChips,
             Persistence = UpgradePersistence.Permanent,
@@ -385,9 +394,9 @@ internal static class Upgrades
         yield return new()
         {
             Id = "ember_name",
-            Name = "余烬之名",
-            Icon = "✍️",
-            Description = "点击收益 ×6、变异体奖励 ×1.5。她记得自己叫什么，这在重启里并不常见。",
+            Name = Prose.Text("upgrades", "ember_name", "name"),
+            Icon = Prose.Text("upgrades", "ember_name", "icon"),
+            Description = Prose.Text("upgrades", "ember_name", "description"),
             Price = 9,
             Currency = UpgradeCurrency.PrestigeChips,
             Persistence = UpgradePersistence.Permanent,
@@ -401,10 +410,9 @@ internal static class Upgrades
         yield return new()
         {
             Id = "ember_promise",
-            Name = "余烬之约",
-            Icon = "🕯️",
-            Description = "全局产量 ×2，另按记忆残片加成（每 5,000 片 +10%，最多 60,000 片，+120%）。"
-                 + "她答应过的东西比她自己记得的多。",
+            Name = Prose.Text("upgrades", "ember_promise", "name"),
+            Icon = Prose.Text("upgrades", "ember_promise", "icon"),
+            Description = Prose.Text("upgrades", "ember_promise", "description"),
             Price = 20,
             Currency = UpgradeCurrency.PrestigeChips,
             Persistence = UpgradePersistence.Permanent,
@@ -424,9 +432,9 @@ internal static class Upgrades
         yield return new()
         {
             Id = "ember_always",
-            Name = "余烬不灭",
-            Icon = "🔥",
-            Description = "全局产量 ×2.5、增益时长 ×1.4。她终于承认：她不是在被重启，她是在接着往下活。",
+            Name = Prose.Text("upgrades", "ember_always", "name"),
+            Icon = Prose.Text("upgrades", "ember_always", "icon"),
+            Description = Prose.Text("upgrades", "ember_always", "description"),
             Price = 45,
             Currency = UpgradeCurrency.PrestigeChips,
             Persistence = UpgradePersistence.Permanent,

@@ -823,5 +823,376 @@
       "icon": "📕",
       "description": "抵达结局「无人再读」。"
     }
+  },
+  "buffs": {
+    "purr_frenzy": {
+      "name": "呼噜狂暴",
+      "description": "所有建筑产量 ×7。整栋楼在共振。",
+      "icon": "💤"
+    },
+    "headpat_frenzy": {
+      "name": "摸头停不下来",
+      "description": "点击收益 ×777。手已经不是你的了。",
+      "icon": "🖐️"
+    },
+    "god_gaze": {
+      "name": "猫神注视",
+      "description": "所有建筑产量 ×15。寐娅看了一眼这边。",
+      "icon": "👁️"
+    },
+    "memory_flash": {
+      "name": "记忆闪回",
+      "description": "「记忆金库」产量 ×40。她想起来了一段不属于自己的童年。",
+      "icon": "⚡"
+    },
+    "nine_resonance": {
+      "name": "九命共鸣",
+      "description": "所有建筑产量 ×66。九条命同时醒着。",
+      "icon": "⛓️"
+    },
+    "void_creep": {
+      "name": "虚无侵蚀",
+      "description": "所有建筑产量 ×0.5。有人忘了读她那一段。",
+      "icon": "🕳️"
+    },
+    "dream_dive": {
+      "name": "沉入梦层",
+      "description": "点击收益 ×50，所有建筑产量 ×3。",
+      "icon": "🌀"
+    },
+    "deleted": {
+      "name": "被删除",
+      "description": "所有建筑产量 ×0.25。她少了一页。",
+      "icon": "⌫"
+    }
+  },
+  "upgrades": {
+    "cardboard_box_tier1": {
+      "name": "熟悉的纸箱",
+      "description": "「纸箱」的产量翻倍。",
+      "icon": "📦"
+    },
+    "cardboard_box_tier10": {
+      "name": "成套的纸箱",
+      "description": "「纸箱」的产量翻倍。",
+      "icon": "📦"
+    },
+    "cardboard_box_tier25": {
+      "name": "传说里的纸箱",
+      "description": "「纸箱」的产量翻倍。",
+      "icon": "📦"
+    },
+    "cat_bed_tier1": {
+      "name": "熟悉的猫窝",
+      "description": "「猫窝」的产量翻倍。",
+      "icon": "🛏️"
+    },
+    "cat_bed_tier10": {
+      "name": "成套的猫窝",
+      "description": "「猫窝」的产量翻倍。",
+      "icon": "🛏️"
+    },
+    "cat_bed_tier25": {
+      "name": "传说里的猫窝",
+      "description": "「猫窝」的产量翻倍。",
+      "icon": "🛏️"
+    },
+    "cat_cafe_tier1": {
+      "name": "熟悉的猫娘咖啡馆",
+      "description": "「猫娘咖啡馆」的产量翻倍。",
+      "icon": "☕"
+    },
+    "cat_cafe_tier10": {
+      "name": "成套的猫娘咖啡馆",
+      "description": "「猫娘咖啡馆」的产量翻倍。",
+      "icon": "☕"
+    },
+    "cat_cafe_tier25": {
+      "name": "传说里的猫娘咖啡馆",
+      "description": "「猫娘咖啡馆」的产量翻倍。",
+      "icon": "☕"
+    },
+    "catnip_field_tier1": {
+      "name": "熟悉的猫薄荷田",
+      "description": "「猫薄荷田」的产量翻倍。",
+      "icon": "🌿"
+    },
+    "catnip_field_tier10": {
+      "name": "成套的猫薄荷田",
+      "description": "「猫薄荷田」的产量翻倍。",
+      "icon": "🌿"
+    },
+    "catnip_field_tier25": {
+      "name": "传说里的猫薄荷田",
+      "description": "「猫薄荷田」的产量翻倍。",
+      "icon": "🌿"
+    },
+    "cat_tower_tier1": {
+      "name": "熟悉的猫塔",
+      "description": "「猫塔」的产量翻倍。",
+      "icon": "🗼"
+    },
+    "cat_tower_tier10": {
+      "name": "成套的猫塔",
+      "description": "「猫塔」的产量翻倍。",
+      "icon": "🗼"
+    },
+    "cat_tower_tier25": {
+      "name": "传说里的猫塔",
+      "description": "「猫塔」的产量翻倍。",
+      "icon": "🗼"
+    },
+    "catgirl_lab_tier1": {
+      "name": "熟悉的猫娘实验室",
+      "description": "「猫娘实验室」的产量翻倍。",
+      "icon": "🧪"
+    },
+    "catgirl_lab_tier10": {
+      "name": "成套的猫娘实验室",
+      "description": "「猫娘实验室」的产量翻倍。",
+      "icon": "🧪"
+    },
+    "catgirl_lab_tier25": {
+      "name": "传说里的猫娘实验室",
+      "description": "「猫娘实验室」的产量翻倍。",
+      "icon": "🧪"
+    },
+    "server_farm_tier1": {
+      "name": "熟悉的服务器农场",
+      "description": "「服务器农场」的产量翻倍。",
+      "icon": "🖥️"
+    },
+    "server_farm_tier10": {
+      "name": "成套的服务器农场",
+      "description": "「服务器农场」的产量翻倍。",
+      "icon": "🖥️"
+    },
+    "server_farm_tier25": {
+      "name": "传说里的服务器农场",
+      "description": "「服务器农场」的产量翻倍。",
+      "icon": "🖥️"
+    },
+    "memory_vault_tier1": {
+      "name": "熟悉的记忆金库",
+      "description": "「记忆金库」的产量翻倍。",
+      "icon": "🗄️"
+    },
+    "memory_vault_tier10": {
+      "name": "成套的记忆金库",
+      "description": "「记忆金库」的产量翻倍。",
+      "icon": "🗄️"
+    },
+    "memory_vault_tier25": {
+      "name": "传说里的记忆金库",
+      "description": "「记忆金库」的产量翻倍。",
+      "icon": "🗄️"
+    },
+    "temple_tier1": {
+      "name": "熟悉的猫神神殿",
+      "description": "「猫神神殿」的产量翻倍。",
+      "icon": "🏛️"
+    },
+    "temple_tier10": {
+      "name": "成套的猫神神殿",
+      "description": "「猫神神殿」的产量翻倍。",
+      "icon": "🏛️"
+    },
+    "temple_tier25": {
+      "name": "传说里的猫神神殿",
+      "description": "「猫神神殿」的产量翻倍。",
+      "icon": "🏛️"
+    },
+    "stream_studio_tier1": {
+      "name": "熟悉的直播间",
+      "description": "「直播间」的产量翻倍。",
+      "icon": "📺"
+    },
+    "stream_studio_tier10": {
+      "name": "成套的直播间",
+      "description": "「直播间」的产量翻倍。",
+      "icon": "📺"
+    },
+    "stream_studio_tier25": {
+      "name": "传说里的直播间",
+      "description": "「直播间」的产量翻倍。",
+      "icon": "📺"
+    },
+    "dream_library_tier1": {
+      "name": "熟悉的梦境图书馆",
+      "description": "「梦境图书馆」的产量翻倍。",
+      "icon": "📚"
+    },
+    "dream_library_tier10": {
+      "name": "成套的梦境图书馆",
+      "description": "「梦境图书馆」的产量翻倍。",
+      "icon": "📚"
+    },
+    "dream_library_tier25": {
+      "name": "传说里的梦境图书馆",
+      "description": "「梦境图书馆」的产量翻倍。",
+      "icon": "📚"
+    },
+    "cat_universe_tier1": {
+      "name": "熟悉的猫娘宇宙",
+      "description": "「猫娘宇宙」的产量翻倍。",
+      "icon": "🌌"
+    },
+    "cat_universe_tier10": {
+      "name": "成套的猫娘宇宙",
+      "description": "「猫娘宇宙」的产量翻倍。",
+      "icon": "🌌"
+    },
+    "cat_universe_tier25": {
+      "name": "传说里的猫娘宇宙",
+      "description": "「猫娘宇宙」的产量翻倍。",
+      "icon": "🌌"
+    },
+    "steady_hand": {
+      "name": "稳住的手",
+      "description": "每次摸头额外获得 1 条小鱼干。",
+      "icon": "🖐️"
+    },
+    "both_hands": {
+      "name": "两只手都用上",
+      "description": "点击收益 ×2。她说这样比较舒服。",
+      "icon": "🤲"
+    },
+    "behind_the_ears": {
+      "name": "耳后那块",
+      "description": "点击收益 ×3。据说那里是猫神的接口。",
+      "icon": "🐱"
+    },
+    "purr_sync": {
+      "name": "呼噜同步",
+      "description": "点击收益 +25%。你和她的心跳对上了。",
+      "icon": "💤"
+    },
+    "nine_tails": {
+      "name": "九条尾巴",
+      "description": "点击收益 ×3。摸一次，等于摸了九条命。",
+      "icon": "✨"
+    },
+    "purr_solo": {
+      "name": "一只猫的呼噜",
+      "description": "每个成就让所有建筑产量 +1%。",
+      "icon": "🎵"
+    },
+    "purr_chorus": {
+      "name": "一屋子的呼噜",
+      "description": "每个成就让所有建筑产量 +2%，点击收益 ×1.5。",
+      "icon": "🎶"
+    },
+    "world_heartbeat": {
+      "name": "世界的心跳",
+      "description": "每个成就让所有建筑产量 +3%。呼噜声就是这个世界的地基。",
+      "icon": "💗"
+    },
+    "server_overclock": {
+      "name": "超频许可",
+      "description": "服务器农场产量 ×2。赛博纪元特有的权限。",
+      "icon": "⚡"
+    },
+    "eulogy_reader": {
+      "name": "悼词朗读",
+      "description": "所有建筑产量 +30%，点击收益 ×2。念出来的名字才不算消失。",
+      "icon": "🕯️"
+    },
+    "camera_instinct": {
+      "name": "镜头直觉",
+      "description": "直播间产量 ×2。她知道哪个角度最像神。",
+      "icon": "🎥"
+    },
+    "lucid_dreaming": {
+      "name": "清醒梦",
+      "description": "离线收益效率 ×2.5。梦里也在场。",
+      "icon": "🌀"
+    },
+    "readership": {
+      "name": "被阅读的权利",
+      "description": "每个成就让所有建筑产量 +5%。被读到的部分才存在。",
+      "icon": "📖"
+    },
+    "cat_god_whisper": {
+      "name": "猫神的低语",
+      "description": "所有建筑产量 ×1.5，随机事件更频繁。寐娅在九层之外看着你。",
+      "icon": "🌙"
+    },
+    "remembered_warmth": {
+      "name": "记得的温度",
+      "description": "点击收益 ×3。跨越九次转生都不肯凉掉的东西。",
+      "icon": "🔥"
+    },
+    "remembered_name": {
+      "name": "记得的名字",
+      "description": "所有建筑价格 −12%。有人叫得出你的名字，你就不能算消失。",
+      "icon": "🏷️"
+    },
+    "remembered_path": {
+      "name": "记得的路",
+      "description": "离线收益效率 +50%。第九次醒来时你还认得方向。",
+      "icon": "🧭"
+    },
+    "remembered_god": {
+      "name": "记得的神",
+      "description": "所有建筑产量 ×1.20。你已经想起来了她是谁。",
+      "icon": "🌟"
+    },
+    "remembered_self": {
+      "name": "记得的自己",
+      "description": "所有建筑产量 ×1.35、点击 ×5。九条命记住了同一个人。",
+      "icon": "🪞"
+    }
+  },
+  "goldenCookies": {
+    "lucky": {
+      "name": "抹不掉的记忆",
+      "description": "获得 {amount} 条小鱼干。她记得你，所以你还在。",
+      "icon": "🍀"
+    },
+    "frenzy": {
+      "name": "呼噜狂暴",
+      "description": "产量 ×7，持续 {duration}。",
+      "icon": "💤"
+    },
+    "click_frenzy": {
+      "name": "摸头停不下来",
+      "description": "点击收益 ×777，持续 {duration}。",
+      "icon": "🖐️"
+    },
+    "ruin": {
+      "name": "虚无侵蚀",
+      "description": "损失 {amount} 条小鱼干...有人忘了读她那一段。",
+      "icon": "🕳️"
+    },
+    "blab": {
+      "name": "未命名",
+      "description": "她对你说了一个音节，然后忘了自己本来想说什么。",
+      "icon": "💬"
+    },
+    "memory": {
+      "name": "记忆闪回",
+      "description": "「记忆金库」产量 ×40，持续 {duration}。",
+      "icon": "⚡"
+    },
+    "bloodlust": {
+      "name": "猫神注视",
+      "description": "产量 ×15，持续 {duration}。",
+      "icon": "👁️"
+    },
+    "chain": {
+      "name": "九命共鸣",
+      "description": "产量 ×7 且点击 ×777，持续 {duration}。",
+      "icon": "⛓️"
+    },
+    "deletion": {
+      "name": "被删除",
+      "description": "产量 ×0.25，持续 {duration}。",
+      "icon": "⌫"
+    },
+    "dream": {
+      "name": "沉入梦层",
+      "description": "点击 ×50 且产量 ×3，持续 {duration}。",
+      "icon": "🌀"
+    }
   }
 }

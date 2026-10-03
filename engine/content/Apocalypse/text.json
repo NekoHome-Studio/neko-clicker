@@ -609,5 +609,336 @@
       "icon": "🕯️",
       "description": "抵达结局「安静结束」。"
     }
+  },
+  "buffs": {
+    "mutation_wave": {
+      "name": "变异潮",
+      "description": "地下那层东西被水泡过之后开始长，长得比谁都快。全部产量 ×7。",
+      "icon": "🧬"
+    },
+    "scavenge_frenzy": {
+      "name": "翻找狂热",
+      "description": "她今天不想停。手指划破了就换一只手。点击收益 ×777。",
+      "icon": "⛏️"
+    },
+    "prewar_cache": {
+      "name": "战前缓存",
+      "description": "撬开一扇封死的门，里面是整整齐齐码到天花板的箱子。全部产量 ×15。",
+      "icon": "📦"
+    },
+    "blackout": {
+      "name": "全城断电",
+      "description": "负载跳了，所有灯同时灭。黑暗中只剩下她自己的呼吸。全部产量 ×0.5。",
+      "icon": "🌑"
+    },
+    "radiation_cloud": {
+      "name": "辐射云",
+      "description": "风向变了，灰色的雾贴着地面过来。所有人下到地下二层。全部产量 ×0.6。",
+      "icon": "☢️"
+    },
+    "plague": {
+      "name": "疫病",
+      "description": "从东边来的三个人带来了它。隔离、烧水、等人好。全部产量 ×0.7。",
+      "icon": "🦠"
+    },
+    "shelter_night": {
+      "name": "避难所之夜",
+      "description": "外面下着雨，所有人挤在地下二层分一锅汤。避难所产量 ×30。",
+      "icon": "🛖"
+    },
+    "salvage_order": {
+      "name": "拆解有序",
+      "description": "她画了一张拆解顺序图，拆下来的东西第一次全部用上了。点击收益 ×50。",
+      "icon": "🔧"
+    }
+  },
+  "upgrades": {
+    "ruins_tier1": {
+      "name": "清出来的废墟",
+      "description": "「废墟」的产量翻倍。",
+      "icon": "🧱"
+    },
+    "ruins_tier10": {
+      "name": "连成片的废墟",
+      "description": "「废墟」的产量翻倍。",
+      "icon": "🧱"
+    },
+    "ruins_tier25": {
+      "name": "能自给的废墟",
+      "description": "「废墟」的产量翻倍。",
+      "icon": "🧱"
+    },
+    "generator_tier1": {
+      "name": "清出来的发电机",
+      "description": "「发电机」的产量翻倍。",
+      "icon": "🔌"
+    },
+    "generator_tier10": {
+      "name": "连成片的发电机",
+      "description": "「发电机」的产量翻倍。",
+      "icon": "🔌"
+    },
+    "generator_tier25": {
+      "name": "能自给的发电机",
+      "description": "「发电机」的产量翻倍。",
+      "icon": "🔌"
+    },
+    "water_purifier_tier1": {
+      "name": "清出来的净水器",
+      "description": "「净水器」的产量翻倍。",
+      "icon": "💧"
+    },
+    "water_purifier_tier10": {
+      "name": "连成片的净水器",
+      "description": "「净水器」的产量翻倍。",
+      "icon": "💧"
+    },
+    "water_purifier_tier25": {
+      "name": "能自给的净水器",
+      "description": "「净水器」的产量翻倍。",
+      "icon": "💧"
+    },
+    "shelter_tier1": {
+      "name": "清出来的避难所",
+      "description": "「避难所」的产量翻倍。",
+      "icon": "🛖"
+    },
+    "shelter_tier10": {
+      "name": "连成片的避难所",
+      "description": "「避难所」的产量翻倍。",
+      "icon": "🛖"
+    },
+    "shelter_tier25": {
+      "name": "能自给的避难所",
+      "description": "「避难所」的产量翻倍。",
+      "icon": "🛖"
+    },
+    "greenhouse_tier1": {
+      "name": "清出来的温室",
+      "description": "「温室」的产量翻倍。",
+      "icon": "🌱"
+    },
+    "greenhouse_tier10": {
+      "name": "连成片的温室",
+      "description": "「温室」的产量翻倍。",
+      "icon": "🌱"
+    },
+    "greenhouse_tier25": {
+      "name": "能自给的温室",
+      "description": "「温室」的产量翻倍。",
+      "icon": "🌱"
+    },
+    "data_tower_tier1": {
+      "name": "清出来的数据塔",
+      "description": "「数据塔」的产量翻倍。",
+      "icon": "📡"
+    },
+    "data_tower_tier10": {
+      "name": "连成片的数据塔",
+      "description": "「数据塔」的产量翻倍。",
+      "icon": "📡"
+    },
+    "data_tower_tier25": {
+      "name": "能自给的数据塔",
+      "description": "「数据塔」的产量翻倍。",
+      "icon": "📡"
+    },
+    "archive_tier1": {
+      "name": "清出来的记忆档案馆",
+      "description": "「记忆档案馆」的产量翻倍。",
+      "icon": "🗄️"
+    },
+    "archive_tier10": {
+      "name": "连成片的记忆档案馆",
+      "description": "「记忆档案馆」的产量翻倍。",
+      "icon": "🗄️"
+    },
+    "archive_tier25": {
+      "name": "能自给的记忆档案馆",
+      "description": "「记忆档案馆」的产量翻倍。",
+      "icon": "🗄️"
+    },
+    "fusion_reactor_tier1": {
+      "name": "清出来的聚变堆",
+      "description": "「聚变堆」的产量翻倍。",
+      "icon": "⚛️"
+    },
+    "fusion_reactor_tier10": {
+      "name": "连成片的聚变堆",
+      "description": "「聚变堆」的产量翻倍。",
+      "icon": "⚛️"
+    },
+    "fusion_reactor_tier25": {
+      "name": "能自给的聚变堆",
+      "description": "「聚变堆」的产量翻倍。",
+      "icon": "⚛️"
+    },
+    "relic_city_tier1": {
+      "name": "清出来的遗迹之城",
+      "description": "「遗迹之城」的产量翻倍。",
+      "icon": "🏚️"
+    },
+    "relic_city_tier10": {
+      "name": "连成片的遗迹之城",
+      "description": "「遗迹之城」的产量翻倍。",
+      "icon": "🏚️"
+    },
+    "relic_city_tier25": {
+      "name": "能自给的遗迹之城",
+      "description": "「遗迹之城」的产量翻倍。",
+      "icon": "🏚️"
+    },
+    "scavenger_hands": {
+      "name": "翻找的手套",
+      "description": "每次翻找额外获得 1 点物资。手指头上的口子终于有人管了。",
+      "icon": "🧤"
+    },
+    "metal_detector": {
+      "name": "金属探测仪",
+      "description": "点击收益 ×2。从那以后她不再凭手感挖。",
+      "icon": "🔔"
+    },
+    "drone_eye": {
+      "name": "无人机眼",
+      "description": "点击收益 ×3。它飞一圈要二十分钟，比她自己走一天看到的多。",
+      "icon": "🛩️"
+    },
+    "ruin_sense": {
+      "name": "废墟直觉",
+      "description": "点击收益 ×4，且每次翻找额外获得 1e4 点物资。有些地方她就是知道下面有东西。",
+      "icon": "🧭"
+    },
+    "shard_lens": {
+      "name": "残片镜",
+      "description": "全局产量 +0.05%／每片记忆残片（最多 1,500 片，+75%）。把碎片举到光底下，能看见上面还有字。",
+      "icon": "🔍"
+    },
+    "memory_weave": {
+      "name": "记忆编织",
+      "description": "全局产量 ×2，增益时长 ×1.3。她知道哪几片应该接在一起——接错了会疼。",
+      "icon": "🧶"
+    },
+    "inherited_voice": {
+      "name": "继承者的声音",
+      "description": "全局产量 ×2.5、变异体奖励 ×2。她开始用别人的语气说话，然后道歉。",
+      "icon": "🗣️"
+    },
+    "ruins_to_tower": {
+      "name": "从废墟里架起来的天线",
+      "description": "数据塔产量 +2%／每座废墟（最多 100 座，+200%）。天线是拿拆下来的钢筋搭的。",
+      "icon": "📡"
+    },
+    "water_to_greenhouse": {
+      "name": "水浇出来的绿",
+      "description": "温室产量 +1.5%／每台净水器（最多 100 台，+150%）。干净的水先给能长东西的地方。",
+      "icon": "🚿"
+    },
+    "reactor_to_city": {
+      "name": "整座城的电",
+      "description": "遗迹之城产量 +1%／每座聚变堆（最多 300 座，+300%）。她给整座废墟通了电，只为了让灯替她守着。",
+      "icon": "🔋"
+    },
+    "oil_lamp": {
+      "name": "油灯",
+      "description": "全局产量 ×1.5。没有电的晚上也得干活，这是第一件她自己做的东西。",
+      "icon": "🪔"
+    },
+    "grid": {
+      "name": "局域电网",
+      "description": "全局产量 ×2。把三台发电机接在一起，报废任何一台都不至于全黑。",
+      "icon": "🗼"
+    },
+    "wall": {
+      "name": "围墙",
+      "description": "全局产量 ×2，建筑价格 ×0.9。墙是把「我们」和「外面」分开的第一件东西。",
+      "icon": "🧱"
+    },
+    "ark": {
+      "name": "方舟图纸",
+      "description": "全局产量 ×2.5、增益时长 ×1.2。图纸上是一套能装下四千人的地下结构，只画完了一半。",
+      "icon": "📐"
+    },
+    "last_light": {
+      "name": "最后的灯",
+      "description": "全局产量 ×3，但增益时长 ×0.8。全城的灯都亮着，她一个人站在最高的那盏下面。",
+      "icon": "🔆"
+    },
+    "ember_hands": {
+      "name": "余烬之手",
+      "description": "全局产量 +25%。手上的茧是上一世留下的，这一世不用重新长。",
+      "icon": "🤲"
+    },
+    "ember_blueprint": {
+      "name": "余烬图纸",
+      "description": "建筑价格 ×0.8。图纸边角被烧掉了，剩下的部分够用。",
+      "icon": "📜"
+    },
+    "ember_name": {
+      "name": "余烬之名",
+      "description": "点击收益 ×6、变异体奖励 ×1.5。她记得自己叫什么，这在重启里并不常见。",
+      "icon": "✍️"
+    },
+    "ember_promise": {
+      "name": "余烬之约",
+      "description": "全局产量 ×2，另按记忆残片加成（每 5,000 片 +10%，最多 60,000 片，+120%）。她答应过的东西比她自己记得的多。",
+      "icon": "🕯️"
+    },
+    "ember_always": {
+      "name": "余烬不灭",
+      "description": "全局产量 ×2.5、增益时长 ×1.4。她终于承认：她不是在被重启，她是在接着往下活。",
+      "icon": "🔥"
+    }
+  },
+  "goldenCookies": {
+    "buried_warehouse": {
+      "name": "挖到仓库",
+      "description": "凿开一堵墙，后面是整排货架，箱子上的日期是灾前。获得 {amount} 物资。",
+      "icon": "📦"
+    },
+    "mutation": {
+      "name": "变异",
+      "description": "它比昨天大了一圈，而且不躲人了。变异潮 {duration}。",
+      "icon": "🧬"
+    },
+    "frenzy": {
+      "name": "停不下来",
+      "description": "她从天亮挖到天黑，中间只喝过一次水。翻找狂热 {duration}。",
+      "icon": "⛏️"
+    },
+    "raid": {
+      "name": "被人趁夜搬空",
+      "description": "早上起床，西边的仓房空了一半。地上留着两行不属于这里的鞋印。损失 {amount} 物资。",
+      "icon": "🥷"
+    },
+    "nothing": {
+      "name": "什么也没有",
+      "description": "挖开之后是一个空房间。角落里有一把椅子，是面朝门摆着的。",
+      "icon": "🕳️"
+    },
+    "cache": {
+      "name": "战前缓存",
+      "description": "钥匙就插在锁上，好像主人只是出门一趟。战前缓存 {duration}。",
+      "icon": "🗝️"
+    },
+    "salvage": {
+      "name": "拆解有序",
+      "description": "她第一次把一台机器完整地拆成了能用的零件，一颗螺丝都没剩。拆解有序 {duration}。",
+      "icon": "🔧"
+    },
+    "double_mutation": {
+      "name": "两只",
+      "description": "洞里有两只，一大一小。小的那只学着大的样子朝她龇牙。",
+      "icon": "👥"
+    },
+    "blackout": {
+      "name": "全城断电",
+      "description": "所有灯同时灭掉的那一瞬间，整座废墟安静得像一张纸。全城断电 {duration}。",
+      "icon": "🌑"
+    },
+    "rain_night": {
+      "name": "雨夜",
+      "description": "雨下了一整夜，没人出去。锅里炖着东西，几个人靠在墙上睡着了。避难所之夜 {duration}。",
+      "icon": "🌧️"
+    }
   }
 }

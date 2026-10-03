@@ -629,5 +629,346 @@
       "icon": "🌫️",
       "description": "抵达结局「被遗忘」。"
     }
+  },
+  "buffs": {
+    "divine_frenzy": {
+      "name": "神恩降临",
+      "description": "天上的云裂开一条缝，光正好打在她的神龛上。全部产量 ×7。",
+      "icon": "✨"
+    },
+    "manifest_frenzy": {
+      "name": "显灵停不下来",
+      "description": "她一口气满足了三十七个愿望，其中三十六个是「再来一次」。点击收益 ×777。",
+      "icon": "🙌"
+    },
+    "pilgrim_flood": {
+      "name": "朝圣潮",
+      "description": "路上全是人，队伍从山脚排到神殿门口，有人带着帐篷。全部产量 ×15。",
+      "icon": "🚶"
+    },
+    "offering_shortage": {
+      "name": "供品荒",
+      "description": "今年收成不好，祭坛上摆的是塑料水果。她照样收了，但气压有点低。全部产量 ×0.5。",
+      "icon": "📉"
+    },
+    "heresy_trial": {
+      "name": "异端审判",
+      "description": "隔壁那套神话派人来辩论，辩到一半开始互相举报。她被要求「先停业配合调查」。全部产量 ×0.6。",
+      "icon": "⚖️"
+    },
+    "meme_wave": {
+      "name": "玩梗潮",
+      "description": "所有人都在转那张图，没有一个人记得她管什么。热度是真的，香火是假的。全部产量 ×0.7。",
+      "icon": "😹"
+    },
+    "prime_time": {
+      "name": "黄金档",
+      "description": "平台把她排进了首页推荐位。补光灯全开，弹幕滚得看不清。直播间产量 ×30。",
+      "icon": "📹"
+    },
+    "sutra_reading": {
+      "name": "诵经",
+      "description": "整座神殿同时开口，声音居然是对齐的。她愣了两秒，然后跟着念。点击收益 ×50。",
+      "icon": "📿"
+    }
+  },
+  "upgrades": {
+    "house_shrine_tier1": {
+      "name": "开过光的家神龛",
+      "description": "「家神龛」的产量翻倍。",
+      "icon": "🏠"
+    },
+    "house_shrine_tier10": {
+      "name": "香火不断的家神龛",
+      "description": "「家神龛」的产量翻倍。",
+      "icon": "🏠"
+    },
+    "house_shrine_tier25": {
+      "name": "一整条街的家神龛",
+      "description": "「家神龛」的产量翻倍。",
+      "icon": "🏠"
+    },
+    "stone_temple_tier1": {
+      "name": "开过光的石造神殿",
+      "description": "「石造神殿」的产量翻倍。",
+      "icon": "🏛️"
+    },
+    "stone_temple_tier10": {
+      "name": "香火不断的石造神殿",
+      "description": "「石造神殿」的产量翻倍。",
+      "icon": "🏛️"
+    },
+    "stone_temple_tier25": {
+      "name": "一整条街的石造神殿",
+      "description": "「石造神殿」的产量翻倍。",
+      "icon": "🏛️"
+    },
+    "offering_altar_tier1": {
+      "name": "开过光的祭坛",
+      "description": "「祭坛」的产量翻倍。",
+      "icon": "🕯️"
+    },
+    "offering_altar_tier10": {
+      "name": "香火不断的祭坛",
+      "description": "「祭坛」的产量翻倍。",
+      "icon": "🕯️"
+    },
+    "offering_altar_tier25": {
+      "name": "一整条街的祭坛",
+      "description": "「祭坛」的产量翻倍。",
+      "icon": "🕯️"
+    },
+    "sun_obelisk_tier1": {
+      "name": "开过光的太阳方尖碑",
+      "description": "「太阳方尖碑」的产量翻倍。",
+      "icon": "☀️"
+    },
+    "sun_obelisk_tier10": {
+      "name": "香火不断的太阳方尖碑",
+      "description": "「太阳方尖碑」的产量翻倍。",
+      "icon": "☀️"
+    },
+    "sun_obelisk_tier25": {
+      "name": "一整条街的太阳方尖碑",
+      "description": "「太阳方尖碑」的产量翻倍。",
+      "icon": "☀️"
+    },
+    "oracle_grove_tier1": {
+      "name": "开过光的神谕林",
+      "description": "「神谕林」的产量翻倍。",
+      "icon": "🌳"
+    },
+    "oracle_grove_tier10": {
+      "name": "香火不断的神谕林",
+      "description": "「神谕林」的产量翻倍。",
+      "icon": "🌳"
+    },
+    "oracle_grove_tier25": {
+      "name": "一整条街的神谕林",
+      "description": "「神谕林」的产量翻倍。",
+      "icon": "🌳"
+    },
+    "thunder_hall_tier1": {
+      "name": "开过光的雷霆殿",
+      "description": "「雷霆殿」的产量翻倍。",
+      "icon": "⚡"
+    },
+    "thunder_hall_tier10": {
+      "name": "香火不断的雷霆殿",
+      "description": "「雷霆殿」的产量翻倍。",
+      "icon": "⚡"
+    },
+    "thunder_hall_tier25": {
+      "name": "一整条街的雷霆殿",
+      "description": "「雷霆殿」的产量翻倍。",
+      "icon": "⚡"
+    },
+    "stream_studio_tier1": {
+      "name": "开过光的直播间",
+      "description": "「直播间」的产量翻倍。",
+      "icon": "📹"
+    },
+    "stream_studio_tier10": {
+      "name": "香火不断的直播间",
+      "description": "「直播间」的产量翻倍。",
+      "icon": "📹"
+    },
+    "stream_studio_tier25": {
+      "name": "一整条街的直播间",
+      "description": "「直播间」的产量翻倍。",
+      "icon": "📹"
+    },
+    "merch_factory_tier1": {
+      "name": "开过光的周边工厂",
+      "description": "「周边工厂」的产量翻倍。",
+      "icon": "🧸"
+    },
+    "merch_factory_tier10": {
+      "name": "香火不断的周边工厂",
+      "description": "「周边工厂」的产量翻倍。",
+      "icon": "🧸"
+    },
+    "merch_factory_tier25": {
+      "name": "一整条街的周边工厂",
+      "description": "「周边工厂」的产量翻倍。",
+      "icon": "🧸"
+    },
+    "abyssal_cathedral_tier1": {
+      "name": "开过光的深渊大教堂",
+      "description": "「深渊大教堂」的产量翻倍。",
+      "icon": "🐙"
+    },
+    "abyssal_cathedral_tier10": {
+      "name": "香火不断的深渊大教堂",
+      "description": "「深渊大教堂」的产量翻倍。",
+      "icon": "🐙"
+    },
+    "abyssal_cathedral_tier25": {
+      "name": "一整条街的深渊大教堂",
+      "description": "「深渊大教堂」的产量翻倍。",
+      "icon": "🐙"
+    },
+    "prayer_beads": {
+      "name": "念珠",
+      "description": "每次显灵额外获得 1 点香火。珠子是她自己串的，串到第七颗就开始不耐烦。",
+      "icon": "📿"
+    },
+    "live_demo": {
+      "name": "现场显灵",
+      "description": "点击收益 ×2。当着人的面变一次戏法，比在神龛里闷一百年有用。",
+      "icon": "✨"
+    },
+    "fan_service": {
+      "name": "粉丝服务",
+      "description": "点击收益 ×3。她学会了在显灵的同时念出对方的名字，转化率立刻翻倍。",
+      "icon": "💬"
+    },
+    "algorithm_god": {
+      "name": "推荐算法之神",
+      "description": "点击收益 ×4，每次显灵额外获得 1e4 香火。她没学过算法，但算法认识她。",
+      "icon": "📈"
+    },
+    "incense_monopoly": {
+      "name": "香火专营",
+      "description": "全局产量 ×2。她终于搞明白：神职是一种特许经营权。",
+      "icon": "🪙"
+    },
+    "tithe_network": {
+      "name": "什一税网络",
+      "description": "全局产量 ×2、增益时长 ×1.3。五套神话共用一本账，这就是跨体系结算。",
+      "icon": "🧾"
+    },
+    "faith_inflation": {
+      "name": "信仰通胀",
+      "description": "全局产量 ×2.5、神迹奖励 ×2。信徒变多了，人均虔诚度下降了——但总量是涨的。",
+      "icon": "🎈"
+    },
+    "stream_overlay": {
+      "name": "直播打赏",
+      "description": "直播间产量 ×30、全局产量 ×1.5。她把神龛搬上了补光灯，香火变成了流水。",
+      "icon": "🎁"
+    },
+    "merch_collab": {
+      "name": "周边联名",
+      "description": "全局产量 ×2、建筑价格 ×0.9。她把神格授权给了一家做毛绒玩具的厂，祭司团为这事开了三次会，最后一致同意：分红到账就不算亵渎。",
+      "icon": "🧸"
+    },
+    "shrine_to_temple": {
+      "name": "从神龛到神殿",
+      "description": "石造神殿产量 +2%／每座家神龛（上限 +200%）。第一块木板是所有神殿的图纸。",
+      "icon": "🏛️"
+    },
+    "altar_to_obelisk": {
+      "name": "祭坛的阴影",
+      "description": "太阳方尖碑产量 +1.5%／每座祭坛（上限 +150%）。影子越长，供品越多。",
+      "icon": "☀️"
+    },
+    "hall_to_abyss": {
+      "name": "雷霆之后的沉默",
+      "description": "深渊大教堂产量 +1%／每座雷霆殿（上限 +300%）。雷声停下来的地方，才是它开始的地方。",
+      "icon": "🐙"
+    },
+    "hearth_sutra": {
+      "name": "灶王经",
+      "description": "全局产量 ×1.5。全文只有三句，第一句是「别把碗摔了」。",
+      "icon": "🏠"
+    },
+    "book_of_the_dead": {
+      "name": "亡者之书（猫用版）",
+      "description": "全局产量 ×2。原版写的是怎么去往生，猫用版第二章开始全是「凭什么」。",
+      "icon": "🐈"
+    },
+    "oracle_collection": {
+      "name": "神谕集",
+      "description": "全局产量 ×2、建筑价格 ×0.9。三千条预言里真正有用的那七条，她单独订了一册。",
+      "icon": "🏺"
+    },
+    "ragnarok_schedule": {
+      "name": "诸神黄昏排期表",
+      "description": "全局产量 ×2.5、增益时长 ×1.2。末日要提前三个月定档，不然赞助商排不开。",
+      "icon": "⚡"
+    },
+    "rlyeh_phrasebook": {
+      "name": "拉莱耶语入门",
+      "description": "全局产量 ×3，但增益时长 ×0.8。第一课是发音，第二课是别念出声。",
+      "icon": "🐙"
+    },
+    "old_altar_stone": {
+      "name": "旧祭坛的石头",
+      "description": "全局产量 +25%。第一块木板上压着的那块石头，她换了五套神话都没扔。",
+      "icon": "🪨"
+    },
+    "priest_handbook": {
+      "name": "祭司手册",
+      "description": "建筑价格 ×0.8。换一套神话就要重写一遍仪轨，她干脆写成了模板。",
+      "icon": "📕"
+    },
+    "her_own_voice": {
+      "name": "她自己的声音",
+      "description": "点击收益 ×6、神迹奖励 ×1.5。五套神话用了五种语言，只有声音一直是她的。",
+      "icon": "🎙️"
+    },
+    "loyal_flock": {
+      "name": "跑不掉的信徒",
+      "description": "全局产量 ×2、神迹奖励 ×1.5。神话换了五套，有一批人五套都信了。",
+      "icon": "🧑‍🤝‍🧑"
+    },
+    "same_cat": {
+      "name": "还是同一只猫",
+      "description": "全局产量 ×2.5、增益时长 ×1.4。五套体系吵了几千年，最后达成共识：神只有一只。",
+      "icon": "🐾"
+    }
+  },
+  "goldenCookies": {
+    "forgotten_offering": {
+      "name": "有人偷偷补了供品",
+      "description": "祭坛上多了一盘还热着的鱼，旁边没有脚印。她没有去查是谁放的。获得 {amount} 香火。",
+      "icon": "🍥"
+    },
+    "divine_frenzy": {
+      "name": "神恩降临",
+      "description": "云裂开一条缝，光正好打在她的神龛上，围观的人开始拍照。神恩降临 {duration}。",
+      "icon": "✨"
+    },
+    "manifest_frenzy": {
+      "name": "显灵停不下来",
+      "description": "三十七个愿望一口气满足完，她喘了口气说「下一个」。显灵停不下来 {duration}。",
+      "icon": "🙌"
+    },
+    "snatched_offering": {
+      "name": "供品被顺走了",
+      "description": "案板是空的，供盘是热的，猫是装睡的。损失 {amount} 香火。",
+      "icon": "🥷"
+    },
+    "nothing": {
+      "name": "什么也没发生",
+      "description": "她在神龛前坐了一整个下午，只等到一只路过的猫，那只猫看了她一眼就走了。",
+      "icon": "🕳️"
+    },
+    "pilgrim_flood": {
+      "name": "朝圣潮",
+      "description": "路上全是人，队伍从山脚排到门口。有人问她能不能插队，她说「你问后面的人」。朝圣潮 {duration}。",
+      "icon": "🚶"
+    },
+    "sutra_reading": {
+      "name": "诵经",
+      "description": "整座神殿同时开口，声音居然是对齐的，她愣了两秒然后跟着念。诵经 {duration}。",
+      "icon": "📿"
+    },
+    "double_miracle": {
+      "name": "两套神话同时显灵",
+      "description": "两边的祭司都说是自己请来的，她两边都点了点头——这种场面，点头最省事。",
+      "icon": "🔀"
+    },
+    "offering_shortage": {
+      "name": "供品荒",
+      "description": "今年收成不好，塑料水果摆了整整一季。供品荒 {duration}。",
+      "icon": "📉"
+    },
+    "prime_time": {
+      "name": "黄金档",
+      "description": "平台把她排进了首页推荐位，补光灯全开。她对着镜头说了句「大家好」，弹幕炸了。黄金档 {duration}。",
+      "icon": "📹"
+    }
   }
 }

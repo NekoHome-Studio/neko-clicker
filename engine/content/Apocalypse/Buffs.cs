@@ -11,15 +11,23 @@ namespace NekoClicker.Content.Apocalypse;
 /// </summary>
 internal static class Buffs
 {
+    /// <summary>
+    /// 本包的 <c>text.json</c>：增益 / 升级 / 金猫结果的文案与其它分区<b>共用同一份实例</b>（<see cref="Lore.Prose"/>）。<para>
+    /// 必须共用：孤儿检查会遍历整份文件的每个 kind，而"哪些 id 已取用"是按实例记的——
+    /// 两个实例各记一半，就会把对方那些 id 全报成孤儿。
+    /// </para>
+    /// </summary>
+    private static ContentText Prose => Lore.Prose;
+
     /// <summary>全部增益。</summary>
     public static BuffDefinition[] All =>
     [
         new()
         {
             Id = "mutation_wave",
-            Name = "变异潮",
-            Icon = "🧬",
-            Description = "地下那层东西被水泡过之后开始长，长得比谁都快。全部产量 ×7。",
+            Name = Prose.Text("buffs", "mutation_wave", "name"),
+            Icon = Prose.Text("buffs", "mutation_wave", "icon"),
+            Description = Prose.Text("buffs", "mutation_wave", "description"),
             Duration = 77,
             StackMode = BuffStackMode.Refresh,
             Modifiers = [Modifier.GlobalMultiplier(7)],
@@ -27,9 +35,9 @@ internal static class Buffs
         new()
         {
             Id = "scavenge_frenzy",
-            Name = "翻找狂热",
-            Icon = "⛏️",
-            Description = "她今天不想停。手指划破了就换一只手。点击收益 ×777。",
+            Name = Prose.Text("buffs", "scavenge_frenzy", "name"),
+            Icon = Prose.Text("buffs", "scavenge_frenzy", "icon"),
+            Description = Prose.Text("buffs", "scavenge_frenzy", "description"),
             Duration = 13,
             StackMode = BuffStackMode.Refresh,
             Modifiers = [Modifier.ClickMultiplier(777)],
@@ -37,9 +45,9 @@ internal static class Buffs
         new()
         {
             Id = "prewar_cache",
-            Name = "战前缓存",
-            Icon = "📦",
-            Description = "撬开一扇封死的门，里面是整整齐齐码到天花板的箱子。全部产量 ×15。",
+            Name = Prose.Text("buffs", "prewar_cache", "name"),
+            Icon = Prose.Text("buffs", "prewar_cache", "icon"),
+            Description = Prose.Text("buffs", "prewar_cache", "description"),
             Duration = 60,
             StackMode = BuffStackMode.Refresh,
             Modifiers = [Modifier.GlobalMultiplier(15)],
@@ -47,9 +55,9 @@ internal static class Buffs
         new()
         {
             Id = "blackout",
-            Name = "全城断电",
-            Icon = "🌑",
-            Description = "负载跳了，所有灯同时灭。黑暗中只剩下她自己的呼吸。全部产量 ×0.5。",
+            Name = Prose.Text("buffs", "blackout", "name"),
+            Icon = Prose.Text("buffs", "blackout", "icon"),
+            Description = Prose.Text("buffs", "blackout", "description"),
             Duration = 66,
             StackMode = BuffStackMode.Refresh,
             Modifiers = [Modifier.GlobalMultiplier(0.5)],
@@ -58,9 +66,9 @@ internal static class Buffs
         new()
         {
             Id = "radiation_cloud",
-            Name = "辐射云",
-            Icon = "☢️",
-            Description = "风向变了，灰色的雾贴着地面过来。所有人下到地下二层。全部产量 ×0.6。",
+            Name = Prose.Text("buffs", "radiation_cloud", "name"),
+            Icon = Prose.Text("buffs", "radiation_cloud", "icon"),
+            Description = Prose.Text("buffs", "radiation_cloud", "description"),
             Duration = 72,
             StackMode = BuffStackMode.Refresh,
             Modifiers = [Modifier.GlobalMultiplier(0.6)],
@@ -69,9 +77,9 @@ internal static class Buffs
         new()
         {
             Id = "plague",
-            Name = "疫病",
-            Icon = "🦠",
-            Description = "从东边来的三个人带来了它。隔离、烧水、等人好。全部产量 ×0.7。",
+            Name = Prose.Text("buffs", "plague", "name"),
+            Icon = Prose.Text("buffs", "plague", "icon"),
+            Description = Prose.Text("buffs", "plague", "description"),
             Duration = 90,
             StackMode = BuffStackMode.Refresh,
             Modifiers = [Modifier.GlobalMultiplier(0.7)],
@@ -80,9 +88,9 @@ internal static class Buffs
         new()
         {
             Id = "shelter_night",
-            Name = "避难所之夜",
-            Icon = "🛖",
-            Description = "外面下着雨，所有人挤在地下二层分一锅汤。避难所产量 ×30。",
+            Name = Prose.Text("buffs", "shelter_night", "name"),
+            Icon = Prose.Text("buffs", "shelter_night", "icon"),
+            Description = Prose.Text("buffs", "shelter_night", "description"),
             Duration = 30,
             StackMode = BuffStackMode.Extend,
             Modifiers = [Modifier.BuildingMultiplier("shelter", 30)],
@@ -90,9 +98,9 @@ internal static class Buffs
         new()
         {
             Id = "salvage_order",
-            Name = "拆解有序",
-            Icon = "🔧",
-            Description = "她画了一张拆解顺序图，拆下来的东西第一次全部用上了。点击收益 ×50。",
+            Name = Prose.Text("buffs", "salvage_order", "name"),
+            Icon = Prose.Text("buffs", "salvage_order", "icon"),
+            Description = Prose.Text("buffs", "salvage_order", "description"),
             Duration = 20,
             StackMode = BuffStackMode.Refresh,
             Modifiers = [Modifier.ClickMultiplier(50)],

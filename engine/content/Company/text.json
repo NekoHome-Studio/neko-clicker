@@ -699,5 +699,331 @@
       "icon": "📄",
       "description": "抵达结局「无疾而终」。"
     }
+  },
+  "buffs": {
+    "requirement_change": {
+      "name": "需求变更",
+      "description": "甲方半夜发来新需求，所有排期作废，所有人都在动。全部产量 ×7。",
+      "icon": "🌀"
+    },
+    "all_nighter": {
+      "name": "通宵冲刺",
+      "description": "咖啡机第三次见底，交付日期提前了一天。点击收益 ×777。",
+      "icon": "☕"
+    },
+    "funding_round": {
+      "name": "融资到账",
+      "description": "钱到了，账上第一次有了不用算着花的数字。全部产量 ×15。",
+      "icon": "💸"
+    },
+    "server_outage": {
+      "name": "服务器宕机",
+      "description": "线上全挂，客诉涌进来，所有人都在等一个人修好它。全部产量 ×0.5。",
+      "icon": "🔥"
+    },
+    "viral_post": {
+      "name": "意外出圈",
+      "description": "她随手发的一条动态上了热门，服务器差点没扛住。全部产量 ×25。",
+      "icon": "📣"
+    },
+    "poached": {
+      "name": "被挖角",
+      "description": "两个核心同事递了辞呈，理由写的是「想换个环境」。全部产量 ×0.7。",
+      "icon": "🚪"
+    },
+    "team_offsite": {
+      "name": "团建",
+      "description": "两天一夜，山里没有信号。回来后大家说话的语气不一样了。工位产量 ×30。",
+      "icon": "🏕️"
+    },
+    "year_end_bonus": {
+      "name": "年终奖",
+      "description": "红包发下去的那一刻，办公室安静了三秒，然后掌声。点击收益 ×50。",
+      "icon": "🧧"
+    }
+  },
+  "upgrades": {
+    "desk_tier1": {
+      "name": "正式配齐的工位",
+      "description": "「工位」的产量翻倍。",
+      "icon": "🪑"
+    },
+    "desk_tier10": {
+      "name": "成排的工位",
+      "description": "「工位」的产量翻倍。",
+      "icon": "🪑"
+    },
+    "desk_tier25": {
+      "name": "整层楼的工位",
+      "description": "「工位」的产量翻倍。",
+      "icon": "🪑"
+    },
+    "meeting_room_tier1": {
+      "name": "正式配齐的会议室",
+      "description": "「会议室」的产量翻倍。",
+      "icon": "🗣️"
+    },
+    "meeting_room_tier10": {
+      "name": "成排的会议室",
+      "description": "「会议室」的产量翻倍。",
+      "icon": "🗣️"
+    },
+    "meeting_room_tier25": {
+      "name": "整层楼的会议室",
+      "description": "「会议室」的产量翻倍。",
+      "icon": "🗣️"
+    },
+    "outsourcing_base_tier1": {
+      "name": "正式配齐的外包基地",
+      "description": "「外包基地」的产量翻倍。",
+      "icon": "🧵"
+    },
+    "outsourcing_base_tier10": {
+      "name": "成排的外包基地",
+      "description": "「外包基地」的产量翻倍。",
+      "icon": "🧵"
+    },
+    "outsourcing_base_tier25": {
+      "name": "整层楼的外包基地",
+      "description": "「外包基地」的产量翻倍。",
+      "icon": "🧵"
+    },
+    "server_room_tier1": {
+      "name": "正式配齐的服务器",
+      "description": "「服务器」的产量翻倍。",
+      "icon": "🖥️"
+    },
+    "server_room_tier10": {
+      "name": "成排的服务器",
+      "description": "「服务器」的产量翻倍。",
+      "icon": "🖥️"
+    },
+    "server_room_tier25": {
+      "name": "整层楼的服务器",
+      "description": "「服务器」的产量翻倍。",
+      "icon": "🖥️"
+    },
+    "growth_team_tier1": {
+      "name": "正式配齐的增长团队",
+      "description": "「增长团队」的产量翻倍。",
+      "icon": "📈"
+    },
+    "growth_team_tier10": {
+      "name": "成排的增长团队",
+      "description": "「增长团队」的产量翻倍。",
+      "icon": "📈"
+    },
+    "growth_team_tier25": {
+      "name": "整层楼的增长团队",
+      "description": "「增长团队」的产量翻倍。",
+      "icon": "📈"
+    },
+    "roadshow_hall_tier1": {
+      "name": "正式配齐的IPO 路演厅",
+      "description": "「IPO 路演厅」的产量翻倍。",
+      "icon": "🎤"
+    },
+    "roadshow_hall_tier10": {
+      "name": "成排的IPO 路演厅",
+      "description": "「IPO 路演厅」的产量翻倍。",
+      "icon": "🎤"
+    },
+    "roadshow_hall_tier25": {
+      "name": "整层楼的IPO 路演厅",
+      "description": "「IPO 路演厅」的产量翻倍。",
+      "icon": "🎤"
+    },
+    "data_center_tier1": {
+      "name": "正式配齐的数据中心",
+      "description": "「数据中心」的产量翻倍。",
+      "icon": "🗄️"
+    },
+    "data_center_tier10": {
+      "name": "成排的数据中心",
+      "description": "「数据中心」的产量翻倍。",
+      "icon": "🗄️"
+    },
+    "data_center_tier25": {
+      "name": "整层楼的数据中心",
+      "description": "「数据中心」的产量翻倍。",
+      "icon": "🗄️"
+    },
+    "overseas_branch_tier1": {
+      "name": "正式配齐的海外分部",
+      "description": "「海外分部」的产量翻倍。",
+      "icon": "🌏"
+    },
+    "overseas_branch_tier10": {
+      "name": "成排的海外分部",
+      "description": "「海外分部」的产量翻倍。",
+      "icon": "🌏"
+    },
+    "overseas_branch_tier25": {
+      "name": "整层楼的海外分部",
+      "description": "「海外分部」的产量翻倍。",
+      "icon": "🌏"
+    },
+    "headquarters_tier1": {
+      "name": "正式配齐的总部大楼",
+      "description": "「总部大楼」的产量翻倍。",
+      "icon": "🏢"
+    },
+    "headquarters_tier10": {
+      "name": "成排的总部大楼",
+      "description": "「总部大楼」的产量翻倍。",
+      "icon": "🏢"
+    },
+    "headquarters_tier25": {
+      "name": "整层楼的总部大楼",
+      "description": "「总部大楼」的产量翻倍。",
+      "icon": "🏢"
+    },
+    "business_card": {
+      "name": "名片",
+      "description": "每次谈单额外获得 1 点营收。印了一千张，用掉三张。",
+      "icon": "💳"
+    },
+    "pitch_deck": {
+      "name": "路演 PPT",
+      "description": "点击收益 ×2。第 7 页那张图是你熬了两个晚上画的。",
+      "icon": "📊"
+    },
+    "personal_brand": {
+      "name": "个人品牌",
+      "description": "点击收益 ×3。客户开始点名要你亲自讲，你分不清这是好事还是坏事。",
+      "icon": "🎙️"
+    },
+    "team_handbook": {
+      "name": "员工手册",
+      "description": "全局产量 +0.3%／每点士气（上限 +60%）。终于有人把规矩写下来了。",
+      "icon": "📘"
+    },
+    "option_pool": {
+      "name": "期权池",
+      "description": "全局产量 +0.5%／每点士气（上限 +150%）。把未来的钱分出去，换现在的劲。",
+      "icon": "🎫"
+    },
+    "severance_protocol": {
+      "name": "离职补偿",
+      "description": "设备价格 ×0.7，但事故奖励 ×0.8。你开始认真算「最坏情况」了。",
+      "icon": "📦"
+    },
+    "flex_office": {
+      "name": "弹性办公",
+      "description": "全局产量 ×2.2。没人再打卡之后，活反而干完了。",
+      "icon": "🏡"
+    },
+    "culture_deck": {
+      "name": "文化手册",
+      "description": "全局产量 +5%／每个成就。写下来的东西才叫文化，没写下来的叫习惯。",
+      "icon": "📔"
+    },
+    "okr_alignment": {
+      "name": "OKR 对齐",
+      "description": "全局产量 +3%／每个成就（上限 +300%）。现在每个人的目标都挂在墙上。",
+      "icon": "🎯"
+    },
+    "employer_review": {
+      "name": "雇主口碑",
+      "description": "事故奖励 ×1.6、事故频率 +30%。好事开始主动找上门了。",
+      "icon": "⭐"
+    },
+    "series_a_fuel": {
+      "name": "A 轮弹药",
+      "description": "全局产量 ×1.8。钱到账那天全员加班——这一条开始吃士气。",
+      "icon": "🚀"
+    },
+    "bell_rehearsal": {
+      "name": "敲钟彩排",
+      "description": "全局产量 ×2.5。你对着空椅子练了十七遍「感谢我们的团队」。",
+      "icon": "🔔"
+    },
+    "wolf_culture": {
+      "name": "狼性文化",
+      "description": "全局产量 ×3，但增益时长 ×0.7。标语贴满了墙，士气开始往下掉。",
+      "icon": "🐺"
+    },
+    "muscle_memory": {
+      "name": "肌肉记忆",
+      "description": "全局产量 +25%。手比脑子先想起来怎么干。",
+      "icon": "💪"
+    },
+    "network": {
+      "name": "人脉",
+      "description": "设备价格 ×0.8。你知道谁的报价可以砍一半。",
+      "icon": "🤝"
+    },
+    "first_order": {
+      "name": "第一笔订单",
+      "description": "点击收益 ×5、事故奖励 ×1.5。你还留着那张手写的收据。",
+      "icon": "🧾"
+    },
+    "ipo_experience": {
+      "name": "上市经验",
+      "description": "全局产量 ×2。你记得流程的每一步，包括哪一步会卡住。",
+      "icon": "📈"
+    },
+    "no_more_crunch": {
+      "name": "不再加班",
+      "description": "增益时长 ×1.4。你终于明白，通宵换来的效率是借来的。",
+      "icon": "🌙"
+    },
+    "golden_parachute": {
+      "name": "金降落伞",
+      "description": "全局产量 ×1.5、事故奖励 ×2。这一次，退路是你自己给自己准备的。",
+      "icon": "🪂"
+    }
+  },
+  "goldenCookies": {
+    "scope_creep": {
+      "name": "需求蔓延",
+      "description": "甲方把「顺便加一下」说了四次。团队边骂边做，居然真的做完了。获得 {amount} 营收。",
+      "icon": "📩"
+    },
+    "midnight_change": {
+      "name": "半夜改需求",
+      "description": "凌晨两点，消息弹出来：「方向要调整一下。」全员进入救火状态。需求变更 {duration}。",
+      "icon": "🌙"
+    },
+    "overtime_sprint": {
+      "name": "通宵冲刺",
+      "description": "咖啡机第三次见底，她把外套盖在腿上继续改。通宵冲刺 {duration}。",
+      "icon": "☕"
+    },
+    "client_vanished": {
+      "name": "甲方失联",
+      "description": "对接人换了三任，最后一任的签名档写着「已离职」。预付款要不回来了。损失 {amount} 营收。",
+      "icon": "📵"
+    },
+    "empty_meeting": {
+      "name": "会议白开",
+      "description": "两个小时的会，结论是「下次再对齐一下」。什么都没发生，也什么都没多。",
+      "icon": "🕳️"
+    },
+    "funding_round": {
+      "name": "融资到账",
+      "description": "投资人回了邮件，只有一个词：「打款。」融资到账 {duration}。",
+      "icon": "💸"
+    },
+    "viral_post": {
+      "name": "意外出圈",
+      "description": "她随手发的一条动态上了热门，评论区一半在问产品，一半在问猫。出圈 {duration}。",
+      "icon": "📣"
+    },
+    "double_change": {
+      "name": "连环变更",
+      "description": "需求改到第三版的时候，甲方说：「还是第一版好。」所有人都笑了，笑完继续改。",
+      "icon": "🌀"
+    },
+    "server_outage": {
+      "name": "线上事故",
+      "description": "监控全红的那三十秒，你听见自己的心跳。服务器宕机 {duration}。",
+      "icon": "🔥"
+    },
+    "team_offsite": {
+      "name": "团建",
+      "description": "两天一夜，山里没有信号。回来之后，工位上的灯亮得更久了。团建 {duration}。",
+      "icon": "🏕️"
+    }
   }
 }

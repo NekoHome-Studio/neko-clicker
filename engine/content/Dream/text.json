@@ -594,5 +594,366 @@
       "icon": "🌙",
       "description": "抵达结局「永远留在梦里」。"
     }
+  },
+  "buffs": {
+    "lucid_dream": {
+      "name": "清明梦",
+      "description": "她忽然知道自己在做梦。知道之后，整层梦都听她的。全部产量 ×7。",
+      "icon": "💡"
+    },
+    "controlled_dream": {
+      "name": "梦中梦",
+      "description": "梦见自己在睡，然后又在那一层里睡着。醒来的时候要往上数四层。全部产量 ×15。",
+      "icon": "🌀"
+    },
+    "dream_leap": {
+      "name": "入梦",
+      "description": "她一脚踏空，落进更深的那一层。落地的时候手是张开的，什么都抓得住。点击收益 ×777。",
+      "icon": "⤵️"
+    },
+    "sleep_paralysis": {
+      "name": "鬼压床",
+      "description": "她醒了，但只有眼睛醒了。胸口上有东西坐着，它不动，也不说话。全部产量 ×0.5。",
+      "icon": "🪨"
+    },
+    "falling": {
+      "name": "坠落",
+      "description": "脚下的地面没了。她往下掉的时候数着楼层，数到第四层就不敢数了。全部产量 ×0.7。",
+      "icon": "🕳️"
+    },
+    "nightmare_tide": {
+      "name": "梦魇潮",
+      "description": "褶皱里的东西一起翻上来了。它们不追她，只是把整层梦压得很低。全部产量 ×0.6。",
+      "icon": "🌊"
+    },
+    "deeper_layer": {
+      "name": "更深的一层",
+      "description": "梦层又往下一层。这一层比上面大得多，也亮得多。全部产量 ×2.5。",
+      "icon": "🌌"
+    },
+    "dream_core_pulse": {
+      "name": "梦核的搏动",
+      "description": "梦核跳了一下，整座梦跟着抖了一下。所有东西都清楚了一倍。梦核产量 ×30。",
+      "icon": "🔮"
+    },
+    "crafting": {
+      "name": "织梦",
+      "description": "她把上一晚剩下的线头接了起来。今晚的梦会接着说昨天那一句。点击收益 ×50。",
+      "icon": "🧶"
+    },
+    "waking_moment": {
+      "name": "将醒未醒",
+      "description": "她听见外面有人在收摊。那一瞬间她分得清哪个是真的。全部产量 ×9。",
+      "icon": "🌅"
+    }
+  },
+  "upgrades": {
+    "pillow_t1": {
+      "name": "铺好的枕头",
+      "description": "「枕头」的产量翻倍。",
+      "icon": "🛏️"
+    },
+    "pillow_t10": {
+      "name": "铺了一层的枕头",
+      "description": "「枕头」的产量翻倍。",
+      "icon": "🛏️"
+    },
+    "pillow_t25": {
+      "name": "一层压一层的枕头",
+      "description": "「枕头」的产量翻倍。",
+      "icon": "🛏️"
+    },
+    "dream_layer_t1": {
+      "name": "铺好的梦层",
+      "description": "「梦层」的产量翻倍。",
+      "icon": "🌙"
+    },
+    "dream_layer_t10": {
+      "name": "铺了一层的梦层",
+      "description": "「梦层」的产量翻倍。",
+      "icon": "🌙"
+    },
+    "dream_layer_t25": {
+      "name": "一层压一层的梦层",
+      "description": "「梦层」的产量翻倍。",
+      "icon": "🌙"
+    },
+    "dream_mirror_t1": {
+      "name": "铺好的梦镜",
+      "description": "「梦镜」的产量翻倍。",
+      "icon": "🪞"
+    },
+    "dream_mirror_t10": {
+      "name": "铺了一层的梦镜",
+      "description": "「梦镜」的产量翻倍。",
+      "icon": "🪞"
+    },
+    "dream_mirror_t25": {
+      "name": "一层压一层的梦镜",
+      "description": "「梦镜」的产量翻倍。",
+      "icon": "🪞"
+    },
+    "nightmare_nest_t1": {
+      "name": "铺好的噩梦巢",
+      "description": "「噩梦巢」的产量翻倍。",
+      "icon": "🕷️"
+    },
+    "nightmare_nest_t10": {
+      "name": "铺了一层的噩梦巢",
+      "description": "「噩梦巢」的产量翻倍。",
+      "icon": "🕷️"
+    },
+    "nightmare_nest_t25": {
+      "name": "一层压一层的噩梦巢",
+      "description": "「噩梦巢」的产量翻倍。",
+      "icon": "🕷️"
+    },
+    "insomnia_corridor_t1": {
+      "name": "铺好的失眠走廊",
+      "description": "「失眠走廊」的产量翻倍。",
+      "icon": "🚪"
+    },
+    "insomnia_corridor_t10": {
+      "name": "铺了一层的失眠走廊",
+      "description": "「失眠走廊」的产量翻倍。",
+      "icon": "🚪"
+    },
+    "insomnia_corridor_t25": {
+      "name": "一层压一层的失眠走廊",
+      "description": "「失眠走廊」的产量翻倍。",
+      "icon": "🚪"
+    },
+    "lucid_zone_t1": {
+      "name": "铺好的清醒区",
+      "description": "「清醒区」的产量翻倍。",
+      "icon": "💡"
+    },
+    "lucid_zone_t10": {
+      "name": "铺了一层的清醒区",
+      "description": "「清醒区」的产量翻倍。",
+      "icon": "💡"
+    },
+    "lucid_zone_t25": {
+      "name": "一层压一层的清醒区",
+      "description": "「清醒区」的产量翻倍。",
+      "icon": "💡"
+    },
+    "dream_weaver_t1": {
+      "name": "铺好的织梦者",
+      "description": "「织梦者」的产量翻倍。",
+      "icon": "🧶"
+    },
+    "dream_weaver_t10": {
+      "name": "铺了一层的织梦者",
+      "description": "「织梦者」的产量翻倍。",
+      "icon": "🧶"
+    },
+    "dream_weaver_t25": {
+      "name": "一层压一层的织梦者",
+      "description": "「织梦者」的产量翻倍。",
+      "icon": "🧶"
+    },
+    "nesting_tower_t1": {
+      "name": "铺好的嵌套塔",
+      "description": "「嵌套塔」的产量翻倍。",
+      "icon": "🗼"
+    },
+    "nesting_tower_t10": {
+      "name": "铺了一层的嵌套塔",
+      "description": "「嵌套塔」的产量翻倍。",
+      "icon": "🗼"
+    },
+    "nesting_tower_t25": {
+      "name": "一层压一层的嵌套塔",
+      "description": "「嵌套塔」的产量翻倍。",
+      "icon": "🗼"
+    },
+    "dream_core_t1": {
+      "name": "铺好的梦核",
+      "description": "「梦核」的产量翻倍。",
+      "icon": "🔮"
+    },
+    "dream_core_t10": {
+      "name": "铺了一层的梦核",
+      "description": "「梦核」的产量翻倍。",
+      "icon": "🔮"
+    },
+    "dream_core_t25": {
+      "name": "一层压一层的梦核",
+      "description": "「梦核」的产量翻倍。",
+      "icon": "🔮"
+    },
+    "count_sheep": {
+      "name": "数到第七只",
+      "description": "每次闭眼额外获得 1 点梦。她数到第七只就不数了，因为第七只开始说话。",
+      "icon": "🐑"
+    },
+    "half_asleep": {
+      "name": "半梦半醒",
+      "description": "点击收益 ×2。只有一半睡着了的人，手指还能动。",
+      "icon": "😑"
+    },
+    "remember_the_dream": {
+      "name": "记住这个梦",
+      "description": "点击收益 ×3。醒来之后她写了三行，写完发现字是反的。",
+      "icon": "📝"
+    },
+    "wake_control": {
+      "name": "想醒就能醒",
+      "description": "点击收益 ×4，且每次闭眼额外获得 1e4 点梦。她试过一次，那次她真的醒了，然后又睡了回去。",
+      "icon": "⏱️"
+    },
+    "seven_minutes": {
+      "name": "再睡七分钟",
+      "description": "点击收益 ×5。这是她说得最多的一句话，也是这个梦里最像谎的一句。",
+      "icon": "⏰"
+    },
+    "thickening": {
+      "name": "梦在变浓",
+      "description": "全局产量 +0.05%／每点梦境能量（最多计入 20,000 点，即 +100%）。她抬手的时候，空气有一点阻力。",
+      "icon": "🌫️"
+    },
+    "dream_substance": {
+      "name": "梦有实体",
+      "description": "全局产量 ×2，增益时长 ×1.25。她按了一下墙，墙面凹下去一小块，慢慢又弹了回来。",
+      "icon": "🧱"
+    },
+    "make_things": {
+      "name": "梦里能造东西",
+      "description": "全局产量 ×2.5、梦魇奖励 ×2。她捏了一只猫，捏出来是热的，还会打呼。",
+      "icon": "🪄"
+    },
+    "core_resonance": {
+      "name": "和梦核共振",
+      "description": "全局产量 +0.3%／每点梦境能量（最多计入 600 million 点，即 +180%）。她和那颗东西对上了频率。",
+      "icon": "🔮"
+    },
+    "nest_under_pillow": {
+      "name": "枕头底下压着一层梦",
+      "description": "噩梦巢产量 +1.5%／每座枕头（最多计入 100 座，即 +150%）。她把枕头掀开过，底下是凉的。",
+      "icon": "🛏️"
+    },
+    "weave_the_layer": {
+      "name": "用梦层织梦",
+      "description": "织梦者产量 +2%／每层梦层（最多计入 100 层，即 +200%）。线头是从下面那一层抽上来的。",
+      "icon": "🧶"
+    },
+    "nest_to_lucid": {
+      "name": "从噩梦里带出来的清醒",
+      "description": "清醒区产量 +1%／每座噩梦巢（最多计入 200 座，即 +200%）。在噩梦里待过的人，做梦时最清醒。",
+      "icon": "💡"
+    },
+    "tower_to_core": {
+      "name": "塔的重量压在核上",
+      "description": "梦核产量 +1%／每座嵌套塔（最多计入 300 座，即 +300%）。塔越往上，核转得越快。",
+      "icon": "🗼"
+    },
+    "the_first_fall": {
+      "name": "第一次掉下去",
+      "description": "全局产量 ×1.8。入睡的那一瞬间像踩空一格楼梯，谁都躲不过。",
+      "icon": "⤵️"
+    },
+    "heavier": {
+      "name": "越来越沉",
+      "description": "全局产量 ×2、建筑价格 ×0.92。醒来的时候身体像灌了铅，那是因为梦舍不得放人。",
+      "icon": "🪨"
+    },
+    "my_own_dream": {
+      "name": "这是我的梦",
+      "description": "全局产量 ×2.2，梦魇间隔 ×1.15（来得更少）。清明之后梦魇反而少了一点——因为它也得听她的。",
+      "icon": "💡"
+    },
+    "things_i_did": {
+      "name": "没做完的那些事",
+      "description": "全局产量 ×2.5、增益时长 ×1.2。噩梦层里的东西全是从上面掉下来的，包括她自己的。",
+      "icon": "🕷️"
+    },
+    "the_core_answered": {
+      "name": "梦核答应了一声",
+      "description": "全局产量 ×3，但增益时长 ×0.85。它转得快了，所以梦也散得快。",
+      "icon": "🔮"
+    },
+    "one_more_layer": {
+      "name": "再搭一层",
+      "description": "全局产量 ×2.5、建筑价格 ×0.88。最里面那层是她自己搭的，所以她说了算。",
+      "icon": "🧱"
+    },
+    "kept_fragments": {
+      "name": "留下来的碎片",
+      "description": "全局产量 +25%。上一层的梦碎在这里，拼起来还能认出形状。",
+      "icon": "🧩"
+    },
+    "know_the_way_down": {
+      "name": "记得往下走的路",
+      "description": "建筑价格 ×0.82。往下走过一次之后，第二次就不用摸黑。",
+      "icon": "🪜"
+    },
+    "hand_still_works": {
+      "name": "手还能动",
+      "description": "点击收益 ×6、梦魇奖励 ×1.5。在浅眠那一层，能动手就是全部的本事。",
+      "icon": "✋"
+    },
+    "same_night": {
+      "name": "还是同一个晚上",
+      "description": "全局产量 ×2、梦魇奖励 ×1.5。睡了这么深，外面的天还没亮。",
+      "icon": "🌙"
+    },
+    "remember_every_layer": {
+      "name": "每一层都记得",
+      "description": "全局产量 ×2.5、增益时长 ×1.4。她能把五层梦按顺序背出来，一层不差。",
+      "icon": "🧠"
+    }
+  },
+  "goldenCookies": {
+    "warm_hollow": {
+      "name": "枕头下的温热",
+      "description": "她把手伸到枕头底下，摸到一块被自己焐热的地方。梦就是从那儿开始的。获得 {amount} 点梦。",
+      "icon": "🛏️"
+    },
+    "nested": {
+      "name": "梦中梦",
+      "description": "她在梦里睡着了，然后又在那一层里睡着。醒的时候要往上数四层。梦中梦 {duration}。",
+      "icon": "🌀"
+    },
+    "lucid": {
+      "name": "忽然清明",
+      "description": "她停下来，抬手看了看自己的手指，然后说：这是我的梦。清明梦 {duration}。",
+      "icon": "💡"
+    },
+    "paralysis": {
+      "name": "鬼压床",
+      "description": "她醒了，但只有眼睛醒了。胸口上坐着的东西不动，也不说话。鬼压床 {duration}。",
+      "icon": "🪨"
+    },
+    "name_called": {
+      "name": "有人喊她的名字",
+      "description": "声音是从上面来的，隔着好几层梦，闷闷的，但她听清了。那声音喊的是她真正的名字。",
+      "icon": "📣"
+    },
+    "replay": {
+      "name": "这一段做过",
+      "description": "她认得这面墙、这句台词、这个转身的弧度。上一次也是在这儿醒的。",
+      "icon": "🔁"
+    },
+    "alarm_inside": {
+      "name": "闹钟在梦里响",
+      "description": "声音从梦里面传出来。她翻了半天才找到那个闹钟——它就摆在梦的床头。入梦 {duration}。",
+      "icon": "⏰"
+    },
+    "becoming": {
+      "name": "变成梦魇",
+      "description": "她低头看见自己的手不对。有那么一小会儿，她不介意——那一小会儿里她什么都不怕。梦魇潮 {duration}。",
+      "icon": "🕷️"
+    },
+    "falling_dream": {
+      "name": "楼在梦里塌了",
+      "description": "她站的那一层忽然没了。往下掉的时候她数着楼层，数到第四层就不敢数了。坠落 {duration}。",
+      "icon": "🕳️"
+    },
+    "dragged_deeper": {
+      "name": "被拽进更深处",
+      "description": "有东西拉着她的脚踝往上——不对，是往下。她攥住了一层梦的边缘，还是被带走了。",
+      "icon": "🪝"
+    }
   }
 }

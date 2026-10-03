@@ -17,15 +17,23 @@ namespace NekoClicker.Content.Dream;
 /// </summary>
 internal static class GoldenCookieOutcomes
 {
+    /// <summary>
+    /// 本包的 <c>text.json</c>：增益 / 升级 / 金猫结果的文案与其它分区<b>共用同一份实例</b>（<see cref="Lore.Prose"/>）。<para>
+    /// 必须共用：孤儿检查会遍历整份文件的每个 kind，而"哪些 id 已取用"是按实例记的——
+    /// 两个实例各记一半，就会把对方那些 id 全报成孤儿。
+    /// </para>
+    /// </summary>
+    private static ContentText Prose => Lore.Prose;
+
     /// <summary>全部结果。</summary>
     public static GoldenCookieOutcome[] All =>
     [
         new()
         {
             Id = "warm_hollow",
-            Name = "枕头下的温热",
-            Icon = "🛏️",
-            Description = "她把手伸到枕头底下，摸到一块被自己焐热的地方。梦就是从那儿开始的。获得 {amount} 点梦。",
+            Name = Prose.Text("goldenCookies", "warm_hollow", "name"),
+            Icon = Prose.Text("goldenCookies", "warm_hollow", "icon"),
+            Description = Prose.Text("goldenCookies", "warm_hollow", "description"),
             Weight = 46,
             CookiesFromBankFraction = 0.15,
             CookiesFromBankFractionCapSecondsOfCps = 900,
@@ -34,9 +42,9 @@ internal static class GoldenCookieOutcomes
         new()
         {
             Id = "nested",
-            Name = "梦中梦",
-            Icon = "🌀",
-            Description = "她在梦里睡着了，然后又在那一层里睡着。醒的时候要往上数四层。梦中梦 {duration}。",
+            Name = Prose.Text("goldenCookies", "nested", "name"),
+            Icon = Prose.Text("goldenCookies", "nested", "icon"),
+            Description = Prose.Text("goldenCookies", "nested", "description"),
             Weight = 30,
             BuffId = "controlled_dream",
             BuffSeconds = 60,
@@ -44,9 +52,9 @@ internal static class GoldenCookieOutcomes
         new()
         {
             Id = "lucid",
-            Name = "忽然清明",
-            Icon = "💡",
-            Description = "她停下来，抬手看了看自己的手指，然后说：这是我的梦。清明梦 {duration}。",
+            Name = Prose.Text("goldenCookies", "lucid", "name"),
+            Icon = Prose.Text("goldenCookies", "lucid", "icon"),
+            Description = Prose.Text("goldenCookies", "lucid", "description"),
             Weight = 9,
             BuffId = "lucid_dream",
             BuffSeconds = 77,
@@ -54,9 +62,9 @@ internal static class GoldenCookieOutcomes
         new()
         {
             Id = "paralysis",
-            Name = "鬼压床",
-            Icon = "🪨",
-            Description = "她醒了，但只有眼睛醒了。胸口上坐着的东西不动，也不说话。鬼压床 {duration}。",
+            Name = Prose.Text("goldenCookies", "paralysis", "name"),
+            Icon = Prose.Text("goldenCookies", "paralysis", "icon"),
+            Description = Prose.Text("goldenCookies", "paralysis", "description"),
             Weight = 18,
             BuffId = "sleep_paralysis",
             BuffSeconds = 66,
@@ -64,18 +72,18 @@ internal static class GoldenCookieOutcomes
         new()
         {
             Id = "name_called",
-            Name = "有人喊她的名字",
-            Icon = "📣",
-            Description = "声音是从上面来的，隔着好几层梦，闷闷的，但她听清了。那声音喊的是她真正的名字。",
+            Name = Prose.Text("goldenCookies", "name_called", "name"),
+            Icon = Prose.Text("goldenCookies", "name_called", "icon"),
+            Description = Prose.Text("goldenCookies", "name_called", "description"),
             Weight = 7,
             CookiesFromCpsSeconds = 30,
         },
         new()
         {
             Id = "replay",
-            Name = "这一段做过",
-            Icon = "🔁",
-            Description = "她认得这面墙、这句台词、这个转身的弧度。上一次也是在这儿醒的。",
+            Name = Prose.Text("goldenCookies", "replay", "name"),
+            Icon = Prose.Text("goldenCookies", "replay", "icon"),
+            Description = Prose.Text("goldenCookies", "replay", "description"),
             Weight = 5,
             CookiesFromCpsSeconds = 60,
             IsRare = true,
@@ -83,9 +91,9 @@ internal static class GoldenCookieOutcomes
         new()
         {
             Id = "alarm_inside",
-            Name = "闹钟在梦里响",
-            Icon = "⏰",
-            Description = "声音从梦里面传出来。她翻了半天才找到那个闹钟——它就摆在梦的床头。入梦 {duration}。",
+            Name = Prose.Text("goldenCookies", "alarm_inside", "name"),
+            Icon = Prose.Text("goldenCookies", "alarm_inside", "icon"),
+            Description = Prose.Text("goldenCookies", "alarm_inside", "description"),
             Weight = 6,
             BuffId = "dream_leap",
             BuffSeconds = 13,
@@ -93,9 +101,9 @@ internal static class GoldenCookieOutcomes
         new()
         {
             Id = "becoming",
-            Name = "变成梦魇",
-            Icon = "🕷️",
-            Description = "她低头看见自己的手不对。有那么一小会儿，她不介意——那一小会儿里她什么都不怕。梦魇潮 {duration}。",
+            Name = Prose.Text("goldenCookies", "becoming", "name"),
+            Icon = Prose.Text("goldenCookies", "becoming", "icon"),
+            Description = Prose.Text("goldenCookies", "becoming", "description"),
             Weight = 7,
             BuffId = "nightmare_tide",
             BuffSeconds = 72,
@@ -103,9 +111,9 @@ internal static class GoldenCookieOutcomes
         new()
         {
             Id = "falling_dream",
-            Name = "楼在梦里塌了",
-            Icon = "🕳️",
-            Description = "她站的那一层忽然没了。往下掉的时候她数着楼层，数到第四层就不敢数了。坠落 {duration}。",
+            Name = Prose.Text("goldenCookies", "falling_dream", "name"),
+            Icon = Prose.Text("goldenCookies", "falling_dream", "icon"),
+            Description = Prose.Text("goldenCookies", "falling_dream", "description"),
             Weight = 8,
             BuffId = "falling",
             BuffSeconds = 90,
@@ -113,9 +121,9 @@ internal static class GoldenCookieOutcomes
         new()
         {
             Id = "dragged_deeper",
-            Name = "被拽进更深处",
-            Icon = "🪝",
-            Description = "有东西拉着她的脚踝往上——不对，是往下。她攥住了一层梦的边缘，还是被带走了。",
+            Name = Prose.Text("goldenCookies", "dragged_deeper", "name"),
+            Icon = Prose.Text("goldenCookies", "dragged_deeper", "icon"),
+            Description = Prose.Text("goldenCookies", "dragged_deeper", "description"),
             Weight = 4,
             StealBankFraction = 0.05,
         },

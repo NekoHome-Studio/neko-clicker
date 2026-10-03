@@ -599,5 +599,336 @@
       "icon": "🌑",
       "description": "抵达结局「无人再读」。"
     }
+  },
+  "buffs": {
+    "bookworm_swarm": {
+      "name": "蠹虫成群",
+      "description": "它们啃穿了整整一排没人翻的书，油墨味顺着走廊散开。全部产量 ×7。",
+      "icon": "🐛"
+    },
+    "overnight_draft": {
+      "name": "通宵赶稿",
+      "description": "天亮前必须交。她写到手指发抖，但没有一行是凑的。点击收益 ×777。",
+      "icon": "🌙"
+    },
+    "bestseller": {
+      "name": "畅销",
+      "description": "加印了三次还是不够。门口排队的人多到挡住了隔壁的招牌。全部产量 ×15。",
+      "icon": "📈"
+    },
+    "paper_shortage": {
+      "name": "纸荒",
+      "description": "印坊停了。有读者愿意拿自己的本子来换，她没换。全部产量 ×0.5。",
+      "icon": "📉"
+    },
+    "plagiarism": {
+      "name": "抄本泛滥",
+      "description": "满街都是这本书，只是署名不是她。读的人越多，她越说不清哪个是自己写的。全部产量 ×0.7。",
+      "icon": "🪞"
+    },
+    "censorship": {
+      "name": "查禁",
+      "description": "书脊上又被划了一道。她把剩下的搬到地下室，灯不敢开。全部产量 ×0.6。",
+      "icon": "🚫"
+    },
+    "night_reading_room": {
+      "name": "深夜阅览室",
+      "description": "闭馆之后还有人没走，她也就没关灯。阅览室产量 ×30。",
+      "icon": "🪑"
+    },
+    "proofread": {
+      "name": "校稿",
+      "description": "她自己从头到尾读了一遍，改掉十七个错字和三处前后矛盾。点击收益 ×50。",
+      "icon": "🔍"
+    }
+  },
+  "upgrades": {
+    "bookshelf_tier1": {
+      "name": "上过架的书架",
+      "description": "「书架」的产量翻倍。",
+      "icon": "📚"
+    },
+    "bookshelf_tier10": {
+      "name": "整面墙的书架",
+      "description": "「书架」的产量翻倍。",
+      "icon": "📚"
+    },
+    "bookshelf_tier25": {
+      "name": "一排接一排的书架",
+      "description": "「书架」的产量翻倍。",
+      "icon": "📚"
+    },
+    "reading_room_tier1": {
+      "name": "上过架的阅览室",
+      "description": "「阅览室」的产量翻倍。",
+      "icon": "🪑"
+    },
+    "reading_room_tier10": {
+      "name": "整面墙的阅览室",
+      "description": "「阅览室」的产量翻倍。",
+      "icon": "🪑"
+    },
+    "reading_room_tier25": {
+      "name": "一排接一排的阅览室",
+      "description": "「阅览室」的产量翻倍。",
+      "icon": "🪑"
+    },
+    "copier_tier1": {
+      "name": "上过架的复印机",
+      "description": "「复印机」的产量翻倍。",
+      "icon": "📠"
+    },
+    "copier_tier10": {
+      "name": "整面墙的复印机",
+      "description": "「复印机」的产量翻倍。",
+      "icon": "📠"
+    },
+    "copier_tier25": {
+      "name": "一排接一排的复印机",
+      "description": "「复印机」的产量翻倍。",
+      "icon": "📠"
+    },
+    "banned_section_tier1": {
+      "name": "上过架的禁书区",
+      "description": "「禁书区」的产量翻倍。",
+      "icon": "🔒"
+    },
+    "banned_section_tier10": {
+      "name": "整面墙的禁书区",
+      "description": "「禁书区」的产量翻倍。",
+      "icon": "🔒"
+    },
+    "banned_section_tier25": {
+      "name": "一排接一排的禁书区",
+      "description": "「禁书区」的产量翻倍。",
+      "icon": "🔒"
+    },
+    "author_room_tier1": {
+      "name": "上过架的作者室",
+      "description": "「作者室」的产量翻倍。",
+      "icon": "🖋️"
+    },
+    "author_room_tier10": {
+      "name": "整面墙的作者室",
+      "description": "「作者室」的产量翻倍。",
+      "icon": "🖋️"
+    },
+    "author_room_tier25": {
+      "name": "一排接一排的作者室",
+      "description": "「作者室」的产量翻倍。",
+      "icon": "🖋️"
+    },
+    "index_tower_tier1": {
+      "name": "上过架的索引塔",
+      "description": "「索引塔」的产量翻倍。",
+      "icon": "🗼"
+    },
+    "index_tower_tier10": {
+      "name": "整面墙的索引塔",
+      "description": "「索引塔」的产量翻倍。",
+      "icon": "🗼"
+    },
+    "index_tower_tier25": {
+      "name": "一排接一排的索引塔",
+      "description": "「索引塔」的产量翻倍。",
+      "icon": "🗼"
+    },
+    "printing_house_tier1": {
+      "name": "上过架的印坊",
+      "description": "「印坊」的产量翻倍。",
+      "icon": "🖨️"
+    },
+    "printing_house_tier10": {
+      "name": "整面墙的印坊",
+      "description": "「印坊」的产量翻倍。",
+      "icon": "🖨️"
+    },
+    "printing_house_tier25": {
+      "name": "一排接一排的印坊",
+      "description": "「印坊」的产量翻倍。",
+      "icon": "🖨️"
+    },
+    "world_workshop_tier1": {
+      "name": "上过架的世界观工坊",
+      "description": "「世界观工坊」的产量翻倍。",
+      "icon": "🧩"
+    },
+    "world_workshop_tier10": {
+      "name": "整面墙的世界观工坊",
+      "description": "「世界观工坊」的产量翻倍。",
+      "icon": "🧩"
+    },
+    "world_workshop_tier25": {
+      "name": "一排接一排的世界观工坊",
+      "description": "「世界观工坊」的产量翻倍。",
+      "icon": "🧩"
+    },
+    "endless_shelf_tier1": {
+      "name": "上过架的无尽书架",
+      "description": "「无尽书架」的产量翻倍。",
+      "icon": "♾️"
+    },
+    "endless_shelf_tier10": {
+      "name": "整面墙的无尽书架",
+      "description": "「无尽书架」的产量翻倍。",
+      "icon": "♾️"
+    },
+    "endless_shelf_tier25": {
+      "name": "一排接一排的无尽书架",
+      "description": "「无尽书架」的产量翻倍。",
+      "icon": "♾️"
+    },
+    "nib": {
+      "name": "换一支笔尖",
+      "description": "每次提笔额外获得 1 页。旧的那支被她收在抽屉里，没扔。",
+      "icon": "🖊️"
+    },
+    "writing_habit": {
+      "name": "每天三千字",
+      "description": "点击收益 ×2。习惯比灵感可靠，这是她写了十年才知道的。",
+      "icon": "📅"
+    },
+    "typewriter": {
+      "name": "打字机",
+      "description": "点击收益 ×3。键帽被磨得发亮，声音在夜里能传很远。",
+      "icon": "⌨️"
+    },
+    "the_muse": {
+      "name": "缪斯",
+      "description": "点击收益 ×4，且每次提笔额外获得 1e4 页。她从来不承认有这个人在。",
+      "icon": "🕊️"
+    },
+    "reading_group": {
+      "name": "读书会",
+      "description": "全局产量 +0.2%／每点被阅读度（最多 40,000 点，+80%）。每周三晚上，六个人，同一本书。",
+      "icon": "👥"
+    },
+    "book_club_network": {
+      "name": "共读网络",
+      "description": "全局产量 ×2，增益时长 ×1.3。一本书被同时读到的地方越多，它越不容易散。",
+      "icon": "🕸️"
+    },
+    "everyone_knows": {
+      "name": "每个人都记得一句",
+      "description": "全局产量 ×2.5、蠹虫奖励 ×2。她没写过那句，但所有人都在引用。",
+      "icon": "💬"
+    },
+    "shelf_to_room": {
+      "name": "把书架搬进阅览室",
+      "description": "阅览室产量 +2%／每座书架（上限 +200%）。她把最常被翻的那几本单独摆到了手边。",
+      "icon": "🪑"
+    },
+    "copier_to_banned": {
+      "name": "禁书区的复印件",
+      "description": "禁书区产量 +1.5%／每台复印机（上限 +150%）。栅栏挡得住原本，挡不住副本。",
+      "icon": "📠"
+    },
+    "index_to_endless": {
+      "name": "索引到尽头",
+      "description": "无尽书架产量 +1%／每座索引塔（上限 +300%）。她说找不到的书等于没有。",
+      "icon": "🗼"
+    },
+    "first_sentence": {
+      "name": "第一句话",
+      "description": "全局产量 ×1.5。那句话是自己掉下来的，她只是接住了。",
+      "icon": "✒️"
+    },
+    "world_map": {
+      "name": "世界地图",
+      "description": "全局产量 ×2。先把地形画完再放人进去，这一条是从第 1 本的混乱里学来的。",
+      "icon": "🗺️"
+    },
+    "red_line": {
+      "name": "书脊上那道红笔",
+      "description": "全局产量 ×2，建筑价格 ×0.9。被划掉的那天起，这本书才开始真的被人读。",
+      "icon": "🖍️"
+    },
+    "timeline": {
+      "name": "时间线校订",
+      "description": "全局产量 ×2.5、增益时长 ×1.2。合订本最难的部分不是装订，是让四个人的时间对得上。",
+      "icon": "🧵"
+    },
+    "last_page": {
+      "name": "最后一页",
+      "description": "全局产量 ×3，但增益时长 ×0.8。写完之后她坐了很久，没有立刻合上。",
+      "icon": "🔖"
+    },
+    "margin_notes": {
+      "name": "页边的批注",
+      "description": "全局产量 +25%。上一轮写在页边的话，这一轮还能看见。",
+      "icon": "🗒️"
+    },
+    "known_tropes": {
+      "name": "已经用过的桥段",
+      "description": "建筑价格 ×0.8。有些套路用过一次就不用再摸索一遍。",
+      "icon": "🎭"
+    },
+    "your_voice": {
+      "name": "你的语气",
+      "description": "点击收益 ×6、蠹虫奖励 ×1.5。换了很多个世界，第一人称一直没换。",
+      "icon": "🗣️"
+    },
+    "old_readers": {
+      "name": "老读者",
+      "description": "全局产量 ×2、蠹虫奖励 ×1.5。有人每一本都读了，而且每一本都记得上一本。",
+      "icon": "👤"
+    },
+    "same_shelf": {
+      "name": "同一个书架",
+      "description": "全局产量 ×2.5、增益时长 ×1.4。五本书排在一起，书脊上是同一个名字。",
+      "icon": "📚"
+    }
+  },
+  "goldenCookies": {
+    "unsold_stock": {
+      "name": "库房里还有一箱",
+      "description": "最里面那排架子上翻出一整箱没拆过的初版，纸边还是白的。获得 {amount} 页。",
+      "icon": "📦"
+    },
+    "swarm": {
+      "name": "蠹虫成群",
+      "description": "它们从没人翻的那一头开始啃，啃到一半被光吸引过来了。蠹虫成群 {duration}。",
+      "icon": "🐛"
+    },
+    "deadline": {
+      "name": "交稿日就在今晚",
+      "description": "她看了一眼钟，把茶凉在桌上，重新摊开纸。通宵赶稿 {duration}。",
+      "icon": "🌙"
+    },
+    "stolen_pages": {
+      "name": "被人撕走了几页",
+      "description": "归还的时候书是热的，但中间缺了三页，撕口很整齐。损失 {amount} 页。",
+      "icon": "✂️"
+    },
+    "nothing": {
+      "name": "什么也没有",
+      "description": "书页之间夹着一张借阅卡，上面只有日期，没有名字。",
+      "icon": "🕳️"
+    },
+    "bestseller": {
+      "name": "畅销",
+      "description": "加印第三次的时候，印坊的师傅说这辈子没见过这样的。畅销 {duration}。",
+      "icon": "📈"
+    },
+    "proofread": {
+      "name": "校稿",
+      "description": "她自己从头读了一遍，在页边改掉十七个错字，然后坐在那儿把那三页又读了一次。校稿 {duration}。",
+      "icon": "🔍"
+    },
+    "second_worm": {
+      "name": "又来一只",
+      "description": "两只蠹虫在书脊上并排待着，一大一小，都朝她看。",
+      "icon": "👀"
+    },
+    "paper_shortage": {
+      "name": "纸荒",
+      "description": "印坊的仓库空了，订单排到了明年。纸荒 {duration}。",
+      "icon": "📉"
+    },
+    "night_reading_room": {
+      "name": "闭馆之后",
+      "description": "灯还亮着，靠窗那张桌子边坐着一个人，面前的茶已经凉了。深夜阅览室 {duration}。",
+      "icon": "🪑"
+    }
   }
 }

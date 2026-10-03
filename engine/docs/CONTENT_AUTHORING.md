@@ -731,6 +731,48 @@ private static LoreEntry Make(string id, int order, UnlockCondition reveal, Lore
 - **写作形态**之外还有一条给内容作者的提醒：这四类的文案**不参与**条件判断，
   改文案不会影响任何解锁——条件树、权重、修饰符留在代码里，两边只靠 id 关联。
 
+### 12.0.4 增益 / 升级 / 金猫结果也外置了（2026-10-03 起，第五轮也是最后一轮）
+
+第五轮把"面向玩家的文案"这一类里**剩下的全部**搬进同一个 `text.json`，用三个新根节：
+`buffs` / `upgrades` / `goldenCookies`。判据仍是同一条：**能进数据的只有散文**。
+做完这一轮，十一类文案**全部**在文件里了。
+
+| 分区 | 形状 | 代码侧 | 留在代码里的 |
+|---|---|---|---|
+| `buffs` | `"<增益 id>": { "name", "description", "icon" }` | `Prose.Text("buffs", id, "description")` | `Id` / `Duration` / `MaxStacks` / `StackMode` / `Modifiers` / `IsDebuff` / `Dispellable` |
+| `upgrades` | `"<升级 id>": { "name", "description", "icon" }` | `Prose.Text("upgrades", id, "name")` | `Id` / `Price` / `Currency` / `Persistence` / `MaxPurchases` / `PriceGrowth` / `Unlock` / `Modifiers` / `Tags` / `Category` / `Tier` / `HiddenUntilUnlocked` |
+| `goldenCookies` | `"<结果 id>": { "name", "description", "icon" }` | `Prose.Text("goldenCookies", id, "description")` | `Id` / `Weight` / 全部 `Cookies*` / `StealBankFraction` / `BuffId` / `BuffSeconds` / `SecondaryBuffId` / `SecondaryBuffSeconds` / `IsRare` |
+
+四件这一轮与前面几轮不同、值得记住的事：
+
+1. **十一个包都有这三类内容**，三张条数表里**一个 0 都没有**（纪元 / 结局那样"某个包没有"的
+   情形在这里不存在）。条数表仍然是**唯一**能发现"代码与文件同时少一条"的守卫。
+2. **升级的文案大多是"算出来的"**：每个包都有一段"每座建筑三档"的循环，名字里带建筑名、
+   说明里带建筑名、图标就是建筑的图标。外置机制只有"id → 字段"这一种，所以文件里存的是
+   **按 id 展开后的成品**（运行时 534 条各自一条文本），id 仍由代码算
+   （`$"{building.Id}_tier{required}"`）。**没有模板引擎**。
+   **代价**：改一座建筑的名字，那三档升级的文案**不会**跟着变——
+   这是"按 id 展开"的代价，也是守卫要逐条比对"代码值 == 文件值"的原因。
+   同一份值现在存在两处（`buildings.<建筑>.name` 与 `upgrades.<建筑>_tier1.name`），
+   守卫保证"代码读到的 == 文件里的"，但**不保证两份文件值一致**——
+   与 `endings.<id>.name` 对 `achievements.ach_end_<id>.name` 的重合是同一性质，**已知且刻意接受**。
+3. **`goldenCookies.<id>.description` 里可以有 `{amount}` / `{duration}` 占位符**——
+   它们是**渲染期**替换的，替换发生在核心代码（`GoldenCookieSystem.Describe`）里，
+   文件里写的就是模板本身那一条条文本，不是渲染结果。
+   **这一条文案有一条静默降级路径**：`description` 为空（或全空白）时，界面会**悄悄改用名称**。
+   所以它用的是 `Text(...)`（缺失即抛）而**不是** `TextOr`，守卫里也断言它非空——
+   "没写说明"从"悄悄换一套文案"变成"当场抛"。
+4. **其余字段一律不搬**：数值、条件树、修饰符、标签、分组、档位、排序、存档键都不是散文。
+   改这些只改对应 `.cs`，改文案只改 `text.json`，两边靠 id 关联。
+
+- **守卫**：三张写死的条数表（`ExpectedBuffs` / `ExpectedUpgrades` /
+  `ExpectedGoldenCookieOutcomes`）+ 三条 `…CountTable_CoversExactlyTheGuardTable` +
+  三条 `Every…_ResolvesItsTextFromTheFile`（双向 + 非空）+
+  三条 `EditingThe…TextWrongly_FailsLoudly`（少一条 / 多一条都要响）。
+- **一个包只能有一个 `ContentText` 实例**（这条从 §12.0.1 起就是**负载性**的）：
+  本轮新加的读写点同样共用 `Lore.Prose`（示例包 `Neko` 用 `Buildings.Prose`），
+  没有新建第二个实例。
+
 ---
 
 ### 12.1 条件编排：三条硬规则

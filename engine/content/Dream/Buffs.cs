@@ -16,15 +16,23 @@ namespace NekoClicker.Content.Dream;
 /// </summary>
 internal static class Buffs
 {
+    /// <summary>
+    /// 本包的 <c>text.json</c>：增益 / 升级 / 金猫结果的文案与其它分区<b>共用同一份实例</b>（<see cref="Lore.Prose"/>）。<para>
+    /// 必须共用：孤儿检查会遍历整份文件的每个 kind，而"哪些 id 已取用"是按实例记的——
+    /// 两个实例各记一半，就会把对方那些 id 全报成孤儿。
+    /// </para>
+    /// </summary>
+    private static ContentText Prose => Lore.Prose;
+
     /// <summary>全部增益。</summary>
     public static BuffDefinition[] All =>
     [
         new()
         {
             Id = "lucid_dream",
-            Name = "清明梦",
-            Icon = "💡",
-            Description = "她忽然知道自己在做梦。知道之后，整层梦都听她的。全部产量 ×7。",
+            Name = Prose.Text("buffs", "lucid_dream", "name"),
+            Icon = Prose.Text("buffs", "lucid_dream", "icon"),
+            Description = Prose.Text("buffs", "lucid_dream", "description"),
             Duration = 77,
             StackMode = BuffStackMode.Refresh,
             Modifiers = [Modifier.GlobalMultiplier(7)],
@@ -32,9 +40,9 @@ internal static class Buffs
         new()
         {
             Id = "controlled_dream",
-            Name = "梦中梦",
-            Icon = "🌀",
-            Description = "梦见自己在睡，然后又在那一层里睡着。醒来的时候要往上数四层。全部产量 ×15。",
+            Name = Prose.Text("buffs", "controlled_dream", "name"),
+            Icon = Prose.Text("buffs", "controlled_dream", "icon"),
+            Description = Prose.Text("buffs", "controlled_dream", "description"),
             Duration = 60,
             StackMode = BuffStackMode.Refresh,
             Modifiers = [Modifier.GlobalMultiplier(15)],
@@ -42,9 +50,9 @@ internal static class Buffs
         new()
         {
             Id = "dream_leap",
-            Name = "入梦",
-            Icon = "⤵️",
-            Description = "她一脚踏空，落进更深的那一层。落地的时候手是张开的，什么都抓得住。点击收益 ×777。",
+            Name = Prose.Text("buffs", "dream_leap", "name"),
+            Icon = Prose.Text("buffs", "dream_leap", "icon"),
+            Description = Prose.Text("buffs", "dream_leap", "description"),
             Duration = 13,
             StackMode = BuffStackMode.Refresh,
             Modifiers = [Modifier.ClickMultiplier(777)],
@@ -52,9 +60,9 @@ internal static class Buffs
         new()
         {
             Id = "sleep_paralysis",
-            Name = "鬼压床",
-            Icon = "🪨",
-            Description = "她醒了，但只有眼睛醒了。胸口上有东西坐着，它不动，也不说话。全部产量 ×0.5。",
+            Name = Prose.Text("buffs", "sleep_paralysis", "name"),
+            Icon = Prose.Text("buffs", "sleep_paralysis", "icon"),
+            Description = Prose.Text("buffs", "sleep_paralysis", "description"),
             Duration = 66,
             StackMode = BuffStackMode.Refresh,
             Modifiers = [Modifier.GlobalMultiplier(0.5)],
@@ -63,9 +71,9 @@ internal static class Buffs
         new()
         {
             Id = "falling",
-            Name = "坠落",
-            Icon = "🕳️",
-            Description = "脚下的地面没了。她往下掉的时候数着楼层，数到第四层就不敢数了。全部产量 ×0.7。",
+            Name = Prose.Text("buffs", "falling", "name"),
+            Icon = Prose.Text("buffs", "falling", "icon"),
+            Description = Prose.Text("buffs", "falling", "description"),
             Duration = 90,
             StackMode = BuffStackMode.Refresh,
             Modifiers = [Modifier.GlobalMultiplier(0.7)],
@@ -74,9 +82,9 @@ internal static class Buffs
         new()
         {
             Id = "nightmare_tide",
-            Name = "梦魇潮",
-            Icon = "🌊",
-            Description = "褶皱里的东西一起翻上来了。它们不追她，只是把整层梦压得很低。全部产量 ×0.6。",
+            Name = Prose.Text("buffs", "nightmare_tide", "name"),
+            Icon = Prose.Text("buffs", "nightmare_tide", "icon"),
+            Description = Prose.Text("buffs", "nightmare_tide", "description"),
             Duration = 72,
             StackMode = BuffStackMode.Refresh,
             Modifiers = [Modifier.GlobalMultiplier(0.6)],
@@ -85,9 +93,9 @@ internal static class Buffs
         new()
         {
             Id = "deeper_layer",
-            Name = "更深的一层",
-            Icon = "🌌",
-            Description = "梦层又往下一层。这一层比上面大得多，也亮得多。全部产量 ×2.5。",
+            Name = Prose.Text("buffs", "deeper_layer", "name"),
+            Icon = Prose.Text("buffs", "deeper_layer", "icon"),
+            Description = Prose.Text("buffs", "deeper_layer", "description"),
             Duration = 45,
             StackMode = BuffStackMode.Extend,
             Modifiers = [Modifier.GlobalMultiplier(2.5)],
@@ -95,9 +103,9 @@ internal static class Buffs
         new()
         {
             Id = "dream_core_pulse",
-            Name = "梦核的搏动",
-            Icon = "🔮",
-            Description = "梦核跳了一下，整座梦跟着抖了一下。所有东西都清楚了一倍。梦核产量 ×30。",
+            Name = Prose.Text("buffs", "dream_core_pulse", "name"),
+            Icon = Prose.Text("buffs", "dream_core_pulse", "icon"),
+            Description = Prose.Text("buffs", "dream_core_pulse", "description"),
             Duration = 30,
             StackMode = BuffStackMode.Extend,
             Modifiers = [Modifier.BuildingMultiplier("dream_core", 30)],
@@ -105,9 +113,9 @@ internal static class Buffs
         new()
         {
             Id = "crafting",
-            Name = "织梦",
-            Icon = "🧶",
-            Description = "她把上一晚剩下的线头接了起来。今晚的梦会接着说昨天那一句。点击收益 ×50。",
+            Name = Prose.Text("buffs", "crafting", "name"),
+            Icon = Prose.Text("buffs", "crafting", "icon"),
+            Description = Prose.Text("buffs", "crafting", "description"),
             Duration = 20,
             StackMode = BuffStackMode.Refresh,
             Modifiers = [Modifier.ClickMultiplier(50)],
@@ -115,9 +123,9 @@ internal static class Buffs
         new()
         {
             Id = "waking_moment",
-            Name = "将醒未醒",
-            Icon = "🌅",
-            Description = "她听见外面有人在收摊。那一瞬间她分得清哪个是真的。全部产量 ×9。",
+            Name = Prose.Text("buffs", "waking_moment", "name"),
+            Icon = Prose.Text("buffs", "waking_moment", "icon"),
+            Description = Prose.Text("buffs", "waking_moment", "description"),
             Duration = 40,
             StackMode = BuffStackMode.Refresh,
             Modifiers = [Modifier.GlobalMultiplier(9)],

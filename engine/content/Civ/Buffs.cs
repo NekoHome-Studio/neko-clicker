@@ -15,15 +15,23 @@ namespace NekoClicker.Content.Civ;
 /// </summary>
 internal static class Buffs
 {
+    /// <summary>
+    /// 本包的 <c>text.json</c>：增益 / 升级 / 金猫结果的文案与其它分区<b>共用同一份实例</b>（<see cref="Lore.Prose"/>）。<para>
+    /// 必须共用：孤儿检查会遍历整份文件的每个 kind，而"哪些 id 已取用"是按实例记的——
+    /// 两个实例各记一半，就会把对方那些 id 全报成孤儿。
+    /// </para>
+    /// </summary>
+    private static ContentText Prose => Lore.Prose;
+
     /// <summary>全部增益。</summary>
     public static BuffDefinition[] All =>
     [
         new()
         {
             Id = "harvest_year",
-            Name = "丰收年",
-            Icon = "🌾",
-            Description = "雨来得正好，一整个季节什么都没坏。仓里的东西多到要新盖一间。全部产量 ×7。",
+            Name = Prose.Text("buffs", "harvest_year", "name"),
+            Icon = Prose.Text("buffs", "harvest_year", "icon"),
+            Description = Prose.Text("buffs", "harvest_year", "description"),
             Duration = 77,
             StackMode = BuffStackMode.Refresh,
             Modifiers = [Modifier.GlobalMultiplier(7)],
@@ -31,9 +39,9 @@ internal static class Buffs
         new()
         {
             Id = "all_nighter",
-            Name = "通宵",
-            Icon = "🌙",
-            Description = "她一个人干到天亮。爪子上的茧裂了两次，但没有一块石头是随便放的。点击收益 ×777。",
+            Name = Prose.Text("buffs", "all_nighter", "name"),
+            Icon = Prose.Text("buffs", "all_nighter", "icon"),
+            Description = Prose.Text("buffs", "all_nighter", "description"),
             Duration = 13,
             StackMode = BuffStackMode.Refresh,
             Modifiers = [Modifier.ClickMultiplier(777)],
@@ -41,9 +49,9 @@ internal static class Buffs
         new()
         {
             Id = "breakthrough",
-            Name = "技术突破",
-            Icon = "💡",
-            Description = "她盯着一块烧过的石头看了三天，然后明白了。那一年之后所有的活都快了一截。全部产量 ×15。",
+            Name = Prose.Text("buffs", "breakthrough", "name"),
+            Icon = Prose.Text("buffs", "breakthrough", "icon"),
+            Description = Prose.Text("buffs", "breakthrough", "description"),
             Duration = 60,
             StackMode = BuffStackMode.Refresh,
             Modifiers = [Modifier.GlobalMultiplier(15)],
@@ -51,9 +59,9 @@ internal static class Buffs
         new()
         {
             Id = "golden_age",
-            Name = "黄金时代",
-            Icon = "✨",
-            Description = "整整一代人没打过仗、没饿过肚子。她站在城墙上往下看，第一次觉得这些东西真的留得住。全部产量 ×30。",
+            Name = Prose.Text("buffs", "golden_age", "name"),
+            Icon = Prose.Text("buffs", "golden_age", "icon"),
+            Description = Prose.Text("buffs", "golden_age", "description"),
             Duration = 45,
             StackMode = BuffStackMode.Refresh,
             Modifiers = [Modifier.GlobalMultiplier(30)],
@@ -61,9 +69,9 @@ internal static class Buffs
         new()
         {
             Id = "flood",
-            Name = "洪水",
-            Icon = "🌊",
-            Description = "水从低处涨上来，第一层的东西全泡了。她站在屋顶上看着，没有下水去捞。全部产量 ×0.5。",
+            Name = Prose.Text("buffs", "flood", "name"),
+            Icon = Prose.Text("buffs", "flood", "icon"),
+            Description = Prose.Text("buffs", "flood", "description"),
             Duration = 66,
             StackMode = BuffStackMode.Refresh,
             Modifiers = [Modifier.GlobalMultiplier(0.5)],
@@ -72,9 +80,9 @@ internal static class Buffs
         new()
         {
             Id = "plague",
-            Name = "瘟疫",
-            Icon = "🦠",
-            Description = "集市先静下来，然后是整条街。她把「不要聚在一起」写在了墙上，那时候字还没几个人认得。全部产量 ×0.6。",
+            Name = Prose.Text("buffs", "plague", "name"),
+            Icon = Prose.Text("buffs", "plague", "icon"),
+            Description = Prose.Text("buffs", "plague", "description"),
             Duration = 90,
             StackMode = BuffStackMode.Refresh,
             Modifiers = [Modifier.GlobalMultiplier(0.6)],
@@ -83,9 +91,9 @@ internal static class Buffs
         new()
         {
             Id = "long_winter",
-            Name = "长冬",
-            Icon = "❄️",
-            Description = "冬天长到所有人都开始怀疑还有没有春天。她把最后一批种子分成了三份。全部产量 ×0.7。",
+            Name = Prose.Text("buffs", "long_winter", "name"),
+            Icon = Prose.Text("buffs", "long_winter", "icon"),
+            Description = Prose.Text("buffs", "long_winter", "description"),
             Duration = 72,
             StackMode = BuffStackMode.Refresh,
             Modifiers = [Modifier.GlobalMultiplier(0.7)],
@@ -94,9 +102,9 @@ internal static class Buffs
         new()
         {
             Id = "meteor",
-            Name = "陨石",
-            Icon = "☄️",
-            Description = "天上掉下来一块，砸掉了半个广场。她是最先跑过去的人——因为那块石头能用。全部产量 ×0.75。",
+            Name = Prose.Text("buffs", "meteor", "name"),
+            Icon = Prose.Text("buffs", "meteor", "icon"),
+            Description = Prose.Text("buffs", "meteor", "description"),
             Duration = 54,
             StackMode = BuffStackMode.Refresh,
             Modifiers = [Modifier.GlobalMultiplier(0.75)],
@@ -105,9 +113,9 @@ internal static class Buffs
         new()
         {
             Id = "night_shift",
-            Name = "夜里的学院",
-            Icon = "🕯️",
-            Description = "灯一盏都没熄，有几个学生算到了天亮。学院产量 ×30。",
+            Name = Prose.Text("buffs", "night_shift", "name"),
+            Icon = Prose.Text("buffs", "night_shift", "icon"),
+            Description = Prose.Text("buffs", "night_shift", "description"),
             Duration = 30,
             StackMode = BuffStackMode.Extend,
             Modifiers = [Modifier.BuildingMultiplier("academy", 30)],

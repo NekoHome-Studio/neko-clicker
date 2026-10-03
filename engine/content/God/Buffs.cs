@@ -16,15 +16,23 @@ namespace NekoClicker.Content.God;
 /// </summary>
 internal static class Buffs
 {
+    /// <summary>
+    /// 本包的 <c>text.json</c>：增益 / 升级 / 金猫结果的文案与其它分区<b>共用同一份实例</b>（<see cref="Lore.Prose"/>）。<para>
+    /// 必须共用：孤儿检查会遍历整份文件的每个 kind，而"哪些 id 已取用"是按实例记的——
+    /// 两个实例各记一半，就会把对方那些 id 全报成孤儿。
+    /// </para>
+    /// </summary>
+    private static ContentText Prose => Lore.Prose;
+
     /// <summary>全部增益。</summary>
     public static BuffDefinition[] All =>
     [
         new()
         {
             Id = "divine_frenzy",
-            Name = "神恩降临",
-            Icon = "✨",
-            Description = "天上的云裂开一条缝，光正好打在她的神龛上。全部产量 ×7。",
+            Name = Prose.Text("buffs", "divine_frenzy", "name"),
+            Icon = Prose.Text("buffs", "divine_frenzy", "icon"),
+            Description = Prose.Text("buffs", "divine_frenzy", "description"),
             Duration = 77,
             StackMode = BuffStackMode.Refresh,
             Modifiers = [Modifier.GlobalMultiplier(7)],
@@ -32,9 +40,9 @@ internal static class Buffs
         new()
         {
             Id = "manifest_frenzy",
-            Name = "显灵停不下来",
-            Icon = "🙌",
-            Description = "她一口气满足了三十七个愿望，其中三十六个是「再来一次」。点击收益 ×777。",
+            Name = Prose.Text("buffs", "manifest_frenzy", "name"),
+            Icon = Prose.Text("buffs", "manifest_frenzy", "icon"),
+            Description = Prose.Text("buffs", "manifest_frenzy", "description"),
             Duration = 13,
             StackMode = BuffStackMode.Refresh,
             Modifiers = [Modifier.ClickMultiplier(777)],
@@ -42,9 +50,9 @@ internal static class Buffs
         new()
         {
             Id = "pilgrim_flood",
-            Name = "朝圣潮",
-            Icon = "🚶",
-            Description = "路上全是人，队伍从山脚排到神殿门口，有人带着帐篷。全部产量 ×15。",
+            Name = Prose.Text("buffs", "pilgrim_flood", "name"),
+            Icon = Prose.Text("buffs", "pilgrim_flood", "icon"),
+            Description = Prose.Text("buffs", "pilgrim_flood", "description"),
             Duration = 60,
             StackMode = BuffStackMode.Refresh,
             Modifiers = [Modifier.GlobalMultiplier(15)],
@@ -52,9 +60,9 @@ internal static class Buffs
         new()
         {
             Id = "offering_shortage",
-            Name = "供品荒",
-            Icon = "📉",
-            Description = "今年收成不好，祭坛上摆的是塑料水果。她照样收了，但气压有点低。全部产量 ×0.5。",
+            Name = Prose.Text("buffs", "offering_shortage", "name"),
+            Icon = Prose.Text("buffs", "offering_shortage", "icon"),
+            Description = Prose.Text("buffs", "offering_shortage", "description"),
             Duration = 66,
             StackMode = BuffStackMode.Refresh,
             Modifiers = [Modifier.GlobalMultiplier(0.5)],
@@ -63,9 +71,9 @@ internal static class Buffs
         new()
         {
             Id = "heresy_trial",
-            Name = "异端审判",
-            Icon = "⚖️",
-            Description = "隔壁那套神话派人来辩论，辩到一半开始互相举报。她被要求「先停业配合调查」。全部产量 ×0.6。",
+            Name = Prose.Text("buffs", "heresy_trial", "name"),
+            Icon = Prose.Text("buffs", "heresy_trial", "icon"),
+            Description = Prose.Text("buffs", "heresy_trial", "description"),
             Duration = 72,
             StackMode = BuffStackMode.Refresh,
             Modifiers = [Modifier.GlobalMultiplier(0.6)],
@@ -74,9 +82,9 @@ internal static class Buffs
         new()
         {
             Id = "meme_wave",
-            Name = "玩梗潮",
-            Icon = "😹",
-            Description = "所有人都在转那张图，没有一个人记得她管什么。热度是真的，香火是假的。全部产量 ×0.7。",
+            Name = Prose.Text("buffs", "meme_wave", "name"),
+            Icon = Prose.Text("buffs", "meme_wave", "icon"),
+            Description = Prose.Text("buffs", "meme_wave", "description"),
             Duration = 90,
             StackMode = BuffStackMode.Refresh,
             Modifiers = [Modifier.GlobalMultiplier(0.7)],
@@ -85,9 +93,9 @@ internal static class Buffs
         new()
         {
             Id = "prime_time",
-            Name = "黄金档",
-            Icon = "📹",
-            Description = "平台把她排进了首页推荐位。补光灯全开，弹幕滚得看不清。直播间产量 ×30。",
+            Name = Prose.Text("buffs", "prime_time", "name"),
+            Icon = Prose.Text("buffs", "prime_time", "icon"),
+            Description = Prose.Text("buffs", "prime_time", "description"),
             Duration = 30,
             StackMode = BuffStackMode.Extend,
             Modifiers = [Modifier.BuildingMultiplier("stream_studio", 30)],
@@ -95,9 +103,9 @@ internal static class Buffs
         new()
         {
             Id = "sutra_reading",
-            Name = "诵经",
-            Icon = "📿",
-            Description = "整座神殿同时开口，声音居然是对齐的。她愣了两秒，然后跟着念。点击收益 ×50。",
+            Name = Prose.Text("buffs", "sutra_reading", "name"),
+            Icon = Prose.Text("buffs", "sutra_reading", "icon"),
+            Description = Prose.Text("buffs", "sutra_reading", "description"),
             Duration = 20,
             StackMode = BuffStackMode.Refresh,
             Modifiers = [Modifier.ClickMultiplier(50)],

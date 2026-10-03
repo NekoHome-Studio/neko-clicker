@@ -480,3 +480,171 @@ Description = Prose.Text("buildings", "incubator", "description"),
 至此已迁完的是：剧情散文（10 包 421 条）、建筑（11 包 104 座 × 3 字段）、
 纪元（9 包 49 层 × 6 字段）、结局（9 包 29 个 × 3）、立场（3 包 11 条 × 4）、
 表态（3 包 18 次 × 2 + 36 选项 × 2）、成就（11 包 712 条 × 3）。
+
+---
+
+## 12. 执行记录：增益 / 升级 / 金猫结果（第五轮，实际是怎么做的）
+
+> 本轮做的是 §11.5 那张清单的最后两项 `Buffs.cs` 与 `Upgrades.cs`，并且**顺手做掉了第三个文件**
+> `GoldenCookieOutcomes.cs`（十一个包都有它，其中 `Neko` / `NineLives` 的那一份**就写在
+> `Buffs.cs` 里**）。不做它的话，"面向玩家的文案已经全部外置"这句话就是假的——
+> 而它和增益 / 升级是同一类东西：`GoldenCookieOutcome` 的 `Name` / `Description` / `Icon`
+> 也是玩家在屏幕上读到的字。与前四轮一样：`engine/core` 的**公开 API 一行未改**
+> （`BuffDefinition` / `UpgradeDefinition` / `GoldenCookieOutcome` 三个记录一行未动），
+> 没有动存档格式、没有动快照协议、**没有升版本**；改的只是那些字符串**从哪里来**。
+> （`ContentText.cs` 只改了 XML 注释，见 §12.6。）
+
+### 12.1 交付与形状
+
+**先把数字量准**——任务书给的"≈444 / ≈212 处"与实测差得很远（这个项目里估算错过不止一次）：
+
+| 量的是什么 | 实测 |
+|---|---|
+| 源码里的字面量**赋值点** | `Upgrades.cs` **699**、`Buffs.cs` **318**（含 Neko / 九命写在里面的金猫结果）、`GoldenCookieOutcomes.cs` **267**，合计 **1,284 处** |
+| 源码里的对象初始化器 | **428 个**（417 个字面量 id + 11 个算出来的 id）；428 × 3 = 1,284，每个初始化器恰好三个散文字段，一个不多一个不少 |
+| 运行期的条目 | 增益 **86**、升级 **534**、金猫结果 **109** = **729 条**；差在升级：**11 个生成器把 233 个初始化器铺成了 534 条** |
+
+| 项 | 结果 |
+|---|---|
+| 增益 | **11 个包、86 条** → `buffs.<id>.{name, description, icon}` |
+| 升级 | **11 个包、534 条** → `upgrades.<id>.{name, description, icon}` |
+| 金猫结果 | **11 个包、109 条** → `goldenCookies.<id>.{name, description, icon}` |
+| 逐包条数 | 增益 6/5/8/8/8/10/8/8/9/8/10、升级 49/48/55/44/46/47/47/49/51/47/51、金猫 10/8/10/10/10/10/10/10/11/10/10（顺序同 `Externalized` 表：Neko / Cafe / NineLives / Lab / Company / Apocalypse / Library / God / Civ / Cyber / Dream） |
+| 代码侧 | 一律 `Prose.Text("<分区>", <该对象自己的 id 表达式>, "<字段>")` |
+| 文件 | 仍是同一份 `content/<包>/text.json`，三个新根节**追加在末尾**，EOL 跟随原文件（Neko 是 LF，其余十个是 CRLF） |
+| 代码量 | 源码里**一个字面量都不剩**：`Prose.Text(` 出现 **1,284** 次，`Name = "` / `Description = "` / `Icon = "` 出现 **0** 次 |
+| 用例 | **484 → 493**（`ContentTextFileTests` 22 → **31**；`tools/build.ps1 -Strict` 两个 sln 0 警告、退出码 0） |
+| 版本 | **不动**（公开 API 一行未改，无 minor 可升） |
+
+**什么留在代码里、为什么**——与 §10.1 / §11.1 同一栏性质的判断：
+
+| 记录 | 搬走的（散文） | 留下的（结构 / 计算） |
+|---|---|---|
+| `BuffDefinition` | `Name` / `Description` / `Icon` | `Id`（存档与引用键）、`Duration`、`MaxStacks`、`StackMode`、`Modifiers`、`IsDebuff`、`Dispellable` |
+| `UpgradeDefinition` | `Name` / `Description` / `Icon` | `Id`、`Price`、`Currency`、`Persistence`、`MaxPurchases`、`PriceGrowth`、`Unlock`（条件树）、`Modifiers`、`Tags`、`Category`、`Tier`、`HiddenUntilUnlocked` |
+| `GoldenCookieOutcome` | `Name` / `Description` / `Icon` | `Id`、`Weight`、全部 `Cookies*`、`StealBankFraction`、`BuffId` / `BuffSeconds`、`SecondaryBuffId` / `SecondaryBuffSeconds`、`IsRare` |
+
+**升级这一类是这一轮真正的判断工作，值得单独说。** 升级表里有一大类是**生成**出来的：
+每个包都有一段"每座建筑三档"的循环（`Id = $"{building.Id}_tier{required}"`、
+`Name = $"{prefix}{building.Name}"`、`Icon = building.Icon`、
+`Description = $"「{building.Name}」的产量翻倍。"`）。它们看起来像**模板**，但外置机制只有
+"id → 字段"这一种（§3 定下的），所以只有两条路：**发明一个模板引擎**，或者
+**按 id 展开成成品**。第四轮在成就上已经撞过同一堵墙并选了后者，这一轮**沿用同一条路**：
+
+- 写进文件的是 `upgrades.incubator_tier1.name = "校准过的培养舱"` 这样**逐条展开**的成品，
+  一条一个 id；id 仍然由代码算。
+- **没有发明模板引擎**——那会是一个新机制（占位符、解析器、渲染时机、失败模式），
+  超出"只搬散文"的范围，而且会让"文件里的字"与"玩家看到的字"重新分开。
+- **代价（已知、刻意接受）**：改名一座建筑，那三档升级的名字 / 说明 / 图标
+  **不会**跟着变。同一份值现在存在两处（`buildings.<建筑>.name` 与
+  `upgrades.<建筑>_tier1.name`），`ContentText` 保证"代码读到的 == 文件里的"，
+  但**不保证两份文件值一致**——与 §11.1 里 `endings.<id>.name` 对
+  `achievements.ach_end_<id>.name` 的重合是同一性质。守卫因此必须逐条比对
+  "代码值 == 文件值"（`EveryUpgrade_ResolvesItsTextFromTheFile`），
+  条数表则是唯一能发现"代码与文件**同时**少一档"的东西。
+
+**一处**静默降级**路径**——`GoldenCookieOutcome.Description`：
+`GoldenCookieSystem.Describe` 里写着
+`string.IsNullOrWhiteSpace(outcome.Description) ? outcome.Name : outcome.Description`，
+也就是**说明为空时界面悄悄改用名称**。这与 §10.1 的 `CompletionHint` 是同一形态，
+所以搬的时候用 `Text(...)`（缺失即抛）而**不是** `TextOr`，守卫里也额外断言它非空。
+它的 `{amount}` / `{duration}` 占位符**不是**模板引擎：替换仍然发生在核心代码里，
+文件里存的是模板本身那一条条文本。另外两个散文字段（`Name` / `Icon`）没有这种回退路径，
+但同样用了 `Text(...)` 并断言非空——一致性比"省一条断言"值钱。
+
+### 12.2 方法：还是"判据落在运行期"
+
+与 §8.2 / §9.2 / §10.2 / §11.2 同一条，没有另写 C# 字符串解析器：
+
+1. **迁移前**：一次性探针 `.tmp/Round5Dump`（独立小工程，不在 sln 里）读**运行期**的
+   `GameContent.Buffs` / `.Upgrades` / `.GoldenCookieOutcomes`，把**每个字段**（含不搬的
+   `Duration`、`StackMode`、`Modifiers.Describe`、`Price`、`Unlock.Describe`、`Tags`、
+   `Category`、`Tier`、`Weight`、全部 `Cookies*` 等）dump 成三份 JSON 基线——共 **524,163 字节**：
+   `buffs-baseline.json` 46,720（SHA-256 `3C2BD4EF…`）、
+   `upgrades-baseline.json` 401,690（`F9A314FC…`）、
+   `goldenCookies-baseline.json` 75,753（`0C38C9D5…`）。
+   浮点数写成 round-trip 字符串，因为其中一个默认值是 `+Infinity`，`System.Text.Json` 拒绝写成数字。
+2. **生成**：三个分区**由这三份 dump 生成**，生成脚本每写一个包就把文件读回来、
+   逐字段与运行期基线核对一遍（任一处不符即中止，且拒绝重复追加）。
+3. **改写源码**：扫描器按"类 → 分区"逐文件走，把每个对象初始化器里的三个字面量换成
+   `Prose.Text(...)`；**能对上基线的字面量先断言相等**（1,284 − 11 × 3 = **1,251 处**），
+   任一处不符即整体中止、不写任何文件。
+   算出来的那 11 个 id 是"引用式正确"：查找用的表达式**就是**该对象自己 `Id = …` 的那个表达式
+   （提升成 `string id = $"{building.Id}_tier{required}";`），所以不存在"id 与文案配错"的可能。
+4. **迁移后**：同一个探针再跑一次，三份 dump 与基线**逐字节相同**
+   （`identical=True`，字节数与 SHA-256 一个都没变）。这是本轮最硬的那条证据。
+5. **补一条静态兜底**：漏掉一个赋值点时，那个字面量会**原样留在代码里**，
+   而 before/after dump 仍然会逐字节相同（字面量的值本来就等于文件里的值）——
+   所以改写脚本最后会重扫一遍，要求这三个文件里
+   `Name = "` / `Description = "` / `Icon = "` **一处都不剩**（实测 leftovers = 0）。
+   这是"漏改"这个盲区的唯一守卫。
+
+**先把一个包走完再铺开**：试点仍是**实验室**（8 增益 + 44 升级 + 10 金猫结果，三类都在），
+试点后 dump 就已经逐字节相同；随后才铺其余 10 个包。
+（路上踩了两次**自己造的**坑，都不是静默的：① 用 `open(path,'w')` 做 dry-run 会**当场把文件截断**
+——备份救回来了，见 §12.5；② Python 默认的 universal newline 把 CRLF 读成 LF，
+写回去会让整个文件变成全文件 diff——改成 `newline=''` 后，所有文件的行尾与改动前逐一相同。）
+
+### 12.3 守卫（`ContentTextFileTests`，22 → **31** 条）
+
+| 新增/扩写 | 守什么 |
+|---|---|
+| **新增** `ExpectedBuffs` / `ExpectedUpgrades` / `ExpectedGoldenCookieOutcomes` + 三条 `…CountTable_CoversExactlyTheGuardTable` | **写死每包条数**。三张表都是 11 个包、**一个 0 都没有**（这三类内容十一个包全有，与纪元 / 结局那几类不同）。这是唯一能发现"代码与文件**同时**少一条"的守卫 |
+| **新增** `EveryBuff_ResolvesItsTextFromTheFile` | 代码 ↔ 文件**两个方向** × 三字段逐字 + 三字段非空 |
+| **新增** `EveryUpgrade_ResolvesItsTextFromTheFile` | 同上；这一条同时是"**算出来的 id** 与文件里的键必须是同一套"的证据 |
+| **新增** `EveryGoldenCookieOutcome_ResolvesItsTextFromTheFile` | 同上 × 三字段；`Description` 的非空断言带上了"为空会静默改用名称"的理由 |
+| **新增** `EditingTheBuffTextWrongly_FailsLoudly` 等三条 | 少一条（取它那刻抛、点名 id）/ 多一条（孤儿检查点名）两种坏文件都要响 |
+| **扩写** `ReadAllExcept` + 新的 `ReadBuffs` / `ReadUpgrades` / `ReadGoldenCookieOutcomes` | 夹具读法必须覆盖**整份文件**，否则孤儿检查会把新分区全报成孤儿。跳过的写法仍是统一的 `"分区/id"` |
+
+> 三个散文字段都没有**字段级**孤儿检查，理由与 §10.3 的 `Icon` 相同：
+> `ContentText.IsUsed` 是**按条目**记的，座位的粒度就是"这一条有没有人读"。
+
+### 12.4 反例证明（三处故意改坏，都在**真文件/真守卫**上做）
+
+| 故意改坏 | 红在哪 | 原文 |
+|---|---|---|
+| 真文件里删掉 Lab 的 `containment_breach` 整条 | 整个包 `Build()` 当场抛（31 条守卫里 20 条红） | `…\content\Lab\text.json：buffs 里没有 id「containment_breach」。` |
+| 真文件里给 Lab 的 `buffs` 加一条 `zz_orphan_buff` | 孤儿检查（20 条红） | `内容包「Lab」的剧情文本里有 1 条没人取用（孤儿条目）：buffs/zz_orphan_buff。…` |
+| 期望升级数 `Lab: 44` 改成 `43` | **只有** `EveryUpgrade_ResolvesItsTextFromTheFile` 一条红（31 条里 1 条） | `Lab: 代码里的升级数与期望值对不上。｜期望 <43>，实际 <44>。` |
+
+第三处是这三条里最说明问题的：**双向比对全绿，只有写死的条数表响了**——
+正是"代码与 JSON 同时少一条"那个盲区。三处都还原，还原后 31 条全绿
+（`11 通过 / 20 失败` → `30 通过 / 1 失败` → `全部通过：31 个用例`），
+且 `Lab/text.json` 的 SHA-256 与改坏前逐一相同（`B24B21A1…`）。
+
+### 12.5 备份与"工作树干净"的证据
+
+- 备份是**动手之前**做的：11 份 `text.json` → `.tmp/textjson-backup-round5/`，
+  31 份源码（11 `Buffs.cs` + 11 `Upgrades.cs` + 9 `GoldenCookieOutcomes.cs`）→ `.tmp/cs-backup-round5/`。
+  上面那个 `open(...,'w')` 的截断坑把 10 个文件清成 0 字节，**全部由备份还原**，
+  还原后 `git status` 干净（初始状态下与 HEAD 逐字节相同）。
+- 行尾：所有被改的文件行尾与改动前逐一相同（CRLF 计数 == LF 计数，Neko 的 `text.json` 仍是纯 LF）。
+- 真实的 `saves/` **一次都没写**：探针与守卫都只读运行期对象，不碰磁盘上的存档；
+  收尾时按"大小 + mtime ticks + sha256"逐文件核对了那 11 个文件（含 `.bak`），全部未变。
+
+### 12.6 `ContentText.cs` 的注释修正（唯一一处 `engine/core` 改动）
+
+`ContentText` 的类注释列分区时写的是**只到第一轮为止**的四个
+（`lore` / `eras` / `choices` / `endings`），`Text` 的 `<param name="kind">` 同样是这四个；
+现实是**十一个**（`storylines` / `lore` / `buildings` / `eras` / `endings` / `stances` /
+`choices` / `achievements` / `buffs` / `upgrades` / `goldenCookies`）。本轮**只改注释**：
+没有动签名、没有动行为、没有加成员，所以**没有版本 bump**；
+公开 API 快照逐字节未变，`PublicApiTests` 四条（含
+`PublicApiGuard_RejectsEveryKindOfBreakingChange`）全绿。
+（任务书说这段注释把文件写成 `content/<包名>/lore.json`——**实测不是**，
+那句早就是 `text.json`；真正过期的只有 kind 清单这一处，一并说明。）
+
+### 12.7 这一轮之后：还剩什么
+
+**"面向玩家的文案"这一类**：`storylines` / `lore` / `buildings` / `eras` / `endings` /
+`stances` / `choices` / `achievements` / `buffs` / `upgrades` / `goldenCookies` **十一类全部迁完**。
+累计规模：剧情散文（10 包 421 条）、建筑（11 包 104 座 × 3 字段）、
+纪元（9 包 49 层 × 6 字段）、结局（9 包 29 个 × 3）、立场（3 包 11 条 × 4）、
+表态（3 包 18 次 × 2 + 36 选项 × 2）、成就（11 包 712 条 × 3）、
+增益（11 包 86 条 × 3）、升级（11 包 534 条 × 3）、金猫结果（11 包 109 条 × 3）。
+
+**还留在代码里的中文**（都不属于"给玩家读的散文"，刻意不动）：条件树与修饰符的
+`Describe` 文本（`UnlockCondition.cs` / `Modifier.cs`，是引擎在渲染条件，不是内容）、
+引擎的通知与错误消息（`GameEngine.cs` 等）、以及内容包自己为了**报错**而写的中文
+（例如构建期校验消息）。这些要外置的话是**另一个方案**，不是本方案的收尾。
+

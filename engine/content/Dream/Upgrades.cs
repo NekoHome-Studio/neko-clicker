@@ -20,6 +20,14 @@ namespace NekoClicker.Content.Dream;
 /// </summary>
 internal static class Upgrades
 {
+    /// <summary>
+    /// 本包的 <c>text.json</c>：增益 / 升级 / 金猫结果的文案与其它分区<b>共用同一份实例</b>（<see cref="Lore.Prose"/>）。<para>
+    /// 必须共用：孤儿检查会遍历整份文件的每个 kind，而"哪些 id 已取用"是按实例记的——
+    /// 两个实例各记一半，就会把对方那些 id 全报成孤儿。
+    /// </para>
+    /// </summary>
+    private static ContentText Prose => Lore.Prose;
+
     /// <summary>全部升级。</summary>
     public static UpgradeDefinition[] All =>
     [
@@ -45,12 +53,13 @@ internal static class Upgrades
         {
             foreach ((int required, double priceFactor, string prefix) in tiers)
             {
+                string id = $"{building.Id}_t{required}";
                 yield return new UpgradeDefinition
                 {
-                    Id = $"{building.Id}_t{required}",
-                    Name = $"{prefix}{building.Name}",
-                    Icon = building.Icon,
-                    Description = $"「{building.Name}」的产量翻倍。",
+                    Id = id,
+                    Name = Prose.Text("upgrades", id, "name"),
+                    Icon = Prose.Text("upgrades", id, "icon"),
+                    Description = Prose.Text("upgrades", id, "description"),
                     Price = building.BasePrice * priceFactor,
                     Unlock = UnlockCondition.BuildingsAtLeast(building.Id, required),
                     Modifiers = [Modifier.BuildingMultiplier(building.Id, 2)],
@@ -68,9 +77,9 @@ internal static class Upgrades
         yield return new()
         {
             Id = "count_sheep",
-            Name = "数到第七只",
-            Icon = "🐑",
-            Description = "每次闭眼额外获得 1 点梦。她数到第七只就不数了，因为第七只开始说话。",
+            Name = Prose.Text("upgrades", "count_sheep", "name"),
+            Icon = Prose.Text("upgrades", "count_sheep", "icon"),
+            Description = Prose.Text("upgrades", "count_sheep", "description"),
             Price = 250,
             Unlock = UnlockCondition.ClicksAtLeast(20),
             Modifiers = [Modifier.ClickFlat(1)],
@@ -82,9 +91,9 @@ internal static class Upgrades
         yield return new()
         {
             Id = "half_asleep",
-            Name = "半梦半醒",
-            Icon = "😑",
-            Description = "点击收益 ×2。只有一半睡着了的人，手指还能动。",
+            Name = Prose.Text("upgrades", "half_asleep", "name"),
+            Icon = Prose.Text("upgrades", "half_asleep", "icon"),
+            Description = Prose.Text("upgrades", "half_asleep", "description"),
             Price = 22_000,
             Unlock = UnlockCondition.ClicksAtLeast(200),
             Modifiers = [Modifier.ClickMultiplier(2)],
@@ -96,9 +105,9 @@ internal static class Upgrades
         yield return new()
         {
             Id = "remember_the_dream",
-            Name = "记住这个梦",
-            Icon = "📝",
-            Description = "点击收益 ×3。醒来之后她写了三行，写完发现字是反的。",
+            Name = Prose.Text("upgrades", "remember_the_dream", "name"),
+            Icon = Prose.Text("upgrades", "remember_the_dream", "icon"),
+            Description = Prose.Text("upgrades", "remember_the_dream", "description"),
             Price = 6_000_000,
             Unlock = UnlockCondition.All(
                 UnlockCondition.ClicksAtLeast(1_000),
@@ -112,9 +121,9 @@ internal static class Upgrades
         yield return new()
         {
             Id = "wake_control",
-            Name = "想醒就能醒",
-            Icon = "⏱️",
-            Description = "点击收益 ×4，且每次闭眼额外获得 1e4 点梦。她试过一次，那次她真的醒了，然后又睡了回去。",
+            Name = Prose.Text("upgrades", "wake_control", "name"),
+            Icon = Prose.Text("upgrades", "wake_control", "icon"),
+            Description = Prose.Text("upgrades", "wake_control", "description"),
             Price = 2.2e9,
             Unlock = UnlockCondition.All(
                 UnlockCondition.ClicksAtLeast(5_000),
@@ -128,9 +137,9 @@ internal static class Upgrades
         yield return new()
         {
             Id = "seven_minutes",
-            Name = "再睡七分钟",
-            Icon = "⏰",
-            Description = "点击收益 ×5。这是她说得最多的一句话，也是这个梦里最像谎的一句。",
+            Name = Prose.Text("upgrades", "seven_minutes", "name"),
+            Icon = Prose.Text("upgrades", "seven_minutes", "icon"),
+            Description = Prose.Text("upgrades", "seven_minutes", "description"),
             Price = 8e10,
             Unlock = UnlockCondition.All(
                 UnlockCondition.ClicksAtLeast(20_000),
@@ -156,9 +165,9 @@ internal static class Upgrades
         yield return new()
         {
             Id = "thickening",
-            Name = "梦在变浓",
-            Icon = "🌫️",
-            Description = "全局产量 +0.05%／每点梦境能量（最多计入 20,000 点，即 +100%）。她抬手的时候，空气有一点阻力。",
+            Name = Prose.Text("upgrades", "thickening", "name"),
+            Icon = Prose.Text("upgrades", "thickening", "icon"),
+            Description = Prose.Text("upgrades", "thickening", "description"),
             Price = 3_000_000,
             Unlock = UnlockCondition.Counter(DreamEnergyModule.CounterKey, 2_000),
             Modifiers =
@@ -175,9 +184,9 @@ internal static class Upgrades
         yield return new()
         {
             Id = "dream_substance",
-            Name = "梦有实体",
-            Icon = "🧱",
-            Description = "全局产量 ×2，增益时长 ×1.25。她按了一下墙，墙面凹下去一小块，慢慢又弹了回来。",
+            Name = Prose.Text("upgrades", "dream_substance", "name"),
+            Icon = Prose.Text("upgrades", "dream_substance", "icon"),
+            Description = Prose.Text("upgrades", "dream_substance", "description"),
             Price = 4.5e8,
             Unlock = UnlockCondition.Counter(DreamEnergyModule.CounterKey, 300_000),
             Modifiers =
@@ -193,9 +202,9 @@ internal static class Upgrades
         yield return new()
         {
             Id = "make_things",
-            Name = "梦里能造东西",
-            Icon = "🪄",
-            Description = "全局产量 ×2.5、梦魇奖励 ×2。她捏了一只猫，捏出来是热的，还会打呼。",
+            Name = Prose.Text("upgrades", "make_things", "name"),
+            Icon = Prose.Text("upgrades", "make_things", "icon"),
+            Description = Prose.Text("upgrades", "make_things", "description"),
             Price = 2.5e10,
             Unlock = UnlockCondition.Counter(DreamEnergyModule.CounterKey, 20_000_000),
             Modifiers = [Modifier.GlobalMultiplier(2.5), Modifier.GoldenCookieReward(2)],
@@ -207,9 +216,9 @@ internal static class Upgrades
         yield return new()
         {
             Id = "core_resonance",
-            Name = "和梦核共振",
-            Icon = "🔮",
-            Description = "全局产量 +0.3%／每点梦境能量（最多计入 600 million 点，即 +180%）。她和那颗东西对上了频率。",
+            Name = Prose.Text("upgrades", "core_resonance", "name"),
+            Icon = Prose.Text("upgrades", "core_resonance", "icon"),
+            Description = Prose.Text("upgrades", "core_resonance", "description"),
             Price = 8e11,
             Unlock = UnlockCondition.All(
                 UnlockCondition.Counter(DreamEnergyModule.CounterKey, 600_000_000),
@@ -236,9 +245,9 @@ internal static class Upgrades
         yield return new()
         {
             Id = "nest_under_pillow",
-            Name = "枕头底下压着一层梦",
-            Icon = "🛏️",
-            Description = "噩梦巢产量 +1.5%／每座枕头（最多计入 100 座，即 +150%）。她把枕头掀开过，底下是凉的。",
+            Name = Prose.Text("upgrades", "nest_under_pillow", "name"),
+            Icon = Prose.Text("upgrades", "nest_under_pillow", "icon"),
+            Description = Prose.Text("upgrades", "nest_under_pillow", "description"),
             Price = 55_000_000,
             Unlock = UnlockCondition.BuildingsAtLeast("pillow", 100),
             Modifiers =
@@ -256,9 +265,9 @@ internal static class Upgrades
         yield return new()
         {
             Id = "weave_the_layer",
-            Name = "用梦层织梦",
-            Icon = "🧶",
-            Description = "织梦者产量 +2%／每层梦层（最多计入 100 层，即 +200%）。线头是从下面那一层抽上来的。",
+            Name = Prose.Text("upgrades", "weave_the_layer", "name"),
+            Icon = Prose.Text("upgrades", "weave_the_layer", "icon"),
+            Description = Prose.Text("upgrades", "weave_the_layer", "description"),
             Price = 8e8,
             Unlock = UnlockCondition.BuildingsAtLeast("dream_layer", 100),
             Modifiers =
@@ -276,9 +285,9 @@ internal static class Upgrades
         yield return new()
         {
             Id = "nest_to_lucid",
-            Name = "从噩梦里带出来的清醒",
-            Icon = "💡",
-            Description = "清醒区产量 +1%／每座噩梦巢（最多计入 200 座，即 +200%）。在噩梦里待过的人，做梦时最清醒。",
+            Name = Prose.Text("upgrades", "nest_to_lucid", "name"),
+            Icon = Prose.Text("upgrades", "nest_to_lucid", "icon"),
+            Description = Prose.Text("upgrades", "nest_to_lucid", "description"),
             Price = 3e11,
             Unlock = UnlockCondition.All(
                 UnlockCondition.BuildingsAtLeast("nightmare_nest", 75),
@@ -298,9 +307,9 @@ internal static class Upgrades
         yield return new()
         {
             Id = "tower_to_core",
-            Name = "塔的重量压在核上",
-            Icon = "🗼",
-            Description = "梦核产量 +1%／每座嵌套塔（最多计入 300 座，即 +300%）。塔越往上，核转得越快。",
+            Name = Prose.Text("upgrades", "tower_to_core", "name"),
+            Icon = Prose.Text("upgrades", "tower_to_core", "icon"),
+            Description = Prose.Text("upgrades", "tower_to_core", "description"),
             Price = 6e11,
             Unlock = UnlockCondition.All(
                 UnlockCondition.BuildingsAtLeast("nesting_tower", 50),
@@ -324,9 +333,9 @@ internal static class Upgrades
         yield return new()
         {
             Id = "the_first_fall",
-            Name = "第一次掉下去",
-            Icon = "⤵️",
-            Description = "全局产量 ×1.8。入睡的那一瞬间像踩空一格楼梯，谁都躲不过。",
+            Name = Prose.Text("upgrades", "the_first_fall", "name"),
+            Icon = Prose.Text("upgrades", "the_first_fall", "icon"),
+            Description = Prose.Text("upgrades", "the_first_fall", "description"),
             Price = 6_000,
             Unlock = UnlockCondition.EraAtLeast(1),
             Modifiers = [Modifier.GlobalMultiplier(1.8)],
@@ -338,9 +347,9 @@ internal static class Upgrades
         yield return new()
         {
             Id = "heavier",
-            Name = "越来越沉",
-            Icon = "🪨",
-            Description = "全局产量 ×2、建筑价格 ×0.92。醒来的时候身体像灌了铅，那是因为梦舍不得放人。",
+            Name = Prose.Text("upgrades", "heavier", "name"),
+            Icon = Prose.Text("upgrades", "heavier", "icon"),
+            Description = Prose.Text("upgrades", "heavier", "description"),
             Price = 32_000_000,
             Unlock = UnlockCondition.All(
                 UnlockCondition.EraAtLeast(2),
@@ -354,9 +363,9 @@ internal static class Upgrades
         yield return new()
         {
             Id = "my_own_dream",
-            Name = "这是我的梦",
-            Icon = "💡",
-            Description = "全局产量 ×2.2，梦魇间隔 ×1.15（来得更少）。清明之后梦魇反而少了一点——因为它也得听她的。",
+            Name = Prose.Text("upgrades", "my_own_dream", "name"),
+            Icon = Prose.Text("upgrades", "my_own_dream", "icon"),
+            Description = Prose.Text("upgrades", "my_own_dream", "description"),
             Price = 2.2e9,
             Unlock = UnlockCondition.All(
                 UnlockCondition.EraAtLeast(3),
@@ -370,9 +379,9 @@ internal static class Upgrades
         yield return new()
         {
             Id = "things_i_did",
-            Name = "没做完的那些事",
-            Icon = "🕷️",
-            Description = "全局产量 ×2.5、增益时长 ×1.2。噩梦层里的东西全是从上面掉下来的，包括她自己的。",
+            Name = Prose.Text("upgrades", "things_i_did", "name"),
+            Icon = Prose.Text("upgrades", "things_i_did", "icon"),
+            Description = Prose.Text("upgrades", "things_i_did", "description"),
             Price = 9e10,
             Unlock = UnlockCondition.All(
                 UnlockCondition.EraAtLeast(4),
@@ -390,9 +399,9 @@ internal static class Upgrades
         yield return new()
         {
             Id = "the_core_answered",
-            Name = "梦核答应了一声",
-            Icon = "🔮",
-            Description = "全局产量 ×3，但增益时长 ×0.85。它转得快了，所以梦也散得快。",
+            Name = Prose.Text("upgrades", "the_core_answered", "name"),
+            Icon = Prose.Text("upgrades", "the_core_answered", "icon"),
+            Description = Prose.Text("upgrades", "the_core_answered", "description"),
             Price = 5e11,
             Unlock = UnlockCondition.All(
                 UnlockCondition.EraAtLeast(5),
@@ -410,9 +419,9 @@ internal static class Upgrades
         yield return new()
         {
             Id = "one_more_layer",
-            Name = "再搭一层",
-            Icon = "🧱",
-            Description = "全局产量 ×2.5、建筑价格 ×0.88。最里面那层是她自己搭的，所以她说了算。",
+            Name = Prose.Text("upgrades", "one_more_layer", "name"),
+            Icon = Prose.Text("upgrades", "one_more_layer", "icon"),
+            Description = Prose.Text("upgrades", "one_more_layer", "description"),
             Price = 1.2e12,
             Unlock = UnlockCondition.All(
                 UnlockCondition.EraAtLeast(5),
@@ -430,9 +439,9 @@ internal static class Upgrades
         yield return new()
         {
             Id = "kept_fragments",
-            Name = "留下来的碎片",
-            Icon = "🧩",
-            Description = "全局产量 +25%。上一层的梦碎在这里，拼起来还能认出形状。",
+            Name = Prose.Text("upgrades", "kept_fragments", "name"),
+            Icon = Prose.Text("upgrades", "kept_fragments", "icon"),
+            Description = Prose.Text("upgrades", "kept_fragments", "description"),
             Price = 2,
             Currency = UpgradeCurrency.PrestigeChips,
             Persistence = UpgradePersistence.Permanent,
@@ -446,9 +455,9 @@ internal static class Upgrades
         yield return new()
         {
             Id = "know_the_way_down",
-            Name = "记得往下走的路",
-            Icon = "🪜",
-            Description = "建筑价格 ×0.82。往下走过一次之后，第二次就不用摸黑。",
+            Name = Prose.Text("upgrades", "know_the_way_down", "name"),
+            Icon = Prose.Text("upgrades", "know_the_way_down", "icon"),
+            Description = Prose.Text("upgrades", "know_the_way_down", "description"),
             Price = 4,
             Currency = UpgradeCurrency.PrestigeChips,
             Persistence = UpgradePersistence.Permanent,
@@ -462,9 +471,9 @@ internal static class Upgrades
         yield return new()
         {
             Id = "hand_still_works",
-            Name = "手还能动",
-            Icon = "✋",
-            Description = "点击收益 ×6、梦魇奖励 ×1.5。在浅眠那一层，能动手就是全部的本事。",
+            Name = Prose.Text("upgrades", "hand_still_works", "name"),
+            Icon = Prose.Text("upgrades", "hand_still_works", "icon"),
+            Description = Prose.Text("upgrades", "hand_still_works", "description"),
             Price = 9,
             Currency = UpgradeCurrency.PrestigeChips,
             Persistence = UpgradePersistence.Permanent,
@@ -478,9 +487,9 @@ internal static class Upgrades
         yield return new()
         {
             Id = "same_night",
-            Name = "还是同一个晚上",
-            Icon = "🌙",
-            Description = "全局产量 ×2、梦魇奖励 ×1.5。睡了这么深，外面的天还没亮。",
+            Name = Prose.Text("upgrades", "same_night", "name"),
+            Icon = Prose.Text("upgrades", "same_night", "icon"),
+            Description = Prose.Text("upgrades", "same_night", "description"),
             Price = 18,
             Currency = UpgradeCurrency.PrestigeChips,
             Persistence = UpgradePersistence.Permanent,
@@ -494,9 +503,9 @@ internal static class Upgrades
         yield return new()
         {
             Id = "remember_every_layer",
-            Name = "每一层都记得",
-            Icon = "🧠",
-            Description = "全局产量 ×2.5、增益时长 ×1.4。她能把五层梦按顺序背出来，一层不差。",
+            Name = Prose.Text("upgrades", "remember_every_layer", "name"),
+            Icon = Prose.Text("upgrades", "remember_every_layer", "icon"),
+            Description = Prose.Text("upgrades", "remember_every_layer", "description"),
             Price = 27,
             Currency = UpgradeCurrency.PrestigeChips,
             Persistence = UpgradePersistence.Permanent,

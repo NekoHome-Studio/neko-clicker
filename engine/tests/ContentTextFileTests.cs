@@ -36,6 +36,14 @@ namespace NekoClicker.Core.Tests;
 /// 与纪元同一条理由：<b>没有这一类内容的包期望值写 0</b>，并要求文件里也没有那个分区。
 /// 成就与其它三类不同——<b>十一个包都有</b>，包括没有纪元、没有表态的示例包。
 /// </para>
+/// <para>
+/// <b>第五轮加的三个分区同样在这张表里</b>：<c>buffs</c>（<c>Name</c> / <c>Icon</c> /
+/// <c>Description</c>）、<c>upgrades</c>（同上）与 <c>goldenCookies</c>（同上）。
+/// 这一轮与前四轮有一处不同值得记住：<b>十一个包都有</b>这三类内容，一张表里一个 0 都没有。
+/// 而升级表大多由循环铺出来（"每座建筑三档"），源码里 233 个初始化器展开成 534 条运行时升级——
+/// 所以文件里存的是<b>按 id 展开后的成品</b>，id 仍由代码算；改名一座建筑不会重算那些文案，
+/// 这是已知且刻意接受的代价。
+/// </para>
 /// </summary>
 public static class ContentTextFileTests
 {
@@ -180,6 +188,70 @@ public static class ContentTextFileTests
     ];
 
     /// <summary>
+    /// 每个包应当有几条增益。<para>
+    /// 与前面几张表同一条理由：它管的是"代码与文件<b>同时</b>少一条"——双向比对两边一致时
+    /// 看不出任何异常，而少一条增益意味着一种限时状态凭空消失。
+    /// </para>
+    /// <para>
+    /// <b>十一个包都有增益、都有升级、都有金猫结果</b>（这一轮与建筑 / 结局那几类不同，
+    /// 没有"某个包一个都没有"的情形），所以三张表里一个 0 都没有——
+    /// 但表仍然把十一个包全部登记，否则"给某个包删掉整类内容"就是沉默的。
+    /// </para>
+    /// </summary>
+    private static readonly (string Pack, int Count)[] ExpectedBuffs =
+    [
+        ("Apocalypse", 8),
+        ("Cafe", 5),
+        ("Civ", 9),
+        ("Company", 8),
+        ("Cyber", 8),
+        ("Dream", 10),
+        ("God", 8),
+        ("Lab", 8),
+        ("Library", 8),
+        ("Neko", 6),
+        ("NineLives", 8),
+    ];
+
+    /// <summary>
+    /// 每个包应当有几条升级。<para>
+    /// <b>这一类是这张表最要紧的地方</b>：升级表大多由循环铺出来（"每座建筑三档"），
+    /// 源码里只有 233 个对象初始化器却展开成 534 条运行时升级——
+    /// "代码与文件同时少一档"完全可以由改一次循环边界造成，而双向比对看不见。
+    /// </para>
+    /// </summary>
+    private static readonly (string Pack, int Count)[] ExpectedUpgrades =
+    [
+        ("Apocalypse", 47),
+        ("Cafe", 48),
+        ("Civ", 51),
+        ("Company", 46),
+        ("Cyber", 47),
+        ("Dream", 51),
+        ("God", 49),
+        ("Lab", 44),
+        ("Library", 47),
+        ("Neko", 49),
+        ("NineLives", 55),
+    ];
+
+    /// <summary>每个包应当有几条金猫结果（<c>GoldenCookieOutcome</c>）。理由同 <see cref="ExpectedBuffs"/>。</summary>
+    private static readonly (string Pack, int Count)[] ExpectedGoldenCookieOutcomes =
+    [
+        ("Apocalypse", 10),
+        ("Cafe", 8),
+        ("Civ", 11),
+        ("Company", 10),
+        ("Cyber", 10),
+        ("Dream", 10),
+        ("God", 10),
+        ("Lab", 10),
+        ("Library", 10),
+        ("Neko", 10),
+        ("NineLives", 10),
+    ];
+
+    /// <summary>
     /// 覆盖度：仓库里有几个 <c>text.json</c>，这张表就得有几个包。<para>
     /// 这条守的是"守卫自己瞎掉"——新增一个包只加了文件没加守卫时，它会红。
     /// </para>
@@ -267,6 +339,38 @@ public static class ContentTextFileTests
             string.Join("、", Externalized.Select(p => p.Pack).OrderBy(name => name, StringComparer.Ordinal)),
             string.Join("、", ExpectedAchievements.Select(p => p.Pack).OrderBy(name => name, StringComparer.Ordinal)),
             "成就条数表与守卫表里的包不一致——加一个包就要在两处各加一行。");
+    }
+
+    /// <summary>增益条数表的对应性守卫——与 <see cref="EraCountTable_CoversExactlyTheGuardTable"/> 同构。</summary>
+    [Test]
+    public static void BuffCountTable_CoversExactlyTheGuardTable()
+    {
+        Check.Equal(
+            string.Join("、", Externalized.Select(p => p.Pack).OrderBy(name => name, StringComparer.Ordinal)),
+            string.Join("、", ExpectedBuffs.Select(p => p.Pack).OrderBy(name => name, StringComparer.Ordinal)),
+            "增益条数表与守卫表里的包不一致——加一个包就要在两处各加一行。");
+    }
+
+    /// <summary>升级条数表的对应性守卫——与 <see cref="EraCountTable_CoversExactlyTheGuardTable"/> 同构。</summary>
+    [Test]
+    public static void UpgradeCountTable_CoversExactlyTheGuardTable()
+    {
+        Check.Equal(
+            string.Join("、", Externalized.Select(p => p.Pack).OrderBy(name => name, StringComparer.Ordinal)),
+            string.Join("、", ExpectedUpgrades.Select(p => p.Pack).OrderBy(name => name, StringComparer.Ordinal)),
+            "升级条数表与守卫表里的包不一致——加一个包就要在两处各加一行。");
+    }
+
+    /// <summary>金猫结果条数表的对应性守卫——与 <see cref="EraCountTable_CoversExactlyTheGuardTable"/> 同构。</summary>
+    [Test]
+    public static void GoldenCookieOutcomeCountTable_CoversExactlyTheGuardTable()
+    {
+        Check.Equal(
+            string.Join("、", Externalized.Select(p => p.Pack).OrderBy(name => name, StringComparer.Ordinal)),
+            string.Join(
+                "、",
+                ExpectedGoldenCookieOutcomes.Select(p => p.Pack).OrderBy(name => name, StringComparer.Ordinal)),
+            "金猫结果条数表与守卫表里的包不一致——加一个包就要在两处各加一行。");
     }
 
     /// <summary>
@@ -678,6 +782,172 @@ public static class ContentTextFileTests
     }
 
     /// <summary>
+    /// <c>BuffDefinition</c> 的三个面向玩家的字段（<c>Name</c> / <c>Icon</c> /
+    /// <c>Description</c>）都从文件的 <c>buffs</c> 分区读，条数与写死的期望值一致。<para>
+    /// 与前面几条同构：代码 ↔ 文件<b>两个方向</b>都查，再叠一张写死的条数表。
+    /// 留在代码里的是 <c>Id</c> / <c>Duration</c> / <c>MaxStacks</c> / <c>StackMode</c> /
+    /// <c>Modifiers</c> / <c>IsDebuff</c> / <c>Dispellable</c>——键与规则，不是散文。
+    /// </para>
+    /// </summary>
+    [Test]
+    public static void EveryBuff_ResolvesItsTextFromTheFile()
+    {
+        foreach ((string pack, Func<GameContent> build) in Externalized)
+        {
+            JsonObject file = ShippedJson(pack);
+            GameContent content = build();
+            int expected = ExpectedBuffs.Single(entry => entry.Pack == pack).Count;
+
+            Check.Equal(expected, content.Buffs.Count, $"{pack}: 代码里的增益数与期望值对不上。");
+            Check.True(file["buffs"] is JsonObject, $"{pack}: text.json 里没有 buffs 分区。");
+            JsonObject buffs = (JsonObject)file["buffs"]!;
+            Check.Equal(expected, buffs.Count, $"{pack}: 文件里的增益数与期望值对不上。");
+
+            foreach (BuffDefinition buff in content.Buffs)
+            {
+                Check.True(
+                    buffs.ContainsKey(buff.Id),
+                    $"{pack}: text.json 的 buffs 里没有「{buff.Id}」——它会在构建内容时抛。");
+
+                JsonObject row = (JsonObject)buffs[buff.Id]!;
+                Check.Equal((string?)row["name"], buff.Name, $"{pack}: 增益「{buff.Id}」的名称不是从文件里读出来的。");
+                Check.Equal((string?)row["icon"], buff.Icon, $"{pack}: 增益「{buff.Id}」的图标不是从文件里读出来的。");
+                Check.Equal(
+                    (string?)row["description"],
+                    buff.Description,
+                    $"{pack}: 增益「{buff.Id}」的说明不是从文件里读出来的。");
+                Check.False(string.IsNullOrWhiteSpace(buff.Name), $"{pack}: 增益「{buff.Id}」的名称是空的。");
+                Check.False(string.IsNullOrWhiteSpace(buff.Icon), $"{pack}: 增益「{buff.Id}」的图标是空的。");
+                Check.False(
+                    string.IsNullOrWhiteSpace(buff.Description),
+                    $"{pack}: 增益「{buff.Id}」的说明是空的。");
+            }
+        }
+    }
+
+    /// <summary>
+    /// <c>UpgradeDefinition</c> 的三个面向玩家的字段（<c>Name</c> / <c>Icon</c> /
+    /// <c>Description</c>）都从文件的 <c>upgrades</c> 分区读，条数与写死的期望值一致。<para>
+    /// <b>这一类与其它几类有一处本质区别，值得单独说</b>：升级表大多由循环铺出来
+    /// （"每座建筑三档"），名字里带建筑名、说明里带建筑名、图标就是建筑的图标——
+    /// 它们是<b>算出来的</b>。而外置机制只有"id → 字段"这一种，所以写进文件的是
+    /// <b>按 id 展开后的成品</b>：534 条各自一条文本，id 仍由代码算
+    /// （<c>$"{building.Id}_tier{required}"</c>）。改名一座建筑，那些档位的文案
+    /// <b>不会</b>跟着变——这正是"按 id 展开"的代价，也是这里要逐条比对
+    /// "代码值 == 文件值"的原因。<b>没有为此发明模板引擎。</b>
+    /// </para>
+    /// <para>
+    /// 留在代码里的是 <c>Id</c> / <c>Price</c> / <c>Currency</c> / <c>Persistence</c> /
+    /// <c>MaxPurchases</c> / <c>PriceGrowth</c> / <c>Unlock</c> / <c>Modifiers</c> /
+    /// <c>Tags</c> / <c>Category</c> / <c>Tier</c> / <c>HiddenUntilUnlocked</c>——
+    /// 键、数值、条件树与排序，都不是散文。
+    /// </para>
+    /// </summary>
+    [Test]
+    public static void EveryUpgrade_ResolvesItsTextFromTheFile()
+    {
+        foreach ((string pack, Func<GameContent> build) in Externalized)
+        {
+            JsonObject file = ShippedJson(pack);
+            GameContent content = build();
+            int expected = ExpectedUpgrades.Single(entry => entry.Pack == pack).Count;
+
+            Check.Equal(expected, content.Upgrades.Count, $"{pack}: 代码里的升级数与期望值对不上。");
+            Check.True(file["upgrades"] is JsonObject, $"{pack}: text.json 里没有 upgrades 分区。");
+            JsonObject upgrades = (JsonObject)file["upgrades"]!;
+            Check.Equal(expected, upgrades.Count, $"{pack}: 文件里的升级数与期望值对不上。");
+
+            foreach (UpgradeDefinition upgrade in content.Upgrades)
+            {
+                Check.True(
+                    upgrades.ContainsKey(upgrade.Id),
+                    $"{pack}: text.json 的 upgrades 里没有「{upgrade.Id}」——它会在构建内容时抛。");
+
+                JsonObject row = (JsonObject)upgrades[upgrade.Id]!;
+                Check.Equal(
+                    (string?)row["name"],
+                    upgrade.Name,
+                    $"{pack}: 升级「{upgrade.Id}」的名称不是从文件里读出来的。");
+                Check.Equal(
+                    (string?)row["icon"],
+                    upgrade.Icon,
+                    $"{pack}: 升级「{upgrade.Id}」的图标不是从文件里读出来的。");
+                Check.Equal(
+                    (string?)row["description"],
+                    upgrade.Description,
+                    $"{pack}: 升级「{upgrade.Id}」的说明不是从文件里读出来的。");
+                Check.False(string.IsNullOrWhiteSpace(upgrade.Name), $"{pack}: 升级「{upgrade.Id}」的名称是空的。");
+                Check.False(string.IsNullOrWhiteSpace(upgrade.Icon), $"{pack}: 升级「{upgrade.Id}」的图标是空的。");
+                Check.False(
+                    string.IsNullOrWhiteSpace(upgrade.Description),
+                    $"{pack}: 升级「{upgrade.Id}」的说明是空的。");
+            }
+        }
+    }
+
+    /// <summary>
+    /// <c>GoldenCookieOutcome</c> 的三个面向玩家的字段（<c>Name</c> / <c>Icon</c> /
+    /// <c>Description</c>）都从文件的 <c>goldenCookies</c> 分区读，条数与写死的期望值一致。<para>
+    /// <b><c>Description</c> 特殊</b>：<c>GoldenCookieSystem.Describe</c> 里有一句
+    /// <c>string.IsNullOrWhiteSpace(outcome.Description) ? outcome.Name : outcome.Description</c>——
+    /// 说明为空时界面会<b>静默改用名称</b>。这是一条静默降级路径，所以搬过来时用的是
+    /// <c>Text(...)</c>（缺失即抛）而<b>不是</b> <c>TextOr</c>，这里也额外断言它非空。
+    /// </para>
+    /// <para>
+    /// <c>Description</c> 里的 <c>{amount}</c> / <c>{duration}</c> 是<b>渲染期</b>替换的占位符，
+    /// 替换仍然发生在核心代码里；文件里存的是模板本身的那一条条文本，不是渲染结果。
+    /// 留在代码里的是 <c>Id</c> / <c>Weight</c> / 全部 <c>Cookies*</c> / <c>StealBankFraction</c> /
+    /// <c>BuffId</c> / <c>BuffSeconds</c> / <c>SecondaryBuffId</c> / <c>SecondaryBuffSeconds</c> /
+    /// <c>IsRare</c>——数值与引用键。
+    /// </para>
+    /// </summary>
+    [Test]
+    public static void EveryGoldenCookieOutcome_ResolvesItsTextFromTheFile()
+    {
+        foreach ((string pack, Func<GameContent> build) in Externalized)
+        {
+            JsonObject file = ShippedJson(pack);
+            GameContent content = build();
+            int expected = ExpectedGoldenCookieOutcomes.Single(entry => entry.Pack == pack).Count;
+
+            Check.Equal(
+                expected,
+                content.GoldenCookieOutcomes.Count,
+                $"{pack}: 代码里的金猫结果数与期望值对不上。");
+            Check.True(file["goldenCookies"] is JsonObject, $"{pack}: text.json 里没有 goldenCookies 分区。");
+            JsonObject outcomes = (JsonObject)file["goldenCookies"]!;
+            Check.Equal(expected, outcomes.Count, $"{pack}: 文件里的金猫结果数与期望值对不上。");
+
+            foreach (GoldenCookieOutcome outcome in content.GoldenCookieOutcomes)
+            {
+                Check.True(
+                    outcomes.ContainsKey(outcome.Id),
+                    $"{pack}: text.json 的 goldenCookies 里没有「{outcome.Id}」——它会在构建内容时抛。");
+
+                JsonObject row = (JsonObject)outcomes[outcome.Id]!;
+                Check.Equal(
+                    (string?)row["name"],
+                    outcome.Name,
+                    $"{pack}: 金猫结果「{outcome.Id}」的名称不是从文件里读出来的。");
+                Check.Equal(
+                    (string?)row["icon"],
+                    outcome.Icon,
+                    $"{pack}: 金猫结果「{outcome.Id}」的图标不是从文件里读出来的。");
+                Check.Equal(
+                    (string?)row["description"],
+                    outcome.Description,
+                    $"{pack}: 金猫结果「{outcome.Id}」的说明不是从文件里读出来的。");
+                Check.False(string.IsNullOrWhiteSpace(outcome.Name), $"{pack}: 金猫结果「{outcome.Id}」的名称是空的。");
+                Check.False(string.IsNullOrWhiteSpace(outcome.Icon), $"{pack}: 金猫结果「{outcome.Id}」的图标是空的。");
+                Check.False(
+                    string.IsNullOrWhiteSpace(outcome.Description),
+                    $"{pack}: 金猫结果「{outcome.Id}」的说明是空的——" +
+                    "它为空时界面会静默改用名称（GoldenCookieSystem.Describe），所以这里必须拦住。");
+            }
+        }
+    }
+
+    /// <summary>
     /// 把真文件改坏的三种形态喂给每个包真实的 id 表，确认它们都会响。<para>
     /// 顺序很重要：先证明"原样读一遍一条都不抛"（反面对照），否则下面两条"抛了"可能只是碰巧。
     /// </para>
@@ -971,9 +1241,90 @@ public static class ContentTextFileTests
         }
     }
 
+    /// <summary>
+    /// 增益文案被改坏的两种形态，<b>每个包</b>都要当场炸——十一个包都有增益，
+    /// 所以这条不能像纪元那样"期望 0 就跳过"。
+    /// </summary>
+    [Test]
+    public static void EditingTheBuffTextWrongly_FailsLoudly()
+    {
+        foreach ((string pack, Func<GameContent> build) in Externalized)
+        {
+            GameContent content = build();
+            Check.True(content.Buffs.Count > 0, $"{pack}: 这个包一条增益都没有，这条守卫就没有意义了。");
+
+            ProveCategoryFailsLoudly(
+                (pack, build),
+                "buffs",
+                "description",
+                content.Buffs[0].Id,
+                "zz_orphan_buff",
+                new JsonObject
+                {
+                    ["name"] = "无主增益",
+                    ["icon"] = "❓",
+                    ["description"] = "无主说明",
+                });
+        }
+    }
+
+    /// <summary>
+    /// 升级文案被改坏的两种形态，<b>每个包</b>都要当场炸。<para>
+    /// 删掉的那一条是<b>运行时 id</b>（可能是代码算出来的那一档），所以这里同时也在证明
+    /// "算出来的 id"与"文件里的条目"确实是同一套键——换一套键名，这一条立刻红。
+    /// </para>
+    /// </summary>
+    [Test]
+    public static void EditingTheUpgradeTextWrongly_FailsLoudly()
+    {
+        foreach ((string pack, Func<GameContent> build) in Externalized)
+        {
+            GameContent content = build();
+            Check.True(content.Upgrades.Count > 0, $"{pack}: 这个包一条升级都没有，这条守卫就没有意义了。");
+
+            ProveCategoryFailsLoudly(
+                (pack, build),
+                "upgrades",
+                "description",
+                content.Upgrades[0].Id,
+                "zz_orphan_upgrade",
+                new JsonObject
+                {
+                    ["name"] = "无主升级",
+                    ["icon"] = "❓",
+                    ["description"] = "无主说明",
+                });
+        }
+    }
+
+    /// <summary>金猫结果文案被改坏的两种形态，每个包都要当场炸。</summary>
+    [Test]
+    public static void EditingTheGoldenCookieOutcomeTextWrongly_FailsLoudly()
+    {
+        foreach ((string pack, Func<GameContent> build) in Externalized)
+        {
+            GameContent content = build();
+            Check.True(
+                content.GoldenCookieOutcomes.Count > 0,
+                $"{pack}: 这个包一条金猫结果都没有，这条守卫就没有意义了。");
+
+            ProveCategoryFailsLoudly(
+                (pack, build),
+                "goldenCookies",
+                "description",
+                content.GoldenCookieOutcomes[0].Id,
+                "zz_orphan_golden_cookie",
+                new JsonObject
+                {
+                    ["name"] = "无主结果",
+                    ["icon"] = "❓",
+                    ["description"] = "无主说明",
+                });
+        }
+    }
+
     // ---------------------------------------------------------------- 辅助
-    private static string ShippedPath(string pack) =>
-        Path.Combine(AppContext.BaseDirectory, "content", pack, "text.json");
+    private static string ShippedPath(string pack) =>        Path.Combine(AppContext.BaseDirectory, "content", pack, "text.json");
 
     private static string RepoPath(string pack) =>
         Path.Combine(RepositoryRoot(), "engine", "content", pack, "text.json");
@@ -1005,6 +1356,9 @@ public static class ContentTextFileTests
         ReadStances(text, content, skipped);
         ReadChoices(text, content, skipped);
         ReadAchievements(text, content, skipped);
+        ReadBuffs(text, content, skipped);
+        ReadUpgrades(text, content, skipped);
+        ReadGoldenCookieOutcomes(text, content, skipped);
     }
 
     /// <summary>按代码里的图鉴表读标题与正文（跳过 <paramref name="skip"/> 里点到的那一条）。</summary>
@@ -1114,10 +1468,54 @@ public static class ContentTextFileTests
         }
     }
 
+    /// <summary>按代码里的增益表读名称、图标与说明（跳过点到的那一条增益）。</summary>
+    private static void ReadBuffs(ContentText text, GameContent content, HashSet<string> skip)
+    {
+        foreach (BuffDefinition buff in content.Buffs)
+        {
+            if (skip.Contains("buffs/" + buff.Id)) continue;
+
+            text.Text("buffs", buff.Id, "name");
+            text.Text("buffs", buff.Id, "icon");
+            text.Text("buffs", buff.Id, "description");
+        }
+    }
+
+    /// <summary>
+    /// 按代码里的升级表读名称、图标与说明（跳过点到的那一条升级）。<para>
+    /// 这里的 id 有一部分是<b>算出来的</b>（<c>$"{building.Id}_tier{required}"</c>）——
+    /// 守卫读的正是运行期的那个 id，所以"算出来的 id"与"文件里的键"必须完全一致。
+    /// </para>
+    /// </summary>
+    private static void ReadUpgrades(ContentText text, GameContent content, HashSet<string> skip)
+    {
+        foreach (UpgradeDefinition upgrade in content.Upgrades)
+        {
+            if (skip.Contains("upgrades/" + upgrade.Id)) continue;
+
+            text.Text("upgrades", upgrade.Id, "name");
+            text.Text("upgrades", upgrade.Id, "icon");
+            text.Text("upgrades", upgrade.Id, "description");
+        }
+    }
+
+    /// <summary>按代码里的金猫结果表读名称、图标与说明（跳过点到的那一条结果）。</summary>
+    private static void ReadGoldenCookieOutcomes(ContentText text, GameContent content, HashSet<string> skip)
+    {
+        foreach (GoldenCookieOutcome outcome in content.GoldenCookieOutcomes)
+        {
+            if (skip.Contains("goldenCookies/" + outcome.Id)) continue;
+
+            text.Text("goldenCookies", outcome.Id, "name");
+            text.Text("goldenCookies", outcome.Id, "icon");
+            text.Text("goldenCookies", outcome.Id, "description");
+        }
+    }
+
     /// <summary>
     /// 一类文案的两种坏法都必须当场炸：<b>少一条</b>（取它的那一刻抛，且点名是哪一条）与
     /// <b>多一条</b>（孤儿检查点名）。<para>
-    /// 四个新分区（结局 / 立场 / 表态 / 成就）的 id 表各来自一个不同的源文件，
+    /// 七个分区（结局 / 立场 / 表态 / 成就 / 增益 / 升级 / 金猫结果）的 id 表各来自不同的源文件，
     /// 各有各的漏洞可能，所以每类各跑一遍——这里只是把共同的那套动作收成一个辅助方法。
     /// </para>
     /// </summary>

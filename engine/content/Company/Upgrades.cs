@@ -14,6 +14,14 @@ namespace NekoClicker.Content.Company;
 /// </summary>
 internal static class Upgrades
 {
+    /// <summary>
+    /// 本包的 <c>text.json</c>：增益 / 升级 / 金猫结果的文案与其它分区<b>共用同一份实例</b>（<see cref="Lore.Prose"/>）。<para>
+    /// 必须共用：孤儿检查会遍历整份文件的每个 kind，而"哪些 id 已取用"是按实例记的——
+    /// 两个实例各记一半，就会把对方那些 id 全报成孤儿。
+    /// </para>
+    /// </summary>
+    private static ContentText Prose => Lore.Prose;
+
     /// <summary>全部升级。</summary>
     public static UpgradeDefinition[] All =>
     [
@@ -39,12 +47,13 @@ internal static class Upgrades
         {
             foreach ((int required, double priceFactor, string prefix) in tiers)
             {
+                string id = $"{building.Id}_tier{required}";
                 yield return new UpgradeDefinition
                 {
-                    Id = $"{building.Id}_tier{required}",
-                    Name = $"{prefix}{building.Name}",
-                    Icon = building.Icon,
-                    Description = $"「{building.Name}」的产量翻倍。",
+                    Id = id,
+                    Name = Prose.Text("upgrades", id, "name"),
+                    Icon = Prose.Text("upgrades", id, "icon"),
+                    Description = Prose.Text("upgrades", id, "description"),
                     Price = building.BasePrice * priceFactor,
                     Unlock = UnlockCondition.BuildingsAtLeast(building.Id, required),
                     Modifiers = [Modifier.BuildingMultiplier(building.Id, 2)],
@@ -62,9 +71,9 @@ internal static class Upgrades
         yield return new()
         {
             Id = "business_card",
-            Name = "名片",
-            Icon = "💳",
-            Description = "每次谈单额外获得 1 点营收。印了一千张，用掉三张。",
+            Name = Prose.Text("upgrades", "business_card", "name"),
+            Icon = Prose.Text("upgrades", "business_card", "icon"),
+            Description = Prose.Text("upgrades", "business_card", "description"),
             Price = 200,
             Unlock = UnlockCondition.ClicksAtLeast(20),
             Modifiers = [Modifier.ClickFlat(1)],
@@ -76,9 +85,9 @@ internal static class Upgrades
         yield return new()
         {
             Id = "pitch_deck",
-            Name = "路演 PPT",
-            Icon = "📊",
-            Description = "点击收益 ×2。第 7 页那张图是你熬了两个晚上画的。",
+            Name = Prose.Text("upgrades", "pitch_deck", "name"),
+            Icon = Prose.Text("upgrades", "pitch_deck", "icon"),
+            Description = Prose.Text("upgrades", "pitch_deck", "description"),
             Price = 20_000,
             Unlock = UnlockCondition.ClicksAtLeast(200),
             Modifiers = [Modifier.ClickMultiplier(2)],
@@ -90,9 +99,9 @@ internal static class Upgrades
         yield return new()
         {
             Id = "personal_brand",
-            Name = "个人品牌",
-            Icon = "🎙️",
-            Description = "点击收益 ×3。客户开始点名要你亲自讲，你分不清这是好事还是坏事。",
+            Name = Prose.Text("upgrades", "personal_brand", "name"),
+            Icon = Prose.Text("upgrades", "personal_brand", "icon"),
+            Description = Prose.Text("upgrades", "personal_brand", "description"),
             Price = 5_000_000,
             Unlock = UnlockCondition.All(
                 UnlockCondition.ClicksAtLeast(1_000),
@@ -114,9 +123,9 @@ internal static class Upgrades
         yield return new()
         {
             Id = "team_handbook",
-            Name = "员工手册",
-            Icon = "📘",
-            Description = "全局产量 +0.3%／每点士气（上限 +60%）。终于有人把规矩写下来了。",
+            Name = Prose.Text("upgrades", "team_handbook", "name"),
+            Icon = Prose.Text("upgrades", "team_handbook", "icon"),
+            Description = Prose.Text("upgrades", "team_handbook", "description"),
             Price = 2_000_000,
             Unlock = UnlockCondition.Counter(MoraleModule.CounterKey, 100),
             Modifiers =
@@ -133,9 +142,9 @@ internal static class Upgrades
         yield return new()
         {
             Id = "option_pool",
-            Name = "期权池",
-            Icon = "🎫",
-            Description = "全局产量 +0.5%／每点士气（上限 +150%）。把未来的钱分出去，换现在的劲。",
+            Name = Prose.Text("upgrades", "option_pool", "name"),
+            Icon = Prose.Text("upgrades", "option_pool", "icon"),
+            Description = Prose.Text("upgrades", "option_pool", "description"),
             Price = 60_000_000,
             Unlock = UnlockCondition.Counter(MoraleModule.CounterKey, 500),
             Modifiers =
@@ -152,9 +161,9 @@ internal static class Upgrades
         yield return new()
         {
             Id = "severance_protocol",
-            Name = "离职补偿",
-            Icon = "📦",
-            Description = "设备价格 ×0.7，但事故奖励 ×0.8。你开始认真算「最坏情况」了。",
+            Name = Prose.Text("upgrades", "severance_protocol", "name"),
+            Icon = Prose.Text("upgrades", "severance_protocol", "icon"),
+            Description = Prose.Text("upgrades", "severance_protocol", "description"),
             Price = 40_000_000,
             Unlock = UnlockCondition.Counter(MoraleModule.CounterKey, 800),
             Modifiers = [Modifier.PriceMultiplier(0.7), Modifier.GoldenCookieReward(0.8)],
@@ -166,9 +175,9 @@ internal static class Upgrades
         yield return new()
         {
             Id = "flex_office",
-            Name = "弹性办公",
-            Icon = "🏡",
-            Description = "全局产量 ×2.2。没人再打卡之后，活反而干完了。",
+            Name = Prose.Text("upgrades", "flex_office", "name"),
+            Icon = Prose.Text("upgrades", "flex_office", "icon"),
+            Description = Prose.Text("upgrades", "flex_office", "description"),
             Price = 900_000_000,
             Unlock = UnlockCondition.Counter(MoraleModule.CounterKey, 1_500),
             Modifiers = [Modifier.GlobalMultiplier(2.2)],
@@ -184,9 +193,9 @@ internal static class Upgrades
         yield return new()
         {
             Id = "culture_deck",
-            Name = "文化手册",
-            Icon = "📔",
-            Description = "全局产量 +5%／每个成就。写下来的东西才叫文化，没写下来的叫习惯。",
+            Name = Prose.Text("upgrades", "culture_deck", "name"),
+            Icon = Prose.Text("upgrades", "culture_deck", "icon"),
+            Description = Prose.Text("upgrades", "culture_deck", "description"),
             Price = 500_000,
             Unlock = UnlockCondition.AchievementsAtLeast(8),
             Modifiers =
@@ -201,9 +210,9 @@ internal static class Upgrades
         yield return new()
         {
             Id = "okr_alignment",
-            Name = "OKR 对齐",
-            Icon = "🎯",
-            Description = "全局产量 +3%／每个成就（上限 +300%）。现在每个人的目标都挂在墙上。",
+            Name = Prose.Text("upgrades", "okr_alignment", "name"),
+            Icon = Prose.Text("upgrades", "okr_alignment", "icon"),
+            Description = Prose.Text("upgrades", "okr_alignment", "description"),
             Price = 30_000_000,
             Unlock = UnlockCondition.AchievementsAtLeast(18),
             Modifiers =
@@ -218,9 +227,9 @@ internal static class Upgrades
         yield return new()
         {
             Id = "employer_review",
-            Name = "雇主口碑",
-            Icon = "⭐",
-            Description = "事故奖励 ×1.6、事故频率 +30%。好事开始主动找上门了。",
+            Name = Prose.Text("upgrades", "employer_review", "name"),
+            Icon = Prose.Text("upgrades", "employer_review", "icon"),
+            Description = Prose.Text("upgrades", "employer_review", "description"),
             Price = 2_000_000_000,
             Unlock = UnlockCondition.AchievementsAtLeast(30),
             Modifiers = [Modifier.GoldenCookieReward(1.6), Modifier.GoldenCookieFrequency(1.3)],
@@ -236,9 +245,9 @@ internal static class Upgrades
         yield return new()
         {
             Id = "series_a_fuel",
-            Name = "A 轮弹药",
-            Icon = "🚀",
-            Description = "全局产量 ×1.8。钱到账那天全员加班——这一条开始吃士气。",
+            Name = Prose.Text("upgrades", "series_a_fuel", "name"),
+            Icon = Prose.Text("upgrades", "series_a_fuel", "icon"),
+            Description = Prose.Text("upgrades", "series_a_fuel", "description"),
             Price = 30_000_000,
             Unlock = UnlockCondition.EraAtLeast(2),
             Modifiers = [Modifier.GlobalMultiplier(1.8)],
@@ -250,9 +259,9 @@ internal static class Upgrades
         yield return new()
         {
             Id = "bell_rehearsal",
-            Name = "敲钟彩排",
-            Icon = "🔔",
-            Description = "全局产量 ×2.5。你对着空椅子练了十七遍「感谢我们的团队」。",
+            Name = Prose.Text("upgrades", "bell_rehearsal", "name"),
+            Icon = Prose.Text("upgrades", "bell_rehearsal", "icon"),
+            Description = Prose.Text("upgrades", "bell_rehearsal", "description"),
             Price = 400_000_000,
             Unlock = UnlockCondition.EraAtLeast(3),
             Modifiers = [Modifier.GlobalMultiplier(2.5)],
@@ -264,9 +273,9 @@ internal static class Upgrades
         yield return new()
         {
             Id = "wolf_culture",
-            Name = "狼性文化",
-            Icon = "🐺",
-            Description = "全局产量 ×3，但增益时长 ×0.7。标语贴满了墙，士气开始往下掉。",
+            Name = Prose.Text("upgrades", "wolf_culture", "name"),
+            Icon = Prose.Text("upgrades", "wolf_culture", "icon"),
+            Description = Prose.Text("upgrades", "wolf_culture", "description"),
             Price = 6_000_000_000,
             Unlock = UnlockCondition.All(
                 UnlockCondition.EraAtLeast(2),
@@ -292,9 +301,9 @@ internal static class Upgrades
         yield return new()
         {
             Id = "muscle_memory",
-            Name = "肌肉记忆",
-            Icon = "💪",
-            Description = "全局产量 +25%。手比脑子先想起来怎么干。",
+            Name = Prose.Text("upgrades", "muscle_memory", "name"),
+            Icon = Prose.Text("upgrades", "muscle_memory", "icon"),
+            Description = Prose.Text("upgrades", "muscle_memory", "description"),
             Price = 2,
             Currency = UpgradeCurrency.PrestigeChips,
             Persistence = UpgradePersistence.Permanent,
@@ -308,9 +317,9 @@ internal static class Upgrades
         yield return new()
         {
             Id = "network",
-            Name = "人脉",
-            Icon = "🤝",
-            Description = "设备价格 ×0.8。你知道谁的报价可以砍一半。",
+            Name = Prose.Text("upgrades", "network", "name"),
+            Icon = Prose.Text("upgrades", "network", "icon"),
+            Description = Prose.Text("upgrades", "network", "description"),
             Price = 4,
             Currency = UpgradeCurrency.PrestigeChips,
             Persistence = UpgradePersistence.Permanent,
@@ -324,9 +333,9 @@ internal static class Upgrades
         yield return new()
         {
             Id = "first_order",
-            Name = "第一笔订单",
-            Icon = "🧾",
-            Description = "点击收益 ×5、事故奖励 ×1.5。你还留着那张手写的收据。",
+            Name = Prose.Text("upgrades", "first_order", "name"),
+            Icon = Prose.Text("upgrades", "first_order", "icon"),
+            Description = Prose.Text("upgrades", "first_order", "description"),
             Price = 8,
             Currency = UpgradeCurrency.PrestigeChips,
             Persistence = UpgradePersistence.Permanent,
@@ -340,9 +349,9 @@ internal static class Upgrades
         yield return new()
         {
             Id = "ipo_experience",
-            Name = "上市经验",
-            Icon = "📈",
-            Description = "全局产量 ×2。你记得流程的每一步，包括哪一步会卡住。",
+            Name = Prose.Text("upgrades", "ipo_experience", "name"),
+            Icon = Prose.Text("upgrades", "ipo_experience", "icon"),
+            Description = Prose.Text("upgrades", "ipo_experience", "description"),
             Price = 16,
             Currency = UpgradeCurrency.PrestigeChips,
             Persistence = UpgradePersistence.Permanent,
@@ -356,9 +365,9 @@ internal static class Upgrades
         yield return new()
         {
             Id = "no_more_crunch",
-            Name = "不再加班",
-            Icon = "🌙",
-            Description = "增益时长 ×1.4。你终于明白，通宵换来的效率是借来的。",
+            Name = Prose.Text("upgrades", "no_more_crunch", "name"),
+            Icon = Prose.Text("upgrades", "no_more_crunch", "icon"),
+            Description = Prose.Text("upgrades", "no_more_crunch", "description"),
             Price = 30,
             Currency = UpgradeCurrency.PrestigeChips,
             Persistence = UpgradePersistence.Permanent,
@@ -372,9 +381,9 @@ internal static class Upgrades
         yield return new()
         {
             Id = "golden_parachute",
-            Name = "金降落伞",
-            Icon = "🪂",
-            Description = "全局产量 ×1.5、事故奖励 ×2。这一次，退路是你自己给自己准备的。",
+            Name = Prose.Text("upgrades", "golden_parachute", "name"),
+            Icon = Prose.Text("upgrades", "golden_parachute", "icon"),
+            Description = Prose.Text("upgrades", "golden_parachute", "description"),
             Price = 55,
             Currency = UpgradeCurrency.PrestigeChips,
             Persistence = UpgradePersistence.Permanent,

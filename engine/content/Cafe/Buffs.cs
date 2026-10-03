@@ -10,15 +10,23 @@ namespace NekoClicker.Content.Cafe;
 /// </summary>
 internal static class Buffs
 {
+    /// <summary>
+    /// 本包的 <c>text.json</c>：增益 / 升级 / 金猫结果的文案与其它分区<b>共用同一份实例</b>（<see cref="Lore.Prose"/>）。<para>
+    /// 必须共用：孤儿检查会遍历整份文件的每个 kind，而"哪些 id 已取用"是按实例记的——
+    /// 两个实例各记一半，就会把对方那些 id 全报成孤儿。
+    /// </para>
+    /// </summary>
+    private static ContentText Prose => Lore.Prose;
+
     /// <summary>全部增益。</summary>
     public static BuffDefinition[] All =>
     [
         new()
         {
             Id = "caffeine_overload",
-            Name = "咖啡因过载",
-            Icon = "⚡",
-            Description = "所有人都进入了某种过载状态。全部建筑产量 ×7。",
+            Name = Prose.Text("buffs", "caffeine_overload", "name"),
+            Icon = Prose.Text("buffs", "caffeine_overload", "icon"),
+            Description = Prose.Text("buffs", "caffeine_overload", "description"),
             Duration = 77,
             StackMode = BuffStackMode.Refresh,
             Modifiers = [Modifier.GlobalMultiplier(7)],
@@ -26,9 +34,9 @@ internal static class Buffs
         new()
         {
             Id = "cat_chorus",
-            Name = "猫娘合唱",
-            Icon = "🎶",
-            Description = "不知道谁起的头，所有猫一起唱了起来。点击收益 ×777。",
+            Name = Prose.Text("buffs", "cat_chorus", "name"),
+            Icon = Prose.Text("buffs", "cat_chorus", "icon"),
+            Description = Prose.Text("buffs", "cat_chorus", "description"),
             Duration = 13,
             StackMode = BuffStackMode.Refresh,
             Modifiers = [Modifier.ClickMultiplier(777)],
@@ -36,9 +44,9 @@ internal static class Buffs
         new()
         {
             Id = "boss_treats",
-            Name = "老板请客",
-            Icon = "🎁",
-            Description = "今天的账全记在别人头上。全部建筑产量 ×15。",
+            Name = Prose.Text("buffs", "boss_treats", "name"),
+            Icon = Prose.Text("buffs", "boss_treats", "icon"),
+            Description = Prose.Text("buffs", "boss_treats", "description"),
             Duration = 60,
             StackMode = BuffStackMode.Refresh,
             Modifiers = [Modifier.GlobalMultiplier(15)],
@@ -46,9 +54,9 @@ internal static class Buffs
         new()
         {
             Id = "failed_steam",
-            Name = "打发失败",
-            Icon = "💨",
-            Description = "奶泡怎么都立不起来。全部建筑产量 ×0.5。",
+            Name = Prose.Text("buffs", "failed_steam", "name"),
+            Icon = Prose.Text("buffs", "failed_steam", "icon"),
+            Description = Prose.Text("buffs", "failed_steam", "description"),
             Duration = 66,
             StackMode = BuffStackMode.Refresh,
             Modifiers = [Modifier.GlobalMultiplier(0.5)],
@@ -57,9 +65,9 @@ internal static class Buffs
         new()
         {
             Id = "new_beans",
-            Name = "新豆上市",
-            Icon = "🫘",
-            Description = "今年的第一批豆子到店。烘焙间产量 ×30。",
+            Name = Prose.Text("buffs", "new_beans", "name"),
+            Icon = Prose.Text("buffs", "new_beans", "icon"),
+            Description = Prose.Text("buffs", "new_beans", "description"),
             Duration = 30,
             StackMode = BuffStackMode.Extend,
             Modifiers = [Modifier.BuildingMultiplier("bakery", 30)],

@@ -15,6 +15,14 @@ namespace NekoClicker.Content.Neko;
 /// </summary>
 internal static class Upgrades
 {
+    /// <summary>
+    /// 本包的 <c>text.json</c>：增益 / 升级 / 金猫结果的文案与其它分区<b>共用同一份实例</b>（<see cref="Buildings.Prose"/>）。<para>
+    /// 必须共用：孤儿检查会遍历整份文件的每个 kind，而"哪些 id 已取用"是按实例记的——
+    /// 两个实例各记一半，就会把对方那些 id 全报成孤儿。
+    /// </para>
+    /// </summary>
+    private static ContentText Prose => Buildings.Prose;
+
     /// <summary>全部升级。</summary>
     public static UpgradeDefinition[] All =>
     [
@@ -45,12 +53,13 @@ internal static class Upgrades
         {
             foreach ((int required, double priceFactor, string suffix) in tiers)
             {
+                string id = $"{building.Id}_tier{required}";
                 yield return new UpgradeDefinition
                 {
-                    Id = $"{building.Id}_tier{required}",
-                    Name = $"{suffix}{building.Name}",
-                    Icon = building.Icon,
-                    Description = $"「{building.Name}」的产量翻倍。",
+                    Id = id,
+                    Name = Prose.Text("upgrades", id, "name"),
+                    Icon = Prose.Text("upgrades", id, "icon"),
+                    Description = Prose.Text("upgrades", id, "description"),
                     Price = building.BasePrice * priceFactor,
                     Unlock = UnlockCondition.BuildingsAtLeast(building.Id, required),
                     Modifiers = [Modifier.BuildingMultiplier(building.Id, 2)],
@@ -67,9 +76,9 @@ internal static class Upgrades
         yield return new()
         {
             Id = "warmer_hands",
-            Name = "更暖的手",
-            Icon = "🖐️",
-            Description = "每次撸猫额外获得 1 条小鱼干。",
+            Name = Prose.Text("upgrades", "warmer_hands", "name"),
+            Icon = Prose.Text("upgrades", "warmer_hands", "icon"),
+            Description = Prose.Text("upgrades", "warmer_hands", "description"),
             Price = 100,
             Unlock = UnlockCondition.ClicksAtLeast(10),
             Modifiers = [Modifier.ClickFlat(1)],
@@ -81,9 +90,9 @@ internal static class Upgrades
         yield return new()
         {
             Id = "plush_gloves",
-            Name = "毛绒手套",
-            Icon = "🧤",
-            Description = "点击收益 ×2。猫更喜欢这种触感。",
+            Name = Prose.Text("upgrades", "plush_gloves", "name"),
+            Icon = Prose.Text("upgrades", "plush_gloves", "icon"),
+            Description = Prose.Text("upgrades", "plush_gloves", "description"),
             Price = 5_000,
             Unlock = UnlockCondition.ClicksAtLeast(100),
             Modifiers = [Modifier.ClickMultiplier(2)],
@@ -95,9 +104,9 @@ internal static class Upgrades
         yield return new()
         {
             Id = "electric_wand",
-            Name = "电动逗猫棒",
-            Icon = "🪄",
-            Description = "点击收益 ×2，并且每秒自动撸猫一次的效果（体现在点击收益基数上）。",
+            Name = Prose.Text("upgrades", "electric_wand", "name"),
+            Icon = Prose.Text("upgrades", "electric_wand", "icon"),
+            Description = Prose.Text("upgrades", "electric_wand", "description"),
             Price = 500_000,
             Unlock = UnlockCondition.All(
                 UnlockCondition.ClicksAtLeast(500),
@@ -111,9 +120,9 @@ internal static class Upgrades
         yield return new()
         {
             Id = "laser_pointer",
-            Name = "激光笔",
-            Icon = "🔴",
-            Description = "点击收益 ×3。没有任何猫能抵抗这个红点。",
+            Name = Prose.Text("upgrades", "laser_pointer", "name"),
+            Icon = Prose.Text("upgrades", "laser_pointer", "icon"),
+            Description = Prose.Text("upgrades", "laser_pointer", "description"),
             Price = 50_000_000,
             Unlock = UnlockCondition.All(
                 UnlockCondition.ClicksAtLeast(2_000),
@@ -127,9 +136,9 @@ internal static class Upgrades
         yield return new()
         {
             Id = "purring_resonance",
-            Name = "呼噜共振",
-            Icon = "💤",
-            Description = "点击收益 +25%。猫的呼噜声据说能治愈一切，包括你的钱包。",
+            Name = Prose.Text("upgrades", "purring_resonance", "name"),
+            Icon = Prose.Text("upgrades", "purring_resonance", "icon"),
+            Description = Prose.Text("upgrades", "purring_resonance", "description"),
             Price = 2_000_000_000,
             Unlock = UnlockCondition.All(
                 UnlockCondition.ClicksAtLeast(5_000),
@@ -147,9 +156,9 @@ internal static class Upgrades
         yield return new()
         {
             Id = "bed_buddies",
-            Name = "猫窝里的小猫",
-            Icon = "🐾",
-            Description = "每个「蜷缩的猫」让「猫窝」产量 +2%（上限 100 个）。",
+            Name = Prose.Text("upgrades", "bed_buddies", "name"),
+            Icon = Prose.Text("upgrades", "bed_buddies", "icon"),
+            Description = Prose.Text("upgrades", "bed_buddies", "description"),
             Price = 60_000,
             Unlock = UnlockCondition.All(
                 UnlockCondition.BuildingsAtLeast("cat_bed", 10),
@@ -170,9 +179,9 @@ internal static class Upgrades
         yield return new()
         {
             Id = "cafe_supply_chain",
-            Name = "咖啡馆供应链",
-            Icon = "🚚",
-            Description = "每 1 个「自动喂食器」让「猫咪咖啡馆」产量 +1%（上限 200 个）。",
+            Name = Prose.Text("upgrades", "cafe_supply_chain", "name"),
+            Icon = Prose.Text("upgrades", "cafe_supply_chain", "icon"),
+            Description = Prose.Text("upgrades", "cafe_supply_chain", "description"),
             Price = 8_000_000,
             Unlock = UnlockCondition.All(
                 UnlockCondition.BuildingsAtLeast("cat_cafe", 15),
@@ -193,9 +202,9 @@ internal static class Upgrades
         yield return new()
         {
             Id = "catnip_addiction",
-            Name = "越吸越上头",
-            Icon = "😻",
-            Description = "每座「猫薄荷田」让所有建筑产量 +0.5%（上限 150 座）。",
+            Name = Prose.Text("upgrades", "catnip_addiction", "name"),
+            Icon = Prose.Text("upgrades", "catnip_addiction", "icon"),
+            Description = Prose.Text("upgrades", "catnip_addiction", "description"),
             Price = 900_000_000,
             Unlock = UnlockCondition.BuildingsAtLeast("catnip_field", 20),
             Modifiers =
@@ -219,9 +228,9 @@ internal static class Upgrades
         yield return new()
         {
             Id = "kitten_helpers",
-            Name = "小猫帮手",
-            Icon = "🐱",
-            Description = "每个成就让所有建筑产量 +1%。",
+            Name = Prose.Text("upgrades", "kitten_helpers", "name"),
+            Icon = Prose.Text("upgrades", "kitten_helpers", "icon"),
+            Description = Prose.Text("upgrades", "kitten_helpers", "description"),
             Price = 9_000_000,
             Unlock = UnlockCondition.AchievementsAtLeast(5),
             Modifiers = [Modifier.GlobalPercent(0, new Scaling(ScalingSource.AchievementCount, 0.01))],
@@ -233,9 +242,9 @@ internal static class Upgrades
         yield return new()
         {
             Id = "kitten_workers",
-            Name = "小猫工人",
-            Icon = "😼",
-            Description = "每个成就让所有建筑产量 +2%，并且点击收益 ×1.5。",
+            Name = Prose.Text("upgrades", "kitten_workers", "name"),
+            Icon = Prose.Text("upgrades", "kitten_workers", "icon"),
+            Description = Prose.Text("upgrades", "kitten_workers", "description"),
             Price = 90_000_000_000,
             Unlock = UnlockCondition.All(
                 UnlockCondition.AchievementsAtLeast(20),
@@ -253,9 +262,9 @@ internal static class Upgrades
         yield return new()
         {
             Id = "kitten_managers",
-            Name = "小猫经理",
-            Icon = "😾",
-            Description = "每个成就让所有建筑产量 +3%。它开始管你要 KPI 了。",
+            Name = Prose.Text("upgrades", "kitten_managers", "name"),
+            Icon = Prose.Text("upgrades", "kitten_managers", "icon"),
+            Description = Prose.Text("upgrades", "kitten_managers", "description"),
             Price = 9_000_000_000_000,
             Unlock = UnlockCondition.All(
                 UnlockCondition.AchievementsAtLeast(40),
@@ -272,9 +281,9 @@ internal static class Upgrades
         yield return new()
         {
             Id = "bulk_kibble_coupon",
-            Name = "猫粮批发券",
-            Icon = "🎟️",
-            Description = "所有建筑产量 ×1.5。可以囤 10 张，每张涨价 2.5 倍。",
+            Name = Prose.Text("upgrades", "bulk_kibble_coupon", "name"),
+            Icon = Prose.Text("upgrades", "bulk_kibble_coupon", "icon"),
+            Description = Prose.Text("upgrades", "bulk_kibble_coupon", "description"),
             Price = 3_000_000,
             MaxPurchases = 10,
             PriceGrowth = 2.5,
@@ -288,9 +297,9 @@ internal static class Upgrades
         yield return new()
         {
             Id = "wholesale_haggling",
-            Name = "砍价高手",
-            Icon = "💬",
-            Description = "所有建筑价格 -5%。猫在柜台后面看着你，表情复杂。",
+            Name = Prose.Text("upgrades", "wholesale_haggling", "name"),
+            Icon = Prose.Text("upgrades", "wholesale_haggling", "icon"),
+            Description = Prose.Text("upgrades", "wholesale_haggling", "description"),
             Price = 1_000_000_000,
             Unlock = UnlockCondition.EarnedThisRunAtLeast(100_000_000),
             Modifiers = [Modifier.PriceDiscount(0.05)],
@@ -302,9 +311,9 @@ internal static class Upgrades
         yield return new()
         {
             Id = "lucky_charm",
-            Name = "幸运猫爪",
-            Icon = "🍀",
-            Description = "金猫奖励 ×1.25，出现频率 ×1.2。",
+            Name = Prose.Text("upgrades", "lucky_charm", "name"),
+            Icon = Prose.Text("upgrades", "lucky_charm", "icon"),
+            Description = Prose.Text("upgrades", "lucky_charm", "description"),
             Price = 7_777_777,
             Unlock = UnlockCondition.GoldenCookiesAtLeast(3),
             Modifiers =
@@ -324,9 +333,9 @@ internal static class Upgrades
         yield return new()
         {
             Id = "eternal_paw",
-            Name = "永恒肉垫",
-            Icon = "🐾",
-            Description = "点击收益 ×3。转生后依然有效。",
+            Name = Prose.Text("upgrades", "eternal_paw", "name"),
+            Icon = Prose.Text("upgrades", "eternal_paw", "icon"),
+            Description = Prose.Text("upgrades", "eternal_paw", "description"),
             Price = 3,
             Currency = UpgradeCurrency.PrestigeChips,
             Persistence = UpgradePersistence.Permanent,
@@ -340,9 +349,9 @@ internal static class Upgrades
         yield return new()
         {
             Id = "cat_god_favor",
-            Name = "猫神眷顾",
-            Icon = "🙏",
-            Description = "所有建筑价格 -10%。转生后依然有效。",
+            Name = Prose.Text("upgrades", "cat_god_favor", "name"),
+            Icon = Prose.Text("upgrades", "cat_god_favor", "icon"),
+            Description = Prose.Text("upgrades", "cat_god_favor", "description"),
             Price = 8,
             Currency = UpgradeCurrency.PrestigeChips,
             Persistence = UpgradePersistence.Permanent,
@@ -356,9 +365,9 @@ internal static class Upgrades
         yield return new()
         {
             Id = "angel_cat",
-            Name = "天使猫",
-            Icon = "😇",
-            Description = "离线收益效率 +50%。你睡觉时它替你值班。",
+            Name = Prose.Text("upgrades", "angel_cat", "name"),
+            Icon = Prose.Text("upgrades", "angel_cat", "icon"),
+            Description = Prose.Text("upgrades", "angel_cat", "description"),
             Price = 12,
             Currency = UpgradeCurrency.PrestigeChips,
             Persistence = UpgradePersistence.Permanent,
@@ -375,9 +384,9 @@ internal static class Upgrades
         yield return new()
         {
             Id = "time_lord_cat",
-            Name = "时间领主猫",
-            Icon = "⌛",
-            Description = "所有建筑产量 ×1.15。转生后依然有效。",
+            Name = Prose.Text("upgrades", "time_lord_cat", "name"),
+            Icon = Prose.Text("upgrades", "time_lord_cat", "icon"),
+            Description = Prose.Text("upgrades", "time_lord_cat", "description"),
             Price = 30,
             Currency = UpgradeCurrency.PrestigeChips,
             Persistence = UpgradePersistence.Permanent,
@@ -391,9 +400,9 @@ internal static class Upgrades
         yield return new()
         {
             Id = "golden_whiskers",
-            Name = "黄金胡须",
-            Icon = "✨",
-            Description = "金猫出现频率 ×1.5、停留时间 ×1.5。转生后依然有效。",
+            Name = Prose.Text("upgrades", "golden_whiskers", "name"),
+            Icon = Prose.Text("upgrades", "golden_whiskers", "icon"),
+            Description = Prose.Text("upgrades", "golden_whiskers", "description"),
             Price = 20,
             Currency = UpgradeCurrency.PrestigeChips,
             Persistence = UpgradePersistence.Permanent,

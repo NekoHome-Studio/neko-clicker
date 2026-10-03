@@ -382,5 +382,336 @@
       "icon": "???",
       "description": "隐藏成就。"
     }
+  },
+  "buffs": {
+    "frenzy": {
+      "name": "猫薄荷狂热",
+      "description": "所有建筑产量 ×7。",
+      "icon": "🌿"
+    },
+    "click_frenzy": {
+      "name": "疯狂撸猫",
+      "description": "点击收益 ×777。手速就是一切。",
+      "icon": "🖐️"
+    },
+    "cat_god_descends": {
+      "name": "猫神降临",
+      "description": "所有建筑产量 ×15。",
+      "icon": "😻"
+    },
+    "elder_frenzy": {
+      "name": "远古猫怒",
+      "description": "所有建筑产量 ×666。极稀有。",
+      "icon": "🙀"
+    },
+    "cotton_bed_frenzy": {
+      "name": "棉被猫狂热",
+      "description": "「猫窝」产量 ×30。",
+      "icon": "🛏️"
+    },
+    "clumsy_paws": {
+      "name": "猫爪迟钝",
+      "description": "所有建筑产量 ×0.5。猫把你的键盘坐住了。",
+      "icon": "🐾"
+    }
+  },
+  "upgrades": {
+    "curled_cat_tier1": {
+      "name": "更好的蜷缩的猫",
+      "description": "「蜷缩的猫」的产量翻倍。",
+      "icon": "🐈"
+    },
+    "curled_cat_tier5": {
+      "name": "加倍的蜷缩的猫",
+      "description": "「蜷缩的猫」的产量翻倍。",
+      "icon": "🐈"
+    },
+    "curled_cat_tier25": {
+      "name": "传奇的蜷缩的猫",
+      "description": "「蜷缩的猫」的产量翻倍。",
+      "icon": "🐈"
+    },
+    "scratching_post_tier1": {
+      "name": "更好的猫抓板",
+      "description": "「猫抓板」的产量翻倍。",
+      "icon": "🪵"
+    },
+    "scratching_post_tier5": {
+      "name": "加倍的猫抓板",
+      "description": "「猫抓板」的产量翻倍。",
+      "icon": "🪵"
+    },
+    "scratching_post_tier25": {
+      "name": "传奇的猫抓板",
+      "description": "「猫抓板」的产量翻倍。",
+      "icon": "🪵"
+    },
+    "cat_bed_tier1": {
+      "name": "更好的猫窝",
+      "description": "「猫窝」的产量翻倍。",
+      "icon": "🛏️"
+    },
+    "cat_bed_tier5": {
+      "name": "加倍的猫窝",
+      "description": "「猫窝」的产量翻倍。",
+      "icon": "🛏️"
+    },
+    "cat_bed_tier25": {
+      "name": "传奇的猫窝",
+      "description": "「猫窝」的产量翻倍。",
+      "icon": "🛏️"
+    },
+    "auto_feeder_tier1": {
+      "name": "更好的自动喂食器",
+      "description": "「自动喂食器」的产量翻倍。",
+      "icon": "🍽️"
+    },
+    "auto_feeder_tier5": {
+      "name": "加倍的自动喂食器",
+      "description": "「自动喂食器」的产量翻倍。",
+      "icon": "🍽️"
+    },
+    "auto_feeder_tier25": {
+      "name": "传奇的自动喂食器",
+      "description": "「自动喂食器」的产量翻倍。",
+      "icon": "🍽️"
+    },
+    "cat_cafe_tier1": {
+      "name": "更好的猫咪咖啡馆",
+      "description": "「猫咪咖啡馆」的产量翻倍。",
+      "icon": "☕"
+    },
+    "cat_cafe_tier5": {
+      "name": "加倍的猫咪咖啡馆",
+      "description": "「猫咪咖啡馆」的产量翻倍。",
+      "icon": "☕"
+    },
+    "cat_cafe_tier25": {
+      "name": "传奇的猫咪咖啡馆",
+      "description": "「猫咪咖啡馆」的产量翻倍。",
+      "icon": "☕"
+    },
+    "catnip_field_tier1": {
+      "name": "更好的猫薄荷田",
+      "description": "「猫薄荷田」的产量翻倍。",
+      "icon": "🌿"
+    },
+    "catnip_field_tier5": {
+      "name": "加倍的猫薄荷田",
+      "description": "「猫薄荷田」的产量翻倍。",
+      "icon": "🌿"
+    },
+    "catnip_field_tier25": {
+      "name": "传奇的猫薄荷田",
+      "description": "「猫薄荷田」的产量翻倍。",
+      "icon": "🌿"
+    },
+    "cat_portal_tier1": {
+      "name": "更好的猫咪传送门",
+      "description": "「猫咪传送门」的产量翻倍。",
+      "icon": "🌀"
+    },
+    "cat_portal_tier5": {
+      "name": "加倍的猫咪传送门",
+      "description": "「猫咪传送门」的产量翻倍。",
+      "icon": "🌀"
+    },
+    "cat_portal_tier25": {
+      "name": "传奇的猫咪传送门",
+      "description": "「猫咪传送门」的产量翻倍。",
+      "icon": "🌀"
+    },
+    "time_cat_tier1": {
+      "name": "更好的时间猫",
+      "description": "「时间猫」的产量翻倍。",
+      "icon": "⏳"
+    },
+    "time_cat_tier5": {
+      "name": "加倍的时间猫",
+      "description": "「时间猫」的产量翻倍。",
+      "icon": "⏳"
+    },
+    "time_cat_tier25": {
+      "name": "传奇的时间猫",
+      "description": "「时间猫」的产量翻倍。",
+      "icon": "⏳"
+    },
+    "cat_temple_tier1": {
+      "name": "更好的维度猫神殿",
+      "description": "「维度猫神殿」的产量翻倍。",
+      "icon": "🏛️"
+    },
+    "cat_temple_tier5": {
+      "name": "加倍的维度猫神殿",
+      "description": "「维度猫神殿」的产量翻倍。",
+      "icon": "🏛️"
+    },
+    "cat_temple_tier25": {
+      "name": "传奇的维度猫神殿",
+      "description": "「维度猫神殿」的产量翻倍。",
+      "icon": "🏛️"
+    },
+    "cat_universe_tier1": {
+      "name": "更好的猫猫宇宙",
+      "description": "「猫猫宇宙」的产量翻倍。",
+      "icon": "🌌"
+    },
+    "cat_universe_tier5": {
+      "name": "加倍的猫猫宇宙",
+      "description": "「猫猫宇宙」的产量翻倍。",
+      "icon": "🌌"
+    },
+    "cat_universe_tier25": {
+      "name": "传奇的猫猫宇宙",
+      "description": "「猫猫宇宙」的产量翻倍。",
+      "icon": "🌌"
+    },
+    "warmer_hands": {
+      "name": "更暖的手",
+      "description": "每次撸猫额外获得 1 条小鱼干。",
+      "icon": "🖐️"
+    },
+    "plush_gloves": {
+      "name": "毛绒手套",
+      "description": "点击收益 ×2。猫更喜欢这种触感。",
+      "icon": "🧤"
+    },
+    "electric_wand": {
+      "name": "电动逗猫棒",
+      "description": "点击收益 ×2，并且每秒自动撸猫一次的效果（体现在点击收益基数上）。",
+      "icon": "🪄"
+    },
+    "laser_pointer": {
+      "name": "激光笔",
+      "description": "点击收益 ×3。没有任何猫能抵抗这个红点。",
+      "icon": "🔴"
+    },
+    "purring_resonance": {
+      "name": "呼噜共振",
+      "description": "点击收益 +25%。猫的呼噜声据说能治愈一切，包括你的钱包。",
+      "icon": "💤"
+    },
+    "bed_buddies": {
+      "name": "猫窝里的小猫",
+      "description": "每个「蜷缩的猫」让「猫窝」产量 +2%（上限 100 个）。",
+      "icon": "🐾"
+    },
+    "cafe_supply_chain": {
+      "name": "咖啡馆供应链",
+      "description": "每 1 个「自动喂食器」让「猫咪咖啡馆」产量 +1%（上限 200 个）。",
+      "icon": "🚚"
+    },
+    "catnip_addiction": {
+      "name": "越吸越上头",
+      "description": "每座「猫薄荷田」让所有建筑产量 +0.5%（上限 150 座）。",
+      "icon": "😻"
+    },
+    "kitten_helpers": {
+      "name": "小猫帮手",
+      "description": "每个成就让所有建筑产量 +1%。",
+      "icon": "🐱"
+    },
+    "kitten_workers": {
+      "name": "小猫工人",
+      "description": "每个成就让所有建筑产量 +2%，并且点击收益 ×1.5。",
+      "icon": "😼"
+    },
+    "kitten_managers": {
+      "name": "小猫经理",
+      "description": "每个成就让所有建筑产量 +3%。它开始管你要 KPI 了。",
+      "icon": "😾"
+    },
+    "bulk_kibble_coupon": {
+      "name": "猫粮批发券",
+      "description": "所有建筑产量 ×1.5。可以囤 10 张，每张涨价 2.5 倍。",
+      "icon": "🎟️"
+    },
+    "wholesale_haggling": {
+      "name": "砍价高手",
+      "description": "所有建筑价格 -5%。猫在柜台后面看着你，表情复杂。",
+      "icon": "💬"
+    },
+    "lucky_charm": {
+      "name": "幸运猫爪",
+      "description": "金猫奖励 ×1.25，出现频率 ×1.2。",
+      "icon": "🍀"
+    },
+    "eternal_paw": {
+      "name": "永恒肉垫",
+      "description": "点击收益 ×3。转生后依然有效。",
+      "icon": "🐾"
+    },
+    "cat_god_favor": {
+      "name": "猫神眷顾",
+      "description": "所有建筑价格 -10%。转生后依然有效。",
+      "icon": "🙏"
+    },
+    "angel_cat": {
+      "name": "天使猫",
+      "description": "离线收益效率 +50%。你睡觉时它替你值班。",
+      "icon": "😇"
+    },
+    "time_lord_cat": {
+      "name": "时间领主猫",
+      "description": "所有建筑产量 ×1.15。转生后依然有效。",
+      "icon": "⌛"
+    },
+    "golden_whiskers": {
+      "name": "黄金胡须",
+      "description": "金猫出现频率 ×1.5、停留时间 ×1.5。转生后依然有效。",
+      "icon": "✨"
+    }
+  },
+  "goldenCookies": {
+    "lucky": {
+      "name": "幸运",
+      "description": "幸运！获得 {amount} 条小鱼干。",
+      "icon": "🍀"
+    },
+    "frenzy": {
+      "name": "猫薄荷狂热",
+      "description": "猫薄荷狂热！产量 ×7，持续 {duration}。",
+      "icon": "🌿"
+    },
+    "click_frenzy": {
+      "name": "疯狂撸猫",
+      "description": "疯狂撸猫！点击收益 ×777，持续 {duration}。快去点屏幕！",
+      "icon": "🖐️"
+    },
+    "ruin": {
+      "name": "猫粮被抢",
+      "description": "猫粮被抢！损失 {amount} 条小鱼干...",
+      "icon": "💢"
+    },
+    "blab": {
+      "name": "猫语呢喃",
+      "description": "金猫对你喵了一声，什么也没有发生。",
+      "icon": "💬"
+    },
+    "cotton_bed": {
+      "name": "棉被猫狂热",
+      "description": "棉被猫狂热！「猫窝」产量 ×30，持续 {duration}。",
+      "icon": "🛏️"
+    },
+    "bloodlust": {
+      "name": "猫神降临",
+      "description": "猫神降临！产量 ×15，持续 {duration}。",
+      "icon": "😻"
+    },
+    "chain": {
+      "name": "连锁金猫",
+      "description": "连锁金猫！同时获得产量 ×7 与点击收益 ×777，持续 {duration}。",
+      "icon": "⛓️"
+    },
+    "elder_frenzy": {
+      "name": "远古猫怒",
+      "description": "远古猫怒！！产量 ×666，持续 {duration}！",
+      "icon": "🙀"
+    },
+    "clumsy": {
+      "name": "猫爪迟钝",
+      "description": "猫爪迟钝...产量 ×0.5，持续 {duration}。",
+      "icon": "🐾"
+    }
   }
 }
