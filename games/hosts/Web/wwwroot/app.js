@@ -1092,10 +1092,26 @@ function updateBuildingRow(node, building) {
   // 计算、被写进 DOM，然后被藏掉。终端宿主有这一列（`TerminalUi.BuildingRow` 的 Owned），
   // 这边没有。所以并进本来就只在 owned > 0 时出现的那一行（share），用「已有 N」把它和
   // 价格行上的批次记号 `×10`（那是"一次买几个"，不是"有几个"）在字面上分开。
+  // 「单个产速」（`buildings[].cpsEach`）此前**一次都没被前端引用过**：引擎早就算好了
+  // （`BuildingView.CpsEach`）、快照每一帧都推、终端详情面板也一直在画（`TerminalUi.cs`
+  // 的 `单个 4.5/s`），只有这边没画——用户 2026-10-03 玩末世包时报的就是这一处
+  // （反馈件 `WEB_BUILDING_RATE_FEEDBACK.md` §1/§2）。三种摆法里选的是那篇 §6 的 A：
+  //
+  //   · **并进这一行、共用同一道 `owned > 0` 闸门**：不新增节点、不动 CSS。这一行本来就
+  //     跨满卡片两列（`grid-template-areas` 的 `share` 横跨 `name` / `price`），而且
+  //     `.card .share` 有 `min-width: 0` + `overflow-wrap: anywhere`（§11 守着），
+  //     窄屏放不下时是**折行**而不是顶出面板。
+  //   · **次序照终端详情面板**（`单个 → 合计 → 占`）：两个产速写在相邻位置，折行之后
+  //     也还是"每个 → 总共"这一对；顺带把裸的 `90/s` 补成终端的措辞 `合计 90/s`，
+  //     于是同一份数据在两个宿主上读成同一句话（这正是这次缺陷的形态：两边只差一个字段）。
+  //   · `owned == 0` 时整行不出现，所以**不会**画出 `单个 0/s`。那种时候引擎给的恒为 0
+  //     （反馈件 §3：`EffectiveUnitCps` 在未持有时直接返回 0），画出来就是一句假话——
+  //     宁可不说。"买之前也能看到这个数"是第二层（`OPEN_WORK` 的 **D11**），
+  //     它要动 `engine/core` 新增公开字段，这一轮不做。
   const showShare = unlocked && building.owned > 0;
   node.share.classList.toggle("hidden", !showShare);
   if (showShare) {
-    setText(node.share, `已有 ${building.owned} · ${number(building.cpsContribution)}/s · 占 ${percent(building.cpsShare)}`);
+    setText(node.share, `已有 ${building.owned} · 单个 ${unitRate(building.cpsEach)}/s · 合计 ${number(building.cpsContribution)}/s · 占 ${percent(building.cpsShare)}`);
   } else {
     // 藏起来的那一行要清空（与 renderEraStage 对阶段那一行同一条规矩）：
     // 留着上一帧的「已有 3」，DOM 里就是一句和状态对不上的话——今天它被 display:none
@@ -1509,6 +1525,28 @@ function number(value) {
 function percent(ratio) {
   if (ratio === undefined || ratio === null) return "—";
   return `${Math.round(ratio * 100)}%`;
+}
+
+/**
+ * 「单个产速」的格式化：**小数不能抹掉**。
+ *
+ * `number()` 在 1000 以下取整（`toFixed(0)`），而单个产速恰恰常常落在 1 以下——
+ * 末世包那一局的 🧱 废墟是 `0.225/s`，用 `number()` 会画成 `0/s`：那不是"四舍五入"，
+ * 是一句明确的假话（"这建筑不产钱"）。`4.5/s` 也会变成 `5/s`。
+ *
+ * 口径对着服务端的 `NumFormat.FormatBelowMillion`：1 以下保留到 5 位小数
+ * （服务端也是 `0.#####`；再小就到 `1e-5` 以下，那已经是另一个量级，交给 `number()`），
+ * 1 ~ 1000 最多 3 位小数并去掉尾零，1000 以上交给 `number()` 做中文量级缩写
+ * （线上那一档本来就是整数）。`null` / `undefined` 给 `—`，与 `number()` / `percent()` 同一条规矩。
+ *
+ * 名字刻意不叫 `rate`：`animate()` 里已经有一个同名的局部量（当前每秒产量），
+ * 那个局部量会把这个名字遮住，读起来像是同一件东西——它不是。
+ */
+function unitRate(value) {
+  if (value === undefined || value === null) return "—";
+  const abs = Math.abs(value);
+  if (abs >= 1000) return number(value);
+  return value.toFixed(abs >= 1 ? 3 : 5).replace(/\.?0+$/, "");
 }
 
 /**

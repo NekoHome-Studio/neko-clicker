@@ -325,7 +325,7 @@ function snapshot(overrides = {}) {
     buffs: [{ isDebuff: false, icon: "☕", name: "精神", stacks: 2, remainingSeconds: 30, description: "更快" }],
     buildings: [{
       id: "b1", isVisible: true, isUnlocked: true, canAfford: true, icon: "🏠", name: "猫窝",
-      owned: 3, batchAmount: 10, batchPrice: 120, cpsContribution: 5.5, cpsShare: 0.12,
+      owned: 3, batchAmount: 10, batchPrice: 120, cpsEach: 4.5, cpsContribution: 5.5, cpsShare: 0.12,
       unlockHint: "", unlockProgress: 1,
       // 「这座建筑自己的升级」——**服务端算好的 id**（`GameContent.UpgradesForBuilding`）。
       // 前端不解析 `category` 里的 `"building:"` 前缀，只做集合运算（见 app.js 的
@@ -1468,7 +1468,7 @@ section("19. 建筑卡片说得出「已有几个」");
   const own = await loadApp(copyAs("app-owned.mjs", appSource));
   const bed = (count) => ({
     id: "b1", isVisible: true, isUnlocked: true, canAfford: true, icon: "🏠", name: "猫窝",
-    owned: count, batchAmount: 10, batchPrice: 120, cpsContribution: 5.5, cpsShare: 0.12,
+    owned: count, batchAmount: 10, batchPrice: 120, cpsEach: 4.5, cpsContribution: 5.5, cpsShare: 0.12,
     unlockHint: "", unlockProgress: 1, description: "猫在里面睡。", upgradeIds: [],
   });
   const partsOf = (cls) =>
@@ -1615,6 +1615,212 @@ section("21. 阶段那一行 vs 里程碑那一句（不许读成同一件事）
   check("里程碑的名字即使在快照里，也不会跑到阶段那一行上去", () => {
     const stage = el(words, "era-stage").textContent;
     if (stage.includes("正式配齐的猫窝")) throw new Error(`阶段那一行里出现了里程碑的名字：<${stage}>`);
+  });
+}
+
+// 22. 建筑卡片上的「单个产速」（`buildings[].cpsEach`）。
+//
+// 这是 `WEB_BUILDING_RATE_FEEDBACK.md` 的第一层：那个数**早就随着快照推过来了**，
+// 终端详情面板也一直在画（`TerminalUi.cs` 的 `单个 4.5/s`），只有 Web 前端一次都没引用过
+// （`grep cpsEach games/hosts/Web/wwwroot/` 当年是零命中，卡片上也没有 tooltip 藏着它）。
+// 修法：并进建筑卡片本来就有的那一行（`已有 N · …`），措辞照终端（单个 / 合计 / 占）。
+//
+// 这一节钉住三件事：那一行真的同时写出单个与合计、**小数不会被抹掉**、以及
+// `owned == 0` 时宁可不说不画出「单个 0/s」。
+section("22. 建筑卡片上的「单个产速」");
+{
+  const perUnit = await loadApp(copyAs("app-rate.mjs", appSource));
+  // 反馈件 §1 那一局 🔌 发电机的真值：持有 20、单个 4.5/s、合计 90/s、占 41.28%。
+  const generator = {
+    id: "b1", isVisible: true, isUnlocked: true, canAfford: true, icon: "🔌", name: "发电机",
+    owned: 20, batchAmount: 1, batchPrice: 1636.65, cpsEach: 4.5,
+    cpsContribution: 90, cpsShare: 0.4128,
+    unlockHint: "", unlockProgress: 1, description: "烧油。", upgradeIds: [],
+  };
+  const shareOf = () =>
+    el(perUnit, "buildings").children[0].children
+      .find((child) => child.classList.contains("card")).children
+      .find((child) => child.classList.contains("share"));
+
+  await perUnit.push({ kind: "full", seq: 1, snapshot: snapshot({ buildings: [generator] }) });
+
+  check("卡片那一行同时写出「单个」与「合计」，次序与终端详情面板一致", () => {
+    eq(shareOf().textContent, "已有 20 · 单个 4.5/s · 合计 90/s · 占 41%", "那一行");
+  });
+
+  // 🧱 废墟那一档：单个 0.225/s。`number()`（价格 / 合计用的那个格式化器）在 1000 以下取整，
+  // 会把 0.225 画成 `0/s`——不是舍入，是一句"这建筑不产钱"。所以 `rate()` 单独存在。
+  await perUnit.push({
+    kind: "full", seq: 2,
+    snapshot: snapshot({ buildings: [{ ...generator, icon: "🧱", name: "废墟", owned: 9, cpsEach: 0.225, cpsContribution: 2.025, cpsShare: 0.0093 }] }),
+  });
+
+  check("1 以下的产速不被抹成 0：0.225 → 「单个 0.225/s」（用 number() 会画成 0/s）", () => {
+    const text = shareOf().textContent;
+    if (!text.includes("单个 0.225/s")) throw new Error(`小数被抹掉了：<${text}>`);
+  });
+
+  await perUnit.push({
+    kind: "full", seq: 3,
+    snapshot: snapshot({ buildings: [{ ...generator, owned: 0, cpsEach: 0, cpsContribution: 0, cpsShare: 0 }] }),
+  });
+
+  check("owned = 0：那一行整行不出现，页面上也没有一处写出「单个 0/s」那句假话", () => {
+    const share = shareOf();
+    if (!share.classList.contains("hidden")) throw new Error("owned 为 0 时那一行还显示着");
+    if (share.textContent.includes("单个")) throw new Error(`写出了「单个 0/s」这种假话：<${share.textContent}>`);
+  });
+}
+
+// 23. 快照里的每个字段都要有人决定过：画了，或者写明为什么不画。
+//
+// 这是**同一类缺陷的第五次**——引擎算好、快照推过来，而 Web 前端一次都没画过：
+//   · `category` / `tier` / `nextMilestoneAt`（§15 与 §21 记着它们只活在终端宿主里）
+//   · `buildings[].owned`（§19，2026-10-03 修：数字一直在算、一直在写、然后被 CSS 藏掉）
+//   · `buildings[].cpsEach`（§22，2026-10-03 修）
+// 五次都是**人注意到**或**代理审计**发现的——仓库里没有任何东西会在"多了一个没人画的字段"
+// 时变红。这一节就是那个东西：以后**没决定过的新字段会让这一节红，并点名到完整路径**。
+//
+// 判据分两层，缺一不可：
+//   · **正向**：夹具（`tools/fixtures/web-snapshot.json`，真宿主抓下来的线上形状）里逐个字段，
+//     要么 app.js 的代码里读得到（`.字段名`），要么在下面的 `NOT_DRAWN` 表里有一句理由。
+//   · **反向**：表里每一条**必须还是真的**——字段还在夹具里、且确实没被引用。
+//     过期的借口也是红：否则这张表会慢慢烂成"一些字段的历史注记"，而不是一份决定记录。
+//
+// **粒度选的是"下钻到记录内部"**（`buildings[].cpsEach` 这一级），不是只数顶层字段。
+// 理由就是这五次事故本身：五个字段里**没有一个是顶层字段**——顶层只有 `buildings` /
+// `upgrades` 这些容器，而它们当然都被引用了，只守顶层一条都逮不到。
+//
+// **引用是怎么认的（这条守卫的边界，不假装它更强）**：把 app.js 的注释剥掉之后找 `.字段名`。
+// 它证明的是"有人碰过这个名字"，**不是"这个字段被画出来了"；名字撞车（将来多一个 `icon` /
+// `progress`）会漏**。它的判别力来自一个事实：这五次事故的字段在 app.js 里一个字符都没有。
+// **注释不算引用**：注释里必须能提 `nextMilestoneAt` 这类名字（那正是"为什么不画"要解释的东西），
+// 所以先剥注释再扫。今天这个文件里既没有声明解构、也没有 `obj["x"]`（第四条用例守着这两件事），
+// 所以 `.字段名` 是完备的读法；参数解构（`function f({ a })`）是这条规则看不见的第三种写法，
+// 今天一处都没有（`grep '(\s*{'` 只命中一个对象字面量）。**前端 = app.js**：index.html 与
+// app.css 都画不出快照里的字段。
+section("23. 快照里的每个字段都要有人决定过（画了，或写明不画）");
+{
+  const wire = JSON.parse(readFileSync(join(root, "tools", "fixtures", "web-snapshot.json"), "utf8"));
+
+  const frontCode = appSource
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .split("\n")
+    .map((line) => line.replace(/\/\/.*$/, ""))
+    .join("\n");
+
+  /**
+   * 「明确不画」表：**完整路径 → 一句理由**。
+   *
+   * 键用完整路径（`buildings[].category`）而不是裸字段名：同一个名字在两种记录里可以是
+   * 两件事（`hiddenUntilUnlocked` 在 `buildings[]` 与 `upgrades[]` 上各有各的处置），
+   * 只写名字等于把两个决定合成一个。
+   *
+   * 理由里凡是真的"还没决定"，就写"未决定"——不编一个听起来像设计的说法。
+   */
+  const NOT_DRAWN = {
+    // ---- 顶层：整块没有落点的数字
+    "clickPower": "前端画的是服务端格式化好的 clickPowerText，裸数没有画布",
+    "cookiesEarnedThisRun": "页面上没有统计面板——这些数一个落点都没有（未决定要不要做）",
+    "cookiesEarnedAllTime": "同上：没有统计面板（未决定）",
+    "handMadeCookies": "同上：没有统计面板（未决定）",
+    "totalClicks": "同上：没有统计面板（未决定）",
+    "ascensions": "同上：没有统计面板（未决定）",
+    "purchasedUpgrades": "同上：没有统计面板（未决定）",
+    "goldenCookiesClicked": "终端状态行画「已抓 N 只」；Web 没有那个位置（未决定）",
+    "goldenCookieCountdown": "Web 只画在场的那只金猫（goldenCookies[]）；「下一只还有多久」没画（未决定）",
+    "totalBuildings": "终端画「建筑 N」；Web 的建筑面板本身就是它，没有重复写（未决定）",
+    "prestigeLevel": "前端画的是 canAscend / chipsOnAscend；等级本身没有落点（未决定）",
+    "mode": "枚举序数：前端只认 modeName 这个 token，序数由 §14 单独守着不许读（不许前端解释序数）",
+    // ---- buildings[]：五次事故里有三次在这一行
+    "buildings[].category": "服务端把分组算成了 upgradeIds；前端不解析 category 的 building: 前缀（既有规矩）",
+    "buildings[].hiddenUntilUnlocked": "隐藏规则由服务端算成 isVisible / isUnlocked（Views.cs 的一行属性），前端只读结果",
+    "buildings[].unitPrice": "前端画的是真正会扣的 batchPrice；单价那一份没画（未决定）",
+    "buildings[].nextMilestoneAt": "里程碑那一句今天只活在终端宿主里，§21 明确守着「页面不许画它」",
+    "buildings[].nextMilestoneName": "同上：§21 守着它不许跑到阶段那一行上（未决定要不要单独画）",
+    "buildings[].sellRefundRate": "页面上没有「卖出」这个动作（终端有卖模式，Web 没有）",
+    // ---- upgrades[]
+    "upgrades[].hiddenUntilUnlocked": "同 buildings[]：服务端算成 isVisible / isUnlocked",
+    "upgrades[].category": "前端用服务端算好的 upgradeIds 挂建筑升级，不解析 category",
+    "upgrades[].tier": "终端用它排序分区；Web 的升级面板不分区（未决定）",
+    // ---- 其他记录
+    "achievements[].category": "成就列表面板不分组（未决定）",
+    "prestige.currentLevel": "前端只有 canAscend / chipsOnAscend 与 era.progressText 有落点（未决定）",
+    "prestige.nextLevel": "同上（未决定）",
+    "prestige.cookiesForNextLevel": "转生门槛的原始数：前端画的是 era.progressText 那句现成的话（未决定）",
+    "era.entryText": "本层进入叙事：Web 没有画它的位置（终端在横幅里画）（未决定）",
+    "era.stageName": "阶段那一行画的是序号 + 门槛文本（§21）；阶段名本身没画（未决定）",
+    "era.modifierSummary": "本层常驻规则摘要：Web 一处都没画（未决定）",
+    "era.all[].completed": "纪元总览（整张表）前端一张都没画（未决定）",
+    "era.all[].current": "同上：总览没画，所以「当前是哪一层」也没画（未决定）",
+    "codex.storylines[].entries[].storylineId": "条目就嵌在自己的 storyline 里，这个回指字段前端用不上",
+    "codex.storylines[].entries[].storylineName": "同上：外层 storyline 对象上已经有 name",
+    "codex.storylines[].entries[].order": "数组顺序就是服务端给的顺序，前端不再排序",
+    "codex.storylines[].entries[].channel": "投放通道（Log / Popup / Codex / EraText）：前端画的是图鉴那一栏（未决定）",
+  };
+
+  /** 空数组：夹具里一格都没有，所以它们**内部**有什么字段这条守卫看不见（见第三条用例）。 */
+  const EMPTY_ARRAY_BLIND_SPOTS = ["buffs[]", "goldenCookies[]", "pendingLore[]", "pendingChoices[]"];
+
+  const fields = [];
+  const emptyArrays = [];
+  (function walk(value, path) {
+    if (value === null || value === undefined) return;
+    if (Array.isArray(value)) {
+      // 数组只看第 0 个元素：服务端按同一个 record 序列化每一行，字段集合是同一套（同 §14）。
+      if (value.length > 0) walk(value[0], `${path}[]`);
+      else emptyArrays.push(`${path}[]`);
+      return;
+    }
+    if (typeof value === "object") {
+      for (const key of Object.keys(value)) walk(value[key], path ? `${path}.${key}` : key);
+      return;
+    }
+    fields.push(path);
+  })(wire, "");
+
+  const nameOf = (path) => path.split(".").pop().replace(/\[\]$/, "");
+  const escape = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const referenced = (path) => new RegExp(`\\.${escape(nameOf(path))}\\b`).test(frontCode);
+
+  const undecided = fields.filter((path) => !referenced(path) && !(path in NOT_DRAWN));
+
+  check(`夹具里 ${fields.length} 个字段：要么 app.js 在读它，要么在「明确不画」表里`, () => {
+    if (undecided.length > 0) {
+      throw new Error(`${undecided.length} 个字段没有决定过：\n        · ${undecided.join("\n        · ")}\n      `
+        + `要么在 app.js 里画它，要么写进这一节的 NOT_DRAWN 表并给一句理由（「还没决定」也是理由）。`);
+    }
+  });
+
+  check("「明确不画」表里每一条都还是真的：字段还在夹具里，而且前端确实没引用它", () => {
+    const stale = Object.keys(NOT_DRAWN).filter((path) => !fields.includes(path) || referenced(path));
+    if (stale.length > 0) {
+      const why = stale.map((path) => {
+        const gone = !fields.includes(path);
+        return `${path}（${gone ? "这个字段已经不在夹具里了" : "前端已经在读它了"}）`;
+      });
+      throw new Error(`过期的借口 ${stale.length} 条：\n        · ${why.join("\n        · ")}\n      `
+        + `字段没了就删掉这一行；开始画了就把它从表里移走（决定记录要跟着事实走）。`);
+    }
+  });
+
+  check("夹具里的空数组还是那 4 个（它们是这条守卫的盲区：里面有什么字段看不出来）", () => {
+    const now = [...emptyArrays].sort().join(", ");
+    const pinned = [...EMPTY_ARRAY_BLIND_SPOTS].sort().join(", ");
+    if (now !== pinned) {
+      throw new Error(`空数组变了：钉住的是 <${pinned}>，夹具里是 <${now}>。`
+        + `新填上的那个数组里的字段这条守卫看不见——请逐个决定（画 / 写进 NOT_DRAWN），再把这里更新成新的事实。`);
+    }
+  });
+
+  check("`.字段名` 这条读法规则是完备的：app.js 里没有声明解构、也没有方括号取值", () => {
+    const other = [/(?:^|[^.\w])(?:const|let|var)\s*\{/, /\w\[\s*["']/]
+      .map((pattern) => pattern.exec(frontCode))
+      .filter(Boolean);
+    if (other.length > 0) {
+      throw new Error(`发现了第三种读法 <${other[0][0].trim()}>——上面那条规则会看不见它：`
+        + `要么补进规则，要么把那个字段写进 NOT_DRAWN。`);
+    }
   });
 }
 
