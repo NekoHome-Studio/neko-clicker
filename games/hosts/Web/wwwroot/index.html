@@ -120,6 +120,10 @@
           <h2>建筑</h2>
           <div id="batch" class="batch"></div>
         </div>
+        <!-- 建筑行由 app.js 逐条生成：一行 = [左边的 📖][买卡片]，故事框展开在下面。
+             卡片本体仍然是"点一下买"，展开是**另一个控件**——取舍与展开状态的存放
+             都写在 app.js 的 renderBuildings 里（这里没有静态标记，因为每一行都要跟
+             快照走：价格、可负担性、解锁进度每帧都在变）。 -->
         <div id="buildings" class="list"></div>
       </div>
 

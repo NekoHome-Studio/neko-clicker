@@ -291,6 +291,12 @@ function snapshot(overrides = {}) {
     achievementCount: 1,
     achievementTotal: 12,
     playTimeSeconds: 3600,
+    // ⚠️ 这一行与**线上真实形状不符**：宿主推来的是枚举序数（实测线上是 `"mode":0`），
+    // 不是 camelCase 的名字——`SnapshotProtocol.Options` 没开枚举字符串转换器。
+    // 于是 `renderBatch` 里那句 `(state.mode ?? "").toLowerCase()` 会在真页面上抛
+    // TypeError，而这里喂字符串恰好绕开了它：**这个夹具曾经把一条线上故障藏了整轮**。
+    // 用真形状（数字）喂这一帧，整套用例当场变红；修法需要给快照加个模式名字段
+    // （公开 API + 版本），不是这个脚本能自己决定的事，所以先记在 OPEN_WORK 里。
     mode: "buy10",
     prestige: { canAscend: true, chipsOnAscend: 2 },
     era: {
@@ -679,6 +685,23 @@ check(".sheet-layer 仍留着 overflow-y", () => {
 });
 check("@keyframes sheet-in 还在（复用而不是新造动画）", () => /@keyframes sheet-in/.test(css));
 
+// 建筑那一行的形状：左边一个独立控件、卡片在右、故事框跨整行。
+// 这三条守的是"展开"这件事的**布局**——把它改回"点卡片出字"或把故事框塞进卡片里，
+// 这几条会直接红，而不是等人肉眼看出来。
+check("建筑行是「控件 + 卡片」两列，故事框跨整行（形状守卫）", () => {
+  const building = /\.building \{([\s\S]*?)\}/.exec(css)?.[1] ?? "";
+  if (!building.includes("grid-template-columns: auto 1fr")) throw new Error(".building 不是两列网格");
+  const story = /\.story \{([\s\S]*?)\}/.exec(css)?.[1] ?? "";
+  if (!story.includes("grid-column: 1 / -1")) throw new Error(".story 没有跨整行");
+});
+check("展开按钮的「开着」状态有独立样式（只靠 aria-expanded 这一件事驱动）", () => {
+  if (!/\.story-toggle\[aria-expanded="true"\]/.test(css)) throw new Error("没有 aria-expanded=true 的样式");
+});
+check("展开按钮在窄屏上撑到 44px（📖 只有一字符宽，按不到就等于没有）", () => {
+  const narrow = /@media \(max-width: 34rem\) \{([\s\S]*?)\n\}/.exec(css)?.[1] ?? "";
+  if (!/\.story-toggle \{ min-width: 44px; \}/.test(narrow)) throw new Error("窄屏那节里没有 .story-toggle 的 44px");
+});
+
 // 12. 计数器动画：单调、不振荡。这一条守的是 human 报的"数字来回跳"。
 //
 // 病灶有两处，都在 animate / onmessage 里：显示值**本来就该领先服务端**（那正是外推
@@ -780,6 +803,145 @@ section("12. 计数器动画：只前进，只在服务端倒退时倒退");
     if (tail.some((value) => value !== tail[0])) throw new Error(`最后 10 拍还在变：${trace(tail)}`);
     const lead = tail[0] - PRICE;
     if (lead > TOLERANCE + 1e-9) throw new Error(`停在真值上方 ${lead}，超过上限 ${TOLERANCE}`);
+  });
+}
+
+// 13. 建筑：卡片"买"、📖"看故事"。守的是需求本身——"把建筑写成可以点开的文本框，
+//     把剧情内容藏在里面"。三个判别点各有一条：
+//       · 点 📖 **不发 buy**（否则"看故事"会顺手花掉钱）；
+//       · 点卡片**不展开**故事框（否则每一次购买都会弹出一段字）；
+//       · 展开状态**不被下一帧快照合上**（服务端 4 Hz 推帧，列表每帧都过一遍）。
+//     说明文本全部来自快照（内容包里 text.json 的 buildings.<id>.description）：
+//     这里刻意用一份**两段**的合成文案，证明文本框放得下不止一段，而不是只有一行。
+section("13. 建筑：卡片买、📖 看故事（两个手势互不触发）");
+{
+  const story = await loadApp(copyAs("app-story.mjs", appSource));
+
+  const catBed = {
+    id: "b1", isVisible: true, isUnlocked: true, canAfford: true, icon: "🏠", name: "猫窝",
+    owned: 3, batchAmount: 10, batchPrice: 120, cpsContribution: 5.5, cpsShare: 0.12,
+    unlockHint: "", unlockProgress: 1,
+    description: "猫在里面睡 16 小时。\n\n剩下 8 小时思考要不要出来。",
+  };
+  const feeder = {
+    id: "b2", isVisible: true, isUnlocked: false, canAfford: false, icon: "🍽️", name: "自动喂食器",
+    owned: 0, batchAmount: 1, batchPrice: 900, cpsContribution: 0, cpsShare: 0,
+    unlockHint: "累计赚到 300", unlockProgress: 0.4,
+    description: "定时投喂，它记得这个机器。",
+  };
+  const full = (buildings) => ({ kind: "full", seq: 1, snapshot: snapshot({ buildings }) });
+
+  await story.push(full([catBed, feeder]));
+
+  const row = (index) => el(story, "buildings").children[index];
+  const find = (index, cls) => row(index).children.find((child) => child.classList.contains(cls));
+  const toggleOf = (index) => find(index, "story-toggle");
+  const cardOf = (index) => find(index, "card");
+  const storyOf = (index) => find(index, "story");
+  const openAt = (index) => {
+    const box = storyOf(index);
+    return Boolean(box) && !box.classList.contains("hidden");
+  };
+  const pressKey = (target, code) => {
+    for (const handler of story.doc._listeners.get("keydown") ?? []) {
+      handler({ code, target, preventDefault() {} });
+    }
+  };
+
+  check("每一行都是「📖 + 卡片 + 故事框」三件，且默认全部收起", () => {
+    eq(el(story, "buildings").children.length, 2, "建筑行数");
+    for (const index of [0, 1]) {
+      if (!toggleOf(index)) throw new Error(`第 ${index + 1} 行没有故事按钮`);
+      if (!cardOf(index)) throw new Error(`第 ${index + 1} 行没有卡片`);
+      if (!storyOf(index)) throw new Error(`第 ${index + 1} 行没有故事框`);
+      if (openAt(index)) throw new Error(`第 ${index + 1} 行的故事框默认是开着的`);
+    }
+  });
+
+  check("卡片仍然只做一件事：点它发 buy，而且不展开任何故事框", () => {
+    fire(cardOf(0), "click");
+    const buys = commandsOf(story, "buy");
+    eq(buys.length, 1, "buy 次数");
+    eq(buys[0].id, "b1", "买的是哪一座");
+    if (openAt(0)) throw new Error("买的时候顺手展开了故事框");
+  });
+
+  check("点 📖 不发 buy，只展开那一行（看故事不是购买）", () => {
+    fire(toggleOf(0), "click");
+    eq(commandsOf(story, "buy").length, 1, "buy 次数（仍是 1，没有多出来一发）");
+    if (!openAt(0)) throw new Error("点了 📖 但故事框没展开");
+    if (openAt(1)) throw new Error("展开第 1 行时第 2 行也跟着开了");
+  });
+
+  check("故事框里就是快照给的那段话，逐字一致；空行分成两段", () => {
+    const parts = storyOf(0).children.map((child) => child.textContent);
+    eq(parts.length, 2, "段数（空行分段）");
+    eq(parts[0], "猫在里面睡 16 小时。", "第一段");
+    eq(parts[1], "剩下 8 小时思考要不要出来。", "第二段");
+  });
+
+  check("锁着的那一行也读得到自己的说明（说明文本不按解锁状态藏）", () => {
+    fire(toggleOf(1), "click");
+    if (!openAt(1)) throw new Error("锁着的行打不开故事框");
+    eq(storyOf(1).children.length, 1, "段数");
+    eq(storyOf(1).children[0].textContent, "定时投喂，它记得这个机器。", "正文");
+    eq(commandsOf(story, "buy").length, 1, "读说明没有顺手下单");
+    fire(toggleOf(1), "click"); // 收回去，后面的断言才好读
+  });
+
+  // 下一帧（同样的两行、只有价格变了）来了：开着的必须还开着，关着的必须还关着。
+  const beforeRow = row(0);
+  const beforeToggle = toggleOf(0);
+  await story.push(full([{ ...catBed, batchPrice: 240 }, feeder]));
+  check("重画之后：开着的还开着，关着的还关着", () => {
+    if (!openAt(0)) throw new Error("下一帧把展开着的那个故事框合上了");
+    if (openAt(1)) throw new Error("下一帧把本来关着的那一行打开了");
+  });
+  check("重画没有把这一行换成新节点（焦点与展开按钮的身份都还留着）", () => {
+    if (row(0) !== beforeRow) throw new Error("整行被换成了新节点");
+    if (toggleOf(0) !== beforeToggle) throw new Error("展开按钮被换成了新按钮（键盘焦点会掉回 body）");
+  });
+
+  check("再点一下能收起（同一个按钮关得掉自己打开的东西），且不发 buy", () => {
+    fire(toggleOf(0), "click");
+    if (openAt(0)) throw new Error("点了第二下没收起");
+    eq(commandsOf(story, "buy").length, 1, "buy 次数");
+    fire(toggleOf(0), "click"); // 再打开，给后面几条用
+  });
+
+  check("展开按钮带 aria-expanded / aria-controls，故事框是带名字的 region", () => {
+    const toggle = toggleOf(0);
+    const box = storyOf(0);
+    eq(toggle.tagName, "BUTTON", "展开按钮的标签（Tab 停得到、回车/空格自带激活）");
+    eq(toggle.type, "button", "type（不该是提交按钮）");
+    eq(toggle.getAttribute("aria-controls"), box.id, "aria-controls 指向哪一个框");
+    eq(toggle.getAttribute("aria-expanded"), "true", "展开时的 aria-expanded");
+    eq(box.getAttribute("role"), "region", "故事框的 role");
+    if (!box.getAttribute("aria-label")) throw new Error("故事框没有可读的名字");
+    fire(toggle, "click");
+    eq(toggle.getAttribute("aria-expanded"), "false", "收起时的 aria-expanded");
+    fire(toggle, "click");
+  });
+
+  check("键盘：焦点在 📖 上按空格不会顺手点一下猫（空格归那个按钮自己）", () => {
+    const before = commandsOf(story, "click").length;
+    pressKey({ tagName: "BUTTON" }, "Space");
+    return commandsOf(story, "click").length === before;
+  });
+  check("键盘：焦点不在任何控件上时空格照旧点猫", () => {
+    const before = commandsOf(story, "click").length;
+    pressKey({ tagName: "BODY" }, "Space");
+    return commandsOf(story, "click").length === before + 1;
+  });
+
+  // 说明文本是快照给的：没有它就不该造一个点开空空如也的 📖
+  // （引擎侧那条不变量保证每座建筑的说明非空，所以这是形状守卫，不是活路径）。
+  await story.push(full([{ ...feeder, id: "b3", name: "没写说明的建筑", description: "" }]));
+  check("快照里没有说明的那一座不给 📖（不做点开空空如也的按钮）", () => {
+    eq(el(story, "buildings").children.length, 1, "建筑行数（换了一帧之后只剩这一座）");
+    if (toggleOf(0)) throw new Error("没有说明却给了故事按钮");
+    if (storyOf(0)) throw new Error("没有说明却建了故事框");
+    eq(row(0).children.length, 1, "这一行只剩卡片");
   });
 }
 

@@ -842,51 +842,224 @@ function renderBuffs() {
   }
 }
 
+/**
+ * 玩家展开了哪几条建筑故事。**按建筑 id 记在 JS 里，而不是留在 DOM 上。**
+ *
+ * 为什么状态必须活在这里：建筑列表每一帧都会被过一遍（服务端 4 Hz 推快照），而
+ * "我展开了哪一条"是玩家的操作、不是服务端的状态——快照里没有它，也不该有它。
+ * 把这个 Set 当成唯一真相、重画时按 id 重新套用，展开的框才不会在下一帧自己合上。
+ * 与 `collapsedChoices`（被收起过的那批表态）是同一个模式。
+ */
+const openStories = new Set();
+
+/**
+ * 每个建筑一行的 DOM 节点，按 id 复用。
+ *
+ * 为什么不像别的列表那样每帧 `textContent = ""` 重建：`.list` 是个会滚动的容器
+ * （`max-height: 26rem; overflow-y: auto`），而**清空重建会让"滚动位置还在不在"
+ * 完全失去保证**——内容高度归零的那一瞬，浏览器可以把 `scrollTop` 夹回 0；挂机时
+ * 列表每 250ms 自己跳回顶部。焦点同理：被重画掉的按钮会把键盘焦点丢回 body，
+ * 而"键盘展开一条故事"正需要焦点留住。复用节点，这两件事都不必去赌。
+ */
+const buildingRows = new Map();
+
+/** 一行建筑的元素 id：展开按钮的 `aria-controls` 指向它。 */
+function storyId(buildingId) {
+  return `building-story-${buildingId}`;
+}
+
+/**
+ * 把一段作者写的文本切段：**空行**分段，段内的单个换行保留（CSS `white-space: pre-line`）。
+ *
+ * 今天 11 个包 104 座建筑的说明都是**一行**，所以每条现在只会得到一个 `<p>`——
+ * 这里做的不是"把一句话撑成几段"，而是"文案将来写长了要有地方放"。
+ * 内容一个字都不在这里编：快照里是什么就画什么。
+ */
+function paragraphs(text) {
+  return String(text ?? "")
+    .split(/\r?\n\s*\r?\n/)
+    .map((part) => part.trim())
+    .filter(Boolean);
+}
+
+/**
+ * 建一行建筑的 DOM。**只建一次**，之后每帧只改文字与类（见 `buildingRows`）。
+ *
+ * 一行 = 左边的 📖 按钮（展开故事）+ 买卡片 + 展开在下面的故事框：
+ *
+ *   <div class="building">
+ *     <button class="story-toggle" aria-expanded aria-controls>📖</button>
+ *     <button class="card">…</button>          ← 还是"点一下买"
+ *     <div class="story" role="region" id="building-story-<id>">…</div>
+ *   </div>
+ *
+ * 展开按钮是**另一个控件**而不是卡片的一部分：真 `<button>` 不能嵌在真 `<button>` 里
+ * （那既是非法标记、也是屏幕阅读器读不清的东西），而且这两个手势本来就不该共用一个手势。
+ */
+function createBuildingRow(building) {
+  const root = document.createElement("div");
+  root.className = "building";
+  root.dataset.building = building.id;
+
+  const prose = paragraphs(building.description);
+
+  // 展开按钮：真 <button>，所以 Tab 停得到、回车/空格由浏览器自带激活。
+  // 没有说明文本时**不给这个按钮**：一个点开空空如也的 📖 是在骗人。
+  // （引擎那条不变量保证每座建筑的 description 非空，见 ContentTextFileTests，
+  //  所以这是形状守卫而不是活路径。）
+  const toggle = prose.length > 0 ? document.createElement("button") : null;
+  if (toggle) {
+    toggle.type = "button";
+    toggle.className = "story-toggle";
+    toggle.textContent = "📖";
+    toggle.setAttribute("aria-expanded", "false");
+    toggle.setAttribute("aria-controls", storyId(building.id));
+    toggle.title = `看《${building.name}》的故事`;
+    toggle.setAttribute("aria-label", toggle.title);
+    toggle.addEventListener("click", () => toggleStory(building.id));
+  }
+
+  // 卡片本体：**还是买**，与改动前逐字相同的行为。
+  const card = document.createElement("button");
+  card.className = "card";
+  card.addEventListener("click", () => {
+    if (card.disabled) return; // 锁着的行不发货（真 DOM 里 disabled 的按钮本来就点不动）
+    send("buy", { id: building.id });
+  });
+
+  const name = document.createElement("span");
+  name.className = "name";
+  const owned = document.createElement("span");
+  owned.className = "owned";
+  const price = document.createElement("span");
+  price.className = "price";
+  const share = document.createElement("span");
+  share.className = "share hidden";
+  card.append(name, owned, price, share);
+
+  // 故事框：内联展开在卡片下面，**不是第二套弹窗**——形态沿用卡片那一套
+  // （同底色 / 同圆角 / 同左边框语言，见 app.css 的「建筑行」一节）。
+  const story = prose.length > 0 ? document.createElement("div") : null;
+  if (story) {
+    story.className = "story hidden";
+    story.id = storyId(building.id);
+    // 屏幕阅读器要读得到：给这块一个名字（role=region + aria-label，与 sheet 上的
+    // aria-modal / aria-labelledby 是同一套做法）。
+    story.setAttribute("role", "region");
+    story.setAttribute("aria-label", `《${building.name}》的故事`);
+    for (const part of prose) {
+      const text = document.createElement("p");
+      text.textContent = part;
+      story.append(text);
+    }
+  }
+
+  root.append(...[toggle, card, story].filter(Boolean));
+  return { root, card, toggle, story, name, owned, price, share };
+}
+
+/** 一帧一次的行内更新：只写"会变的东西"，节点本身不换。 */
+function updateBuildingRow(node, building) {
+  const unlocked = Boolean(building.isUnlocked);
+
+  // affordable / locked 这套类名与批量档位的语义一个没动（批次价格由服务端给）。
+  node.card.disabled = !unlocked;
+  node.card.classList.toggle("locked", !unlocked);
+  node.card.classList.toggle("affordable", unlocked && Boolean(building.canAfford));
+
+  setText(node.name, unlocked ? `${building.icon} ${building.name}` : `🔒 ${building.name}`);
+  setText(node.owned, building.owned);
+
+  if (unlocked) {
+    const bulk = building.batchAmount > 1 ? ` ×${building.batchAmount}` : "";
+    setText(node.price, `${state.currencyIcon} ${number(building.batchPrice)}${bulk}`);
+  } else {
+    setText(node.price, `${building.unlockHint}（${percent(building.unlockProgress)}）`);
+  }
+
+  const showShare = unlocked && building.owned > 0;
+  node.share.classList.toggle("hidden", !showShare);
+  if (showShare) {
+    setText(node.share, `${number(building.cpsContribution)}/s · 占 ${percent(building.cpsShare)}`);
+  }
+
+  applyStoryState(node, building.id);
+}
+
+/**
+ * 把展开状态套到这一行的 DOM 上：`hidden` 管可见（全站同一套），
+ * `aria-expanded` 让屏幕阅读器读得出"开着还是关着"。
+ */
+function applyStoryState(node, buildingId) {
+  if (!node.toggle || !node.story) return;
+
+  const open = openStories.has(buildingId);
+  node.story.classList.toggle("hidden", !open);
+  node.toggle.setAttribute("aria-expanded", open ? "true" : "false");
+}
+
+/**
+ * 展开 / 收起某座建筑的故事框。<para>
+ *
+ * 只改这一行的 DOM，**不重画列表**：点一下就该立刻有反应，而不是等下一帧（最迟 250ms）。
+ * 也**不发任何命令**——看故事不是购买。这个"不"由 web-smoke 第 13 节守着。
+ * </para>
+ */
+function toggleStory(buildingId) {
+  if (openStories.has(buildingId)) openStories.delete(buildingId);
+  else openStories.add(buildingId);
+
+  const node = buildingRows.get(buildingId);
+  if (node) applyStoryState(node, buildingId);
+}
+
+/**
+ * 建筑列表：一行 = 一个"买"的卡片 + 一个"看故事"的按钮 + 一个可展开的故事框。
+ *
+ * **一次点击 = 一次购买，这一点没变**：卡片本体仍然是那个 `<button>`，点它就是买。
+ * 故事框是**另一个控件**（左边那个 📖），展开的是这座建筑自己的说明文本，也就是快照里的
+ * `description`（内容包里 `text.json` 的 `buildings.<id>.description`，作者写的散文）。
+ * 两个动作各有一个控件，互不触发：点 📖 不会买，买不会展开。
+ *
+ * 为什么不让"点卡片"同时担当两件事：那是这个游戏的核心循环、是肌肉记忆，而且它是这个
+ * 页面上**唯一会花钱的手势**——同一个手势一会儿花钱、一会儿只是弹出一段字，误操作的
+ * 代价是不对称的（点错了会买错东西，而"点错了"最坏只是多读一段字）。所以宁可多一个
+ * 明确的控件，也不去动那个已经长在玩家手上的手势。
+ *
+ * 展开状态活在 `openStories` 里、按建筑 id 记（见那条注释）；节点按 id 复用（见
+ * `buildingRows`）。两者都只为一件事：**快照每 250ms 来一帧，展开的框不能跟着抖**。
+ */
 function renderBuildings() {
   const host = $("#buildings");
-  const rows = (state.buildings ?? []).filter((b) => b.isVisible);
-  host.textContent = "";
+  const rows = (state.buildings ?? []).filter((building) => building.isVisible);
 
+  const live = [];
   for (const building of rows) {
-    const card = document.createElement("button");
-    card.className = "card";
-    if (!building.isUnlocked) card.classList.add("locked");
-    else if (building.canAfford) card.classList.add("affordable");
-
-    const name = document.createElement("span");
-    name.className = "name";
-    name.textContent = building.isUnlocked ? `${building.icon} ${building.name}` : `🔒 ${building.name}`;
-    card.append(name);
-
-    const owned = document.createElement("span");
-    owned.className = "owned";
-    owned.textContent = building.owned;
-    card.append(owned);
-
-    const price = document.createElement("span");
-    price.className = "price";
-    if (building.isUnlocked) {
-      const bulk = building.batchAmount > 1 ? ` ×${building.batchAmount}` : "";
-      price.textContent = `${state.currencyIcon} ${number(building.batchPrice)}${bulk}`;
-    } else {
-      price.textContent = `${building.unlockHint}（${percent(building.unlockProgress)}）`;
-    }
-    card.append(price);
-
-    if (building.isUnlocked && building.owned > 0) {
-      const share = document.createElement("span");
-      share.className = "share";
-      share.textContent = `${number(building.cpsContribution)}/s · 占 ${percent(building.cpsShare)}`;
-      card.append(share);
+    let node = buildingRows.get(building.id);
+    if (!node) {
+      node = createBuildingRow(building);
+      buildingRows.set(building.id, node);
     }
 
-    if (building.isUnlocked) {
-      card.addEventListener("click", () => send("buy", { id: building.id }));
-    } else {
-      card.disabled = true;
-    }
+    updateBuildingRow(node, building);
+    live.push(node.root);
+  }
 
-    host.append(card);
+  // 成员或顺序真的变了才动结构：真 DOM 里 append 一个已经是子节点的元素是"移动"，
+  // 节点（连同焦点与展开状态）都还在。逐帧清空重建是另一回事——见 buildingRows 的注释。
+  const sameOrder = host.children.length === live.length
+    && live.every((node, index) => host.children[index] === node);
+  if (!sameOrder) {
+    host.textContent = "";
+    host.append(...live);
+  }
+
+  // 掉出列表的建筑（换内容包、可见性变了）连同节点一起丢掉，别让 Map 越攒越多。
+  const visible = new Set(rows.map((building) => building.id));
+  for (const id of [...buildingRows.keys()]) {
+    if (visible.has(id)) continue;
+    buildingRows.delete(id);
+    openStories.delete(id);
   }
 }
 
@@ -1059,6 +1232,18 @@ function percent(ratio) {
   return `${Math.round(ratio * 100)}%`;
 }
 
+/**
+ * 只在真的变了才写 `textContent`。
+ *
+ * 建筑列表每帧都会被过一遍（4 Hz），而反复写同一个字符串会让浏览器白做一次重排；
+ * 更要紧的是它会让"这一帧到底有没有变"变得看不出来。与 `renderChoicesPill` 里那条
+ * "只在真的变了才写"是同一条规矩。
+ */
+function setText(node, text) {
+  const value = text === undefined || text === null ? "" : String(text);
+  if (node.textContent !== value) node.textContent = value;
+}
+
 let toastTimer = null;
 function toast(message, bad = false) {
   const host = $("#toast");
@@ -1146,6 +1331,15 @@ document.addEventListener("keydown", (event) => {
   }
 
   if (event.code === "Space") {
+    // 焦点落在某个控件上时，空格是**那个控件**的激活键（浏览器会替它发一次 click）。
+    // 全局这里再发一次，就变成了"按空格展开故事，顺手又点了一下猫"——两件事都不是玩家要的。
+    // 上面那条 INPUT 是同一类判断，这里把它补全。
+    //
+    // ⚠️ 这同时修掉了一个既有的双发：焦点在 `#big-cat` 上按空格，此前会点两次猫。
+    // 现在那一格归按钮自己（浏览器发的就是 click），全局这条只管"焦点不在任何控件上"。
+    const tag = event.target?.tagName;
+    if (tag === "BUTTON" || tag === "A" || tag === "TEXTAREA" || tag === "SELECT") return;
+
     event.preventDefault();
     send("click");
   }

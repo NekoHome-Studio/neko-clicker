@@ -249,6 +249,45 @@ BOM 保留、长度不变、diff 只有那一行）。
 条件树与修饰符的 `Describe` 文案、引擎的通知/报错消息、内容包自己的构建期校验消息——
 要外置它们是**另一个方案**，不是本方案的收尾。
 
+---
+
+## 0.10 建筑故事框：卡片照旧买，📖 展开作者写的说明（2026-10-03，前端）
+
+需求原话：「把建筑写成可以点开的文本框，可以把剧情内容藏在里面」。**改动只在前端**
+（`games/hosts/Web/wwwroot/` 的 `app.js` / `app.css` / `index.html`）加冒烟用例：
+`engine/core` 一行未改、存档与快照协议未动、**没有升版本**（C# 用例仍是 **493/493**，
+`-Strict` 两个 sln 0 警告）。
+
+| 项 | 结果 |
+|---|---|
+| 取舍 | **卡片本体仍然是"点一下买"**——那是核心循环、是肌肉记忆，而且是这个页面上**唯一会花钱的手势**；"看故事"是**另一个控件**（左侧 📖，真 `<button>`，Tab 停得到、回车/空格由浏览器激活）。点 📖 不买，买不展开 |
+| 文案从哪来 | **快照里本来就有**，不需要加字段：`BuildingView.Description` 一直随 `buildings[]` 推送（`GameViewFactory` 第 61 行）。实测起着的宿主（5273）：`/api/snapshot` 与 SSE 帧里 `buildings[].description` 与 `engine/content/Apocalypse/text.json` **逐字相同**（9 座，0 处不符）；11 个包 104 座**没有一座说明为空** |
+| 形状 | 一行 = `<div class="building">`（`grid: auto 1fr`）里的 `<button class="story-toggle" aria-expanded aria-controls>` + `<button class="card">` + `<div class="story" role="region" aria-label>`；故事框跨整行、默认带 `.hidden` |
+| 多段 | `description` 按**空行**切段，一段一个 `<p>`（段内换行留给 `white-space: pre-line`）。今天 104 座都是一行，所以每条现在只有一个 `<p>`——**一个字都没新编**，这里是给将来的长文案留位置 |
+| 重画不丢 | 展开状态按建筑 id 记在 `openStories`（Set），DOM 节点按 id 缓存复用（`buildingRows`）。逐帧 `textContent = ""` 重建会让滚动位置与键盘焦点都没有保证，所以只在成员/顺序真的变了才动结构 |
+| 用例 | `tools/web-smoke.mjs` **67 → 82 全绿**（第 13 节 12 条 + 第 11 节 3 条形状守卫） |
+| 顺带改的一行 | 全局 `keydown` 里空格此前对谁都生效：焦点在按钮上按空格会**既激活那个按钮、又点一下猫**（焦点在 `#big-cat` 上时是点两次猫）。现在焦点落在 `BUTTON / A / TEXTAREA / SELECT` 上时空格归那个控件自己 |
+| 没做 | 锁定行照样读得到说明（说明是风味文本，按解锁状态藏它不是引擎表达得出的规则）；展开状态不跨刷新（它不是服务端状态） |
+
+**三处故障注入（都不是"看起来红"，是具体某条红）**：
+
+1. 让 📖 顺手 `send("buy")` → 5 条红，头一条是
+   `点 📖 不发 buy，只展开那一行（看故事不是购买） — buy 次数（仍是 1，没有多出来一发）: 期望 1，实际 2`。
+2. `toggleStory` 里把 `openStories` 当场清掉（DOM 开对了、状态没留下）→
+   `重画之后：开着的还开着，关着的还关着 — 下一帧把展开着的那个故事框合上了`。
+3. `renderBuildings` 每帧都 `createBuildingRow`（= 改动前的写法）→
+   `重画没有把这一行换成新节点（焦点与展开按钮的身份都还留着） — 整行被换成了新节点`。
+
+**这次验到的与没验到的**：把**真宿主那份快照**喂进 DOM 桩之后，每座可见建筑都画出了 📖 与故事框、
+正文与作者写的说明逐字相同（这条验证是临时的，不进仓库）；`-Strict` 493/493。**没有真人看过渲染
+结果**——本机起不了浏览器（见 §0.6），所以间距、📖 的位置、展开后的观感只能由眼睛判。
+
+⚠️ 这一轮顺带发现一条**与本轮无关的线上故障**（`renderBatch` 在真页面上每帧抛异常），
+证据与影响面见 §3 的 **N** 条——它同时给 §0.3 的第 3、4 条提供了一种解释。
+
+⚠️ §0.1 里那句 `tools/web-smoke.mjs` **62/62** 是更早的快照：别人的计数修正提交之后基线是
+**67**，本轮之后是 **82**。
+
 
 
 ## 1. 现在在哪（可核对的事实）
@@ -739,6 +778,26 @@ Web 宿主也有了一份（`games/hosts/Web/ChoiceLatencyLog.cs`），每一条
 而本轮的范围限定在"内容 / 文本 / 测试 / 文档"——碰它要连 BOM 一起处理（`edit` 会剥掉 BOM，
 PS 5.1 会按 GBK 读中文 ⇒ 整个脚本 parse error）并重跑那个会起真宿主的脚本。
 **所以它现在是一个已知的旧数**，记在这里而不是悄悄改掉。
+
+### N. ⚠️ **真页面上 `render()` 每帧抛异常**：`state.mode` 是枚举序数，前端当字符串用了
+
+**2026-10-03 发现（做 §0.10 的故事框时探真宿主探出来的），当天按父会话决定修——修法与证据见末尾。**
+
+`games/hosts/Web/wwwroot/app.js` 的 `renderBatch()` 里那句
+`const current = (state.mode ?? "").toLowerCase();` 在真页面上抛
+`TypeError: (state.mode ?? "").toLowerCase is not a function`。
+
+| 证据 | 值 |
+|---|---|
+| 线上真实的形状 | **`"mode":0`**——`/api/snapshot` 与 SSE 帧**原始字节都是这样** |
+| 为什么是数字 | `SnapshotProtocol.Options` **没开**枚举字符串转换器，而 `GameSnapshot.Mode` 是 `PurchaseMode` 枚举（`Buy1`=0…`SellMax`=6） |
+| 后果 | `renderBatch()` 在 `render()` 的中段。它一抛，**后面全都不会跑**（这是语句顺序，不是"我看着页面得出的"）：`#batch` 那四个档位按钮从来没画出来过；`renderOffline` / `renderChoicesSheet` / `reportChoicesShown` / `renderCodex` / `renderAchievements` / `renderNotifications` **一次都没跑过**。建筑与升级在它之前，所以页面"看着还能玩" |
+| 为什么两套测试都是绿的 | `tools/web-smoke.mjs` 的夹具写的是 `mode: "buy10"`——**那是前端以为的形状，不是线上的形状**；`tools/api-test.ps1` 只断言 `mode` 这个键存在 |
+| 建议顺序里的连锁反应 | §0.3 第 3 条（"离线弹窗关不掉的三种现象，到底是哪一种"）与第 4 条（**E：真人延迟样本**）都在那条死掉的路径后面：`#offline` 只有 `renderOffline` 会取消 `.hidden`，`choicesShown` 只有 `reportChoicesShown` 会发。所以"没人见过收下按钮""一个真人样本都没有"**可能都不是玩家的错** |
+
+**为什么没有当场顺手修**：干净的修法要么给快照加"模式名"，要么改已有字段的线上形状——
+两条都不是"改一行 JS"能了的事（前端不许解释枚举序数，这条规矩仓库自己写在
+`UpgradeView.UsesPrestigeCurrency` 与 `currencyIcon` 上）。已报告父会话，由其定夺。
 
 
 

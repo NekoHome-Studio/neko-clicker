@@ -254,6 +254,57 @@ kbd {
 .card.compact .name { font-size: .86rem; }
 .card .owned { display: none; }
 
+/* ---------------------------------------------------------------- 建筑行：卡片 + 可展开的故事
+   一行 = [📖 展开按钮][买卡片]，故事框展开在它下面、占满整行。
+   卡片本身没变（还是"点一下买"）；多出来的是一个**独立的控件**，理由是"买"这个手势
+   不能被分给两件事（取舍写在 app.js 的 renderBuildings 里）。
+   样式全部沿用已有的那套语言：同底色 / 同圆角 / 同一条左边框（affordable 用过的那条），
+   不另起一套面板。 */
+.building {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: .25rem .35rem;
+  align-items: start;
+}
+
+.story-toggle {
+  align-self: stretch;
+  min-width: 2rem;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: transparent;
+  color: var(--dim);
+  font: inherit;
+  font-size: .95rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.story-toggle:hover { color: var(--fg); border-color: var(--accent-deep); background: var(--card-hi); }
+
+/* "开着"要看得出来（不只是靠下面多出一块字）。用 aria-expanded 当选择器，
+   于是样式与"屏幕阅读器读到的状态"永远是同一个事实。 */
+.story-toggle[aria-expanded="true"] {
+  color: var(--accent);
+  border-color: var(--accent-deep);
+  background: var(--card-hi);
+}
+
+/* 建筑自己的说明文本。今天每条只有一行，但边界是"文案写多长都放得下"：
+   段落由 app.js 按空行切开，段内的换行照原样保留（white-space: pre-line）。 */
+.story {
+  grid-column: 1 / -1;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--accent-deep);
+  border-radius: 9px;
+  padding: .55rem .7rem;
+  font-size: .85rem;
+  color: #cdc7e4;
+  line-height: 1.6;
+}
+.story p { margin: 0; white-space: pre-line; }
+.story p + p { margin-top: .5rem; }
+
 /* ---------------------------------------------------------------- 纪元面板 */
 
 .era {
@@ -575,6 +626,8 @@ footer code { background: #00000055; padding: .05rem .3rem; border-radius: 4px; 
 
   /* 触屏目标下限：卡片整行可点，太矮就容易点错。44px 是常见的可点最小值。 */
   .card { min-height: 44px; }
+  /* 展开按钮同理：它只有 📖 一个字符宽，窄屏上要自己撑到能点得到的宽度。 */
+  .story-toggle { min-width: 44px; }
   .tabs button { min-height: 40px; padding: .45rem .7rem; }
 
   /* 日志行：三列在窄屏会把正文挤成一条，时间挪到正文下面。 */
