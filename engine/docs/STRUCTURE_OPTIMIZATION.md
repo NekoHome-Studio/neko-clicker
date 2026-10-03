@@ -37,7 +37,7 @@
 
 | # | 结构问题（一句话） | 复发成本 / 它会造成的 bug 类别 | 代价 | 谁定 | 详情 |
 |---|---|---|---|---|---|
-| **S1** | Web 前端冒烟套件（`tools/web-smoke.mjs`，135 处断言）**不在任何自动闸门上**：`build.ps1` 不跑它，CI 也不跑它 | 前端回归只能靠人记得。**这正是 `FRONTEND_CHECKS` 那一整篇事故的成因**，而且 `618a46c` 刚为"没人画的字段"这个复发 5 次的 bug 类加了 210 行守卫——加在一条没人自动跑的套件里 | **S**（CI 一个 step + `build.ps1` 一行） | 🔧 工程（要 CI） | §S1 |
+| **✅ S1** | Web 前端冒烟套件（`tools/web-smoke.mjs`，135 处断言）**不在任何自动闸门上**：`build.ps1` 不跑它，CI 也不跑它 | 前端回归只能靠人记得。**这正是 `FRONTEND_CHECKS` 那一整篇事故的成因**，而且 `618a46c` 刚为"没人画的字段"这个复发 5 次的 bug 类加了 210 行守卫——加在一条没人自动跑的套件里 | **S**（CI 一个 step + `build.ps1` 一行） | 🔧 工程（要 CI） | §S1 · **已关闭 `4a89cee`** |
 | **S2** | 冒烟套件的**夹具**是手工从真宿主抓的，**抓取脚本不在仓库里**（在 `.tmp/capture-fixture.ps1`，gitignore） | 动了 `wwwroot/` 或协议就要重抓夹具；今天只能"读文档里那句话 + 自己拼一个请求"。抓错形状 → 两套测试全绿而页面是死的（`mode: "buy10"` 那次） | **S**（把抓取收进 `tools/`，一条命令） | 🔧 工程 | §S2 |
 | **S3** | `build.ps1` 撞上"bin 被占"时**只打一句红字**，不判断占用者是谁；而"是谁占着"的判据**仓库里已经写好了**（`start.ps1:39~50`） | 一次失败给出 144~170 条 `MSB3021/MSB3027`，读的人从错误里看不出"是宿主在跑还是别人也在构建"；这条路径**记录过一次约 320 个 `dotnet` 进程 / 9.9 GB**，玩家侧观感是**数字卡死** | **S** | 🔧 工程 | §S3 |
 | **S4** | **测量机器人没有家**：每个测量任务把 `PrestigeTests` 那条机器人**逐行抄**进一个 `.tmp` 里的临时工程；测量产物与三份分析脚本也都在 `.tmp` | 仓库里被引用最多的那些数（`TUNING_ANALYSIS` §1 / §四 的全部表格）**每次都要重抄一遍**，而且**复现不了**（探针不在版本控制里）。已经在两周内重抄至少 4 次 | **S~M** | 🔧 工程 | §S4 |
@@ -49,13 +49,23 @@
 | **S10** | 「**拥有 ⇒ 已解锁**」这条不变量**只有一个包的私有辅助方法在守**（`ApocalypseContentTests`），而它是一条**横扫全部包**就能写的性质 | 下一个打开 `InheritBuildingRatio` 的包若漏改 25~50 条解锁条件，症状是"手里有 50 座建筑，列表里全是未解锁"——**产量照算、看不到也卖不掉**，今天只有一条人手写的 checklist 拦着 | **S** | 🔧 工程 | §S10 |
 | **S11** | `tools/` 里**闸门、环境壳、一次性迁移档案、三个启动器**混在一起，没有分类 | 新来的人（或新会话）不知道该跑哪几个；`RELEASING` 不得不把 11 步顺序再讲一遍。`extract-lore-text.ps1` 自己已声明"不再有运行期职责"，但**在文件列表里与闸门长得一样** | **S** | 🔧 工程 | §S11 |
 | **S12** | `text.json` **没有 schema 版本号**，而它现在已经有**保留键**（`$`）与一张**清单**（`$tables`） | 第一次破坏格式的改动**没有探测器**——存档那边有 `ISaveMigration`（`VERSIONING` §6），文本格式这边什么都没有；判断"这个文件是哪个年代的"只能读文档 | **S** | 👤 决定（**D4**）+ 🔧 实现 | §S12 |
-| **S13** | 全项目**唯一的人类数据仪器有两份实现**：`Demo.Cli/ChoiceLatencyLog.cs`（90 行，**不落盘**）与 `Web/ChoiceLatencyLog.cs`（446 行，**写 `artifacts/latency.txt`**）；而 `start.ps1` 的**默认模式**跑的是前者 | 走默认启动器玩一局，**一个样本都不会留下**；要贡献样本必须知道"得用 `start.cmd web`"。这是登记册 **H1** 那个"全项目唯一没有人类数据的参数"至今只有 21 条 `session start`、**0 条样本**的一个结构解释——**与 S4 是同一个回路的两面** | **S** | 🔧 工程 | §S13 |
+| **✅ S13** | 全项目**唯一的人类数据仪器有两份实现**：`Demo.Cli/ChoiceLatencyLog.cs`（90 行，**不落盘**）与 `Web/ChoiceLatencyLog.cs`（446 行，**写 `artifacts/latency.txt`**）；而 `start.ps1` 的**默认模式**跑的是前者 | 走默认启动器玩一局，**一个样本都不会留下**；要贡献样本必须知道"得用 `start.cmd web`"。这是登记册 **H1** 那个"全项目唯一没有人类数据的参数"至今只有 21 条 `session start`、**0 条样本**的一个结构解释——**与 S4 是同一个回路的两面** | **S** | 🔧 工程 | §S13 · **已关闭 `4a89cee`** |
 
 ---
 
 ## 二、逐条详情
 
 ### S1 Web 前端冒烟套件不在任何自动闸门上
+
+> **✅ 已关闭（2026-10-03，`4a89cee`；现场与判别力抄在 [OPEN_WORK](OPEN_WORK.md) §0.15.1）**。
+> `tools/build.ps1`（在"构建 Web 宿主（独立 sln）"之后、"=== 测试 ==="之前）与
+> `.github/workflows/ci.yml`（新作业 `web-smoke`，`setup-node` 20）现在都跑
+> `node tools/web-smoke.mjs`。**没有 node 时的选择是"故意红"**（exit 1 + 一句
+> "这里刻意不静默跳过" + 人工出路 `-SkipWebSmoke`），不是警告后继续：静默跳过正是
+> 本条描述的失效形态本身。判别力两条都已实测：删掉 `app.js` 的「单个」那一段 →
+> `133 / 135` + `前端冒烟失败…` + **exit 1**（C# 那一档没轮到）；把 node 从 PATH 摘掉
+> （纯 ASCII 探针）→ 同样的红与 `CHILD-EXIT=1`，加 `-SkipWebSmoke` 才走完且 exit 0。
+> 下文保留原文（它记录的是**当时**的事实与理由，包括"没有 node 怎么办"这个问题）。
 
 **是什么**。`tools/web-smoke.mjs`（1,838 行、135 处 `check(` 调用点）是无头 DOM 桩件烟测：
 它**真的把 `app.js` 跑起来**、喂从真宿主抓的快照、断言不抛异常与 DOM 结构。
@@ -203,6 +213,9 @@ if ($LASTEXITCODE -ne 0) {
   `engine/tests/NekoClicker.Core.Tests.csproj:42~44` 用 `Compile Include` 把
   `SnapshotProtocol.cs` / `ChoiceLatencyLog.cs` / `RepositoryPaths.cs` 以**共享源码**的形式编进测试工程，
   注释写明理由："保证**只有一份实现**……不存在『测试测的是一份副本、线上跑的是另一份』"。
+  （**2026-10-03 更正**：埋点与 `RepositoryPaths` 已搬到 `games/hosts/Shared/`、两个宿主各自
+  `Compile Include` 同一份源码，测试项目改为经 `Demo.Cli` 的 `ProjectReference` 使用它——
+  见 §S13 的"已关闭"一段。本节引用的是**当时**的行号与清单。）
   同一条路可以用在机器人上：抽一个 `MeasurementRobot.cs`，测试工程与任何探针都 `Compile Include` 它。
   注意那个 csproj 第 40 行立的规矩——**"改成 ProjectReference 能不能编过没有验证过；既然共享源码已经成立，就不为它冒险改结构"**：
   所以走共享源码，不要顺手改工程结构。
@@ -546,6 +559,22 @@ if ($LASTEXITCODE -ne 0) {
 ---
 
 ### S13 唯一的人类数据仪器有两份实现，而默认启动器跑的是不落盘的那份
+
+> **✅ 已关闭（2026-10-03，`4a89cee`；现场与判别力抄在 [OPEN_WORK](OPEN_WORK.md) §0.15.2）**。
+> 走的是本文的**形态②（收成一份）**：新增 `games/hosts/Shared/ChoiceLatencyLog.cs`
+> （`LatencySample` / `LatencyLogFormat` / `LatencyLogFile` / `ChoiceLatencyLog`）与
+> `Shared/RepositoryPaths.cs`，两个宿主各自 `Compile Include` **同一份源码**，
+> `Demo.Cli/ChoiceLatencyLog.cs`（90 行）、`Web/ChoiceLatencyLog.cs`、
+> `Web/RepositoryPaths.cs` 删除；测试项目改用 Demo.Cli 编好的那一份（再编一份会撞 CS0436）。
+> **默认启动器（终端交互模式）现在默认写** `artifacts/latency.txt`——与 Web 宿主同一个
+> 文件、同一条仓库根判据；`--simulate` / `--frame`（机器人作答）**默认不写**，要写必须显式
+> `--latency-log`。`start.ps1` 的默认模式没改（换默认体验是另一个决定）。
+> 判定为"**没写完**"而不是"刻意不落盘"的三条证据、以及"S/U 行一列不改 + 会话行加
+> `host=` + 短 `HeaderSignature`（免得把 21 个真人会话行误判成别人写的内容）"都写在
+> 那份类的注释与 §0.15.2 里。新增 5 条守卫；真实样本（临时路径）已产出：
+> `S	…	company	choice_first_order	order_take	3.833	0.004	30	1`，
+> 仓库那份真人文件指纹未变（2695 字节 / sha256 `FB64894F…`）。
+> 下文保留原文（它记录的是**当时**的两份实现与"为什么默认路径产不出样本"）。
 
 **是什么**。全项目只有**一个**参数**没有人类数据支撑**（结局宽限那 30 秒；工程那半早已做完，
 现在是"真人从看到表态到作答要多久"这个事实本身）。量它的仪器叫 `ChoiceLatencyLog`，
