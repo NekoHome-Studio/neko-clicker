@@ -3,6 +3,7 @@ using NekoClicker.Core.Events;
 using NekoClicker.Core.Numbers;
 using NekoClicker.Core.Persistence;
 using NekoClicker.Core.Views;
+using NekoClicker.Hosts;
 
 namespace NekoClicker.Demo.Cli;
 
@@ -64,7 +65,16 @@ internal sealed class GameSession : IDisposable
     /// 该参数 <b>1.5.0 起已退役</b>（落定条件改成了条件：现在是"还有答得上的待答表态就不落定"，
     /// 见 <see cref="GameEngine.CheckEnding"/>），传非 <c>null</c> 只会让引擎发一条警告；
     /// 保留形参是为了不打断已有的调用与脚本。</param>
-    public GameSession(ContentPackage package, string? savePath, ulong seed, double? endingGraceSeconds = null)
+    /// <param name="latencyLogPath">作答延迟埋点文件路径（<b>只追加</b>）；<c>null</c> 表示不落盘。
+    /// 默认值是 <c>null</c>（不是"仓库里的 artifacts"）是刻意的：**写不写真人数据文件必须由调用方
+    /// 明确决定**——否则测试、单帧渲染、机器人跑一局都会往那份文件里塞行。真人玩的路径由
+    /// <see cref="FromOptions"/>（<c>humanPlay: true</c>）接上。</param>
+    public GameSession(
+        ContentPackage package,
+        string? savePath,
+        ulong seed,
+        double? endingGraceSeconds = null,
+        string? latencyLogPath = null)
     {
         Package = package;
 
@@ -85,9 +95,12 @@ internal sealed class GameSession : IDisposable
         _endingSubscription = Engine.Events.Subscribe<EndingReachedEvent>(OnEndingReached);
 
         // 作答延迟的量测：宽限期该定多少秒，只能由真人的实测数据回答。
-        _latency = new ChoiceLatencyLog(Engine);
-        _latency.Answered += (choiceId, seconds) =>
-            Log($"⏱ 表态「{choiceId}」你想了 {NumFormat.Duration(seconds)}才答。", "⏱");
+        // 用的就是 Web 宿主那一份实现（共享源码），所以两个宿主写出来的行格式不可能分叉。
+        _latency = new ChoiceLatencyLog(Engine, package.Id, LatencyLogFormat.CliHost, latencyLogPath);
+        _latency.Answered += sample =>
+            Log($"⏱ 表态「{sample.ChoiceId}」你想了 {NumFormat.Duration(sample.SimulatedSeconds)}才答。", "⏱");
+        _latency.Unmeasured += (choiceId, reason) =>
+            Log($"⏱ 表态「{choiceId}」这次量不出时长：{reason}。", "⏱");
 
         if (savePath is not null)
         {
@@ -106,8 +119,34 @@ internal sealed class GameSession : IDisposable
             Log(package.Welcome, "🐱");
         }
 
+        // 埋点写到哪去了必须当场说清楚，而不是等玩家去翻文档：这份文件是"真人从看到表态到
+        // 作答有多久"唯一的来源，而 Web 宿主早就在启动时报出路径了（终端不报，就等于
+        // "埋点在跑"与"埋点没接线"在现象上都是"没有数据"）。
+        if (_latency.FilePath is { } probePath)
+            Log($"作答延迟埋点：{probePath}（只追加；只有真人作答才会出现数据行）", "📏");
+
         RefreshCache();
     }
+
+    /// <summary>
+    /// 按命令行选项开会话——<b>两个运行模式都走这一条</b>。<para>
+    /// <paramref name="humanPlay"/> 决定要不要把埋点接上那个真实文件：交互模式（默认启动器跑的
+    /// 就是它）是<b>真人</b>在玩，样本是这份文件唯一的合法来源；而无头模拟是<b>机器人</b>作答，
+    /// 它的样本不是人类数据，默认不许写进去（要写必须显式 <c>--latency-log</c>）。
+    /// </para>
+    /// <para>
+    /// 之所以把这件事收成一个工厂而不是两处各写一遍 <c>new GameSession(...)</c>：
+    /// §S13 那个缺陷的形态正是"默认模式那条路忘了把埋点接上文件"——两处各写一遍时，
+    /// 没有任何测试或守卫能看见这条差别。收成一处之后，"默认模式接没接上"变成可以断言的事实。
+    /// </para>
+    /// </summary>
+    public static GameSession FromOptions(CliOptions options, bool humanPlay)
+        => new(
+            options.Package,
+            options.SavePath,
+            options.Seed,
+            options.EndingGraceSeconds,
+            humanPlay || options.LatencyLogExplicit ? options.LatencyLogPath : null);
 
     /// <summary>当前内容包。</summary>
     public ContentPackage Package { get; }
@@ -502,6 +541,9 @@ internal sealed class GameSession : IDisposable
 
     /// <summary>作答延迟的汇总（宽限期该定多少秒的实测输入）。</summary>
     public string LatencySummary() => _latency.Summary();
+
+    /// <summary>作答延迟埋点的落盘路径；本次不落盘时为 <c>null</c>。</summary>
+    public string? LatencyLogPath => _latency.FilePath;
 
     private void OnChoiceTriggered(ChoiceTriggeredEvent evt)
         => Log($"{evt.Speaker}问你：「{evt.Prompt}」 —— 按 Tab 切到「表态」作答。", "🗣");

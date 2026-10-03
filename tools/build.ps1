@@ -1,8 +1,9 @@
 ﻿# 构建 + 测试一键脚本。
 #
 # 用法:
-#   pwsh -File tools/build.ps1            快速构建（增量）+ 全部测试
-#   pwsh -File tools/build.ps1 -Strict    全量重编 + 警告即错误 + 全部测试（提交前跑）
+#   pwsh -File tools/build.ps1            快速构建（增量）+ 全部测试 + 前端冒烟
+#   pwsh -File tools/build.ps1 -Strict    全量重编 + 警告即错误 + 全部测试 + 前端冒烟（提交前跑）
+#   pwsh -File tools/build.ps1 -SkipWebSmoke   显式跳过前端冒烟（只有"这台机器没有 node"才该用它）
 #
 # 为什么要分两档：
 #   增量编译对"这次没重编的项目"不会重新回报警告，所以输出里的 "0 Warning(s)"
@@ -17,7 +18,7 @@ $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
 
 $strict = $args -contains '-Strict'
-$forward = @($args | Where-Object { $_ -ne '-Strict' })
+$forward = @($args | Where-Object { $_ -ne '-Strict' -and $_ -ne '-SkipWebSmoke' })
 
 $buildArgs = @("$root\NekoClicker.sln", '-v', 'q', '--nologo', '-warnaserror')
 if ($strict) { $buildArgs += '--no-incremental' }
@@ -45,6 +46,42 @@ if (Test-Path $webSln) {
     & "$PSScriptRoot\dnet.ps1" build $webSln -v q --nologo -warnaserror
     if ($LASTEXITCODE -ne 0) {
         Write-Host 'Web 宿主构建失败。它有自己的 sln，主 sln 编不到它——这正是这一步存在的理由。' -ForegroundColor Red
+        exit $LASTEXITCODE
+    }
+}
+
+# 前端冒烟（tools/web-smoke.mjs）：无头 DOM 桩件把 wwwroot/app.js **真的跑一遍**。
+#
+# 为什么它必须在这一条命令里（STRUCTURE_OPTIMIZATION §S1）：它自 2026-10 起有 135 条断言，
+# 其中 210 行专为"快照里多了一个没人画的字段"这个**复发过五次**的 bug 类而写——
+# 而它此前不在任何自动闸门上（build.ps1 不跑、CI 不跑），也就是说那道守卫只在
+# "有人记得"的时候才说话。这跟没有守卫的区别，只在于心理。
+#
+# 它不需要 .NET、不需要宿主、不需要网络，只要 node。
+#
+# **没有 node 时怎么办**：刻意**不允许静默跳过**——静默跳过正是 S1 这条欠账的形态本身。
+# 所以默认行为是**红**：清楚地说出"缺 node、前端这一层没被验证"，并给出两条出路
+# （装 Node；或显式加 -SkipWebSmoke）。跳过必须是有人打出来的决定，不是默认值。
+# （本脚本自己的注释原先写着"刻意不进来，因为会让『没有 node 的机器上还能不能过』变成新问题"。
+#  那个问题是真的，答案是：让它红，并让退出方式只有一个人工开关。）
+if ($args -contains '-SkipWebSmoke') {
+    Write-Host ''
+    Write-Host '⚠ 已显式跳过前端冒烟（-SkipWebSmoke）：这次构建**没有**验证 wwwroot（app.js / index.html / app.css）。' -ForegroundColor Yellow
+}
+else {
+    Write-Host ''
+    Write-Host '=== 前端冒烟（tools/web-smoke.mjs）===' -ForegroundColor Cyan
+    if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
+        Write-Host '找不到 node —— 前端冒烟套件跑不了。' -ForegroundColor Red
+        Write-Host '这里刻意不静默跳过：前端回归正是"没人自动跑"才复发过五次。' -ForegroundColor Red
+        Write-Host '装 Node（https://nodejs.org）后重跑；本机确实没有 node、且这次改动与 wwwroot 无关时，' -ForegroundColor Yellow
+        Write-Host '显式加 -SkipWebSmoke —— 跳过是有人打出来的决定，不是默认行为。' -ForegroundColor Yellow
+        exit 1
+    }
+    & node "$PSScriptRoot\web-smoke.mjs"
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host '前端冒烟失败：wwwroot 那一层有回归（上面每一条 ✘ 就是原因）。' -ForegroundColor Red
+        Write-Host '它不碰引擎——红了说明页面这一侧坏了，而不是 C# 那侧。' -ForegroundColor Red
         exit $LASTEXITCODE
     }
 }

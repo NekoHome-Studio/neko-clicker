@@ -16,6 +16,21 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!--
+      宿主侧共用的两份源码以**共享源码**的形式编进来（与测试项目编 Web 的 SnapshotProtocol 同一个机制）：
+      仓库根定位（RepositoryPaths）与作答延迟埋点（ChoiceLatencyLog）。
+
+      为什么必须共享而不是各写一份：埋点有两份实现时，**默认启动器跑的那一份**（终端）
+      只把样本攒在内存里，而 Web 那一份才写文件——于是"照默认方式玩一局"一个样本都不会留下
+      （artifacts/latency.txt：21 条 session start、0 条 S 行）。两份实现之间不存在任何东西
+      会去发现"它们的行为已经分叉"；共享一份源码是唯一能保证这一点的形状。
+      见 engine/docs/STRUCTURE_OPTIMIZATION.md §S13。
+    -->
+    <Compile Include="..\Shared\ChoiceLatencyLog.cs" Link="Shared\ChoiceLatencyLog.cs" />
+    <Compile Include="..\Shared\RepositoryPaths.cs" Link="Shared\RepositoryPaths.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <!-- 全部内容包都引用：用命令行 package 参数选择要玩的游戏。 -->
     <ProjectReference Include="..\..\..\engine\core\NekoClicker.Core.csproj" />
     <ProjectReference Include="..\..\..\engine\content\Neko\NekoClicker.Content.Neko.csproj" />

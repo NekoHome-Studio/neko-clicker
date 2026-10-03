@@ -31,6 +31,16 @@
 
   <ItemGroup>
     <!--
+      宿主侧共用的两份源码（回答延迟埋点、仓库根定位）以共享源码的形式编进来：
+      终端宿主（Demo.Cli）编的是同一份文件，于是两个宿主写出来的行格式不可能分叉。
+      详见 Demo.Cli 的 csproj 与 engine/docs/STRUCTURE_OPTIMIZATION.md §S13。
+    -->
+    <Compile Include="..\Shared\ChoiceLatencyLog.cs" Link="Shared\ChoiceLatencyLog.cs" />
+    <Compile Include="..\Shared\RepositoryPaths.cs" Link="Shared\RepositoryPaths.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
       与 Demo.Cli 同样的接线方式：引用 Core + 全部内容包，用命令行/URL 参数选择要玩的游戏。
       只有一个包能"选择"时，前端才不会被焊死在某一个作品上。
 

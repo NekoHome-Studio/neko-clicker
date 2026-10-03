@@ -4,6 +4,7 @@ using System.Threading.Channels;
 using NekoClicker.Core;
 using NekoClicker.Core.Numbers;
 using NekoClicker.Core.Views;
+using NekoClicker.Hosts;
 
 namespace NekoClicker.Web;
 

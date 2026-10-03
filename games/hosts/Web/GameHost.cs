@@ -8,6 +8,7 @@ using NekoClicker.Core.Content;
 using NekoClicker.Core.Numbers;
 using NekoClicker.Core.Persistence;
 using NekoClicker.Core.Views;
+using NekoClicker.Hosts;
 
 namespace NekoClicker.Web;
 
@@ -124,7 +125,7 @@ public sealed class GameHost : IAsyncDisposable
 
         // 作答延迟埋点（理由见 ChoiceLatencyLog 的类注释）。**必须建在读档之后**：
         // 读档会把表态放进待答队列，而那些表态的"出现时刻"在这次会话之外，只能如实记成不可量。
-        _latency = new ChoiceLatencyLog(_engine, package.Id, latencyLogPath);
+        _latency = new ChoiceLatencyLog(_engine, package.Id, LatencyLogFormat.WebHost, latencyLogPath);
         _latency.Answered += sample => Console.WriteLine(
             $"[{package.Id}] ⏱ 表态「{sample.ChoiceId}」等了 {NumFormat.Duration(sample.SimulatedSeconds)}（模拟）"
             + $" / {sample.WallSeconds.ToString("0.#", CultureInfo.InvariantCulture)} 秒（真实）才作答。");

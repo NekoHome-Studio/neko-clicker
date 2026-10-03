@@ -21,8 +21,12 @@
 // 覆盖边界（诚实）: 它证明的是"真的被执行过的路径不抛异常"。没被执行到的分支
 // （`if (!pill) return` 这类防御）只有 node --check 的语法保证。
 //
-// 这个脚本刻意不进 tools/build.ps1: 构建脚本至今零 JS 依赖，加一条 node 步骤会让
-// "没有 node 的机器上 -Strict 还能不能过"变成一个新问题。跑它是独立的一步。
+// 这个脚本**从 2026-10 起进了 tools/build.ps1**（也进了 CI）：一条 135 条断言、其中 210 行
+// 专为"复发过五次"的 bug 类而写的套件，不进自动闸门就等于没有守卫。
+// 需要 node —— 没有 node 时 build.ps1 **故意红**（并给出 -SkipWebSmoke 这条人工出路），
+// 而不是静默跳过：静默跳过正是它当初缺闸门时的那种失效形态。
+// （旧注释写着"刻意不进来，免得『没有 node 的机器上还能不能过』变成新问题"。那个问题是真的，
+//  现在的答案是"让它红、并且只留一个人工开关"，而不是"不接"。）
 
 import { readFileSync, writeFileSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";

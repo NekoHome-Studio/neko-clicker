@@ -5,7 +5,7 @@ using NekoClicker.Core;
 using NekoClicker.Core.Events;
 using NekoClicker.Core.Numbers;
 
-namespace NekoClicker.Web;
+namespace NekoClicker.Hosts;
 
 /// <summary>
 /// 一条量到的作答延迟。<para>
@@ -42,8 +42,22 @@ internal static class LatencyLogFormat
     /// <summary>不可量、但要如实记账的行。</summary>
     public const string UnmeasuredTag = "U";
 
-    /// <summary>表头的第一行；同时它就是"这个文件是本埋点写的"的判据（见 <see cref="LatencyLogFile.Ensure"/>）。</summary>
-    public const string HeaderSignature = "# neko-clicker 作答延迟埋点（Web 宿主）";
+    /// <summary>终端宿主的 <c>host=</c> 取值（默认启动器跑的就是它）。</summary>
+    public const string CliHost = "cli";
+
+    /// <summary>Web 宿主的 <c>host=</c> 取值。</summary>
+    public const string WebHost = "web";
+
+    /// <summary>
+    /// 表头的第一句；同时它就是"这个文件是本埋点写的"的判据（见 <see cref="LatencyLogFile.Ensure"/>）。<para>
+    /// 它<b>刻意取得比表头首行短</b>：统一之前表头写的是"（Web 宿主）"，而
+    /// <c>artifacts/latency.txt</c> 里那 21 个会话行正是那个版本写下的真人数据。
+    /// 判据若跟着表头一起改，<see cref="Ensure"/> 会把这些行当成"别人写的内容"、
+    /// 在它们上面补一段"以上内容不是当前埋点实现写的"——那是在对事实撒谎。
+    /// 短签名同时匹配两种表头首行，于是旧数据既不被覆盖、也不被误判。
+    /// </para>
+    /// </summary>
+    public const string HeaderSignature = "# neko-clicker 作答延迟埋点";
 
     /// <summary>
     /// 文件里已经有**别人**写的内容时的分隔说明。<para>
@@ -62,7 +76,7 @@ internal static class LatencyLogFormat
     /// 而是隔了很久才打开它的另一个人（或另一个会话）——没有表头，那些数字就只是一串浮点数。
     /// </summary>
     public const string Header = """
-# neko-clicker 作答延迟埋点（Web 宿主）—— 只追加，不重写。
+# neko-clicker 作答延迟埋点 —— 只追加，不重写。
 #
 # 为什么要它：这里记的是"真人从看到一次表态到作答，用了多久"。它最初是为一个玩法参数
 # 服务的——结局落定前留给玩家作答的宽限期（GameEngineOptions.EndingGraceSeconds，
@@ -75,6 +89,11 @@ internal static class LatencyLogFormat
 # 样本行里仍然带着当时的宽限期参数值：它已不参与判定，但设置过什么要能对上。
 # 所以这个文件里只会有真人的数据行。
 #
+# 谁来写：**终端宿主与 Web 宿主写同一个文件、同一个格式**。2026-10 之前只有 Web 宿主写，
+# 而默认启动器（start.cmd）跑的是终端宿主——于是"照默认方式玩一局"一个样本都不会留下。
+# 会话行上的 host= 说明这一段的样本来自哪个宿主：host=cli（终端）/ host=web（浏览器）。
+# 没有 host= 的会话行是这次统一之前写下的（当时只有 Web 宿主在写）。
+#
 # 为什么记模拟秒：它换掉的那条宽限也用模拟秒。挂机造成的长尾必须被如实记下来，
 # 而不是被"当时窗口没开着"折算掉。真实秒另占一列：两者不一致就是模拟与真实脱节，
 # 不许悄悄折算成一个数。
@@ -82,6 +101,9 @@ internal static class LatencyLogFormat
 # 行格式（制表符分隔，数字一律用不变文化的小数点，可直接解析）：
 #   S <utc> <包id> <表态id> <选项id> <模拟秒> <真实秒> <当时的宽限期参数秒> <本次会话第几条样本>
 #   U <utc> <包id> <表态id> <选项id> <不可量的原因>
+#   # session start <utc> package=<包id> host=<cli|web> grace=<秒>
+#   # session end <utc> package=<包id> host=<cli|web> samples=<条> unmeasured=<条> max=<秒> avg=<秒> grace=<秒>
+#   # error <utc> <写盘失败的原因>
 #   # ...  自述行（会话开始 / 会话结束汇总 / 写盘出错）
 """;
 
@@ -107,7 +129,7 @@ internal static class LatencyLogFormat
             index.ToString(CultureInfo.InvariantCulture));
 
     /// <summary>一条"这次作答量不出来、原因是……"的行。<b>记账而不是丢掉</b>：丢掉的话，
-    /// 最常见的 Web 情形（打开页面时表态已经挂着）会一条样本都不产出，
+    /// 最常见的情形（打开页面/读档接手时表态已经挂着）会一条样本都不产出，
     /// 而"没有样本"会被读成"没人作答"——与事实正好相反。</summary>
     public static string UnmeasuredLine(
         string packageId,
@@ -117,21 +139,25 @@ internal static class LatencyLogFormat
         DateTimeOffset at)
         => string.Join(Separator, UnmeasuredTag, Timestamp(at), packageId, choiceId, optionId, reason);
 
-    /// <summary>会话开始的自述行（含当时的宽限期参数，便于日后核对设过什么——该参数 1.5.0 起已退役）。</summary>
-    public static string SessionStartLine(string packageId, double graceSeconds, DateTimeOffset at)
-        => $"# session start {Timestamp(at)} package={packageId} grace={Number(graceSeconds)}";
+    /// <summary>
+    /// 会话开始的自述行（含当时的宽限期参数，便于日后核对设过什么——该参数 1.5.0 起已退役，
+    /// 以及写这一段的是哪个宿主）。
+    /// </summary>
+    public static string SessionStartLine(string packageId, string host, double graceSeconds, DateTimeOffset at)
+        => $"# session start {Timestamp(at)} package={packageId} host={host} grace={Number(graceSeconds)}";
 
     /// <summary>会话结束的汇总行。<b>汇总用模拟秒的原始值</b>（不是给人看的"3 分 20 秒"）：
     /// 这一行是拿去做决策的输入，格式化了就没法再算。</summary>
     public static string SessionEndLine(
         string packageId,
+        string host,
         int samples,
         int unmeasured,
         double maxSeconds,
         double averageSeconds,
         double graceSeconds,
         DateTimeOffset at)
-        => $"# session end {Timestamp(at)} package={packageId} samples={samples}"
+        => $"# session end {Timestamp(at)} package={packageId} host={host} samples={samples}"
            + $" unmeasured={unmeasured} max={Number(maxSeconds)} avg={Number(averageSeconds)}"
            + $" grace={Number(graceSeconds)}";
 
@@ -248,7 +274,7 @@ internal sealed class LatencyLogFile
 }
 
 /// <summary>
-/// 量「玩家从看到表态到作答」用了多久（<b>模拟</b>秒）——Web 宿主版。<para>
+/// 量「玩家从看到表态到作答」用了多久（<b>模拟</b>秒）——<b>两个宿主共用这一份实现</b>。<para>
 /// <b>它是个测量埋点，不是玩法。</b>当年它存在的理由是：结局判定的作答宽限期
 /// （<see cref="EndingSystem.DefaultGraceSeconds"/>，可由
 /// <see cref="GameEngineOptions.EndingGraceSeconds"/> 外部配置）该定多少秒，取决于真人需要多久，
@@ -259,9 +285,23 @@ internal sealed class LatencyLogFile
 /// "真人从看到到作答有多久"这个事实本身，而不再是某个待调参数的输入。
 /// </para>
 /// <para>
-/// 与终端宿主的 <c>Demo.Cli/ChoiceLatencyLog</c> 是<b>同构但不同程序集</b>的两份：Web 宿主
-/// 不该为一个埋点去依赖 CLI 宿主（那会把两个宿主的发布节奏绑在一起）。共用的是
-/// <see cref="LatencyLogFormat"/> 这层纯函数，于是"两边写出来的行格式一致"是用例能钉住的事实。
+/// <b>为什么两个宿主共用一份</b>（2026-10 合并，见 <c>STRUCTURE_OPTIMIZATION.md</c> §S13）：
+/// 此前是两份实现——终端宿主那份（<c>Demo.Cli/ChoiceLatencyLog.cs</c>，90 行）只把样本
+/// 攒在内存里，Web 宿主那份（<c>Web/ChoiceLatencyLog.cs</c>，446 行）才写文件。
+/// 而 <c>tools/start.ps1</c> 的<b>默认模式</b>跑的正是终端宿主，于是"照默认方式玩一局"
+/// 一个样本都不会留下：<c>artifacts/latency.txt</c> 里 21 条 <c>session start</c>、
+/// <b>0 条 <c>S</c> 行</b>。这不是"刻意不落盘"——终端那份自己的注释写着
+/// "埋点如果在某一条路径上不生效，它就会安安静静地什么都不产出，而那正是『沉默失败』
+/// 最典型的形态"，而它<b>恰恰就是</b>那个形态：<c>Answered</c> 事件的文档说"宿主据此写日志"，
+/// 但宿主只把那一行写进了游戏内日志面板，没有任何地方接上文件。
+/// 仓库里凡是有意为之的地方都会写下"刻意"二字，那份文件里一个都没有。
+/// 所以这是**没写完**，不是设计。
+/// </para>
+/// <para>
+/// 合并的连带收益：终端那份还会把"会话开始前就挂着的表态"<b>静默丢掉</b>
+/// （它只查 <c>_shownAt</c>，查不到就 <c>return</c>）——而终端宿主同样会读档，
+/// 读档接手时的作答在那边同样一条样本都不产出。Web 那份为这件事专门记了 <c>U</c> 行，
+/// 现在两边都是这个行为。
 /// </para>
 /// <para>
 /// <b>线程约定</b>：事件回调由引擎发布，所以本类的所有可变状态都只被游戏线程碰。
@@ -273,6 +313,7 @@ internal sealed class ChoiceLatencyLog : IDisposable
 {
     private readonly GameEngine _engine;
     private readonly string _packageId;
+    private readonly string _host;
     private readonly LatencyLogFile? _file;
     private readonly IDisposable _triggeredSubscription;
     private readonly IDisposable _madeSubscription;
@@ -288,29 +329,32 @@ internal sealed class ChoiceLatencyLog : IDisposable
     /// </summary>
     /// <param name="engine">要观察的引擎。</param>
     /// <param name="packageId">内容包 id（写进每一行，用于区分不同包的数据）。</param>
+    /// <param name="host">哪一个宿主在写（<see cref="LatencyLogFormat.CliHost"/> / <see cref="LatencyLogFormat.WebHost"/>），写进会话行。</param>
     /// <param name="filePath">埋点文件路径；<c>null</c> 表示只在控制台报（不落盘）。</param>
-    public ChoiceLatencyLog(GameEngine engine, string packageId, string? filePath = null)
+    public ChoiceLatencyLog(GameEngine engine, string packageId, string host, string? filePath = null)
     {
         _engine = engine;
         _packageId = packageId;
+        _host = host;
 
         if (filePath is not null)
         {
             _file = new LatencyLogFile(filePath);
             _file.Ensure();
-            _file.Append(LatencyLogFormat.SessionStartLine(packageId, EndingSystem.Grace(engine), DateTimeOffset.UtcNow));
+            _file.Append(LatencyLogFormat.SessionStartLine(
+                packageId, host, EndingSystem.Grace(engine), DateTimeOffset.UtcNow));
         }
 
         // 读档接手 / 宿主刚起来时，待答队列里可能已经挂着表态了。它的"出现时刻"发生在
-        // 这次会话之外，真实等待时长不可知——**必须记账，不能丢**：丢掉的话，Web 宿主里
-        // 最常见的那一类作答会一条样本都不产出，而"没有样本"会被读成"没人作答"。
+        // 这次会话之外，真实等待时长不可知——**必须记账，不能丢**：丢掉的话，最常见的那一类
+        // 作答会一条样本都不产出，而"没有样本"会被读成"没人作答"。
         foreach (string id in engine.State.PendingChoices) _unmeasurable.Add(id);
 
         _triggeredSubscription = engine.Events.Subscribe<ChoiceTriggeredEvent>(OnTriggered);
         _madeSubscription = engine.Events.Subscribe<ChoiceMadeEvent>(OnMade);
     }
 
-    /// <summary>每次量到样本后回调（宿主据此写控制台日志）。</summary>
+    /// <summary>每次量到样本后回调（宿主据此写控制台日志 / 游戏内日志）。</summary>
     public event Action<LatencySample>? Answered;
 
     /// <summary>每次作答但量不出时长时回调（宿主据此说清"为什么这次没有数"）。</summary>
@@ -348,7 +392,7 @@ internal sealed class ChoiceLatencyLog : IDisposable
 
             if (_unmeasurable.Remove(evt.ChoiceId))
             {
-                const string reason = "表态在这次 Web 会话开始前就已经挂着，真实等待时长不可知";
+                const string reason = "表态在这次会话开始前就已经挂着，真实等待时长不可知";
                 _unmeasuredAnswers.Add(evt.ChoiceId);
                 _file?.Append(LatencyLogFormat.UnmeasuredLine(_packageId, evt.ChoiceId, evt.OptionId, reason, now));
                 Unmeasured?.Invoke(evt.ChoiceId, reason);
@@ -427,6 +471,7 @@ internal sealed class ChoiceLatencyLog : IDisposable
                 double average = _samples.Count == 0 ? 0 : _samples.Average(s => s.SimulatedSeconds);
                 _file.Append(LatencyLogFormat.SessionEndLine(
                     _packageId,
+                    _host,
                     _samples.Count,
                     _unmeasuredAnswers.Count,
                     max,

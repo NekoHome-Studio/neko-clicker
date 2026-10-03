@@ -62,7 +62,10 @@ internal static class Program
             return 2;
         }
 
-        using var session = new GameSession(options.Package, options.SavePath, options.Seed, options.EndingGraceSeconds);
+        // humanPlay: true —— 这是**真人**坐在终端前玩，也就是 start.cmd 默认走的那条路。
+        // 埋点必须在这条路上落盘：它此前不落盘，于是"照默认方式玩一局"一个样本都不会留下
+        // （artifacts/latency.txt：21 条 session start、0 条 S 行）。
+        using var session = GameSession.FromOptions(options, humanPlay: true);
         return InteractiveLoop.Run(session, options.AltScreen);
     }
 }

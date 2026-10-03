@@ -1,11 +1,16 @@
 using NekoClicker.Core;
 using NekoClicker.Core.Content;
-using NekoClicker.Web;
+using NekoClicker.Hosts;
 
 namespace NekoClicker.Core.Tests;
 
 /// <summary>
-/// Web 宿主的作答延迟埋点（<see cref="ChoiceLatencyLog"/>）。<para>
+/// 作答延迟埋点的**格式与算术**（<see cref="ChoiceLatencyLog"/>）。<para>
+/// 这份实现现在由两个宿主共用（共享源码：<c>games/hosts/Shared/ChoiceLatencyLog.cs</c>），
+/// 用例里出现的类型来自 Demo.Cli 那个程序集——而 Web 宿主编的是**同一份源码**，
+/// 所以"测的是一份副本、线上跑的是另一份"这种最坏形态不存在。
+/// </para>
+/// <para>
 /// 这些埋点用例存在的理由和别的守卫不太一样：埋点的失效方式<b>全是沉默的</b>——
 /// 少记一条样本、把"量不出"当成"没作答"、写盘失败被吞掉、格式改了没人解析得动，
 /// 这四种在现象上都只是"文件里没有那个数"。而这份文件是"真人从看到表态到作答要多久"
@@ -27,7 +32,7 @@ internal sealed class WebChoiceLatencyTests
     {
         GameEngine engine = NewEngine();
 
-        using var probe = new ChoiceLatencyLog(engine, "latency-test");
+        using var probe = new ChoiceLatencyLog(engine, "latency-test", LatencyLogFormat.WebHost);
 
         engine.State.PlayTimeSeconds = 10;
         engine.Click();          // 满足 ClicksAtLeast(1)
@@ -61,7 +66,7 @@ internal sealed class WebChoiceLatencyTests
         // 手工把它放进待答队列，模拟"这次会话开始前就挂着"。
         engine.State.PendingChoices.Add("c1");
 
-        using var probe = new ChoiceLatencyLog(engine, "latency-test");
+        using var probe = new ChoiceLatencyLog(engine, "latency-test", LatencyLogFormat.WebHost);
         engine.State.PlayTimeSeconds += 100;
 
         Check.True(engine.AnswerChoice("c1", "yes"), "待答队列里的选择应当能作答。");
@@ -140,7 +145,7 @@ internal sealed class WebChoiceLatencyTests
             string path = Path.Combine(blocker, "latency.txt");
 
             GameEngine engine = NewEngine();
-            using var probe = new ChoiceLatencyLog(engine, "latency-test", path);
+            using var probe = new ChoiceLatencyLog(engine, "latency-test", LatencyLogFormat.WebHost, path);
 
             engine.State.PlayTimeSeconds = 5;
             engine.Click();

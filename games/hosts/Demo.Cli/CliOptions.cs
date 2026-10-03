@@ -64,6 +64,24 @@ internal sealed class CliOptions
     /// <summary>存档文件路径；<c>null</c> 表示不落盘。未指定时按内容包分开（saves/&lt;包 id&gt;.json）。</summary>
     public string? SavePath { get; private set; } = Path.Combine("saves", "neko.json");
 
+    /// <summary>
+    /// 作答延迟埋点文件路径（<b>只追加</b>）；<c>null</c> 表示本次不落盘。<para>
+    /// 默认指向仓库根的 <c>artifacts/latency.txt</c>——也就是 Web 宿主写的那一份。
+    /// <b>默认落盘</b>是这份埋点存在的全部意义：它是"真人从看到表态到作答要多久"唯一的来源，
+    /// 而这条埋点此前只在 Web 宿主上落盘，终端宿主（<c>start.cmd</c> 的默认模式）一个字节都不写，
+    /// 于是"照默认方式玩一局"永远贡献不出一个样本（见 <c>STRUCTURE_OPTIMIZATION.md</c> §S13）。
+    /// </para>
+    /// </summary>
+    public string? LatencyLogPath { get; private set; } = DefaultLatencyLogPath();
+
+    /// <summary>
+    /// 埋点路径是不是命令行**显式**给的。<para>
+    /// 无头模拟是机器人在作答，它的样本不是人类数据：默认不许写进那份真人数据文件，
+    /// 只有显式 <c>--latency-log</c> 才写（测试与压测就是这么把它指到临时文件的）。
+    /// </para>
+    /// </summary>
+    public bool LatencyLogExplicit { get; private set; }
+
     /// <summary>渲染宽度。</summary>
     public int Width { get; private set; } = 100;
 
@@ -147,6 +165,21 @@ internal sealed class CliOptions
 
                 case "--no-save":
                     options.SavePath = null;
+                    break;
+
+                case "--latency-log":
+                    if (i + 1 < args.Length)
+                    {
+                        options.LatencyLogPath = args[i + 1];
+                        options.LatencyLogExplicit = true;
+                        i++;
+                    }
+                    else options.Error = "--latency-log 需要一个文件路径。";
+                    break;
+
+                case "--no-latency-log":
+                    options.LatencyLogPath = null;
+                    options.LatencyLogExplicit = true;
                     break;
 
                 case "--frame":
@@ -233,6 +266,12 @@ internal sealed class CliOptions
           --grace <秒>        已退役（1.5.0）：结局不再按时间落定，传入只会得到一条警告；保留仅为不打断已有脚本
           --save <路径>       存档文件（默认按内容包分开：saves/<包 id>.json）
           --no-save           本次运行不读写存档
+          --latency-log <路径> 作答延迟埋点文件（默认 artifacts/latency.txt，**只追加**；
+                              它记的是"真人从看到表态到作答要多久"，是全项目唯一没有
+                              人类数据支撑的那个数，所以默认就落盘——照默认方式玩一局
+                              就会贡献样本。交互模式写它；无头模拟是机器人作答，
+                              默认不写，要写得分明地给出这个参数）
+          --no-latency-log    本次不写埋点文件
           --frame [宽x高]     渲染一帧界面到标准输出后退出（默认 100x30）
           --size <宽x高>      指定界面尺寸
           --panel <名称>      指定右侧面板初始焦点：buildings | upgrades | achievements | codex | choices
@@ -269,6 +308,19 @@ internal sealed class CliOptions
           neko-clicker --package cafe --simulate 21600 --auto
           neko-clicker --frame 120x34 --no-color > frame.txt
         """;
+
+    /// <summary>
+    /// 埋点的默认路径：仓库根的 <c>artifacts/latency.txt</c>（仓库根由
+    /// <see cref="NekoClicker.Hosts.RepositoryPaths"/> 定位，与 Web 宿主、存档目录同一条判据）。<para>
+    /// 找不到仓库根（发布产物被搬到别处）时退化成当前目录下的 <c>artifacts/</c>——
+    /// 至少不会写到别处去；宁可路径难看，也不要两个宿主各写一份 <c>latency.txt</c>。
+    /// </para>
+    /// </summary>
+    private static string DefaultLatencyLogPath()
+    {
+        string? root = NekoClicker.Hosts.RepositoryPaths.Find();
+        return Path.Combine(root ?? Directory.GetCurrentDirectory(), "artifacts", "latency.txt");
+    }
 
     /// <summary>解析 <c>--panel</c> 的面板名。</summary>
     private static bool TryParsePanel(string text, out PanelFocus panel)

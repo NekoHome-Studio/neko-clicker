@@ -30,18 +30,21 @@
 
   <ItemGroup>
     <!--
-      Web 前端的三份实现以**共享源码**的形式参与编译，而不是加一个 ProjectReference：
-      线上协议（SnapshotProtocol）与作答延迟埋点（ChoiceLatencyLog / RepositoryPaths）。
+      Web 前端的线上协议以**共享源码**的形式参与编译，而不是加一个 ProjectReference。
 
       原先写的理由是"两层框架不匹配（Web 宿主是 net10.0）"——**那个理由已经过时**：
       Web 宿主后来改成了与全仓库一致的 net8.0。机制保留的理由换成了下面这条，
-      而且它本来就比前一条更硬：共享源码保证**只有一份实现**——协议或埋点格式改了，
+      而且它本来就比前一条更硬：共享源码保证**只有一份实现**——协议改了，
       两端编到的是同一份代码，不存在"测试测的是一份副本、线上跑的是另一份"这种最坏的形态。
       （改成 ProjectReference 能不能编过没有验证过；既然共享源码已经成立，就不为它冒险改结构。）
+
+      作答延迟埋点（ChoiceLatencyLog）与仓库根定位（RepositoryPaths）不再列在这里：
+      它们统一搬到了 games/hosts/Shared/，两个宿主各自 Compile Include 那一份，
+      而测试项目直接用 **Demo.Cli 的 ProjectReference**（它有 InternalsVisibleTo）——
+      再在自己这边编一份会与引用进来的类型撞成 CS0436，而且那又变回"两份实现"。
+      WebChoiceLatencyTests 测的就是 Web 宿主编的那同一份源码。
     -->
     <Compile Include="..\..\games\hosts\Web\SnapshotProtocol.cs" Link="Web\SnapshotProtocol.cs" />
-    <Compile Include="..\..\games\hosts\Web\ChoiceLatencyLog.cs" Link="Web\ChoiceLatencyLog.cs" />
-    <Compile Include="..\..\games\hosts\Web\RepositoryPaths.cs" Link="Web\RepositoryPaths.cs" />
   </ItemGroup>
 
 </Project>
