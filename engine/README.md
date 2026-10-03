@@ -109,5 +109,6 @@ dotnet build NekoClicker.sln     # 或者用仓库根的 .\tools\build.ps1
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | 想改引擎：模块地图、时间模型、数值管线、价格求解、存档迁移、终端渲染的取舍 |
 | [docs/CONTENT_AUTHORING.md](docs/CONTENT_AUTHORING.md) | 想写一个新内容包：数值节奏、构建期校验规则、以及一批真实踩过的坑 |
 | [docs/VERSIONING.md](docs/VERSIONING.md) | 想动公开 API，或想知道这套快照守卫**保证不了**什么 |
+| [docs/STRUCTURE_OPTIMIZATION.md](docs/STRUCTURE_OPTIMIZATION.md) | 想动**验证回路 / 构建脚本 / 内容创作模型**，或想知道"下一次改动为什么这么贵"（结构层清单，与 `docs/OPEN_WORK.md` 的待办表**不重复**） |
 | 仓库根的 `README.md` | 想先跑起来玩一玩（`.\tools\play.ps1`） |
 | `games/docs/ROADMAP.md` | 想看这套引擎是怎么被十个包验证过来的（含每条决策的理由与可逆性） |
