@@ -5,12 +5,21 @@
 > 一句话版本：**从 1.0.0 起，公开 API 只增不改。** 删改任何公开成员都必须升主版本号，
 > 而且这条规矩不是靠自觉——有测试守着。
 >
-> 当前版本 **1.7.0**：minor——公开 API **只增不改**：新增 `GameSnapshot.ModeName`（string）
-> 与 `PurchaseModes.WireName()`。它不是语义例外，是这张表里最标准的一格：
-> 前端原本拿线上的枚举序数 `mode` 当档位名用（`(state.mode ?? "").toLowerCase()`），
-> 于是真页面上每次 `render()` 都在中段抛 `TypeError`；修法是**给名字**而不是让前端解释序数
-> （与 1.4.0 的 `UpgradeView` 同一形状），数字形的 `mode` **原样留着**，没有一个消费者被打断。
-> 细节与判别力见 [CHANGELOG](../../CHANGELOG.md) 的 1.7.0 与 [OPEN_WORK](OPEN_WORK.md) 的 N 条。
+> 当前版本 **1.8.0**：minor——公开 API **只增不改**：新增 `UpgradeCategories` 类型、
+> `GameContent.UpgradesByBuilding` / `UpgradesForBuilding(string)`、`BuildingView.UpgradeIds`。
+> 它不是语义例外，是这张表里最标准的一格：把 `UpgradeDefinition.Category` 上那条
+> `"building:<id>"` 约定（"这条升级属于哪座建筑"）从"没人校验、没人读"变成
+> **构建期校验 + 索引 + 快照字段**——老字段（`upgrades[].category` / `tier`、
+> `buildings[].nextMilestoneAt`）**一个都没动**，所以没有一个消费者被打断。
+> 细节与判别力见 [CHANGELOG](../../CHANGELOG.md) 的 1.8.0、
+> [BUILDING_UPGRADES_PLAN](BUILDING_UPGRADES_PLAN.md) 与 [OPEN_WORK](OPEN_WORK.md) 的最新一节。
+>
+> 上一版 **1.7.0**：minor——公开 API **只增不改**：新增 `GameSnapshot.ModeName`（string）
+> 与 `PurchaseModes.WireName()`。前端原本拿线上的枚举序数 `mode` 当档位名用
+> （`(state.mode ?? "").toLowerCase()`），于是真页面上每次 `render()` 都在中段抛
+> `TypeError`；修法是**给名字**而不是让前端解释序数（与 1.4.0 的 `UpgradeView` 同一形状），
+> 数字形的 `mode` **原样留着**。见 [CHANGELOG](../../CHANGELOG.md) 的 1.7.0 与
+> [OPEN_WORK](OPEN_WORK.md) 的 N 条。
 >
 > 上一版 **1.6.0**：minor——公开 API **一个成员都没有增删**（`MarkPendingChoicesShown()`
 > 还在）。但它**同时是一处刻意的语义不兼容**：结局的落定条件从"玩家**被展示过**那批待答表态"
@@ -42,9 +51,9 @@
 单一事实来源是 **`Directory.Build.props` 里的 `<Version>`**：
 
 ```xml
-<Version>1.7.0</Version>
-<AssemblyVersion>1.7.0.0</AssemblyVersion>
-<FileVersion>1.7.0.0</FileVersion>
+<Version>1.8.0</Version>
+<AssemblyVersion>1.8.0.0</AssemblyVersion>
+<FileVersion>1.8.0.0</FileVersion>
 ```
 
 这个值会同时成为程序集版本、文件版本，以及 `ApiVersion.Current` 报告的版本。
@@ -60,8 +69,8 @@
 ```csharp
 using NekoClicker.Core;
 
-Console.WriteLine(ApiVersion.Current);        // "1.7.0"
-Console.WriteLine(ApiVersion.AssemblyVersion); // 1.7.0.0
+Console.WriteLine(ApiVersion.Current);        // "1.8.0"
+Console.WriteLine(ApiVersion.AssemblyVersion); // 1.8.0.0
 Console.WriteLine(ApiVersion.Major);           // 1
 ```
 
@@ -125,8 +134,9 @@ Console.WriteLine(ApiVersion.Major);           // 1
 光有规矩没有守卫，规矩会在第一次赶工时失效。所以有一份**快照**：
 
 ```
-engine/core/PublicApi.txt     ← 公开表面的逐项清单（行数随公开成员增减；1.7.0 新增
-                                GameSnapshot.ModeName 与 PurchaseModes.WireName，所以行数涨了）
+engine/core/PublicApi.txt     ← 公开表面的逐项清单（行数随公开成员增减；1.8.0 新增
+                                UpgradeCategories 与 GameContent.UpgradesByBuilding /
+                                UpgradesForBuilding、BuildingView.UpgradeIds，所以行数涨了）
 ```
 
 它被**嵌进 `NekoClicker.Core.dll`**，随 dll 一起走。任何拿到这个 dll 的宿主都能断言
@@ -203,8 +213,8 @@ git tag -a v1.0.0 -m "NekoClicker.Core 1.0.0"
 > [RELEASING](RELEASING.md)。下面是判据清单。
 
 - [ ] `pwsh -File tools/build.ps1 -Strict` 退出码 0，0 警告
-- [ ] 全部用例通过（当前 **504** 个）
-- [ ] 若这次动了 Web 宿主：`pwsh -File tools/api-test.ps1` 全部端到端检查通过（当前 52 项；脚本收尾自己核对"源码几处检查点 / 这次执行到几处"）
+- [ ] 全部用例通过（当前 **516** 个）
+- [ ] 若这次动了 Web 宿主：`pwsh -File tools/api-test.ps1` 全部端到端检查通过（当前 55 项；脚本收尾自己核对"源码几处检查点 / 这次执行到几处"）
 - [ ] `Directory.Build.props` 的 `Version` / `AssemblyVersion` / `FileVersion` 三处一致
 - [ ] `CHANGELOG.md` 有当前版本的带日期条目，写清了兼容性影响
 - [ ] 若公开 API 有变动：快照已更新，且**确实**是有意为之

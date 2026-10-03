@@ -77,7 +77,7 @@ new BuildingDefinition
 **解锁条件建议用「本轮累计赚取」而不是「当前持有」**：玩家在快买得起时就能看到下一层，
 形成"再攒一点就解锁"的牵引感；转生后重新逐层揭示，也避免开局被一长串灰色条目淹没。
 
-## 3. 升级：四种写法覆盖绝大多数需求
+## 3. 升级：五种写法覆盖绝大多数需求
 
 ### (a) 批量生成（建筑强化档）
 
@@ -92,11 +92,38 @@ foreach (var building in Buildings.All)
             Price = building.BasePrice * priceFactor,
             Unlock = UnlockCondition.BuildingsAtLeast(building.Id, required),
             Modifiers = [Modifier.BuildingMultiplier(building.Id, 2)],
-            Category = $"building:{building.Id}",
+            Category = UpgradeCategories.ForBuilding(building.Id),   // ← 见 §3(e)
+            Tier = required,
         };
 ```
 
 内容量上去之后，**这是唯一能维护下去的写法**：给建筑表加一行，强化档自动出现。
+
+### (e) 建筑专属升级：这条线**有家**
+
+`Category = UpgradeCategories.ForBuilding(id)`（就是 `"building:<id>"`）是"这一条属于哪座
+建筑"的唯一通道，10 个包 312 条都在用它。它现在**被校验、被索引、也被界面用上了**：
+
+| 环节 | 行为 |
+|---|---|
+| 构建期 | 建筑 id 为空 / 建筑不存在 / 分类说属于 A 而修饰符作用在 B → **抛 `GameContentValidationException`，点名升级 id 与那个建筑 id**（与"修饰符引用了不存在的建筑"同一条规矩） |
+| 索引 | `GameContent.UpgradesForBuilding(id)` / `UpgradesByBuilding`；轨内**按 `Tier`、同档按声明顺序** |
+| 快照 | `BuildingView.UpgradeIds`（**服务端算好的 id 列表**，前端不解析前缀） |
+| 界面 | 挂在那一座建筑的 **⬆** 上（与 📖 并列；徽标是"现在买得起几条"）。**扁平的「升级」面板不再重复渲染它们**，并会写出一行"这里 N 条挂在各座建筑上" |
+
+三条硬规则：
+
+1. **分类与效果必须指向同一座建筑**。分类说属于 A、`Modifiers` 却写在 B 上，构建期就红
+   ——玩家会在 A 名下看到它、买到的却是 B 的效果，而两端都不会报错。
+2. **效果是全局的，不算违规**（"这座建筑的培训提升了所有人"是合法创作）；违规的是
+   "作用在**别的**建筑上"。
+3. **`Tier` 是轨内的排序键**。同一座建筑的几档要按 `Tier` 递增写（今天 11 个包的声明顺序
+   与 `Tier` 顺序刚好一致，所以这是把既有事实写下来）。
+
+> 想要"每座建筑一条可以反复买的等级线"？**不用加任何核心机制**：
+> `MaxPurchases = 20` + `PriceGrowth = 2.5` + `Modifiers = [Modifier.BuildingMultiplier(id, 1.5)]`
+> 就是 20 级、越买越贵、每级 ×1.5（`ModifierResolver` 按购买次数重复计入）。
+> 这是**内容**决定，不是框架缺口；见 [BUILDING_UPGRADES_PLAN](BUILDING_UPGRADES_PLAN.md) §3。
 
 ### (b) 联动成长（`Scaling`）
 
@@ -343,6 +370,9 @@ public void Configure(GameContentBuilder builder)
   **给成长型修饰符写一条端点断言**，是这类误读唯一可靠的防线。
 - **`Scaling` / 修饰符引用的 id 必须真实存在**。写错建筑 id 或增益 id 在构建期就会报错——
   这类错误以前是静默失效（修饰符算了但没人受影响），现在拦在构建期。
+- **`Category = "building:<id>"` 引用的建筑同样必须真实存在**，而且**分类与修饰符要指向
+  同一座建筑**（§3(e)）。这两个以前也没人查：分类写错只会让那条升级在"建筑自己的升级"
+  里永远不出现，而两端都不会报错。写成 `"building:"`（前缀后面没 id）也一样报错。
 - **不要让成就的 `Unlock` 恒为假**（构建期会报错）——不可达内容是纯负担。
 - **不要写出互相依赖的解锁链**（构建期会报错，见 §4.2）。
   确实需要"暂时不可达"的内容时，用 `UnlockCondition.Custom` 显式声明。

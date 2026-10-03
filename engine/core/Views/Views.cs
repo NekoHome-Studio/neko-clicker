@@ -62,6 +62,22 @@ public sealed record BuildingView
     /// <summary>里程碑对应的升级名。</summary>
     public string? NextMilestoneName { get; init; }
 
+    /// <summary>
+    /// <b>这座建筑自己的升级</b>的 id，按档位排序（<see cref="GameContent.UpgradesForBuilding"/>）。<para>
+    /// 为什么给 id 而不是嵌套一整套 <see cref="UpgradeView"/>：那些行本来就在
+    /// <see cref="GameSnapshot.Upgrades"/> 里推过一遍了，再嵌一份等于同一份数据付两次运费，
+    /// 而增量协议对字节是敏感的。前端按 id 去 <c>upgrades[]</c> 里取行是<b>取数</b>，
+    /// 不是解释服务端的约定。
+    /// </para>
+    /// <para>
+    /// 为什么不让前端自己按 <see cref="UpgradeView.Category"/> 的前缀筛：
+    /// 与 <see cref="UpgradeView.UsesPrestigeCurrency"/> / <see cref="GameSnapshot.ModeName"/>
+    /// 完全同一条规矩——<b>前端不许解释服务端的字符串或序数</b>，
+    /// 服务端该把"哪几行属于这座建筑"直接算好给它。
+    /// </para>
+    /// </summary>
+    public IReadOnlyList<string> UpgradeIds { get; init; } = [];
+
     /// <summary>出售返还比例。</summary>
     public double SellRefundRate { get; init; }
 

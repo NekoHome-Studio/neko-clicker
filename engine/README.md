@@ -18,7 +18,7 @@ dotnet build NekoClicker.sln     # 或者用仓库根的 .\tools\build.ps1
 | `core/` | **引擎本体**。时间推进、数值管线、价格闭式解、解锁条件树、存档与迁移、事件总线、只读视图 |
 | `content/Neko/` | 示例内容包「猫咖物语」——引擎的技术演示，同时是框架回归基线 |
 | `content/{Cafe,NineLives,Lab,Company,Apocalypse,Library,God,Civ,Cyber,Dream}/` | 十个内容包，**每个都是独立的 csproj** |
-| `tests/` | 504 个用例 + 自研迷你测试运行器（零依赖，不需要 xunit） |
+| `tests/` | 516 个用例 + 自研迷你测试运行器（零依赖，不需要 xunit） |
 | `docs/` | 架构、内容作者指南、版本承诺 |
 
 **为什么内容包算引擎的一部分？** 因为它们是**引擎的集成测试探针**，不是某个作品的资产：
@@ -73,13 +73,18 @@ dotnet build NekoClicker.sln     # 或者用仓库根的 .\tools\build.ps1
 
 ## 版本与兼容性
 
-**当前 `1.7.0`。从 `1.0.0` 起，`NekoClicker.Core` 的公开 API 只增不改**，
+**当前 `1.8.0`。从 `1.0.0` 起，`NekoClicker.Core` 的公开 API 只增不改**，
 由 `core/PublicApi.txt`（快照，**嵌进 dll**）加四条守卫强制执行。
-规矩见 [docs/VERSIONING.md](docs/VERSIONING.md)。1.7.0 是**纯新增**：
-`GameSnapshot.ModeName` + `PurchaseModes.WireName()`——它们修的是"前端拿枚举序数当档位名用"
-那条线上故障（`mode` 那个数字在线上原样留着，没有破坏任何消费者），
-往返与判别力见 [CHANGELOG](../CHANGELOG.md) 与 [OPEN_WORK](docs/OPEN_WORK.md) 的 N 条。
-上一个版本 1.6.0 **一个公开成员都没有增删**，
+规矩见 [docs/VERSIONING.md](docs/VERSIONING.md)。1.8.0 是**纯新增**：
+`UpgradeCategories` + `GameContent.UpgradesByBuilding` / `UpgradesForBuilding` +
+`BuildingView.UpgradeIds`——把 `UpgradeDefinition.Category` 上那条 `"building:<id>"` 约定
+（"这条升级属于哪座建筑"）从"没人校验、没人读"变成**构建期校验 + 索引 + 快照字段 + 界面**，
+方案见 [docs/BUILDING_UPGRADES_PLAN.md](docs/BUILDING_UPGRADES_PLAN.md)。
+上一个版本 1.7.0 也是纯新增：`GameSnapshot.ModeName` + `PurchaseModes.WireName()`——
+它们修的是"前端拿枚举序数当档位名用"那条线上故障（`mode` 那个数字在线上原样留着，
+没有破坏任何消费者），往返与判别力见 [CHANGELOG](../CHANGELOG.md) 与
+[OPEN_WORK](docs/OPEN_WORK.md) 的 N 条。
+**1.6.0 一个公开成员都没有增删**，
 却把结局的落定条件又一次收紧了：从 1.5.0 的"玩家**被展示过**那批待答表态"
 改成"玩家把它们**答完**"（`MarkPendingChoicesShown()` 因此退化成**诊断信号**，
 不再参与判定）——那处语义改动、它刻意移除的那条性质与"答不上的表态不拦结局"这条

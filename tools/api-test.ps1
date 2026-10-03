@@ -9,7 +9,7 @@
 #     · 增量推送的派生字段没处理干净 → 每帧 28KB，而"变化字段数 ≤ 4"的用例照样绿。
 #   所以这一层的判据只能是**真的通**：起宿主、发请求、读 SSE 流、看着它回话。
 #
-# 与单元测试的分工：`tools/build.ps1 -Strict` 守引擎（493 个用例 + 公开 API 快照），
+# 与单元测试的分工：`tools/build.ps1 -Strict` 守引擎（516 个用例 + 公开 API 快照），
 # 本脚本守"宿主 + 浏览器协议"那一段。CI 里两条都跑（.github/workflows/ci.yml）。
 #
 # 五条刻意为之的行为（都不是默认就该有的，是踩出来的）：
@@ -489,6 +489,50 @@ try {
     # 这个包必须有永久线，否则下面那条（以及前端那个面板）都是空的。
     Check '永久线全部花转生货币（前端按这个旗子选钱包）' ($permanentCount -ge 1 -and $wrongWallet.Count -eq 0) `
         "永久升级 $permanentCount 条$(if ($wrongWallet.Count -gt 0) { "，其中 " + ($wrongWallet -join '、') + " 用了普通货币" })"
+
+    # ------------------------------------------------------------ 建筑专属升级
+    # `buildings[].upgradeIds` 是"这条升级属于哪座建筑"**唯一到得了前端**的通道：
+    # 引擎那条 `Category = "building:<id>"` 的约定从 1.4.0 起就在，但 `category` / `tier` /
+    # `nextMilestoneAt` 前端一处都没读过——于是 312 条建筑专属升级在界面上根本不存在，
+    # 而两端都不会报错。判据刻意是**两段各自对得上**（不只是"键在不在"）：
+    # 给一串 `upgrades[]` 里没有的 id，前端只会静默少画几行。
+    Write-Section '建筑专属升级（buildings[].upgradeIds）'
+    $knownUpgradeIds = @{}
+    foreach ($u in $upgrades) { $knownUpgradeIds[[string]$u.id] = $true }
+
+    $trackBuildings = 0
+    $trackTotal = 0
+    $shapeProblems = @()
+    $dangling = @()
+    $duplicated = @()
+    $claimed = @{}
+    foreach ($b in @($snapshot.buildings)) {
+        if ($null -eq $b.PSObject.Properties['upgradeIds']) { $shapeProblems += "$($b.id)：整行没有 upgradeIds"; continue }
+        $ids = @($b.upgradeIds)
+        if ($ids.Count -eq 0) { continue }
+
+        $trackBuildings++
+        $trackTotal += $ids.Count
+        foreach ($id in $ids) {
+            $key = [string]$id
+            if (-not $knownUpgradeIds.ContainsKey($key)) { $dangling += "$($b.id)->$key" }
+            if ($claimed.ContainsKey($key)) { $duplicated += $key } else { $claimed[$key] = $true }
+        }
+    }
+
+    # 是数组而不是字符串：写错形状时前端会把它当标量遍历（`for...of` 一个字符串会逐字符发命令）。
+    $shapeOk = $shapeProblems.Count -eq 0
+    $shapeDetail = if ($shapeOk) { "$trackBuildings 座建筑带轨，合计 $trackTotal 条" } else { ($shapeProblems | Select-Object -First 4) -join '、' }
+    Check '每座建筑都带 upgradeIds 字段（可以是空数组）' $shapeOk $shapeDetail
+
+    $danglingDetail = if ($dangling.Count -eq 0) { "$trackTotal 个 id 全部命中 upgrades[]" } else { "对不上：" + (($dangling | Select-Object -First 4) -join '、') }
+    Check 'upgradeIds 里的每个 id 都能在 upgrades[] 里找到' ($dangling.Count -eq 0) $danglingDetail
+
+    # 非空 + 不重复认领：空表会让上面两条**假绿**（"一条都没有"同样满足"都对得上"）。
+    $dupDetail = if ($duplicated.Count -gt 0) { "被两座建筑同时认领：" + (($duplicated | Select-Object -First 4) -join '、') }
+                  elseif ($trackTotal -eq 0) { '没有任何建筑带升级轨' }
+                  else { "$trackBuildings 座建筑 / $trackTotal 条，没有一条被两座建筑同时认领" }
+    Check '建筑专属升级不是空的，也没有一条被两座建筑同时认领' ($trackTotal -gt 0 -and $duplicated.Count -eq 0) $dupDetail
 
     # ------------------------------------------------------------ 命令
     Write-Section '命令（点 40 下，应该真的涨钱）'

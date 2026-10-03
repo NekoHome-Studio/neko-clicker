@@ -77,6 +77,31 @@ public sealed class GameContent
     public IReadOnlyDictionary<string, UpgradeDefinition> UpgradeById { get; init; }
         = new Dictionary<string, UpgradeDefinition>(StringComparer.Ordinal);
 
+    /// <summary>
+    /// 「建筑 → 这座建筑自己的升级」索引，由 <see cref="GameContentBuilder"/> 在构建期
+    /// 按 <see cref="UpgradeCategories.BuildingPrefix"/> 那条约定建好并校验过。<para>
+    /// 顺序是<b>先按 <see cref="UpgradeDefinition.Tier"/>、同档按声明顺序</b>
+    /// （<c>OrderBy</c> 是稳定排序），所以"档位"这件事在界面上的先后是确定的。
+    /// 没有升级的建筑<b>不会</b>出现在这张表里——用
+    /// <see cref="UpgradesForBuilding"/> 取，它把"没有"回答成空表。
+    /// </para>
+    /// </summary>
+    public IReadOnlyDictionary<string, IReadOnlyList<UpgradeDefinition>> UpgradesByBuilding { get; init; }
+        = new Dictionary<string, IReadOnlyList<UpgradeDefinition>>(StringComparer.Ordinal);
+
+    /// <summary>
+    /// 某座建筑自己的升级（按 <see cref="UpgradeDefinition.Tier"/>、同档按声明顺序）。<para>
+    /// 这条关系<b>不是</b>从解锁条件推的：一条升级可以挂在某座建筑名下、却用别的条件解锁
+    /// （成就数、计数器、转生等级…）。所以"按建筑数量解锁的下一档"是另一条独立的线
+    /// （<c>BuildingView.NextMilestoneAt</c>）。两者互为补充，谁也不替谁。
+    /// </para>
+    /// </summary>
+    /// <param name="buildingId">建筑 id。</param>
+    public IReadOnlyList<UpgradeDefinition> UpgradesForBuilding(string buildingId)
+        => UpgradesByBuilding.TryGetValue(buildingId, out IReadOnlyList<UpgradeDefinition>? list)
+            ? list
+            : [];
+
     /// <summary>成就列表。</summary>
     public IReadOnlyList<AchievementDefinition> Achievements { get; init; } = [];
 

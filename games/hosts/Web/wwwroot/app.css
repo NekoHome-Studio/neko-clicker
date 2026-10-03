@@ -255,19 +255,24 @@ kbd {
 .card .owned { display: none; }
 
 /* ---------------------------------------------------------------- 建筑行：卡片 + 可展开的故事
-   一行 = [📖 展开按钮][买卡片]，故事框展开在它下面、占满整行。
-   卡片本身没变（还是"点一下买"）；多出来的是一个**独立的控件**，理由是"买"这个手势
+   一行 = [📖 展开按钮][⬆ 升级轨按钮][买卡片]，两个展开出来的框都占满整行。
+   卡片本身没变（还是"点一下买"）；多出来的是**独立的控件**，理由是"买"这个手势
    不能被分给两件事（取舍写在 app.js 的 renderBuildings 里）。
    样式全部沿用已有的那套语言：同底色 / 同圆角 / 同一条左边框（affordable 用过的那条），
-   不另起一套面板。 */
+   不另起一套面板。
+
+   三个元素都用**显式列号**钉住（而不是靠自动排布）：没有说明的建筑不给 📖、
+   没有升级的建筑不给 ⬆，而空的 `auto` 轨道宽度是 0——于是卡片总是紧跟着
+   实际存在的按钮，不会因为少一个按钮就掉到一列窄轨道里去。 */
 .building {
   display: grid;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: auto auto 1fr;
   gap: .25rem .35rem;
   align-items: start;
 }
 
 .story-toggle {
+  grid-column: 1;
   align-self: stretch;
   min-width: 2rem;
   border: 1px solid var(--line);
@@ -289,6 +294,34 @@ kbd {
   background: var(--card-hi);
 }
 
+/* 升级轨按钮：与 📖 同规格（同尺寸、同悬停、同 aria-expanded 表达"开着"）。
+   徽标是"这座建筑现在有几项升级买得起"——不必展开也看得见的那半个信号。 */
+.upgrade-toggle {
+  grid-column: 2;
+  align-self: stretch;
+  min-width: 2rem;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: transparent;
+  color: var(--dim);
+  font: inherit;
+  font-size: .95rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.upgrade-toggle:hover { color: var(--fg); border-color: var(--accent-deep); background: var(--card-hi); }
+.upgrade-toggle[aria-expanded="true"] {
+  color: var(--accent);
+  border-color: var(--accent-deep);
+  background: var(--card-hi);
+}
+/* 有买得起的：与卡片那套"第二重信号"一致（不只是靠颜色——那条规矩写在 .affordable 上）。 */
+.upgrade-toggle.affordable { color: var(--ok); border-left: 3px solid var(--ok); }
+.upgrade-toggle .badge { display: block; margin: .15rem auto 0; }
+
+/* 买卡片钉在第 3 列（见 .building 的注释：空轨道宽度为 0，卡片不会被挤走）。 */
+.building > .card { grid-column: 3; }
+
 /* 建筑自己的说明文本。今天每条只有一行，但边界是"文案写多长都放得下"：
    段落由 app.js 按空行切开，段内的换行照原样保留（white-space: pre-line）。 */
 .story {
@@ -304,6 +337,27 @@ kbd {
 }
 .story p { margin: 0; white-space: pre-line; }
 .story p + p { margin-top: .5rem; }
+
+/* 这座建筑自己的升级（快照里 buildings[].upgradeIds 指向的那些行）。
+   与故事框同一套形态：跨整行、展开在卡片下面、不另起一套面板。 */
+.track {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: .25rem;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--accent-deep);
+  border-radius: 9px;
+  padding: .45rem;
+}
+.track-head {
+  font-size: .78rem;
+  letter-spacing: .03em;
+  color: var(--dim);
+  padding: 0 .15rem .1rem;
+}
+/* 轨内的一行沿用升级卡片那套（.card.compact），只是窄一点、左内边距小一点。 */
+.track-row { margin: 0; }
 
 /* ---------------------------------------------------------------- 纪元面板 */
 
@@ -626,8 +680,10 @@ footer code { background: #00000055; padding: .05rem .3rem; border-radius: 4px; 
 
   /* 触屏目标下限：卡片整行可点，太矮就容易点错。44px 是常见的可点最小值。 */
   .card { min-height: 44px; }
-  /* 展开按钮同理：它只有 📖 一个字符宽，窄屏上要自己撑到能点得到的宽度。 */
+  /* 展开按钮同理：它只有 📖 一个字符宽，窄屏上要自己撑到能点得到的宽度。
+     ⬆ 是同一类控件，同一个下限。 */
   .story-toggle { min-width: 44px; }
+  .upgrade-toggle { min-width: 44px; }
   .tabs button { min-height: 40px; padding: .45rem .7rem; }
 
   /* 日志行：三列在窄屏会把正文挤成一条，时间挪到正文下面。 */

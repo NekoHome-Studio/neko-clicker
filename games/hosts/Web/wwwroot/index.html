@@ -120,10 +120,11 @@
           <h2>建筑</h2>
           <div id="batch" class="batch"></div>
         </div>
-        <!-- 建筑行由 app.js 逐条生成：一行 = [左边的 📖][买卡片]，故事框展开在下面。
-             卡片本体仍然是"点一下买"，展开是**另一个控件**——取舍与展开状态的存放
+        <!-- 建筑行由 app.js 逐条生成：一行 = [📖 故事][⬆ 升级轨][买卡片]，两个框展开在下面。
+             卡片本体仍然是"点一下买"，展开是**另外两个控件**——取舍与展开状态的存放
              都写在 app.js 的 renderBuildings 里（这里没有静态标记，因为每一行都要跟
-             快照走：价格、可负担性、解锁进度每帧都在变）。 -->
+             快照走：价格、可负担性、解锁进度每帧都在变）。
+             ⬆ 只在这座建筑**真的有升级**时才出现（`buildings[].upgradeIds` 非空）。 -->
         <div id="buildings" class="list"></div>
       </div>
 
@@ -132,6 +133,10 @@
           <h2>升级</h2>
           <span id="upgrade-count" class="muted"></span>
         </div>
+        <!-- 建筑自己的升级**不在这张列表里**：它们挂到各座建筑的 ⬆ 上（一条线只有一个家，
+             与「永久」那条线不进这里同一条规矩）。这里必须**说出去**有多少条被移走了，
+             否则就是静默少内容。文案由 app.js 的 renderUpgrades 填。 -->
+        <p id="upgrade-hint" class="muted"></p>
         <div id="upgrades" class="list"></div>
       </div>
 

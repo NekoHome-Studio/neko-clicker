@@ -288,13 +288,152 @@ BOM 保留、长度不变、diff 只有那一行）。
 ⚠️ §0.1 里那句 `tools/web-smoke.mjs` **62/62** 是更早的快照：别人的计数修正提交之后基线是
 **67**，本轮之后是 **82**。
 
+---
 
+## 0.11 建筑升级系统：把"这条升级属于哪座建筑"接上（2026-10-03，版本 **1.8.0**）
+
+需求原话：「做一下建筑的升级系统」。**先把"已经有什么"查清楚**，因为这套机器大半已经在树上：
+
+| 已经有的 | 证据 |
+|---|---|
+| 升级机器（一次性 + 可重复购买） | `UpgradeDefinition` 的 `MaxPurchases` / `PriceGrowth`（`Definitions.cs:93` / `:96`） |
+| **每座建筑的强化档**（`<id>_tier{1,10,25}`） | 11 个包各一个 `BuildingTierUpgrades()`，如 `Apocalypse/Upgrades.cs:38-67`；**312 条** |
+| 单建筑修饰符 + 折叠公式 | `ModifierTarget.BuildingCps`（`ModifierTarget.cs:72`）、`ModifierAccumulator.Apply`（`ModifierSet.cs:35-41`）、`ProductionCalculator.cs:83-95` |
+| 按购买次数重复计入（= "等级"的数值语义） | `ModifierResolver.Build`（`ModifierSet.cs:141-150`，注释原文"按已购次数重复计入"） |
+| "下一档里程碑"（按建筑数量） | `GameViewFactory.FindNextMilestone`（`:475-500`）→ 只有终端宿主读（`TerminalUi.cs:440`） |
+
+**所以读法 A（每座建筑自己的等级）不需要新机制**（内容侧 `MaxPurchases`+`PriceGrowth` 就能表达）、
+**读法 C（另一套货币）树里没有任何依据**，两条都写进了"明确不做"。
+
+**缺口是一条关系**：`UpgradeDefinition.Category` 上那条 `"building:<id>"` 约定
+（`Definitions.cs:107` 文档化的、"UI 用"的那条）**没有一处代码校验它、没有索引、也没有消费者**——
+`UpgradeView.Category` / `Tier` 上线了没人读，`nextMilestoneAt` 只有终端读。于是建筑专属升级
+在**玩家眼里根本不存在**，而两端都不会报错。三条实测把这件事钉死：
+
+| 量 | 值 |
+|---|---|
+| 升级总数 / 其中建筑档 | **534 / 312** |
+| 有升级轨的建筑 | **104 / 104 座，每座恰好 3 条** |
+| 分类指向不存在的建筑 / 分类与修饰符目标不一致 | **0 / 0**（所以新校验一条都不误伤今天的内容） |
+| 全量快照 | 48.2K~72.4K 字节；建筑档从扁平列表移走后每包还剩 **13~19 条**（没有一包会空） |
+| 九命闲置一 tick | **188 字节 / 64,471 字节 = 0.3%**（判据 `<5%`；`buildings` 根本不进增量帧） |
+
+**落地**（`engine/core` 一行内容知识都没加；内容一行都没改）：
+
+| 项 | 位置 |
+|---|---|
+| 那条约定收成一个出处 | 新公开类型 `UpgradeCategories`（`BuildingPrefix` / `ForBuilding` / `TryGetBuildingId`） |
+| 构建期三条校验（点名升级 id 与建筑 id） | `GameContentBuilder.ValidateBuildingCategories`：前缀无 id / 建筑不存在 / **分类说属于 A 而修饰符作用在 B** |
+| 索引（按 `Tier`、同档按声明顺序） | `GameContent.UpgradesByBuilding` / `UpgradesForBuilding(id)` |
+| 快照（**服务端算好的 id 列表**，前端不解析前缀） | `BuildingView.UpgradeIds` |
+| 界面 | 建筑行的 **⬆**（与 📖 并列；徽标 = 现在买得起几项）；扁平「升级」面板不再重复渲染建筑档，并**写出一行**"这里 N 条挂在各座建筑上" |
+| 作者规则 | [CONTENT_AUTHORING](CONTENT_AUTHORING.md) §3(e)（新增）+ §8 常见坑加一条 |
+| 完整方案（问题/已有/缺口/提案/守卫/不做/未决） | [BUILDING_UPGRADES_PLAN](BUILDING_UPGRADES_PLAN.md) |
+
+**版本决定：`1.7.0` → `1.8.0`（minor）。** 证据不是"我觉得"：`1.7.0` 已被同一天的
+`GameSnapshot.ModeName` 占用（`CHANGELOG` 已有 `## [1.7.0]` 条目），而且**这个仓库自己早就写下来了**
+——`WEB_EXTENSION_PLAN.md:7`「`1.7.0` 已被 `GameSnapshot.ModeName` 占用」、
+`DEVELOPMENT_SUMMARY.md:477`「真要落地时版本号从 `1.8.0` 起算」。公开 API 快照
+`engine/core/PublicApi.txt`：**1933 → 1941 行；`git diff --numstat` = `9 1`**——
+那 1 行删除就是快照头里的 `version=1.7.0` → `version=1.8.0`（唯一一处"改"），
+另外 8 行是**纯新增**（7 行成员/类型：`UpgradeCategories` 类型本身 + `BuildingPrefix` +
+`ForBuilding` + `TryGetBuildingId` + `UpgradesByBuilding` + `UpgradesForBuilding` +
+`BuildingView.UpgradeIds`，外加类型之间的 1 个空行分隔）。
+**没有任何"不兼容"段**。快照在改完代码与版本**之后**才重生成（顺序按 `VERSIONING.md` §4）。
+
+**守卫与判别力**：
+
+| 层 | 新增 | 判别力（故意改坏真树，看具体的红，再还原） |
+|---|---|---|
+| C#（`BuildingUpgradeTests.cs`，**12 条**） | 11 包横扫（分类必须指向真实建筑、索引与声明逐条一致、轨内 `Tier` 单调、**312 / 104 两个计数**防假绿）、三条坏声明各自断言**错误信息里同时出现升级 id 与坏建筑 id**、"全局效果合法"的阴性对照、`UpgradeIds` 逐座等于内容轨 + 线上是字符串数组、两帧逐字节相同且 `buildings` 不进闲置增量 | ① 把某个真实包一条分类改成 `building:ghost` → 构建期异常点名 `「<id>」` 与 `「ghost」`；② 改成 `"building:"` → 点名该升级 id 与那个前缀；③ 让修饰符指向另一座建筑 → 点名两个建筑 id；④ 让 `BuildingView.UpgradeIds` 恒为空 → `BuildingView_CarriesTheTrack_ForEveryBuilding` 红（"快照轨 [] != 内容轨 [a,b,c]"） |
+| 前端（`tools/web-smoke.mjs`，**88 → 103**） | 第 15 节 14 条（⬆ 不发 `buy`、只开这一行、重画不丢展开态且节点复用、没有升级就不给 ⬆、锁着的行也在且点不动、`upgradeIds` 里有对不上的 id 时跳过而不抛、徽标跟着"买得起"走）+ §2 一条"被移走的必须说出去" + §11 布局形状守卫从"两列"改成"三列 + 卡片钉在第 3 列 + 两个框都跨整行" | 见 CHANGELOG 1.8.0 一节与本节末的注入记录 |
+| 端到端（`tools/api-test.ps1`，**52 → 55 项**） | 真宿主上：每座建筑都带 `upgradeIds`；每个 id 都能在 `upgrades[]` 里找到（**两段各自对得上**）；不是空的、也没有一条被两座建筑同时认领（防前两条假绿） | 覆盖审计 **55 处 / 执行到 55 处 / 0 跳过** |
+
+**夹具按 §14 的规矩重新抓了一份**（`tools/fixtures/web-snapshot.json`，61,143 字节，
+9 座建筑各带 3 条 `upgradeIds`）——前端开始用 `upgradeIds` 之后，那份"真宿主抓下来的快照"
+不带它就会让"夹具不是谎话"守卫（正确地）红。
+
+**这次没做**（写下来免得下一个人当成缺口）：
+
+- **没给任何包加一条升级**（缺口是关系不是内容量）；`text.json` 一行未改、存档格式未动、
+  存档版本号未升、内容守卫的写死条数一条都不用改——**这本身就是"没偷偷改内容"的证据**。
+- **没新增货币**（读法 C）。
+- **没把"建筑等级"做成核心机制**（读法 A 今天就能用 `MaxPurchases` + `PriceGrowth` 表达，
+  配方写在 `CONTENT_AUTHORING` §3(e)）。
+- **没动 `BuildingView.NextMilestoneAt` 的语义**（公开 API；它是"按建筑数量解锁的下一档"，
+  与 `UpgradeIds` 是两条互补的线），**也没把 `FindNextMilestone` 收窄成只扫本建筑的升级**
+  （那会漏掉"以本建筑数量解锁、但分类不指向本建筑"的升级——是静默的行为改变，不是优化）。
+- **没做终端宿主**（它已经读了 `nextMilestoneAt`；`UpgradeIds` 是 Web 侧的缺口）。
+
+**未决（只有真人能判）**：建筑强化档从扁平「升级」列表移走之后，那个面板会明显变短
+（534 条里移走 312 条）。形态是"一条线只有一个家"（`renderPermanent` 早写过这条规矩）+
+指路文案 + ⬆ 徽标，但**观感只有眼睛能判**。回退成本很低（前端两处过滤条件），**引擎侧一行都不用动**。
+
+### 0.11.1 判别力：真树上四条故障注入的实际红（逐条抄下来）
+
+**注入 A（真内容：分类指向不存在的建筑）**——把 `Apocalypse/Upgrades.cs` 里
+`Category = $"building:{building.Id}"` 改成 `"building:nope"`：
+
+```
+  ✗ BuildingUpgradeTests.BuildingCategories_ResolveToRealBuildings_InEveryPack
+      GameContentValidationException: 内容定义校验失败：
+  - 升级 「ruins_tier1」 的 Category 引用了不存在的建筑 「nope」（写的是「building:nope」）。
+```
+
+**注入 B（真内容：前缀后面没有 id）**——同一处改成 `"building:"`：
+
+```
+  - 升级 「ruins_tier1」 的 Category 是「building:」——前缀后面缺建筑 id。要么补上建筑 id
+    （用 UpgradeCategories.ForBuilding(id)），要么换成一个不是建筑分组的分类。
+```
+
+**注入 C（真内容：分类与效果指向不同的建筑）**——把 `Civ/Upgrades.cs` 的强化档修饰符
+改成 `Buildings.All[^1].Id`：
+
+```
+  - 升级 「cat_nest_tier1」 的 Category 说它属于建筑「cat_nest」，但它的修饰符作用在别的建筑上
+    （「deep_space_relay」）——分类与效果对不上：玩家会在「cat_nest」名下看到它，买到的却是别处的效果。
+```
+
+**注入 D（快照：轨恒为空）**——`GameViewFactory` 里 `UpgradeIds = [],`：
+`BuildingView_CarriesTheTrack_ForEveryBuilding` 红（"建筑「X」的快照轨 [] != 内容轨 […]"）。
+
+**注入 E（前端：⬆ 顺手买一次建筑）**——`trackToggle` 的 click 里加一句 `send("buy", …)`：
+
+```
+  ✘ 点 ⬆ 只展开这一行，**不发 buy** — buy 次数（看升级不是买建筑）: 期望 0，实际 1
+  ✘ 点轨里的一条升级发的是 upgrade，而且发的是**那一条**的 id — 全程没有买建筑: 期望 0，实际 1
+  101 / 103 条通过
+```
+
+**还原与复核**：四条注入各自还原后（`SHA-256` 逐文件比对 + `git status --porcelain -- engine/content` 为空），
+重跑 `-Strict` **516/516 全绿**、`web-smoke` **103/103**、`api-test` **55/55**。
+
+### 0.11.2 本轮我自己犯的两个错（都当场发现并修好了，值得记下来）
+
+1. **一次性注入脚本用 `Path.GetFileName` 当备份名，于是互相覆盖**：`Apocalypse/Upgrades.cs`
+   与 `Civ/Upgrades.cs` **同名**，`backup\Upgrades.cs` 被后一个覆盖；还原时把 **Civ 的内容写进了
+   Apocalypse**。我是在 `git diff --numstat` 上看到"我没改过内容包，却冒出 268/178 行"才发现的
+   ——**"还原成功"这句话当时是假的**（它比对的是被覆盖过的备份，所以 `identical=True` 照样成立）。
+   修法：备份名用完整相对路径变换（`engine__content__Apocalypse__Upgrades.cs.bak`）；
+   并且**用 `git status --porcelain -- engine/content` 为空**作为"内容没被动过"的独立判据
+   （比"我自己比对的哈希"强，因为它对着的是 HEAD）。
+2. **`Copy-Item` 保留源文件的 mtime，于是 MSBuild 认为不用重编**：还原之后源码是对的
+   （`git status` 为空），但 `engine/content/Civ/bin` 里那条 **DLL 还是注入版**，
+   于是"还原后仍然红"——红的是旧二进制，不是源码。两次都被这个坑绊到（Apocalypse 一次、Civ 一次）。
+   教训与仓库里那条"增量构建会掩盖警告"是同一类：**判据要落在"源码 vs HEAD"上，
+   而不是落在"我这轮跑出来的结果"上**；还原后要么 touch 一次，要么直接跑 `-Strict`（`--no-incremental`）。
+
+⚠️ **本机还是起不了浏览器**（见 §0.6），所以"⬆ 摆在卡片左边好不好看、徽标挤不挤"
+只能由真人判；能自动验的部分已经全验了（103 条冒烟 + 55 项端到端 + 12 条 C#）。
+
+---
 
 ## 1. 现在在哪（可核对的事实）
 
 | 项 | 值 | 怎么核对 |
 |---|---|---|
-| 版本 | **1.7.0** | `Directory.Build.props` 的 `<Version>`（1.7.0 是 N 条的修复：新增 `GameSnapshot.ModeName` + `PurchaseModes.WireName()`） |
+| 版本 | **1.8.0** | `Directory.Build.props` 的 `<Version>`（1.8.0 是建筑升级系统：`UpgradeCategories` + `GameContent.UpgradesForBuilding` + `BuildingView.UpgradeIds`；见 §0.11） |
 | 文本外部化 | **11 / 11 个包**有 `text.json`；**十一类面向玩家的文案全部在文件里**：`storylines` / `lore`（10 包 421 条）、`buildings`（11 包 104 座 × name/description/icon）、`eras`（9 包 49 层 × 6 字段）、`endings`（9 包 29 个 ×3）、`stances`（3 包 11 条 ×4）、`choices`（3 包 18 次 ×2 + 36 选项 ×2）、`achievements`（11 包 712 条 ×3）、`buffs`（11 包 86 条 ×3）、`upgrades`（11 包 534 条 ×3）、`goldenCookies`（11 包 109 条 ×3）。C# 里 `Prose.Text(` 共 1,284 处、`Name/Description/Icon = "` 0 处 | `Get-ChildItem engine\content -Recurse -Filter text.json`；见 §0.9（第五轮，收尾） |
 | 加载器 | `ContentText` 已 **public** | `engine/core/Content/ContentText.cs` |
 | Web 端点 | `/`、`/app.js`、`/app.css`、`/?package=lab`、`/api/packs`(11 包) 全 200 | 起宿主后直接打 |

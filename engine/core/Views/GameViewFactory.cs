@@ -74,6 +74,9 @@ public static class GameViewFactory
                 CpsShare = bp.Share,
                 NextMilestoneAt = milestone,
                 NextMilestoneName = milestoneName,
+                // 这座建筑自己的升级（构建期按 Category 建好的索引）。给 id 不给整行：
+                // 那些行已经在 upgrades[] 里，见 BuildingView.UpgradeIds 的注释。
+                UpgradeIds = [.. content.UpgradesForBuilding(definition.Id).Select(u => u.Id)],
                 SellRefundRate = refundRate,
             });
         }

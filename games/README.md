@@ -50,6 +50,12 @@
   预览脚本刻意留在 `.tmp/` 不进仓库：每轮要看的东西都不一样，等它被第二个人用第二次再固化。
 - 推送用 SSE 推「信封 + 变化字段」：全量 56.9 KB，增量均 1.99 KB（省 97%）。
   契约测试在 `engine/tests/WebSnapshotProtocolTests.cs`（11 条，**按字节数**守，不是按字段数）。
+- **建筑自己的升级**（2026-10-03，随 `NekoClicker.Core` **1.8.0**）：建筑行多一个与 📖 并列的 **⬆**
+  （徽标 = 这座建筑现在买得起几项），展开的就是**这一座**的升级、点一下买那一条。
+  依据是服务端新给的 `buildings[].upgradeIds`——前端**不解析** `category` 里的 `"building:<id>"`
+  前缀（与 `usesPrestigeCurrency` / `modeName` 同一条规矩）。扁平的「升级」面板因此不再重复渲染
+  那 312 条，并**写出一行**说明它们去哪了（不做静默少内容）。方案见
+  [../engine/docs/BUILDING_UPGRADES_PLAN.md](../engine/docs/BUILDING_UPGRADES_PLAN.md)。
 - 状态所有权：一条专用线程独占 `GameEngine`（引擎是单线程可变对象，ASP.NET Core 用的是线程池），
   HTTP 命令走 `Channel` 投递。
 - 换包走 URL（`?package=<id>`），包是运行时扫描输出目录发现的，宿主里没有包名字面量。
@@ -76,7 +82,7 @@
 一条命令即可验收全仓库：
 
 ```powershell
-.\tools\build.ps1 -Strict      # 引擎 + 内容 + 493 条用例 + Web 宿主
+.\tools\build.ps1 -Strict      # 引擎 + 内容 + 516 条用例 + Web 宿主
 .\tools\web.ps1   build -Strict  # 只编 Web 宿主时用它
 ```
 

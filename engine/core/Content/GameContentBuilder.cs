@@ -324,6 +324,9 @@ public sealed class GameContentBuilder
             ValidateModifiers(u.Modifiers, $"升级 「{u.Id}」", buildingById, buffById, errors);
         }
 
+        Dictionary<string, IReadOnlyList<UpgradeDefinition>> upgradesByBuilding =
+            ValidateBuildingCategories(_upgrades, buildingById, errors);
+
         foreach (AchievementDefinition a in _achievements)
         {
             if (a.Unlock is ConstantCondition { Value: false })
@@ -387,6 +390,7 @@ public sealed class GameContentBuilder
             BuildingById = buildingById,
             Upgrades = _upgrades,
             UpgradeById = upgradeById,
+            UpgradesByBuilding = upgradesByBuilding,
             Achievements = _achievements,
             AchievementById = achievementById,
             Buffs = _buffs,
@@ -920,6 +924,83 @@ public sealed class GameContentBuilder
                 + $"玩家会在够条件之前舍命走人，这个选择永远遇不到（EraId 是硬门）。"
                 + $"请把门槛降到 {eraRequirement} 以下。");
         }
+    }
+
+    /// <summary>
+    /// 校验并建立「建筑 → 这座建筑自己的升级」这条关系（<see cref="UpgradeCategories.BuildingPrefix"/>）。<para>
+    /// <b>为什么这件事必须在这里做</b>：这条约定从 1.4.0 起就写在
+    /// <see cref="UpgradeDefinition.Category"/> 的文档上、十一个包都在用它，但在此之前
+    /// <b>没有一处代码校验过它</b>——写成 <c>building:nope</c> 不会报错，只会让这条升级
+    /// 在"按建筑取升级"的界面上永远不出现。这与 <see cref="ValidateModifiers"/> 拦住
+    /// "修饰符引用了不存在的建筑"是同一类修复：把一条<b>静默失效</b>的引用变成构建期的红。
+    /// </para>
+    /// <para>
+    /// 三条检查，都点名升级 id：前缀在、建筑 id 为空；前缀在、建筑不存在；
+    /// 分类挂在某座建筑名下、而它的修饰符作用在<b>别的</b>建筑上（分类与效果对不上——
+    /// 玩家会在 A 那里看到它、买到的却是 B 的效果，两端都不会报错）。
+    /// </para>
+    /// </summary>
+    /// <returns>建筑 id → 这座建筑的升级（按 <see cref="UpgradeDefinition.Tier"/>、同档按声明顺序）。</returns>
+    private static Dictionary<string, IReadOnlyList<UpgradeDefinition>> ValidateBuildingCategories(
+        IReadOnlyList<UpgradeDefinition> upgrades,
+        Dictionary<string, BuildingDefinition> buildings,
+        List<string> errors)
+    {
+        var byBuilding = new Dictionary<string, List<UpgradeDefinition>>(StringComparer.Ordinal);
+
+        foreach (UpgradeDefinition u in upgrades)
+        {
+            if (u.Category is null || !u.Category.StartsWith(UpgradeCategories.BuildingPrefix, StringComparison.Ordinal))
+                continue;
+
+            if (!UpgradeCategories.TryGetBuildingId(u.Category, out string buildingId))
+            {
+                errors.Add(
+                    $"升级 「{u.Id}」 的 Category 是「{UpgradeCategories.BuildingPrefix}」——前缀后面缺建筑 id。"
+                    + $"要么补上建筑 id（用 UpgradeCategories.ForBuilding(id)），要么换成一个不是建筑分组的分类。");
+                continue;
+            }
+
+            if (!buildings.ContainsKey(buildingId))
+            {
+                errors.Add(
+                    $"升级 「{u.Id}」 的 Category 引用了不存在的建筑 「{buildingId}」"
+                    + $"（写的是「{u.Category}」）。");
+                continue;
+            }
+
+            // 只挑"作用在具体某座建筑上"的修饰符；全局 / 点击 / 金猫这类不算，
+            // 因为"挂在某座建筑名下、效果是全局的"是合法的创作（例如这座建筑的培训提升了所有人）。
+            List<string> otherBuildings = [];
+            bool targetsThis = false;
+            foreach (Modifier m in u.Modifiers)
+            {
+                if (m.Target.Kind is not (ModifierTargetKind.BuildingCps or ModifierTargetKind.BuildingPrice)) continue;
+                if (m.Target.Id is null) continue;
+                if (string.Equals(m.Target.Id, buildingId, StringComparison.Ordinal)) targetsThis = true;
+                else otherBuildings.Add(m.Target.Id);
+            }
+
+            if (!targetsThis && otherBuildings.Count > 0)
+            {
+                errors.Add(
+                    $"升级 「{u.Id}」 的 Category 说它属于建筑「{buildingId}」，"
+                    + $"但它的修饰符作用在别的建筑上（{string.Join('、', otherBuildings.Distinct().Select(id => $"「{id}」"))}）——"
+                    + $"分类与效果对不上：玩家会在「{buildingId}」名下看到它，买到的却是别处的效果。"
+                    + "要么改分类，要么把修饰符的目标改成这座建筑。");
+                continue;
+            }
+
+            if (!byBuilding.TryGetValue(buildingId, out List<UpgradeDefinition>? list))
+                byBuilding[buildingId] = list = [];
+
+            list.Add(u);
+        }
+
+        return byBuilding.ToDictionary(
+            pair => pair.Key,
+            pair => (IReadOnlyList<UpgradeDefinition>)[.. pair.Value.OrderBy(x => x.Tier)],
+            StringComparer.Ordinal);
     }
 
     private static void ValidateModifiers(

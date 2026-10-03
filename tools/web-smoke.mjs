@@ -311,12 +311,23 @@ function snapshot(overrides = {}) {
       id: "b1", isVisible: true, isUnlocked: true, canAfford: true, icon: "🏠", name: "猫窝",
       owned: 3, batchAmount: 10, batchPrice: 120, cpsContribution: 5.5, cpsShare: 0.12,
       unlockHint: "", unlockProgress: 1,
+      // 「这座建筑自己的升级」——**服务端算好的 id**（`GameContent.UpgradesForBuilding`）。
+      // 前端不解析 `category` 里的 `"building:"` 前缀，只做集合运算（见 app.js 的
+      // buildingOwnedUpgradeIds）：形状必须与真快照一致，§14 盯着它。
+      upgradeIds: ["u1"],
     }],
     upgrades: [
       {
+        // 建筑专属那一条：它**不该**出现在扁平的「升级」列表里（它挂在 b1 的 ⬆ 上）。
         id: "u1", isVisible: true, isPermanent: false, isAvailable: true, isUnlocked: true,
         isMaxed: false, canAfford: true, icon: "⭐", name: "更好的碗", owned: 1,
         currencyIcon: "🐟", price: 50, effectSummary: "+10%", unlockProgress: 1, maxPurchases: 1,
+      },
+      {
+        // 普通（全局）升级那一条：它**才**该出现在扁平的「升级」列表里。
+        id: "u2", isVisible: true, isPermanent: false, isAvailable: true, isUnlocked: true,
+        isMaxed: false, canAfford: false, icon: "🔧", name: "全店翻新", owned: 0,
+        currencyIcon: "🐟", price: 900, effectSummary: "所有建筑 ×1.5", unlockProgress: 1, maxPurchases: 1,
       },
       {
         id: "p1", isVisible: true, isPermanent: true, isAvailable: true, isUnlocked: true,
@@ -449,12 +460,21 @@ check("连接状态画在页面上（首帧之后「已连接」）", () => {
 });
 check("建筑 / 升级 / 图鉴 / 日志 / 金猫都被画出来了", () => {
   eq(el(app, "buildings").children.length, 1, "建筑数");
-  eq(el(app, "upgrades").children.length, 1, "普通升级数（永久线不在这一栏）");
+  // 扁平「升级」列表**只**放不属于任何建筑的升级：夹具里是 u2。
+  // 把 u1（b1 的升级）也放回这一栏，这条会红——那正是"一条线只有一个家"。
+  const flat = el(app, "upgrades").children;
+  eq(flat.length, 1, "普通升级数（建筑专属与永久线都不在这一栏）");
+  eq(flat[0].children.find((child) => child.className === "name").textContent, "🔧 全店翻新", "留在这一栏的是哪一条");
   eq(el(app, "permanent").children.length, 1, "永久线数");
   eq(el(app, "codex").children.length, 1, "剧情线数");
   eq(el(app, "log").children.length, 1, "日志条数");
   eq(el(app, "golden").children.length, 1, "金猫数");
   eq(hidden(app, "golden"), false, "金猫浮层可见");
+});
+check("被移走的建筑升级**说出去**了（静默少内容是这个仓库最反对的失败形态）", () => {
+  const hint = el(app, "upgrade-hint").textContent;
+  if (!hint.includes("1 条")) throw new Error(`指路文案里没有说出移走了几条：<${hint}>`);
+  if (!hint.includes("⬆")) throw new Error(`指路文案没有说去哪找：<${hint}>`);
 });
 check("选择器全部落在 index.html 真实存在的元素上（没有任何落空）", () => {
   if (app.doc.missedSelectors.length > 0) throw new Error(`落空：${app.missedSelectors.join(", ")}`);
@@ -686,21 +706,29 @@ check(".sheet-layer 仍留着 overflow-y", () => {
 });
 check("@keyframes sheet-in 还在（复用而不是新造动画）", () => /@keyframes sheet-in/.test(css));
 
-// 建筑那一行的形状：左边一个独立控件、卡片在右、故事框跨整行。
-// 这三条守的是"展开"这件事的**布局**——把它改回"点卡片出字"或把故事框塞进卡片里，
-// 这几条会直接红，而不是等人肉眼看出来。
-check("建筑行是「控件 + 卡片」两列，故事框跨整行（形状守卫）", () => {
+// 建筑那一行的形状：两个独立控件（📖 故事 / ⬆ 升级轨）、卡片在右、两个框都跨整行。
+// 这几条守的是"展开"这件事的**布局**——把它改回"点卡片出字"、把框塞进卡片里、
+// 或者让三个元素回到自动排布（少一个按钮就把卡片挤进窄轨道），这几条会直接红。
+check("建筑行是「两个控件 + 卡片」三列，两个展开框都跨整行（形状守卫）", () => {
   const building = /\.building \{([\s\S]*?)\}/.exec(css)?.[1] ?? "";
-  if (!building.includes("grid-template-columns: auto 1fr")) throw new Error(".building 不是两列网格");
+  if (!building.includes("grid-template-columns: auto auto 1fr")) throw new Error(".building 不是三列网格");
+  // 显式列号：少一个按钮时**空的 auto 轨道宽度是 0**，卡片不能因此掉进窄轨道里。
+  if (!/\.story-toggle \{[\s\S]*?grid-column: 1;/.test(css)) throw new Error(".story-toggle 没有钉在第 1 列");
+  if (!/\.upgrade-toggle \{[\s\S]*?grid-column: 2;/.test(css)) throw new Error(".upgrade-toggle 没有钉在第 2 列");
+  if (!/\.building > \.card \{ grid-column: 3; \}/.test(css)) throw new Error(".building > .card 没有钉在第 3 列");
   const story = /\.story \{([\s\S]*?)\}/.exec(css)?.[1] ?? "";
   if (!story.includes("grid-column: 1 / -1")) throw new Error(".story 没有跨整行");
+  const track = /\.track \{([\s\S]*?)\}/.exec(css)?.[1] ?? "";
+  if (!track.includes("grid-column: 1 / -1")) throw new Error(".track 没有跨整行");
 });
 check("展开按钮的「开着」状态有独立样式（只靠 aria-expanded 这一件事驱动）", () => {
   if (!/\.story-toggle\[aria-expanded="true"\]/.test(css)) throw new Error("没有 aria-expanded=true 的样式");
+  if (!/\.upgrade-toggle\[aria-expanded="true"\]/.test(css)) throw new Error("⬆ 没有 aria-expanded=true 的样式");
 });
-check("展开按钮在窄屏上撑到 44px（📖 只有一字符宽，按不到就等于没有）", () => {
+check("展开按钮在窄屏上撑到 44px（📖 / ⬆ 只有一字符宽，按不到就等于没有）", () => {
   const narrow = /@media \(max-width: 34rem\) \{([\s\S]*?)\n\}/.exec(css)?.[1] ?? "";
   if (!/\.story-toggle \{ min-width: 44px; \}/.test(narrow)) throw new Error("窄屏那节里没有 .story-toggle 的 44px");
+  if (!/\.upgrade-toggle \{ min-width: 44px; \}/.test(narrow)) throw new Error("窄屏那节里没有 .upgrade-toggle 的 44px");
 });
 
 // 12. 计数器动画：单调、不振荡。这一条守的是 human 报的"数字来回跳"。
@@ -1054,6 +1082,192 @@ section("14. 夹具形状 vs 真宿主快照");
   });
   check("离线收益那张的可见性与真快照一致（它也在 renderBatch 之后）", () => {
     eq(el(real, "offline").classList.contains("hidden"), golden.offline === null, "offline 那张 sheet");
+  });
+}
+
+// 15. 建筑自己的升级（`buildings[].upgradeIds`）挂在建筑上，与 📖 并列的第二个手势。
+//
+// 这一节守的是一个**静默失效**：引擎从 1.4.0 起就把「这条升级属于哪座建筑」写在
+// `UpgradeDefinition.Category` 上（`"building:<id>"`），十一个包 312 条都在用，
+// 而快照里 `category` / `tier` / `nextMilestoneAt` **一处都没被前端读过**——
+// 于是"建筑专属升级"在玩家眼里根本不存在，且没有任何东西会因此变红。
+// 现在的形状是服务端把 id 列表算好（`upgradeIds`），前端只做集合运算，不解析约定。
+section("15. 建筑自己的升级：⬆ 展开、点一下买那一条（不是买建筑）");
+{
+  const track = await loadApp(copyAs("app-track.mjs", appSource));
+
+  const catBed = {
+    id: "b1", isVisible: true, isUnlocked: true, canAfford: true, icon: "🏠", name: "猫窝",
+    owned: 3, batchAmount: 10, batchPrice: 120, cpsContribution: 5.5, cpsShare: 0.12,
+    unlockHint: "", unlockProgress: 1,
+    description: "猫在里面睡 16 小时。",
+    upgradeIds: ["t1", "t2"],
+  };
+  const feeder = {
+    id: "b2", isVisible: true, isUnlocked: true, canAfford: false, icon: "🍽️", name: "自动喂食器",
+    owned: 0, batchAmount: 1, batchPrice: 900, cpsContribution: 0, cpsShare: 0,
+    unlockHint: "", unlockProgress: 1,
+    description: "定时投喂。",
+    upgradeIds: [], // 这座建筑没有任何升级 → **不给 ⬆**
+  };
+  const upgrades = [
+    {
+      id: "t1", isVisible: true, isPermanent: false, isAvailable: true, isUnlocked: true,
+      isMaxed: false, canAfford: true, icon: "⭐", name: "更好的碗", owned: 1,
+      currencyIcon: "🐟", price: 50, effectSummary: "+100% 猫窝", unlockProgress: 1, maxPurchases: 1,
+    },
+    {
+      id: "t2", isVisible: true, isPermanent: false, isAvailable: true, isUnlocked: false,
+      isMaxed: false, canAfford: false, icon: "🌟", name: "连成片的猫窝", owned: 0,
+      currencyIcon: "🐟", price: 500, effectSummary: "猫窝 ×2", unlockHint: "有 10 个猫窝", unlockProgress: 0.3,
+      maxPurchases: 1,
+    },
+    {
+      id: "g1", isVisible: true, isPermanent: false, isAvailable: true, isUnlocked: true,
+      isMaxed: false, canAfford: true, icon: "🔧", name: "全店翻新", owned: 0,
+      currencyIcon: "🐟", price: 900, effectSummary: "所有建筑 ×1.5", unlockProgress: 1, maxPurchases: 1,
+    },
+  ];
+  const full = (buildings, rows = upgrades) =>
+    ({ kind: "full", seq: 1, snapshot: snapshot({ buildings, upgrades: rows }) });
+
+  await track.push(full([catBed, feeder]));
+
+  const row = (index) => el(track, "buildings").children[index];
+  const find = (index, cls) => row(index).children.find((child) => child.classList.contains(cls));
+  const toggleOf = (index) => find(index, "upgrade-toggle");
+  const trackOf = (index) => find(index, "track");
+  const cardOf = (index) => find(index, "card");
+  const openAt = (index) => {
+    const box = trackOf(index);
+    return Boolean(box) && !box.classList.contains("hidden");
+  };
+  /** 轨道里的升级行（跳过表头那一行）。 */
+  const trackRowsAt = (index) => trackOf(index).children.filter((child) => child.classList.contains("track-row"));
+
+  check("有升级的建筑才有 ⬆；没有升级的那座**不给**这个按钮", () => {
+    if (!toggleOf(0)) throw new Error("b1 有升级却没有 ⬆");
+    if (toggleOf(1)) throw new Error("b2 一条升级都没有，却给了 ⬆（点开是空的）");
+    if (!trackOf(0)) throw new Error("b1 没有升级轨容器");
+    if (trackOf(1)) throw new Error("b2 没有升级，却建了轨容器");
+    if (openAt(0)) throw new Error("升级轨默认是开着的");
+  });
+
+  check("⬆ 是真 button，带 aria-expanded / aria-controls", () => {
+    const toggle = toggleOf(0);
+    eq(toggle.tagName, "BUTTON", "标签");
+    eq(toggle.type, "button", "type（不该是提交按钮）");
+    eq(toggle.getAttribute("aria-controls"), trackOf(0).id, "aria-controls 指向哪一个框");
+    eq(toggle.getAttribute("aria-expanded"), "false", "收起时的 aria-expanded");
+  });
+
+  check("徽标 = 这座建筑现在买得起的条数（t1 买得起、t2 锁着 → 1）", () => {
+    const badge = toggleOf(0).children.find((child) => child.classList.contains("badge"));
+    if (!badge) throw new Error("⬆ 上没有徽标");
+    eq(badge.textContent, "1", "徽标数字");
+    eq(badge.classList.contains("hidden"), false, "有买得起的就应当显示徽标");
+  });
+
+  check("点 ⬆ 只展开这一行，**不发 buy**", () => {
+    fire(toggleOf(0), "click");
+    eq(commandsOf(track, "buy").length, 0, "buy 次数（看升级不是买建筑）");
+    if (!openAt(0)) throw new Error("点了 ⬆ 但升级轨没展开");
+    if (openAt(1)) throw new Error("展开第 1 行时第 2 行也跟着开了");
+    eq(toggleOf(0).getAttribute("aria-expanded"), "true", "展开时的 aria-expanded");
+  });
+
+  check("轨里就是这座建筑那几条（按服务端给的顺序），锁着的那条也在", () => {
+    const rows = trackRowsAt(0);
+    eq(rows.length, 2, "轨内行数（含锁着的那一条）");
+    const names = rows.map((node) => node.children.find((child) => child.className === "name").textContent);
+    eq(names[0], "⭐ 更好的碗 ✔", "第 1 条");
+    eq(names[1], "🔒 连成片的猫窝", "第 2 条（锁着也要看得见：这一行回答的是「还有什么」）");
+  });
+
+  check("点轨里的一条升级发的是 upgrade，而且发的是**那一条**的 id", () => {
+    fire(trackRowsAt(0)[0], "click");
+    const sent = commandsOf(track, "upgrade");
+    eq(sent.length, 1, "upgrade 次数");
+    eq(sent[0].id, "t1", "发出去的 id");
+    eq(commandsOf(track, "buy").length, 0, "全程没有买建筑");
+  });
+
+  check("锁着的升级行点不动（真 DOM 里 disabled 的按钮本来就点不到）", () => {
+    const locked = trackRowsAt(0)[1];
+    eq(locked.disabled, true, "锁着的那一行 disabled");
+    if (!locked.classList.contains("locked")) throw new Error("锁着的那一行没有 locked 类");
+    fire(locked, "click");
+    eq(commandsOf(track, "upgrade").length, 1, "upgrade 次数（没有多出来一发）");
+  });
+
+  // 下一帧：只有价格变了。开着的必须还开着，节点必须还是同一个（焦点会掉的话就在这里）。
+  const beforeRow = row(0);
+  const beforeToggle = toggleOf(0);
+  const beforeTrackRow = trackRowsAt(0)[0];
+  await track.push(full([{ ...catBed, batchPrice: 240 }, feeder]));
+
+  check("重画之后：开着的还开着，关着的还关着", () => {
+    if (!openAt(0)) throw new Error("下一帧把展开着的升级轨合上了");
+    if (openAt(1)) throw new Error("下一帧把本来关着的那一行打开了");
+  });
+  check("重画没有把这一行 / ⬆ / 轨内行换成新节点", () => {
+    if (row(0) !== beforeRow) throw new Error("整行被换成了新节点");
+    if (toggleOf(0) !== beforeToggle) throw new Error("⬆ 被换成了新按钮（键盘焦点会掉回 body）");
+    if (trackRowsAt(0)[0] !== beforeTrackRow) throw new Error("轨内的升级行被换成了新节点");
+  });
+
+  check("再点一下能收起；收起之后轨里还是那两条（不丢内容）", () => {
+    fire(toggleOf(0), "click");
+    if (openAt(0)) throw new Error("点了第二下没收起");
+    eq(toggleOf(0).getAttribute("aria-expanded"), "false", "收起时的 aria-expanded");
+    eq(trackRowsAt(0).length, 2, "收起之后轨内的行数");
+  });
+
+  // 徽标与"买得起"是同一份口径：把钱包抬高，t2 也买得起 → 徽标变 2。
+  // 这里刻意**不改** upgradeIds，只改行本身——徽标必须跟着行走。
+  await track.push({
+    kind: "full", seq: 2,
+    snapshot: snapshot({
+      buildings: [catBed, feeder],
+      upgrades: upgrades.map((row_) => (row_.id === "t2" ? { ...row_, isUnlocked: true, canAfford: true } : row_)),
+    }),
+  });
+  check("徽标跟着「买得起」走（t2 也能买了 → 2）", () => {
+    const badge = toggleOf(0).children.find((child) => child.classList.contains("badge"));
+    eq(badge.textContent, "2", "徽标数字");
+    eq(toggleOf(0).classList.contains("affordable"), true, "⬆ 上的第二重信号");
+  });
+
+  // 换一帧：b1 的升级**换成了别的两条**（成员变了）→ 轨必须重建，
+  // 而且重建之后展开状态还在（它是按建筑 id 记的，不是按行记的）。
+  const swapped = upgrades.filter((row_) => row_.id === "g1").concat([{
+    id: "t9", isVisible: true, isPermanent: false, isAvailable: true, isUnlocked: true,
+    isMaxed: false, canAfford: false, icon: "🧺", name: "换过的升级", owned: 0,
+    currencyIcon: "🐟", price: 10, effectSummary: "x", unlockProgress: 1, maxPurchases: 1,
+  }]);
+  await track.push(full([{ ...catBed, upgradeIds: ["t9"] }, feeder], swapped));
+  check("轨的成员真的变了才重建（新的一条在里面，旧的不在）", () => {
+    fire(toggleOf(0), "click"); // 重新展开
+    const rows = trackRowsAt(0);
+    eq(rows.length, 1, "轨内行数");
+    eq(
+      rows[0].children.find((child) => child.className === "name").textContent,
+      "🧺 换过的升级",
+      "换过之后的那一条");
+  });
+
+  // upgradeIds 指向一条 `upgrades[]` 里根本没有的 id：不许抛，也不许造一个空行。
+  await track.push(full([{ ...catBed, upgradeIds: ["t9", "missing"] }, feeder], swapped));
+  check("upgradeIds 里有对不上的 id 时：跳过它，不抛异常、不造空行", () => {
+    eq(trackRowsAt(0).length, 1, "轨内行数（missing 被跳过）");
+  });
+
+  check("键盘：焦点在 ⬆ 上按空格不会顺手点一下猫", () => {
+    const before = commandsOf(track, "click").length;
+    for (const handler of track.doc._listeners.get("keydown") ?? []) {
+      handler({ code: "Space", target: { tagName: "BUTTON" }, preventDefault() {} });
+    }
+    return commandsOf(track, "click").length === before;
   });
 }
 

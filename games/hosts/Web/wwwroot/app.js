@@ -863,9 +863,42 @@ const openStories = new Set();
  */
 const buildingRows = new Map();
 
+/**
+ * 玩家展开了哪几座建筑的"升级轨"。与 `openStories` 同一套理由与同一套做法：
+ * 展开是玩家的操作、不是服务端状态，所以真相只能活在这里，按建筑 id 记。
+ */
+const openTracks = new Set();
+
 /** 一行建筑的元素 id：展开按钮的 `aria-controls` 指向它。 */
 function storyId(buildingId) {
   return `building-story-${buildingId}`;
+}
+
+/** 升级轨容器的元素 id（⬆ 按钮的 `aria-controls` 指向它）。 */
+function trackId(buildingId) {
+  return `building-track-${buildingId}`;
+}
+
+/**
+ * 「这条升级属于某座建筑」的 id 全集，**由服务端算好**（`buildings[].upgradeIds`）。<para>
+ *
+ * 前端**不解析** `category` 里的 `"building:<id>"` 约定：那是服务端的字符串格式，
+ * 前端按字符串前缀去猜，正是 `usesPrestigeCurrency` / `currencyIcon` / `modeName`
+ * 三次都刻意避开的那条路（猜错了是静默的：行会安静地挂到错的地方、或者一条都不挂）。
+ * 所以这里只做集合运算：谁在 `upgradeIds` 里，谁就归建筑。
+ * </para>
+ */
+function buildingOwnedUpgradeIds() {
+  const ids = new Set();
+  for (const building of state.buildings ?? []) {
+    for (const id of building.upgradeIds ?? []) ids.add(id);
+  }
+  return ids;
+}
+
+/** 按 id 取升级行（建筑轨要拿完整的那一行：名字、价格、已购、买得起）。 */
+function upgradeById(id) {
+  return (state.upgrades ?? []).find((upgrade) => upgrade.id === id) ?? null;
 }
 
 /**
@@ -919,6 +952,29 @@ function createBuildingRow(building) {
     toggle.addEventListener("click", () => toggleStory(building.id));
   }
 
+  // 升级轨的展开按钮：与 📖 同规格的第二个真 <button>（Tab 停得到、回车/空格自带激活）。
+  // **没有升级的建筑不给这个按钮**——与"没有说明就不给 📖"同一条规矩：
+  // 一个点开空空如也的按钮是在骗人。
+  // 徽标里的数字是"这座建筑现在买得起的升级条数"，于是不必展开也看得见哪座有东西可买。
+  const trackToggle = (building.upgradeIds ?? []).length > 0 ? document.createElement("button") : null;
+  let badge = null;
+  if (trackToggle) {
+    trackToggle.type = "button";
+    trackToggle.className = "upgrade-toggle";
+    trackToggle.setAttribute("aria-expanded", "false");
+    trackToggle.setAttribute("aria-controls", trackId(building.id));
+    trackToggle.title = `看《${building.name}》自己的升级`;
+    trackToggle.setAttribute("aria-label", trackToggle.title);
+
+    const glyph = document.createElement("span");
+    glyph.textContent = "⬆";
+    badge = document.createElement("b");
+    badge.className = "badge hidden";
+    trackToggle.append(glyph, badge);
+
+    trackToggle.addEventListener("click", () => toggleTrack(building.id));
+  }
+
   // 卡片本体：**还是买**，与改动前逐字相同的行为。
   const card = document.createElement("button");
   card.className = "card";
@@ -954,8 +1010,25 @@ function createBuildingRow(building) {
     }
   }
 
-  root.append(...[toggle, card, story].filter(Boolean));
-  return { root, card, toggle, story, name, owned, price, share };
+  // 升级轨：这座建筑自己的升级（服务端 `upgradeIds` 给的是 id，整行在 `upgrades[]` 里）。
+  // 形态与故事框一致：跨整行、默认带 `.hidden`、由自己的按钮开关。
+  const track = trackToggle ? document.createElement("div") : null;
+  if (track) {
+    track.className = "track hidden";
+    track.id = trackId(building.id);
+    track.setAttribute("role", "region");
+    track.setAttribute("aria-label", `《${building.name}》的升级`);
+  }
+
+  root.append(...[toggle, trackToggle, card, story, track].filter(Boolean));
+  return {
+    root, card, toggle, story, name, owned, price, share,
+    trackToggle, track, badge,
+    // 升级轨当前装着哪几条 id（成员或顺序变了才重建行；见 syncTrack）
+    trackIds: [],
+    trackRows: new Map(),
+    trackHead: null,
+  };
 }
 
 /** 一帧一次的行内更新：只写"会变的东西"，节点本身不换。 */
@@ -984,6 +1057,112 @@ function updateBuildingRow(node, building) {
   }
 
   applyStoryState(node, building.id);
+  applyTrackBadge(node, building);
+}
+
+/**
+ * 把「这座建筑自己的升级」画进那一行的轨道里。
+ *
+ * 两件事分开做：
+ *   · **徽标**每帧都更新——它是"不必展开也看得见"的那半个信号；
+ *   · **轨内的行**只在展开时才同步。收起时那些行本来就看不见，而建筑有 104 座、
+ *     每座 3 条：每帧把 312 行的文字重写一遍，换来的只是"收着的框里数字也是新的"，
+ *     而它在被打开的那一瞬间就会同步（见 toggleTrack）。所以这里刻意跳过。
+ */
+function applyTrackBadge(node, building) {
+  if (!node.trackToggle) return;
+
+  const affordable = (building.upgradeIds ?? [])
+    .map((id) => upgradeById(id))
+    .filter((upgrade) => upgrade && upgrade.isUnlocked && !upgrade.isMaxed && upgrade.canAfford)
+    .length;
+
+  if (node.badge) {
+    setText(node.badge, affordable);
+    node.badge.classList.toggle("hidden", affordable === 0);
+  }
+
+  node.trackToggle.classList.toggle("affordable", affordable > 0);
+  node.trackToggle.title = affordable > 0
+    ? `《${building.name}》有 ${affordable} 项升级现在买得起`
+    : `看《${building.name}》自己的升级`;
+
+  if (openTracks.has(building.id)) syncTrack(node, building);
+}
+
+/**
+ * 同步一条轨的内容：成员或顺序变了才重建行，否则只改文字。
+ *
+ * 与 `renderBuildings` 同一套理由（见 `buildingRows` 的注释）：轨也在一个会滚动的
+ * 容器里，清空重建会让滚动位置与键盘焦点都失去保证。行按升级 id 复用。
+ */
+function syncTrack(node, building) {
+  if (!node.track) return;
+
+  const ids = building.upgradeIds ?? [];
+  const same = node.trackIds.length === ids.length && ids.every((id, i) => node.trackIds[i] === id);
+
+  if (!same) {
+    node.track.textContent = "";
+    node.trackRows = new Map();
+
+    const head = document.createElement("div");
+    head.className = "track-head";
+    node.trackHead = head;
+    node.track.append(head);
+
+    for (const id of ids) {
+      const upgrade = upgradeById(id);
+      if (!upgrade) continue;
+      const row = createUpgradeCard(upgrade);
+      row.root.classList.add("track-row");
+      node.trackRows.set(id, row);
+      node.track.append(row.root);
+    }
+
+    node.trackIds = [...ids];
+  }
+
+  let affordable = 0;
+  for (const id of ids) {
+    const row = node.trackRows.get(id);
+    const upgrade = upgradeById(id);
+    if (!row || !upgrade) continue;
+    updateUpgradeCard(row, upgrade);
+    if (upgrade.isUnlocked && !upgrade.isMaxed && upgrade.canAfford) affordable++;
+  }
+
+  if (node.trackHead) {
+    setText(
+      node.trackHead,
+      affordable > 0 ? `这座建筑的升级 · ${affordable} 项买得起` : "这座建筑的升级");
+  }
+}
+
+/** 展开 / 收起某座建筑的升级轨。与 `toggleStory` 同一套：只动这一行，不重画列表。 */
+function toggleTrack(buildingId) {
+  if (openTracks.has(buildingId)) openTracks.delete(buildingId);
+  else openTracks.add(buildingId);
+
+  const node = buildingRows.get(buildingId);
+  if (!node) return;
+
+  // 打开前先同步一次：收着的时候轨内文字是旧的（见 applyTrackBadge 的取舍）。
+  if (openTracks.has(buildingId) && state) {
+    const building = (state.buildings ?? []).find((row) => row.id === buildingId);
+    if (building) syncTrack(node, building);
+  }
+
+  applyTrackState(node, buildingId);
+}
+
+/** 把展开状态套到这一行的轨道上（与 `applyStoryState` 同规格）。 */
+function applyTrackState(node, buildingId) {
+  if (!node.trackToggle || !node.track) return;
+
+  const open = openTracks.has(buildingId);
+  node.track.classList.toggle("hidden", !open);
+  node.trackToggle.setAttribute("aria-expanded", open ? "true" : "false");
 }
 
 /**
@@ -1014,20 +1193,22 @@ function toggleStory(buildingId) {
 }
 
 /**
- * 建筑列表：一行 = 一个"买"的卡片 + 一个"看故事"的按钮 + 一个可展开的故事框。
+ * 建筑列表：一行 = 一个"买"的卡片 + 两个展开控件（📖 看故事 / ⬆ 看这座建筑的升级）
+ * + 两个可展开的框（故事框 / 升级轨）。
  *
  * **一次点击 = 一次购买，这一点没变**：卡片本体仍然是那个 `<button>`，点它就是买。
- * 故事框是**另一个控件**（左边那个 📖），展开的是这座建筑自己的说明文本，也就是快照里的
- * `description`（内容包里 `text.json` 的 `buildings.<id>.description`，作者写的散文）。
- * 两个动作各有一个控件，互不触发：点 📖 不会买，买不会展开。
+ * 故事框展开的是这座建筑自己的说明文本（快照里的 `description`，内容包 `text.json` 的
+ * `buildings.<id>.description`）；升级轨展开的是**这座建筑自己的升级**（快照里的
+ * `buildings[].upgradeIds`，整行在 `upgrades[]` 里，点一下买那一条升级）。
+ * 三个动作各有各的控件，互不触发：点 📖 / ⬆ 都不会买建筑，买建筑不会展开任何框。
  *
  * 为什么不让"点卡片"同时担当两件事：那是这个游戏的核心循环、是肌肉记忆，而且它是这个
  * 页面上**唯一会花钱的手势**——同一个手势一会儿花钱、一会儿只是弹出一段字，误操作的
  * 代价是不对称的（点错了会买错东西，而"点错了"最坏只是多读一段字）。所以宁可多一个
  * 明确的控件，也不去动那个已经长在玩家手上的手势。
  *
- * 展开状态活在 `openStories` 里、按建筑 id 记（见那条注释）；节点按 id 复用（见
- * `buildingRows`）。两者都只为一件事：**快照每 250ms 来一帧，展开的框不能跟着抖**。
+ * 展开状态活在 `openStories` / `openTracks` 里、按建筑 id 记（见那两条注释）；节点按 id
+ * 复用（见 `buildingRows`）。两者都只为一件事：**快照每 250ms 来一帧，展开的框不能跟着抖**。
  */
 function renderBuildings() {
   const host = $("#buildings");
@@ -1060,12 +1241,68 @@ function renderBuildings() {
     if (visible.has(id)) continue;
     buildingRows.delete(id);
     openStories.delete(id);
+    openTracks.delete(id);
   }
 }
 
 /**
- * 普通升级列表。**永久线不在这里**——它们有自己的面板（见 renderPermanent），
- * 否则一条线会被两处渲染，而且"哪个钱包付钱"会在同一张列表里混着。
+ * 一条升级卡片：**建一次、之后只改文字**，由「升级」面板与「建筑轨」共用。<para>
+ *
+ * 两边共用这一份是刻意的：价格、货币图标、已购次数、"买得起 / 锁着 / 买满"三态
+ * 各写一遍必然长歪，而"同一个东西在两处显示不一样"正是 `GameViewFactory` 存在的理由
+ * （终端与浏览器必须说同一句话）。这里管的是同一个页面里的两处。
+ * </para>
+ */
+function createUpgradeCard(upgrade) {
+  const root = document.createElement("button");
+  root.className = "card compact";
+
+  const name = document.createElement("span");
+  name.className = "name";
+  const price = document.createElement("span");
+  price.className = "price";
+  const effect = document.createElement("span");
+  effect.className = "effect";
+  root.append(name, price, effect);
+
+  root.addEventListener("click", () => {
+    if (root.disabled) return;
+    send("upgrade", { id: upgrade.id });
+  });
+
+  const node = { root, name, price, effect };
+  updateUpgradeCard(node, upgrade);
+  return node;
+}
+
+/** 一帧一次的行内更新（只写会变的东西）。 */
+function updateUpgradeCard(node, upgrade) {
+  node.root.disabled = !upgrade.isUnlocked || Boolean(upgrade.isMaxed);
+  node.root.classList.toggle("maxed", Boolean(upgrade.isMaxed));
+  node.root.classList.toggle("locked", !upgrade.isUnlocked && !upgrade.isMaxed);
+  node.root.classList.toggle("affordable", Boolean(upgrade.isUnlocked) && !upgrade.isMaxed && Boolean(upgrade.canAfford));
+
+  // 锁着 / 买满也要看得见名字：这一行是"这游戏里还有什么"，藏起来等于少一条信息
+  // （永久线那边早就这么做，见 renderPermanent 的注释）。
+  let label = upgrade.isUnlocked ? `${upgrade.icon} ${upgrade.name}` : `🔒 ${upgrade.name}`;
+  if (upgrade.owned > 0) label += upgrade.maxPurchases > 1 ? ` ${upgrade.owned} / ${upgrade.maxPurchases}` : " ✔";
+  setText(node.name, label);
+
+  // 图标也由服务端给（`currencyIcon`），不再按枚举序数在前端两选一
+  setText(
+    node.price,
+    upgrade.isUnlocked ? `${upgrade.currencyIcon} ${number(upgrade.price)}` : percent(upgrade.unlockProgress));
+
+  setText(node.effect, upgrade.effectSummary ?? "");
+}
+
+/**
+ * 普通升级列表。**两条线不在这里**：
+ *   · 永久线有自己的面板（见 renderPermanent）——否则一条线会被两处渲染，
+ *     而且"哪个钱包付钱"会在同一张列表里混着；
+ *   · **建筑自己的升级挂在各座建筑上**（建筑行左边的 ⬆）——同一条"一条线只有一个家"的
+ *     规矩，只是这次的家是建筑。判据是**服务端给的** `buildings[].upgradeIds`，
+ *     前端不去解析 `category` 里的 `"building:"` 前缀（见 buildingOwnedUpgradeIds）。
  *
  * 这里曾经有一个 `slice(0, 40)`：咖啡馆包 48 条升级，末尾几条会**无声地**少掉。
  * 那是这一层最不该有的失败形态（数据都在，界面上什么都不说），所以直接去掉——
@@ -1073,46 +1310,26 @@ function renderBuildings() {
  */
 function renderUpgrades() {
   const host = $("#upgrades");
-  const rows = (state.upgrades ?? []).filter((u) => u.isVisible && !u.isPermanent);
+  const owned = buildingOwnedUpgradeIds();
+  const rows = (state.upgrades ?? [])
+    .filter((u) => u.isVisible && !u.isPermanent && !owned.has(u.id));
   const available = rows.filter((u) => u.isAvailable);
   host.textContent = "";
 
   $("#upgrade-count").textContent = available.length > 0 ? `${available.length} 项可买` : "暂无可买";
 
-  for (const upgrade of rows) {
-    const card = document.createElement("button");
-    card.className = "card compact";
-    if (upgrade.isMaxed) card.classList.add("maxed");
-    else if (!upgrade.isUnlocked) card.classList.add("locked");
-    else if (upgrade.canAfford) card.classList.add("affordable");
-
-    const name = document.createElement("span");
-    name.className = "name";
-    name.textContent = upgrade.isUnlocked ? `${upgrade.icon} ${upgrade.name}` : `🔒 ${upgrade.name}`;
-    if (upgrade.owned > 0) name.textContent += ` ×${upgrade.owned}`;
-    card.append(name);
-
-    const price = document.createElement("span");
-    price.className = "price";
-    // 图标也由服务端给（`currencyIcon`），不再按枚举序数在前端两选一
-    price.textContent = upgrade.isUnlocked ? `${upgrade.currencyIcon} ${number(upgrade.price)}` : percent(upgrade.unlockProgress);
-    card.append(price);
-
-    if (upgrade.effectSummary) {
-      const effect = document.createElement("span");
-      effect.className = "effect";
-      effect.textContent = upgrade.effectSummary;
-      card.append(effect);
-    }
-
-    if (upgrade.isUnlocked && !upgrade.isMaxed) {
-      card.addEventListener("click", () => send("upgrade", { id: upgrade.id }));
-    } else {
-      card.disabled = true;
-    }
-
-    host.append(card);
+  // 移走的那批必须**说出去**：静默把 312 条从这一栏拿走，是这个仓库最反对的那种失败形态。
+  const moved = (state.upgrades ?? []).filter((u) => owned.has(u.id) && u.isVisible && !u.isPermanent).length;
+  const hint = $("#upgrade-hint");
+  if (hint) {
+    setText(
+      hint,
+      moved > 0
+        ? `建筑自己的升级（这里 ${moved} 条）挂在各座建筑上：到「建筑」页点那一行左边的 ⬆。`
+        : "");
   }
+
+  for (const upgrade of rows) host.append(createUpgradeCard(upgrade).root);
 }
 
 /**

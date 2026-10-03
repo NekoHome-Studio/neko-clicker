@@ -1,4 +1,4 @@
-# NekoClicker 公开 API 快照 format=1 assembly=NekoClicker.Core version=1.7.0
+# NekoClicker 公开 API 快照 format=1 assembly=NekoClicker.Core version=1.8.0
 
 public static class NekoClicker.Core.AchievementSystem
   method static System.Collections.Generic.List<NekoClicker.Core.Content.AchievementDefinition>! Check(NekoClicker.Core.Content.GameContent! content, NekoClicker.Core.GameState! state, NekoClicker.Core.IGameMetrics! metrics, NekoClicker.Core.Events.GameEventBus! events)
@@ -351,6 +351,7 @@ public sealed class NekoClicker.Core.Content.GameContent
   method NekoClicker.Core.Content.StorylineDefinition? FindStoryline(System.String! id)
   method NekoClicker.Core.Content.UpgradeDefinition? FindUpgrade(System.String! id)
   method System.Collections.Generic.IReadOnlyList<NekoClicker.Core.Content.LoreEntry>! LoreOf(System.String! storylineId)
+  method System.Collections.Generic.IReadOnlyList<NekoClicker.Core.Content.UpgradeDefinition>! UpgradesForBuilding(System.String! buildingId)
   method System.String! CounterName(System.String! key)
   prop NekoClicker.Core.Content.GameBalance! Balance { get; init; }
   prop System.Boolean HasEras { get; }
@@ -365,6 +366,7 @@ public sealed class NekoClicker.Core.Content.GameContent
   prop System.Collections.Generic.IReadOnlyDictionary<System.String, NekoClicker.Core.Content.StanceDefinition>! StanceById { get; init; }
   prop System.Collections.Generic.IReadOnlyDictionary<System.String, NekoClicker.Core.Content.StorylineDefinition>! StorylineById { get; init; }
   prop System.Collections.Generic.IReadOnlyDictionary<System.String, NekoClicker.Core.Content.UpgradeDefinition>! UpgradeById { get; init; }
+  prop System.Collections.Generic.IReadOnlyDictionary<System.String, System.Collections.Generic.IReadOnlyList<NekoClicker.Core.Content.UpgradeDefinition>>! UpgradesByBuilding { get; init; }
   prop System.Collections.Generic.IReadOnlyDictionary<System.String, System.String>! CounterNames { get; init; }
   prop System.Collections.Generic.IReadOnlyList<NekoClicker.Core.Content.AchievementDefinition>! Achievements { get; init; }
   prop System.Collections.Generic.IReadOnlyList<NekoClicker.Core.Content.BuffDefinition>! Buffs { get; init; }
@@ -735,6 +737,11 @@ public abstract class NekoClicker.Core.Content.UnlockCondition : System.IEquatab
   method virtual System.String! Describe(NekoClicker.Core.Content.GameContent? content = null)
   method virtual System.String! ToString()
   prop virtual System.Type! EqualityContract { get; }
+
+public static class NekoClicker.Core.Content.UpgradeCategories
+  field const System.String! BuildingPrefix = "building:"
+  method static System.Boolean TryGetBuildingId(System.String? category, out System.String buildingId)
+  method static System.String! ForBuilding(System.String! buildingId)
 
 public enum NekoClicker.Core.Content.UpgradeCurrency : System.Int32
   field Cookies = Cookies
@@ -1645,6 +1652,7 @@ public sealed class NekoClicker.Core.Views.BuildingView : System.IEquatable<Neko
   prop System.Boolean HiddenUntilUnlocked { get; init; }
   prop System.Boolean IsUnlocked { get; init; }
   prop System.Boolean IsVisible { get; }
+  prop System.Collections.Generic.IReadOnlyList<System.String>! UpgradeIds { get; init; }
   prop System.Double BatchPrice { get; init; }
   prop System.Double CpsContribution { get; init; }
   prop System.Double CpsEach { get; init; }

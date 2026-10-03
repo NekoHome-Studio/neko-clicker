@@ -7,6 +7,84 @@
 
 ---
 
+## [1.8.0] - 2026-10-03
+
+> 发布口径：**minor**——公开 API **只增不改**：新增 `UpgradeCategories` 类型、
+> `GameContent.UpgradesByBuilding` / `GameContent.UpgradesForBuilding(string)`、
+> `BuildingView.UpgradeIds`。**没有删除、没有改签名、没有改语义**；
+> 线上原来那些字段（`upgrades[].category` / `tier`、`buildings[].nextMilestoneAt`）
+> **一个都没动**，所以已有的 `/api/snapshot` 消费者不会被这个版本打断。
+>
+> **为什么是 1.8.0 而不是 1.7.0**：`1.7.0` 已经被同一天的 `GameSnapshot.ModeName` 占用
+> （`CHANGELOG` 里已有 `## [1.7.0]` 条目、`Directory.Build.props` 当时就是 1.7.0）。
+> 本仓库自己早就把这条写下来了：`engine/docs/WEB_EXTENSION_PLAN.md:7`「`1.7.0` 已被
+> `GameSnapshot.ModeName` 占用」、`engine/docs/DEVELOPMENT_SUMMARY.md:477`「真要落地时
+> 版本号从 `1.8.0` 起算」。所以这次取 **1.8.0**。
+
+### 新增（建筑升级系统：把"这条升级属于哪座建筑"接上）
+
+**先说清楚这次没做什么**：升级机器、每座建筑的强化档、单建筑修饰符、按购买次数重复计入
+**全都已经在树上跑了很久**（11 个包 534 条升级里 **312 条**已经是建筑专属，104 座建筑每座
+3 条）。缺的是一条**关系**：`UpgradeDefinition.Category` 上那条 `"building:<id>"` 约定
+（`Definitions.cs:107` 文档化的那条）**没有一处代码校验它、没有索引、也没有任何消费者**——
+`UpgradeView.Category` / `Tier` 上线了没人读，`BuildingView.NextMilestoneAt` 只有终端宿主读，
+Web 前端一个都没读。于是"建筑专属升级"在玩家眼里根本不存在，**而两端都不会报错**。
+这次把这条关系接上，一行内容都没加、一个数值都没改。
+
+- **`UpgradeCategories`（新公开类型）**：那条约定从"散在 11 个包里的字符串拼接"
+  （`$"building:{building.Id}"`）收成**一个出处**：`BuildingPrefix` / `ForBuilding(id)` /
+  `TryGetBuildingId(category, out id)`。
+- **构建期校验（三条，都点名升级 id 与建筑 id）**：`Category` 是 `"building:"` 却没有 id；
+  指向不存在的建筑；**分类说属于 A、修饰符却作用在 B 上**。
+  前两条以前**完全静默**（写错只是那条升级永远不出现在"建筑自己的升级"里）；
+  第三条是那条静默失效的正脸——玩家会在 A 名下看到它、买到的却是 B 的效果。
+  允许"挂在某座建筑名下、效果是全局的"（例如这座建筑的培训提升了所有人）。
+- **索引**：`GameContent.UpgradesByBuilding` / `UpgradesForBuilding(id)`，顺序是
+  **先按 `Tier`、同档按声明顺序**（`Tier` 从此有了第一个真实消费者）。
+- **快照**：`BuildingView.UpgradeIds`（服务端算好的 id 列表，按档排序）。
+  给 id 不给整行：那些行已经在 `upgrades[]` 里推过了，再嵌一份等于同一份数据付两次运费。
+  **前端不解析 `"building:"` 前缀**——与 1.4.0 的 `UpgradeView.UsesPrestigeCurrency`
+  和 1.7.0 的 `Snapshot.ModeName` 完全同一条规矩。
+- **Web 前端**：建筑行多一个与 📖 并列的 **⬆**（徽标 = "这座建筑现在买得起几项"），
+  展开的是这座建筑自己的升级，点一下买**那一条升级**（不是买建筑）；
+  没有升级的建筑**不给**这个按钮。扁平的「升级」面板**不再重复渲染**建筑专属升级
+  （一条线只有一个家——`renderPermanent` 早就写过这条规矩），并**写出一行**
+  "这里 N 条挂在各座建筑上"，不做静默少内容。两个面板共用同一份升级卡片实现，
+  不会长歪成两套显示。
+
+### 守卫与判别力
+
+- **`BuildingUpgradeTests.cs`（新增 12 条）**：11 包逐条横扫（分类必须指向真实建筑、
+  索引与声明逐条一致、轨内按 Tier、**312 / 104 两个计数**防假绿）；三条坏声明各自
+  断言**错误信息里同时出现升级 id 与坏建筑 id**；"全局效果合法"的阴性对照；
+  `UpgradeIds` 逐座等于内容轨、线上是字符串数组；**静态性**——两个相邻帧逐字节相同、
+  且 `buildings` 不进闲置增量帧（实测九命：全量 64,471 字节 / 一 tick 增量 **188 字节 = 0.3%**，
+  判据 `<5%`，由既有的字节预算用例把着）。
+- **`tools/web-smoke.mjs` 88 → 103**：新增第 15 节 14 条（⬆ 不发 `buy`、展开只影响这一行、
+  重画不丢展开态且节点复用、没有升级就不给 ⬆、锁着的那条也在且点不动、
+  `upgradeIds` 里有对不上的 id 时跳过而不抛、徽标跟着"买得起"走）；第 11 节的布局形状守卫
+  从"两列"改成"三列 + 卡片钉在第 3 列 + 两个框都跨整行"；夹具按 §14 的规矩
+  **重新从真宿主抓了一份**（`tools/fixtures/web-snapshot.json`，61,143 字节，
+  9 座建筑各带 3 条 `upgradeIds`）。
+- **`tools/api-test.ps1` 52 → 55 项**：真宿主上断言"每座建筑都带 `upgradeIds`"
+  "每个 id 都能在 `upgrades[]` 里找到"（两段各自对得上，不只是键在不在）
+  "不是空的、也没有一条被两座建筑同时认领"（防前两条假绿）。
+  收尾的检查点覆盖审计 **55 处 / 执行到 55 处 / 0 跳过**。
+- **`.building` 的布局改了三列网格**：三个元素都用**显式列号**钉住——没有说明的建筑不给 📖、
+  没有升级的建筑不给 ⬆，而空的 `auto` 轨道宽度是 0，靠自动排布会让卡片掉进窄轨道。
+
+### 兼容性与影响面
+
+- **存档格式未动**、存档版本号未升（`UpgradeIds` 是从内容算出来的视图字段）。
+- **内容未动**：11 个包的升级条数、数值、`text.json` 一行都没改，
+  所以那些"写死条数"的内容守卫一条都不需要跟着改——这本身就是"没偷偷改内容"的证据。
+- **公开 API 快照**：`engine/core/PublicApi.txt` 在改完代码与版本之后才重生成
+  （顺序按 `VERSIONING.md` §4）。候选审查者该看的那几行见
+  `engine/docs/OPEN_WORK.md` 的最新一节。
+- 详细方案（问题 / 已经有什么 / 缺口 / 提案 / 守卫 / 明确不做 / 未决问题）在
+  [engine/docs/BUILDING_UPGRADES_PLAN.md](engine/docs/BUILDING_UPGRADES_PLAN.md)；
+  作者侧规则在 [CONTENT_AUTHORING §3(e)](engine/docs/CONTENT_AUTHORING.md)。
+
 ## [1.7.0] - 2026-10-03
 
 > 发布口径：**minor**——公开 API **只增不改**：新增 `GameSnapshot.ModeName`（`string`）与
