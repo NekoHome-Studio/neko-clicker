@@ -291,13 +291,14 @@ function snapshot(overrides = {}) {
     achievementCount: 1,
     achievementTotal: 12,
     playTimeSeconds: 3600,
-    // ⚠️ 这一行与**线上真实形状不符**：宿主推来的是枚举序数（实测线上是 `"mode":0`），
-    // 不是 camelCase 的名字——`SnapshotProtocol.Options` 没开枚举字符串转换器。
-    // 于是 `renderBatch` 里那句 `(state.mode ?? "").toLowerCase()` 会在真页面上抛
-    // TypeError，而这里喂字符串恰好绕开了它：**这个夹具曾经把一条线上故障藏了整轮**。
-    // 用真形状（数字）喂这一帧，整套用例当场变红；修法需要给快照加个模式名字段
-    // （公开 API + 版本），不是这个脚本能自己决定的事，所以先记在 OPEN_WORK 里。
-    mode: "buy10",
+    // 档位：**两个字段都按线上真实形状写**（§14 的"夹具不是谎话"守卫盯着它们）。
+    // `mode` 是枚举序数（数字），前端**不许**读它；`modeName` 才是前端认的那个 token。
+    // 这里曾经写的是 `mode: "buy10"`——那是前端以为的形状，不是线上的形状，于是整套用例
+    // 绿着、而真页面上每次 `render()` 都在 `renderBatch` 处抛 TypeError，它后面所有面板
+    // （批量档位按钮 / 离线收益 / 表态 / 图鉴 / 成就 / 日志）一次都没画出来过。
+    // 见 OPEN_WORK 的 N 条与 §14。
+    mode: 0,
+    modeName: "buy10",
     prestige: { canAscend: true, chipsOnAscend: 2 },
     era: {
       icon: "🌱", name: "第一层", index: 1, total: 4, theme: "开张", progress: 0.42,
@@ -942,6 +943,117 @@ section("13. 建筑：卡片买、📖 看故事（两个手势互不触发）")
     if (toggleOf(0)) throw new Error("没有说明却给了故事按钮");
     if (storyOf(0)) throw new Error("没有说明却建了故事框");
     eq(row(0).children.length, 1, "这一行只剩卡片");
+  });
+}
+
+// 14. 夹具不是谎话：形状对着**真宿主抓下来的快照**比。
+//
+// 这一节存在的唯一理由，是上面那条线上故障：夹具里写 `mode: "buy10"`，线上却是 `"mode":0`，
+// 于是 `render()` 每帧在 `renderBatch` 处抛 TypeError、它后面所有面板一次都没画出来过——
+// **而 82 条用例全绿**。判据只有一条：夹具里前端会用到的每个路径，形状必须与真快照一致。
+//
+// 真快照 = tools/fixtures/web-snapshot.json，就是从起着的宿主上抓的**原始响应**：
+//   curl.exe -s "http://127.0.0.1:5299/api/snapshot?package=apocalypse"
+// 它是**形状**的参照，不是数值的参照：重生成时数值（金币、时长、通知时间戳）会变，
+// 那是预期的；这里比的是类型，所以数值漂移不会让它红。
+section("14. 夹具形状 vs 真宿主快照");
+{
+  const golden = JSON.parse(readFileSync(join(root, "tools", "fixtures", "web-snapshot.json"), "utf8"));
+
+  /** JSON 形状名：null / array / object / string / number / boolean。 */
+  const shapeOf = (value) => {
+    if (value === null) return "null";
+    if (Array.isArray(value)) return "array";
+    if (value === undefined) return "missing";
+    return typeof value;
+  };
+
+  /**
+   * 收集形状差异。规则三条：
+   *   · 任一边是 null 就放过——null 表示"这个内容包没有这一项"（stances / offline / ending…），
+   *     而夹具恰恰是用来演练"有"的那条路的；
+   *   · 夹具里有、真快照里没有 = 夹具**编**了一个线上不存在的字段（`mode` 就是这么来的）；
+   *   · 形状不同 = 同一类谎，点名到具体路径。
+   */
+  function shapeMismatches(fixture, wire, path, into) {
+    const left = shapeOf(fixture);
+    const right = shapeOf(wire);
+    if (left === "null" || right === "null") return;
+
+    if (left === "missing" || right === "missing") {
+      into.push(`${path || "<顶层>"}：夹具是 ${left}，真快照是 ${right}`);
+      return;
+    }
+
+    if (left !== right) {
+      into.push(`${path}：夹具是 ${left}，线上是 ${right}（${JSON.stringify(fixture)} vs ${JSON.stringify(wire)}）`);
+      return;
+    }
+
+    if (left === "object") {
+      for (const key of Object.keys(fixture)) {
+        shapeMismatches(fixture[key], wire[key], path ? `${path}.${key}` : key, into);
+      }
+      return;
+    }
+
+    if (left === "array" && fixture.length > 0 && wire.length > 0) {
+      // 数组只比第 0 个元素：服务端按同一个 record 序列化每一行，字段集合是同一套。
+      shapeMismatches(fixture[0], wire[0], `${path}[0]`, into);
+    }
+  }
+
+  check("夹具里前端会用到的每个路径，形状都与真宿主快照一致", () => {
+    const mismatches = [];
+    shapeMismatches(snapshot(), golden, "", mismatches);
+    if (mismatches.length > 0) {
+      throw new Error(`夹具与真快照对不上 ${mismatches.length} 处：\n      · ${mismatches.join("\n      · ")}`);
+    }
+  });
+  // 这个方向只能发现"夹具里**写了的**路径错了"；反过来的"夹具漏了某个前端要用的字段"
+  // 由 C# 的 WebSnapshotProtocolTests.FrontendContract_FieldNamesAndTheModeToken
+  // 与下面那条"真快照推过 render()"一起守（漏字段会让那条渲染用例红）。
+
+  // app.js 里还有没有人在读那个枚举序数。按行去掉注释再扫——文档里**必须**能提
+  // `state.mode`（那正是要解释的坑），但代码里不许再出现。
+  check("app.js 的代码里不再读 state.mode（序数只配躺在快照里）", () => {
+    const code = appSource
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .split("\n")
+      .map((line) => line.replace(/\/\/.*$/, ""))
+      .filter((line) => /\bstate\.mode\b/.test(line));
+    if (code.length > 0) throw new Error(`还在读序数：${code.map((line) => line.trim()).join(" | ")}`);
+  });
+
+  // 同一份真快照推过整个 render()。判据不只是"没抛"——**晚段**才该出现的效果必须真的出现：
+  // `renderBatch` 在 render() 的中段，它后面的东西一条都不该少。这就是当初那条故障的判别力。
+  const real = await loadApp(copyAs("app-real.mjs", appSource));
+  let renderError = null;
+  try {
+    await real.push({ kind: "full", seq: 1, snapshot: golden });
+  } catch (error) {
+    renderError = error;
+  }
+
+  check("真宿主快照推过 render()：全程不抛异常", () => {
+    if (renderError) throw renderError;
+  });
+  check("中段之后的批量档位按钮真的画出来了（4 个，且高亮的是 modeName 那一个）", () => {
+    const buttons = el(real, "batch").children;
+    eq(buttons.length, 4, "档位按钮数");
+    const active = buttons.filter((button) => button.classList.contains("active"));
+    eq(active.length, 1, "高亮的按钮数");
+    const labels = { buy1: "×1", buy10: "×10", buy100: "×100", buymax: "买满" };
+    eq(active[0].textContent, labels[golden.modeName], `高亮的是 <${golden.modeName}> 对应的那个`);
+  });
+  check("图鉴 / 成就 / 日志 / 建筑这些同样在它后面的面板也都画了", () => {
+    if (golden.codex && el(real, "codex").children.length === 0) throw new Error("图鉴一条都没画");
+    eq(el(real, "achievement-list").children.length, golden.achievements.length, "成就行数");
+    if (el(real, "log").children.length === 0) throw new Error("日志一条都没画");
+    eq(el(real, "buildings").children.length, golden.buildings.filter((b) => b.isVisible).length, "可见建筑行数");
+  });
+  check("离线收益那张的可见性与真快照一致（它也在 renderBatch 之后）", () => {
+    eq(el(real, "offline").classList.contains("hidden"), golden.offline === null, "offline 那张 sheet");
   });
 }
 

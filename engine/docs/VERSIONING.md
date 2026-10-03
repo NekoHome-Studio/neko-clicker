@@ -5,13 +5,20 @@
 > 一句话版本：**从 1.0.0 起，公开 API 只增不改。** 删改任何公开成员都必须升主版本号，
 > 而且这条规矩不是靠自觉——有测试守着。
 >
-> 当前版本 **1.6.0**：minor——公开 API **一个成员都没有增删**（`MarkPendingChoicesShown()`
+> 当前版本 **1.7.0**：minor——公开 API **只增不改**：新增 `GameSnapshot.ModeName`（string）
+> 与 `PurchaseModes.WireName()`。它不是语义例外，是这张表里最标准的一格：
+> 前端原本拿线上的枚举序数 `mode` 当档位名用（`(state.mode ?? "").toLowerCase()`），
+> 于是真页面上每次 `render()` 都在中段抛 `TypeError`；修法是**给名字**而不是让前端解释序数
+> （与 1.4.0 的 `UpgradeView` 同一形状），数字形的 `mode` **原样留着**，没有一个消费者被打断。
+> 细节与判别力见 [CHANGELOG](../../CHANGELOG.md) 的 1.7.0 与 [OPEN_WORK](OPEN_WORK.md) 的 N 条。
+>
+> 上一版 **1.6.0**：minor——公开 API **一个成员都没有增删**（`MarkPendingChoicesShown()`
 > 还在）。但它**同时是一处刻意的语义不兼容**：结局的落定条件从"玩家**被展示过**那批待答表态"
 > 换成"玩家把它们**答完**"，于是"从不作答的玩家永远拿不到结局"这条代价的覆盖面更大了
 > （1.5.0 起"不会永远悬着"就已经被有意移除，那会儿是"没看到"）。
 > 按下面 §2 那张表，改语义本该是 major；这次按 1.1.0 / 1.5.0 的先例走 minor——
 > **同一处、同一类改动的第三次**，例外同样记录在案。
-> 上一版 **1.5.0** 也是 minor（结局落定条件 定时 → "被展示过"这个条件）；
+> **1.5.0** 也是 minor（结局落定条件 定时 → "被展示过"这个条件）；
 > **1.4.0** 也是 minor（`UpgradeView` 新增
 > `UsesPrestigeCurrency` / `CurrencyName` / `CurrencyIcon`，也就是"这一行花哪种货币"）。
 > **1.3.0** 也是 minor（新增 `GameSnapshot.Offline`、`OfflineView`、
@@ -35,9 +42,9 @@
 单一事实来源是 **`Directory.Build.props` 里的 `<Version>`**：
 
 ```xml
-<Version>1.6.0</Version>
-<AssemblyVersion>1.6.0.0</AssemblyVersion>
-<FileVersion>1.6.0.0</FileVersion>
+<Version>1.7.0</Version>
+<AssemblyVersion>1.7.0.0</AssemblyVersion>
+<FileVersion>1.7.0.0</FileVersion>
 ```
 
 这个值会同时成为程序集版本、文件版本，以及 `ApiVersion.Current` 报告的版本。
@@ -53,8 +60,8 @@
 ```csharp
 using NekoClicker.Core;
 
-Console.WriteLine(ApiVersion.Current);        // "1.6.0"
-Console.WriteLine(ApiVersion.AssemblyVersion); // 1.6.0.0
+Console.WriteLine(ApiVersion.Current);        // "1.7.0"
+Console.WriteLine(ApiVersion.AssemblyVersion); // 1.7.0.0
 Console.WriteLine(ApiVersion.Major);           // 1
 ```
 
@@ -118,7 +125,8 @@ Console.WriteLine(ApiVersion.Major);           // 1
 光有规矩没有守卫，规矩会在第一次赶工时失效。所以有一份**快照**：
 
 ```
-engine/core/PublicApi.txt     ← 1931 行，公开表面的逐项清单（行数随公开成员增减；1.6.0 未增删成员）
+engine/core/PublicApi.txt     ← 公开表面的逐项清单（行数随公开成员增减；1.7.0 新增
+                                GameSnapshot.ModeName 与 PurchaseModes.WireName，所以行数涨了）
 ```
 
 它被**嵌进 `NekoClicker.Core.dll`**，随 dll 一起走。任何拿到这个 dll 的宿主都能断言
@@ -196,7 +204,7 @@ git tag -a v1.0.0 -m "NekoClicker.Core 1.0.0"
 
 - [ ] `pwsh -File tools/build.ps1 -Strict` 退出码 0，0 警告
 - [ ] 全部用例通过（当前 **493** 个）
-- [ ] 若这次动了 Web 宿主：`pwsh -File tools/api-test.ps1` 全部端到端检查通过（当前 48 项）
+- [ ] 若这次动了 Web 宿主：`pwsh -File tools/api-test.ps1` 全部端到端检查通过（当前 51 项）
 - [ ] `Directory.Build.props` 的 `Version` / `AssemblyVersion` / `FileVersion` 三处一致
 - [ ] `CHANGELOG.md` 有当前版本的带日期条目，写清了兼容性影响
 - [ ] 若公开 API 有变动：快照已更新，且**确实**是有意为之

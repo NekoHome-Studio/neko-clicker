@@ -371,6 +371,38 @@ try {
         $(if ($missing.Count -eq 0) { "$($names.Count) 个字段" } else { "缺 $($missing -join '、')" })
     # 注意：PowerShell 的属性访问是**大小写不敏感**的，所以这条必须查键名本身，不能查 $snapshot.CookiesText。
     Check '字段名是 camelCase' (($names -ccontains 'cookiesText') -and ($names -cnotcontains 'CookiesText')) ''
+
+    # 档位的**形状**，而不只是'键在不在'。前端认的是 modeName（服务端给的名字），
+    # 不是 mode 那个枚举序数：曾经前端写 (state.mode ?? "").toLowerCase()，而线上 mode 是数字，
+    # 于是真页面上每次 render() 都在中段抛 TypeError，后面所有面板一次都没画出来过
+    # （批量档位按钮 / 离线收益 / 表态 sheet / 图鉴 / 成就 / 日志）。见 OPEN_WORK 的 N 条。
+    $modeVocabulary = @('buy1', 'buy10', 'buy100', 'buymax', 'sell1', 'sell10', 'sellmax')
+    $modeNameIsString = $snapshot.modeName -is [string]
+    Check 'modeName 是字符串，且在前端认的词表里' `
+        ($modeNameIsString -and ($modeVocabulary -ccontains $snapshot.modeName)) `
+        "modeName = <$($snapshot.modeName)>（类型 $(if ($modeNameIsString) { 'string' } else { $snapshot.modeName.GetType().Name })）"
+
+    # 纯新增：数字形的 mode 原样留着，别的消费者不会因为我们加了名字而被打断。
+    Check 'mode 仍是数字（没有改掉老字段的形状）' `
+        ($null -ne $snapshot.mode -and -not ($snapshot.mode -is [string])) "mode = <$($snapshot.mode)>"
+
+    # 档位名的**往返**：把快照给的每个 token 原样发回命令侧，再读一次快照，必须原样回来。
+    # 这比'名字看起来对'强：它证明这几个字面量在真宿主上真的收得下（GameHost.ParseMode），
+    # 也证明 modeName 确实跟着模式走，而不是一个写死的常量。跑完还原成原来的档位，
+    # 免得影响后面那些'买入/买满'的断言。
+    $originalMode = $snapshot.modeName
+    $roundTripFailures = @()
+    foreach ($token in $modeVocabulary) {
+        $modeResult = Invoke-PostJson "/api/command?package=$Package" @{ type = 'mode'; mode = $token }
+        if (-not ($modeResult.Ok -and $modeResult.Success)) { $roundTripFailures += "$token：命令被拒"; continue }
+        Start-Sleep -Milliseconds 350 # 等下一帧推回来（推送周期 250ms）
+        $echo = (Convert-FromJsonSafe (Invoke-Get "/api/snapshot?package=$Package").Body).modeName
+        if ($echo -cne $token) { $roundTripFailures += "$token -> 回读 $echo" }
+    }
+    Invoke-PostJson "/api/command?package=$Package" @{ type = 'mode'; mode = $originalMode } | Out-Null
+    Start-Sleep -Milliseconds 350
+    Check '七个档位名都能原样发回去、并被快照回读' ($roundTripFailures.Count -eq 0) `
+        $(if ($roundTripFailures.Count -eq 0) { "7 个 token 往返一致（已还原为 $originalMode）" } else { $roundTripFailures -join '；' })
     Check '快照是紧凑 JSON（无缩进换行）' ($snapshotResponse.Body -and -not $snapshotResponse.Body.Contains("`n")) `
         "$([System.Text.Encoding]::UTF8.GetByteCount($snapshotResponse.Body)) 字节"
 

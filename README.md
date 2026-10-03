@@ -5,8 +5,10 @@
 + #3《猫娘实验室》+ #10《猫娘公司》+ #6《猫娘末世》+ #9《猫娘图书馆》
 + #7《猫娘神明》+ #4《猫娘文明》+ #5《赛博猫娘》+ #8《猫娘梦境》）和一个可玩的终端 Demo。
 
-**当前版本 `1.6.0`**（`NekoClicker.Core` 的公开 API 版本）。从 `1.0.0` 起
+**当前版本 `1.7.0`**（`NekoClicker.Core` 的公开 API 版本）。从 `1.0.0` 起
 **公开 API 只增不改**，而且有测试守着——见 [版本与兼容性承诺](#版本与兼容性承诺)。
+1.7.0 是纯新增：`GameSnapshot.ModeName` + `PurchaseModes.WireName()`，修掉"前端拿枚举序数
+当档位名用"那条线上故障（`mode` 那个数字**原样留着**，没有破坏任何消费者）。
 语义层面的破坏性变更至今有三处，而且是**同一件事的三次决定**：1.1.0 让结局条件成立后
 先等一段作答宽限期（默认 30 **模拟**秒）；1.5.0 把那段时间换成条件——玩家
 **被展示过**那批待答表态之后结局才允许落定；**1.6.0 又把条件收紧成"玩家把它们答完"**
@@ -326,7 +328,7 @@ Console.WriteLine(engine.Save());           // JSON 存档
 
 ## 版本与兼容性承诺
 
-**当前版本 `1.6.0`。从 `1.0.0` 起，`NekoClicker.Core` 的公开 API 只增不改。**
+**当前版本 `1.7.0`。从 `1.0.0` 起，`NekoClicker.Core` 的公开 API 只增不改。**
 
 | 改动 | 升哪一位 |
 |---|---|
@@ -344,8 +346,8 @@ Console.WriteLine(engine.Save());           // JSON 存档
 ```csharp
 using NekoClicker.Core;
 
-Console.WriteLine(ApiVersion.Current);         // "1.6.0"
-Console.WriteLine(ApiVersion.AssemblyVersion);  // 1.6.0.0
+Console.WriteLine(ApiVersion.Current);         // "1.7.0"
+Console.WriteLine(ApiVersion.AssemblyVersion);  // 1.7.0.0
 ```
 
 ### 这条承诺是怎么被守住的
@@ -515,8 +517,9 @@ Console.WriteLine(ApiVersion.AssemblyVersion);  // 1.6.0.0
   ROADMAP 规划范围内的**十个内容包至此全部交付**，
   四个引擎能力里只有 S-A / S-B / S-C 动过核心（S-D 一行核心代码都没写）。
 
-**接下来做什么**：见 [STATUS.md 的 §8「下一步与交接」](STATUS.md)——工作树是 **1.6.0**
-（结局的落定条件：定时 → 被展示过 → **被答完**，三次改动各配一次 minor 升版与快照再生成），
+**接下来做什么**：见 [STATUS.md 的 §8「下一步与交接」](STATUS.md)——工作树是 **1.7.0**
+（结局的落定条件：定时 → 被展示过 → **被答完**，三次改动各配一次 minor 升版与快照再生成；
+1.7.0 是那条线之外的纯新增：`GameSnapshot.ModeName`），
 **发布还没走**：
 打包 / 打 tag / 推送 / 看 CI 是下一轮的第一件事；再往后是二周目界面（要先定语义）
 与 `PackageId` 打包元数据。1.2.1 / 1.3.0 / 1.4.0 是怎么发的（含发布流程与实际执行记录）

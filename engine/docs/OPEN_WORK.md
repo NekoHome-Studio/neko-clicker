@@ -294,7 +294,7 @@ BOM 保留、长度不变、diff 只有那一行）。
 
 | 项 | 值 | 怎么核对 |
 |---|---|---|
-| 版本 | **1.6.0** | `Directory.Build.props` 的 `<Version>` |
+| 版本 | **1.7.0** | `Directory.Build.props` 的 `<Version>`（1.7.0 是 N 条的修复：新增 `GameSnapshot.ModeName` + `PurchaseModes.WireName()`） |
 | 文本外部化 | **11 / 11 个包**有 `text.json`；**十一类面向玩家的文案全部在文件里**：`storylines` / `lore`（10 包 421 条）、`buildings`（11 包 104 座 × name/description/icon）、`eras`（9 包 49 层 × 6 字段）、`endings`（9 包 29 个 ×3）、`stances`（3 包 11 条 ×4）、`choices`（3 包 18 次 ×2 + 36 选项 ×2）、`achievements`（11 包 712 条 ×3）、`buffs`（11 包 86 条 ×3）、`upgrades`（11 包 534 条 ×3）、`goldenCookies`（11 包 109 条 ×3）。C# 里 `Prose.Text(` 共 1,284 处、`Name/Description/Icon = "` 0 处 | `Get-ChildItem engine\content -Recurse -Filter text.json`；见 §0.9（第五轮，收尾） |
 | 加载器 | `ContentText` 已 **public** | `engine/core/Content/ContentText.cs` |
 | Web 端点 | `/`、`/app.js`、`/app.css`、`/?package=lab`、`/api/packs`(11 包) 全 200 | 起宿主后直接打 |
@@ -797,7 +797,45 @@ PS 5.1 会按 GBK 读中文 ⇒ 整个脚本 parse error）并重跑那个会起
 
 **为什么没有当场顺手修**：干净的修法要么给快照加"模式名"，要么改已有字段的线上形状——
 两条都不是"改一行 JS"能了的事（前端不许解释枚举序数，这条规矩仓库自己写在
-`UpgradeView.UsesPrestigeCurrency` 与 `currencyIcon` 上）。已报告父会话，由其定夺。
+`UpgradeView.UsesPrestigeCurrency` 与 `currencyIcon` 上）。已报告父会话。
+
+#### N.1 **已修**（同一天，版本 `1.6.0 → 1.7.0`，纯新增）
+
+| 项 | 结果 |
+|---|---|
+| 形状 | **加名字，不改老字段**：`GameSnapshot.ModeName`（`string`，小写 token）+ `PurchaseModes.WireName()`。数字形的 `mode` **原样留在线上**——把已有字段的 JSON 类型改掉，对所有别的 `/api/snapshot` 消费者都是一次**静默**破坏，而这份协议没有版本协商；"加旗子/加名字、老字段不动"正是 1.4.0 `UpgradeView` 的那条先例 |
+| 为什么不是改 `mode` 的序列化 | 见上。另外 `SnapshotProtocol.Options` 上加**全局**枚举转换器会同时改掉 `notifications[].kind`（前端按序数索引 `NOTE_KINDS`）与 `upgrades[].currency`（`RecomputeDerived` 里 `GetValue<int>()` 会直接抛），那是一次真正的破坏性改动 |
+| 前端 | `renderBatch` 只读 `modeName`；并加了一条**源码守卫**（按行去掉注释后扫 `state.mode`）不许它回来 |
+| 公开 API 证据 | 守卫在自己的红里点名了**恰好两行、且只有"新增"**：`+ method static System.String! WireName(NekoClicker.Core.PurchaseMode mode)`、`+ prop System.String! ModeName { get; init; }`（没有"不兼容"段）。`PublicApi.txt` **1931 → 1933 行**，diff = 版本行 + 这两行 |
+| 版本流程 | `Directory.Build.props` 三处 → `1.7.0`；`CHANGELOG` 新增 `## [1.7.0] - 2026-10-03`；`README` / `engine/README` / 本文档 §1 的"当前版本"同步；快照在**改完代码与版本之后**才用 `tools/public-api.ps1` 重生成（顺序按 `VERSIONING.md` §4） |
+| 用例 | `-Strict` **493/493**（两个 sln 0 警告）——**条数没变**：模式契约折进了既有的 `WebSnapshotProtocolTests` 前端契约用例（改名 `FrontendContract_FieldNamesAndTheModeToken`），否则那 14 处"当前 493"又要跟着漂 |
+| `web-smoke.mjs` | **82 → 88 全绿**（新增 §14 六条） |
+| `api-test.ps1` | **48 → 51 项全过**（新增：`modeName` 是字符串且在词表里、`mode` 仍是数字、**七个 token 的往返**——把快照给的名字原样发回命令侧、再读快照回读一致，跑完还原原档位） |
+
+**这一条真正的交付物不是修复，是"夹具不再是谎话"**（父会话的原话）。两处都补上了：
+
+1. **真快照进了仓库**：`tools/fixtures/web-snapshot.json`（从起着的宿主
+   `GET /api/snapshot?package=apocalypse` 抓的**原始响应**，60,610 字节）。它是**形状**的参照，
+   不是数值的参照——重生成时金币/时长/时间戳会变，而判据只看类型，所以数值漂移不会让它红。
+2. **"夹具不是谎话"守卫**（`web-smoke.mjs` §14）：夹具里前端会用到的每个路径，
+   形状必须与真快照一致；任一边是 `null` 放过（表示"这个包没有这一项"）。
+   夹具里有而真快照里没有、或形状不同，都点名到**具体路径**。
+   同一节还会把**真快照**推过整个 `render()`，并断言**晚段**才该出现的效果
+   （四个档位按钮 + 高亮的是 `modeName` 那一个 / 图鉴 / 成就 / 日志 / 建筑 / 离线那张的可见性）
+   ——"render 在中段抛异常"这一类故障从此不可能绿。
+
+**判别力（三处故障注入，都是具体的红）**：
+
+| 注入 | 结果 |
+|---|---|
+| `renderBatch` 写回 `(state.mode ?? "").toLowerCase()`（当年的原样） | 现在**夹具就是真形状**，于是 §3 当场炸：`TypeError: (state.mode ?? "").toLowerCase is not a function at renderBatch`——**整套用例不再可能绿着掩盖它** |
+| 夹具写回 `mode: "buy10"`（并去掉 `modeName`） | `夹具里前端会用到的每个路径，形状都与真宿主快照一致 — 夹具与真快照对不上 1 处：· mode：夹具是 string，线上是 number（"buy10" vs 0）` |
+| 把**真快照**的 `mode` 改成字符串（模拟"改了老字段形状"那条我没走的路） | `… · mode：夹具是 number，线上是 string（0 vs "buy1"）`——守卫**双向**都响 |
+
+**仍然没验到的**：真人观感。本机起不了浏览器（见 §0.6），所以"页面现在真的整块都画出来了"
+是**从真快照推过 DOM 桩 + 51 项端到端检查**推出来的，不是眼睛看到的。
+**建议**：父会话重启那个 5273 的 play-test 宿主，让人自己看一眼——按这一条，现在该出现的东西
+里至少有两样是此前**从没出现过**的：批量档位那四个按钮，以及离线收益/表态那两张 sheet。
 
 
 

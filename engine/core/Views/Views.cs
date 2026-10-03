@@ -600,6 +600,23 @@ public sealed record GameSnapshot
     /// <summary>当前 UI 的购买模式。</summary>
     public PurchaseMode Mode { get; init; }
 
+    /// <summary>
+    /// 当前购买模式的<b>名字</b>（小写，例如 <c>buy10</c>）；UI 该读的是它，<b>不是</b>
+    /// <see cref="Mode"/>。<para>
+    /// 存在的理由与 <see cref="UpgradeView.UsesPrestigeCurrency"/> / <see cref="UpgradeView.CurrencyIcon"/>
+    /// 完全同一条：<b>前端不许解释枚举序数</b>。<see cref="Mode"/> 在线上是数字
+    /// （<c>"mode":0</c>，因为 <c>SnapshotProtocol</c> 没开枚举字符串转换器），而前端把数字
+    /// 当名字用会<b>静默抛异常</b>——真页面上就是这样：<c>render()</c> 在画批量档位时中断，
+    /// 后面所有面板（离线收益、表态、图鉴、成就、日志）一次都没画出来过。
+    /// </para>
+    /// <para>
+    /// 这个名字与命令侧接受的字面量是<b>同一个 token</b>（<c>GameHost.ParseMode</c> 认的就是
+    /// <c>buy10</c> 这种写法），所以"读回来的字符串"可以原样发回去；两者的对应关系由
+    /// <c>WebSnapshotProtocolTests</c> 里的往返用例钉住。
+    /// </para>
+    /// </summary>
+    public string ModeName { get; init; } = string.Empty;
+
     /// <summary>建筑行。</summary>
     public IReadOnlyList<BuildingView> Buildings { get; init; } = [];
 

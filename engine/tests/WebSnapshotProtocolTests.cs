@@ -94,9 +94,24 @@ public sealed class WebSnapshotProtocolTests
             $"增量帧 {deltaJson.Length} 字节、全量 {fullBytes} 字节，差距不足以支撑增量协议。");
     }
 
-    /// <summary>字段名必须是 camelCase——前端 JS 直接按这个名字取值，改了就静默失效。</summary>
+    /// <summary>
+    /// 前端真的会读的那些字段必须在线上存在（缺一个就有一个面板永远空着），
+    /// 而且<b>批量档位必须带名字</b>——前端不许解释枚举序数。<para>
+    /// 这条守的是一个**真的发生过**的线上故障（OPEN_WORK 的 N 条）：<c>mode</c> 在线上是
+    /// <b>数字</b>（<c>"mode":0</c>，枚举序数），而前端那句 <c>(state.mode ?? "").toLowerCase()</c>
+    /// 拿数字当字符串用，于是 <c>render()</c> 每帧在画批量档位时抛 <c>TypeError</c>，
+    /// 它<b>后面</b>的所有面板（离线收益、表态、图鉴、成就、日志）一次都没画出来过。
+    /// 而这条用例当时是绿的——它只查了"字段在不在"，没查"前端能不能拿它当名字用"。
+    /// </para>
+    /// <para>
+    /// 判别力就在下面那个词表里：<c>modeName</c> 必须正好是前端认的七个 token 之一，
+    /// 而且是小写。把 <c>PurchaseModes.WireName()</c> 改成 <c>"Buy10"</c> / <c>"buy-ten"</c> /
+    /// 漏掉一个 case，这条都会点名说出是哪一个。（宿主侧的往返——把读回来的名字原样发回去——
+    /// 由 `tools/api-test.ps1` 在真宿主上验，因为 `GameHost` 不在这个程序集里。）
+    /// </para>
+    /// </summary>
     [Test]
-    public void FieldNames_AreCamelCase()
+    public void FrontendContract_FieldNamesAndTheModeToken()
     {
         JsonObject json = ToJson(TestGame.CreateNineLives(out _).Snapshot(PurchaseMode.Buy1));
 
@@ -109,9 +124,31 @@ public sealed class WebSnapshotProtocolTests
                      "achievementCount", "achievementTotal",
                      "buildings", "upgrades", "achievements", "buffs", "goldenCookies",
                      "notifications", "prestige", "era", "codex", "pendingChoices",
+                     // 档位认的是**名字**，不是 `mode` 那个序数
+                     "modeName",
                  })
         {
             Check.True(json.ContainsKey(key), $"快照 JSON 里没有 <{key}>，前端对应的那块会永远空着。");
+        }
+
+        // 名字必须是字符串、小写，而且正好是前端词表里的那七个之一。
+        // 词表在这里**独立写一遍**（不是引用 PurchaseModes）——否则 WireName 改了词表也跟着改，
+        // 这条就变成了照镜子。
+        Check.True(
+            json["modeName"] is JsonValue name && name.TryGetValue(out string? text) && text is not null,
+            $"快照里的 <modeName> 不是字符串：<{json["modeName"]}>；前端会拿不到档位名。");
+
+        string[] vocabulary = ["buy1", "buy10", "buy100", "buymax", "sell1", "sell10", "sellmax"];
+
+        foreach (PurchaseMode mode in Enum.GetValues<PurchaseMode>())
+        {
+            string wire = TestGame.CreateNineLives(out _).Snapshot(mode).ModeName;
+
+            Check.Equal(wire.ToLowerInvariant(), wire, $"模式名 <{wire}> 不是小写——前端按小写 token 认档位。");
+            Check.Contains(
+                string.Join(' ', vocabulary),
+                wire,
+                $"模式名 <{wire}>（{mode}）不在前端认的词表里；前端会认不出这个档位。");
         }
 
         // 序列化不能带缩进：那是给机器读的，缩进只会让体积涨两三成。

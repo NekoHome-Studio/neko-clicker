@@ -1194,10 +1194,21 @@ function renderPermanent() {
   }
 }
 
+/**
+ * 批量档位按钮。
+ *
+ * ⚠️ 认档位必须用 `state.modeName`（服务端给的名字），**不要**用 `state.mode`：
+ * 那个字段在线上是**枚举序数**（`"mode":0`），此前这里写的是
+ * `(state.mode ?? "").toLowerCase()`——数字没有 `toLowerCase`，于是**每一次 `render()`
+ * 都在这里抛 `TypeError`**，而它在 `render()` 的中段：批量按钮、离线收益、表态 sheet、
+ * 图鉴、成就、日志全都没画出来过，页面还"看着能玩"（见 OPEN_WORK 的 N 条）。
+ * `modeName` 就是命令侧接受的那个 token（`buy10` 这种写法），所以它能原样发回去。
+ * web-smoke 里有一条源码守卫盯着这个"不许写回去"。
+ */
 function renderBatch() {
   const modes = ["buy1", "buy10", "buy100", "buymax"];
   const labels = { buy1: "×1", buy10: "×10", buy100: "×100", buymax: "买满" };
-  const current = (state.mode ?? "").toLowerCase();
+  const current = String(state.modeName ?? "").toLowerCase();
 
   const host = $("#batch");
   host.textContent = "";

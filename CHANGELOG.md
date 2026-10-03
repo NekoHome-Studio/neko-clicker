@@ -7,6 +7,53 @@
 
 ---
 
+## [1.7.0] - 2026-10-03
+
+> 发布口径：**minor**——公开 API **只增不改**：新增 `GameSnapshot.ModeName`（`string`）与
+> `PurchaseModes.WireName()`（扩展方法）。**没有删除、没有改签名、没有改语义**；
+> 线上那个数字形的 `mode` **原样留着**，所以已有的 `/api/snapshot` 消费者一个都不会被打断。
+> 公开 API 快照因此多了几行（不再是 1.6.0 那句"一个成员都没有增删"）。
+
+### 修复（线上故障：Web 页面每帧中途抛异常，一半面板从来没画出来过）
+
+- **`mode` 在线上是枚举序数，前端却当字符串用**：`SnapshotProtocol.Options` 没开枚举字符串
+  转换器，`PurchaseMode` 于是序列化成 `"mode":0`；而 `app.js` 的 `renderBatch()` 写的是
+  `(state.mode ?? "").toLowerCase()` ⇒ `TypeError`，**每一次 `render()` 都在这里中断**。
+  它在 `render()` 的中段，所以它后面的东西**一次都没跑过**：批量档位按钮（`#batch`）、
+  离线收益弹窗、待答表态那张 sheet、`renderCodex` / `renderAchievements` /
+  `renderNotifications`。建筑与升级在它之前，所以页面"看着还能玩"——故障是沉默的。
+  证据（真实宿主原始字节）：`/api/snapshot` 与 SSE 帧里**都是** `"mode":0`。
+- **修法：给前端一个名字，而不是让它解释序数**（与 1.4.0 的 `UpgradeView` 同一条规矩）。
+  新增 `GameSnapshot.ModeName`——小写 token（`buy1` / `buy10` / `buy100` / `buymax` /
+  `sell1` / `sell10` / `sellmax`），与命令侧 `GameHost.ParseMode` 接受的字面量**完全相同**，
+  所以"读回来的名字"能原样发回去；这条往返由
+  `WebSnapshotProtocolTests.FrontendContract_FieldNamesAndTheModeToken` 钉住。
+  前端改为只读 `modeName`，并加了一条"不许再读 `state.mode`"的源码守卫。
+- **为什么两套测试当时都是绿的**（这一条比修复本身更重要）：`tools/web-smoke.mjs` 的夹具
+  写的是 `mode: "buy10"`——**那是前端以为的形状，不是线上的形状**；
+  `tools/api-test.ps1` 只断言 `mode` 这个键存在。现在就两处都补上了：
+  - `web-smoke` 提交了一份**从真宿主抓下来的快照**（`tools/fixtures/web-snapshot.json`）当形状参照，
+    并新增"夹具不是谎话"守卫：夹具里前端会用到的每个路径，类型必须与真快照一致
+    （改回 `mode: "buy10"` 会当场点名红）。同一份真快照还会被推过一遍 `render()`，
+    并断言**晚段才该出现的效果**（批量档位按钮、日志行）真的出现了——于是"中途抛异常"
+    这一类故障不可能再绿。
+  - `api-test.ps1` 不再只查键存在，而是断言前端依赖的形状：`modeName` 是字符串且属于那七个 token。
+- **连锁后果（照实写）**：`renderOffline` / 表态 sheet 都在这条死掉的路径后面，而 1.6.0 起
+  结局等的是"玩家把表态答完"——所以在 1.6.0 到本版之间，**玩家在浏览器里根本走不到结局**，
+  也不会看到离线收益弹窗。OPEN_WORK 的 E 条（"真人延迟样本一个都没有"）与
+  §0.3 第 3 条（"离线弹窗关不掉的三种可能"）大概率都是这条的下游。
+  细节与判别力证据见 [OPEN_WORK](engine/docs/OPEN_WORK.md) 的 N 条。
+
+### 新增（前端：建筑的可展开故事框，随提交 `f9044ec` 落地）
+
+- 建筑卡片**仍然是"点一下买"**；"看故事"是**另一个控件**（左侧 📖，真 `<button>`，
+  Tab 可达）。展开的是建筑自己的说明文本——也就是快照里本来就有的
+  `buildings[].description`（内容包 `text.json` 的作者原文），**没有为此加字段**。
+  展开状态按建筑 id 记录、DOM 节点按 id 复用（4 Hz 重画不会把它合上、也不会丢焦点）。
+  细节见 OPEN_WORK 的 §0.10。
+
+---
+
 ## [1.6.0] - 2026-10-02
 
 > 发布口径：**minor**——公开 API **一个成员都没有增删**（`MarkPendingChoicesShown()` 还在，

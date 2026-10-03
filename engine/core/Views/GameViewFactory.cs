@@ -199,6 +199,8 @@ public static class GameViewFactory
             PurchasedUpgrades = state.UpgradeCounts.Count,
             GoldenCookieCountdown = state.GoldenCookieCountdown,
             Mode = mode,
+            // 模式名与枚举一起给：前端只该按名字认档位（它不认识枚举序数，见 GameSnapshot.ModeName）。
+            ModeName = mode.WireName(),
             Buildings = buildings,
             Upgrades = upgrades,
             Achievements = achievements,

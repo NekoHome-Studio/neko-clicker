@@ -59,6 +59,29 @@ public static class PurchaseModes
         _ => mode.ToString(),
     };
 
+    /// <summary>
+    /// 这个模式在<b>线上</b>的名字（小写，例如 <c>buy1</c> / <c>buymax</c>）。<para>
+    /// 给 <see cref="NekoClicker.Core.Views.GameSnapshot.ModeName"/> 用：前端不该解释枚举序数，
+    /// 所以服务端把名字给它。
+    /// 这几个字面量与宿主命令侧接受的是<b>同一个 token</b>（<c>GameHost.ParseMode</c> 认
+    /// <c>buy1</c> / <c>10</c> / <c>max</c> 这些写法），于是"读回来的名字"可以原样发回去。
+    /// </para>
+    /// <para>
+    /// 别拿 <see cref="Label"/> 代替它：那个是给<b>人</b>看的（中文），不是给协议用的。
+    /// </para>
+    /// </summary>
+    public static string WireName(this PurchaseMode mode) => mode switch
+    {
+        PurchaseMode.Buy1 => "buy1",
+        PurchaseMode.Buy10 => "buy10",
+        PurchaseMode.Buy100 => "buy100",
+        PurchaseMode.BuyMax => "buymax",
+        PurchaseMode.Sell1 => "sell1",
+        PurchaseMode.Sell10 => "sell10",
+        PurchaseMode.SellMax => "sellmax",
+        _ => mode.ToString().ToLowerInvariant(),
+    };
+
     /// <summary>切换到下一个购买档位（不改变买卖方向）。</summary>
     public static PurchaseMode NextBuy(this PurchaseMode mode)
     {

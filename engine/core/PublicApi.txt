@@ -1,4 +1,4 @@
-# NekoClicker 公开 API 快照 format=1 assembly=NekoClicker.Core version=1.6.0
+# NekoClicker 公开 API 快照 format=1 assembly=NekoClicker.Core version=1.7.0
 
 public static class NekoClicker.Core.AchievementSystem
   method static System.Collections.Generic.List<NekoClicker.Core.Content.AchievementDefinition>! Check(NekoClicker.Core.Content.GameContent! content, NekoClicker.Core.GameState! state, NekoClicker.Core.IGameMetrics! metrics, NekoClicker.Core.Events.GameEventBus! events)
@@ -1560,6 +1560,7 @@ public static class NekoClicker.Core.PurchaseModes
   method static System.Boolean IsSell(NekoClicker.Core.PurchaseMode mode)
   method static System.Int32 RequestedAmount(NekoClicker.Core.PurchaseMode mode)
   method static System.String! Label(NekoClicker.Core.PurchaseMode mode)
+  method static System.String! WireName(NekoClicker.Core.PurchaseMode mode)
 
 public sealed class NekoClicker.Core.PurchaseResult : System.IEquatable<NekoClicker.Core.PurchaseResult>
   ctor NekoClicker.Core.PurchaseResult()
@@ -1804,6 +1805,7 @@ public sealed class NekoClicker.Core.Views.GameSnapshot : System.IEquatable<Neko
   prop System.String! CpsText { get; init; }
   prop System.String! CurrencyIcon { get; init; }
   prop System.String! CurrencyName { get; init; }
+  prop System.String! ModeName { get; init; }
   prop System.String! PrestigeCurrencyIcon { get; init; }
   prop System.String! PrestigeCurrencyName { get; init; }
   prop System.String! Title { get; init; }
