@@ -1,4 +1,4 @@
-# NekoClicker 公开 API 快照 format=1 assembly=NekoClicker.Core version=1.9.0
+# NekoClicker 公开 API 快照 format=1 assembly=NekoClicker.Core version=1.10.0
 
 public static class NekoClicker.Core.AchievementSystem
   method static System.Collections.Generic.List<NekoClicker.Core.Content.AchievementDefinition>! Check(NekoClicker.Core.Content.GameContent! content, NekoClicker.Core.GameState! state, NekoClicker.Core.IGameMetrics! metrics, NekoClicker.Core.Events.GameEventBus! events)
@@ -1511,11 +1511,13 @@ public sealed class NekoClicker.Core.Persistence.SaveData
 
 public sealed class NekoClicker.Core.Persistence.SaveManager : System.IDisposable
   ctor NekoClicker.Core.Persistence.SaveManager(NekoClicker.Core.GameEngine! engine, NekoClicker.Core.Persistence.IStorage! storage, System.String! slot = "neko-save.json", System.Nullable<System.Double> autoSaveIntervalSeconds = null)
+  method NekoClicker.Core.Persistence.SaveTransferResult! Import(System.String! text)
   method System.Boolean HasSave()
   method System.Boolean Load()
   method System.Boolean Save()
   method System.Boolean WriteRaw(System.String! json)
   method System.String! DescribeStorage()
+  method System.String! Export()
   method System.String! ExportShareCode()
   method System.String? ReadRaw()
   method System.Void Delete()
@@ -1528,6 +1530,7 @@ public sealed class NekoClicker.Core.Persistence.SaveManager : System.IDisposabl
   prop System.Nullable<NekoClicker.Core.OfflineProgress> LastOfflineProgress { get; }
   prop System.Nullable<System.DateTimeOffset> LastSaveAt { get; }
   prop System.String! Slot { get; }
+  prop System.String? PackId { get; set; }
 
 public static class NekoClicker.Core.Persistence.SaveSerializer
   field const System.Int32 CurrentVersion = 1
@@ -1538,6 +1541,46 @@ public static class NekoClicker.Core.Persistence.SaveSerializer
   method static System.String! SerializeToShareCode(NekoClicker.Core.GameEngine! engine)
   method static System.Void Apply(NekoClicker.Core.GameEngine! engine, NekoClicker.Core.Persistence.SaveData! data)
   prop static System.Collections.Generic.List<NekoClicker.Core.Persistence.ISaveMigration>! Migrations { get; }
+
+public static class NekoClicker.Core.Persistence.SaveTransfer
+  field const System.Int32 FormatVersion = 1
+  field const System.Int32 MaxReportedUnknownIds = 20
+  field const System.Int32 MaxTransferChars = 1048576
+  field const System.String! ChecksumPrefix = "sha256:"
+  field const System.String! FormatTag = "neko-save"
+  method static System.String! Checksum(System.String! saveJson)
+  method static System.String! Wrap(System.String! saveJson, System.String? packId, System.String? frameworkVersion = null, System.DateTimeOffset exportedAt = null)
+
+public enum NekoClicker.Core.Persistence.SaveTransferKind : System.Int32
+  field ApplyFailed = ApplyFailed
+  field ChecksumMismatch = ChecksumMismatch
+  field CorruptEnvelope = CorruptEnvelope
+  field CorruptSave = CorruptSave
+  field ForeignPack = ForeignPack
+  field NewerFormat = NewerFormat
+  field NewerSave = NewerSave
+  field NonFiniteNumbers = NonFiniteNumbers
+  field NotAnEnvelope = NotAnEnvelope
+  field Ok = Ok
+  field TooLarge = TooLarge
+  field WriteFailed = WriteFailed
+
+public sealed class NekoClicker.Core.Persistence.SaveTransferResult : System.IEquatable<NekoClicker.Core.Persistence.SaveTransferResult>
+  ctor NekoClicker.Core.Persistence.SaveTransferResult(System.Boolean Ok, NekoClicker.Core.Persistence.SaveTransferKind Kind, System.String! Message, System.String? PackId, System.Int32 SaveVersion, System.Int32 UnknownIdCount, System.Collections.Generic.IReadOnlyList<System.String>! UnknownIds)
+  method System.Boolean Equals(NekoClicker.Core.Persistence.SaveTransferResult? other)
+  method System.Void Deconstruct(out System.Boolean Ok, out NekoClicker.Core.Persistence.SaveTransferKind Kind, out System.String Message, out System.String PackId, out System.Int32 SaveVersion, out System.Int32 UnknownIdCount, out System.Collections.Generic.IReadOnlyList<System.String> UnknownIds)
+  method static System.Boolean op_Equality(NekoClicker.Core.Persistence.SaveTransferResult? left, NekoClicker.Core.Persistence.SaveTransferResult? right)
+  method static System.Boolean op_Inequality(NekoClicker.Core.Persistence.SaveTransferResult? left, NekoClicker.Core.Persistence.SaveTransferResult? right)
+  method virtual System.Boolean Equals(System.Object? obj)
+  method virtual System.Int32 GetHashCode()
+  method virtual System.String! ToString()
+  prop NekoClicker.Core.Persistence.SaveTransferKind Kind { get; init; }
+  prop System.Boolean Ok { get; init; }
+  prop System.Collections.Generic.IReadOnlyList<System.String>! UnknownIds { get; init; }
+  prop System.Int32 SaveVersion { get; init; }
+  prop System.Int32 UnknownIdCount { get; init; }
+  prop System.String! Message { get; init; }
+  prop System.String? PackId { get; init; }
 
 public struct NekoClicker.Core.PrestigePreview : System.IEquatable<NekoClicker.Core.PrestigePreview>
   ctor NekoClicker.Core.PrestigePreview(System.Int32 CurrentLevel, System.Int32 NextLevel, System.Double ChipsOnAscend, System.Double CookiesForNextLevel, System.Double Progress, System.Boolean CanAscend)
