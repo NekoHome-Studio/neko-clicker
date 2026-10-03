@@ -255,5 +255,349 @@
       "exitText": "最后一页落笔。笔尖抬起来的那一刻，整座图书馆安静得能听见别人翻页。",
       "completionHint": "本轮累计 100 billion，并解锁 18 个成就。"
     }
+  },
+  "endings": {
+    "end_read_to_the_end": {
+      "name": "被读到最后",
+      "icon": "🕯️",
+      "text": "最后一本写完那天，闭馆时间早就过了，阅览室还亮着两盏灯：一盏是她开的，一盏是那个读到最后一页的人开的。她没有过去，也没有催，只是在门口站了一会儿，然后转身去做了一件事——她给自己也办了一张借阅卡，编号是最后一个，名字那一栏写的是「读者」。"
+    },
+    "end_no_one_reads": {
+      "name": "无人再读",
+      "icon": "🌑",
+      "text": "五本书都写完了，书架上排得整整齐齐。合上最后一页的那天晚上，阅览室一个人也没有——不是没人来，是她把灯关早了。后来那些书一直在那儿，借阅卡上最晚的一个日期停在很多年以前。有人问她后不后悔，她说：「我写的时候，它们是真的。」说完她把灯又关了，这次是最后一盏。"
+    }
+  },
+  "achievements": {
+    "bookshelf_x1": {
+      "name": "书架的第一座",
+      "icon": "📚",
+      "description": "拥有 1 座「书架」。"
+    },
+    "bookshelf_x25": {
+      "name": "书架排满一面墙",
+      "icon": "📚",
+      "description": "拥有 25 座「书架」。"
+    },
+    "bookshelf_x50": {
+      "name": "书架自成一馆",
+      "icon": "📚",
+      "description": "拥有 50 座「书架」。"
+    },
+    "reading_room_x1": {
+      "name": "阅览室的第一座",
+      "icon": "🪑",
+      "description": "拥有 1 座「阅览室」。"
+    },
+    "reading_room_x25": {
+      "name": "阅览室排满一面墙",
+      "icon": "🪑",
+      "description": "拥有 25 座「阅览室」。"
+    },
+    "reading_room_x50": {
+      "name": "阅览室自成一馆",
+      "icon": "🪑",
+      "description": "拥有 50 座「阅览室」。"
+    },
+    "copier_x1": {
+      "name": "复印机的第一座",
+      "icon": "📠",
+      "description": "拥有 1 座「复印机」。"
+    },
+    "copier_x25": {
+      "name": "复印机排满一面墙",
+      "icon": "📠",
+      "description": "拥有 25 座「复印机」。"
+    },
+    "copier_x50": {
+      "name": "复印机自成一馆",
+      "icon": "📠",
+      "description": "拥有 50 座「复印机」。"
+    },
+    "banned_section_x1": {
+      "name": "禁书区的第一座",
+      "icon": "🔒",
+      "description": "拥有 1 座「禁书区」。"
+    },
+    "banned_section_x25": {
+      "name": "禁书区排满一面墙",
+      "icon": "🔒",
+      "description": "拥有 25 座「禁书区」。"
+    },
+    "banned_section_x50": {
+      "name": "禁书区自成一馆",
+      "icon": "🔒",
+      "description": "拥有 50 座「禁书区」。"
+    },
+    "author_room_x1": {
+      "name": "作者室的第一座",
+      "icon": "🖋️",
+      "description": "拥有 1 座「作者室」。"
+    },
+    "author_room_x25": {
+      "name": "作者室排满一面墙",
+      "icon": "🖋️",
+      "description": "拥有 25 座「作者室」。"
+    },
+    "author_room_x50": {
+      "name": "作者室自成一馆",
+      "icon": "🖋️",
+      "description": "拥有 50 座「作者室」。"
+    },
+    "index_tower_x1": {
+      "name": "索引塔的第一座",
+      "icon": "🗼",
+      "description": "拥有 1 座「索引塔」。"
+    },
+    "index_tower_x25": {
+      "name": "索引塔排满一面墙",
+      "icon": "🗼",
+      "description": "拥有 25 座「索引塔」。"
+    },
+    "index_tower_x50": {
+      "name": "索引塔自成一馆",
+      "icon": "🗼",
+      "description": "拥有 50 座「索引塔」。"
+    },
+    "printing_house_x1": {
+      "name": "印坊的第一座",
+      "icon": "🖨️",
+      "description": "拥有 1 座「印坊」。"
+    },
+    "printing_house_x25": {
+      "name": "印坊排满一面墙",
+      "icon": "🖨️",
+      "description": "拥有 25 座「印坊」。"
+    },
+    "printing_house_x50": {
+      "name": "印坊自成一馆",
+      "icon": "🖨️",
+      "description": "拥有 50 座「印坊」。"
+    },
+    "world_workshop_x1": {
+      "name": "世界观工坊的第一座",
+      "icon": "🧩",
+      "description": "拥有 1 座「世界观工坊」。"
+    },
+    "world_workshop_x25": {
+      "name": "世界观工坊排满一面墙",
+      "icon": "🧩",
+      "description": "拥有 25 座「世界观工坊」。"
+    },
+    "world_workshop_x50": {
+      "name": "世界观工坊自成一馆",
+      "icon": "🧩",
+      "description": "拥有 50 座「世界观工坊」。"
+    },
+    "endless_shelf_x1": {
+      "name": "无尽书架的第一座",
+      "icon": "♾️",
+      "description": "拥有 1 座「无尽书架」。"
+    },
+    "endless_shelf_x25": {
+      "name": "无尽书架排满一面墙",
+      "icon": "♾️",
+      "description": "拥有 25 座「无尽书架」。"
+    },
+    "endless_shelf_x50": {
+      "name": "无尽书架自成一馆",
+      "icon": "♾️",
+      "description": "拥有 50 座「无尽书架」。"
+    },
+    "pages_1e4": {
+      "name": "够一篇短篇",
+      "icon": "📄",
+      "description": "历史累计写到 10,000 页。"
+    },
+    "pages_1e6": {
+      "name": "够一本长篇",
+      "icon": "📄",
+      "description": "历史累计写到 1 million 页。"
+    },
+    "pages_1e8": {
+      "name": "够一套系列",
+      "icon": "📄",
+      "description": "历史累计写到 100 million 页。"
+    },
+    "pages_1e10": {
+      "name": "够摆满一层楼",
+      "icon": "📄",
+      "description": "历史累计写到 10 billion 页。"
+    },
+    "pages_1e12": {
+      "name": "够摆满一整座馆",
+      "icon": "📄",
+      "description": "历史累计写到 1 trillion 页。"
+    },
+    "pages_1e14": {
+      "name": "够写到忘记为什么写",
+      "icon": "📄",
+      "description": "历史累计写到 100 trillion 页。"
+    },
+    "pages_1e16": {
+      "name": "够让每个世界都住满人",
+      "icon": "📄",
+      "description": "历史累计写到 10 quadrillion 页。"
+    },
+    "pages_1e18": {
+      "name": "够盖一座图书馆",
+      "icon": "📄",
+      "description": "历史累计写到 1 quintillion 页。"
+    },
+    "pages_1e20": {
+      "name": "数字开始不像字了",
+      "icon": "📄",
+      "description": "历史累计写到 100 quintillion 页。"
+    },
+    "cps_1e3": {
+      "name": "有人在抄",
+      "icon": "⚙️",
+      "description": "每秒写出 1,000 页。"
+    },
+    "cps_1e6": {
+      "name": "有人在印",
+      "icon": "⚙️",
+      "description": "每秒写出 1 million 页。"
+    },
+    "cps_1e9": {
+      "name": "有人在排队",
+      "icon": "⚙️",
+      "description": "每秒写出 1 billion 页。"
+    },
+    "cps_1e12": {
+      "name": "一整个城市在翻页",
+      "icon": "⚙️",
+      "description": "每秒写出 1 trillion 页。"
+    },
+    "cps_1e15": {
+      "name": "书自己在写自己",
+      "icon": "⚙️",
+      "description": "每秒写出 1 quadrillion 页。"
+    },
+    "cps_1e18": {
+      "name": "字开始自己找读者",
+      "icon": "⚙️",
+      "description": "每秒写出 1 quintillion 页。"
+    },
+    "write_100": {
+      "name": "写了第一句",
+      "icon": "🖊️",
+      "description": "亲手提笔 100 次。"
+    },
+    "write_1000": {
+      "name": "笔尖磨秃了",
+      "icon": "🖊️",
+      "description": "亲手提笔 1,000 次。"
+    },
+    "write_10000": {
+      "name": "手比脑子快",
+      "icon": "🖊️",
+      "description": "亲手提笔 10,000 次。"
+    },
+    "write_100000": {
+      "name": "停下来就难受",
+      "icon": "🖊️",
+      "description": "亲手提笔 100,000 次。"
+    },
+    "write_1000000": {
+      "name": "你成了这句话的一部分",
+      "icon": "🖊️",
+      "description": "亲手提笔 1 million 次。"
+    },
+    "bookworm_1": {
+      "name": "第一只",
+      "icon": "🐛",
+      "description": "处理 1 只蠹虫。"
+    },
+    "bookworm_10": {
+      "name": "它吃的是没人翻的那部分",
+      "icon": "🐛",
+      "description": "处理 10 只蠹虫。"
+    },
+    "bookworm_50": {
+      "name": "开始给它留一页",
+      "icon": "🐛",
+      "description": "处理 50 只蠹虫。"
+    },
+    "bookworm_200": {
+      "name": "它认得你的笔迹",
+      "icon": "🐛",
+      "description": "处理 200 只蠹虫。"
+    },
+    "bookworm_500": {
+      "name": "它在替你校稿",
+      "icon": "🐛",
+      "description": "处理 500 只蠹虫。"
+    },
+    "bookworm_1000": {
+      "name": "你把它写进了书里",
+      "icon": "🐛",
+      "description": "处理 1,000 只蠹虫。"
+    },
+    "book_1": {
+      "name": "空白之书",
+      "icon": "📄",
+      "description": "书架上那本一个字都没有的书，第一句话是自己掉下来的。"
+    },
+    "book_2": {
+      "name": "第一个世界",
+      "icon": "🌍",
+      "description": "书里开始有人住了。他们不知道自己是写出来的。"
+    },
+    "book_3": {
+      "name": "被禁的书",
+      "icon": "🔒",
+      "description": "被列进禁书区之后，它成了唯一一本所有人都读过两遍的书。"
+    },
+    "book_4": {
+      "name": "合订本",
+      "icon": "📖",
+      "description": "前几本的人物在同一本书里碰面，互相觉得对方眼熟。"
+    },
+    "book_5": {
+      "name": "最后一页",
+      "icon": "🔖",
+      "description": "最后一页落笔。合上之后还有没有人读，是她唯一没法控制的事。"
+    },
+    "readers_2000": {
+      "name": "第一个读者",
+      "icon": "👤",
+      "description": "她站在门口看了很久，没敢出声。（被阅读度 2,000）"
+    },
+    "readers_8000": {
+      "name": "有人读完了",
+      "icon": "👤",
+      "description": "借阅卡上第一次出现了同一个名字两次。（被阅读度 8,000）"
+    },
+    "readers_20000": {
+      "name": "有人读了两遍",
+      "icon": "👤",
+      "description": "第二遍读的是注释，比正文还慢。（被阅读度 20,000）"
+    },
+    "readers_38000": {
+      "name": "有人开始引用",
+      "icon": "👤",
+      "description": "她在别人的本子上看见了自己写过的一句话。（被阅读度 38,000）"
+    },
+    "readers_55000": {
+      "name": "有人在等下一本",
+      "icon": "👤",
+      "description": "门口的信箱里出现了没有寄件人的信。（被阅读度 55,000）"
+    },
+    "readers_70000": {
+      "name": "书架自己在长",
+      "icon": "👤",
+      "description": "新的一排架子不是她搬进来的。（被阅读度 70,000）"
+    },
+    "ach_end_read_to_the_end": {
+      "name": "被读到最后",
+      "icon": "🕯️",
+      "description": "抵达结局「被读到最后」。"
+    },
+    "ach_end_no_one_reads": {
+      "name": "无人再读",
+      "icon": "🌑",
+      "description": "抵达结局「无人再读」。"
+    }
   }
 }

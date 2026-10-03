@@ -16,52 +16,52 @@ namespace NekoClicker.Content.Company;
 /// </summary>
 internal static class Endings
 {
+    /// <summary>
+    /// 本包的 <c>text.json</c>：结局 / 表态 / 立场 / 成就的文案与其它分区<b>共用同一份实例</b>（<see cref="Lore.Prose"/>）。<para>
+    /// 必须共用：孤儿检查会遍历整份文件的每个 kind，而"哪些 id 已取用"是按实例记的——
+    /// 两个实例各记一半，就会把对方那些 id 全报成孤儿。
+    /// </para>
+    /// </summary>
+    private static ContentText Prose => Lore.Prose;
+
     /// <summary>四个结局，按 Priority 升序。</summary>
     public static EndingDefinition[] All =>
     [
         new()
         {
             Id = "end_ipo",
-            Name = "上市",
-            Icon = "🔔",
+            Name = Prose.Text("endings", "end_ipo", "name"),
+            Icon = Prose.Text("endings", "end_ipo", "icon"),
             Priority = 0,
             Condition = Committed(Stances.Ipo),
-            Text = "钟声在九点三十分响起。你站在台上，身后是她的名字和整个团队的名单。"
-                   + "闪光灯亮成一片的时候，你忽然想起车库那扇要手动摇起来的卷帘门——"
-                   + "那扇门后来被拆掉了，没人记得是谁拆的。",
+            Text = Prose.Text("endings", "end_ipo", "text"),
         },
         new()
         {
             Id = "end_union",
-            Name = "工会胜利",
-            Icon = "✊",
+            Name = Prose.Text("endings", "end_union", "name"),
+            Icon = Prose.Text("endings", "end_union", "icon"),
             Priority = 1,
             Condition = Committed(Stances.Union),
-            Text = "上市材料里夹着一份章程，第一页写着：重大事项须经工会同意。"
-                   + "投行的人问这是不是必须的，你说：「是。」"
-                   + "那天下午，她在办公室里贴了张纸：「这家公司有主，主是我们。」",
+            Text = Prose.Text("endings", "end_union", "text"),
         },
         new()
         {
             Id = "end_liquidate",
-            Name = "破产清算",
-            Icon = "🧳",
+            Name = Prose.Text("endings", "end_liquidate", "name"),
+            Icon = Prose.Text("endings", "end_liquidate", "icon"),
             Priority = 2,
             Condition = Committed(Stances.Liquidate),
-            Text = "清算完成的那个下午，财务把最后一笔钱打给了每一个人，包括已经离职的。"
-                   + "钥匙交还给房东，灯一盏一盏关掉。她最后一个走，出门前回头看了一眼，"
-                   + "然后说：「其实这样也挺好——至少没有人是被扔下的。」",
+            Text = Prose.Text("endings", "end_liquidate", "text"),
         },
         new()
         {
             Id = "end_fade",
-            Name = "无疾而终",
-            Icon = "📄",
+            Name = Prose.Text("endings", "end_fade", "name"),
+            Icon = Prose.Text("endings", "end_fade", "icon"),
             Priority = 100,
             Condition = Finished,
-            Text = "公司活了下来，不好也不坏。没有人问过你那些问题，所以你一个也没有回答。"
-                   + "几年后的一次聚会上，有人提起这家公司，想了半天才说：「哦，他们啊，还在。」"
-                   + "她坐在角落里笑了笑，没说话。",
+            Text = Prose.Text("endings", "end_fade", "text"),
         },
     ];
 
@@ -73,10 +73,10 @@ internal static class Endings
     /// </summary>
     public static AchievementDefinition[] Achievements =>
     [
-        Ending("ach_end_ipo", "上市", "end_ipo", "🔔"),
-        Ending("ach_end_union", "工会胜利", "end_union", "✊"),
-        Ending("ach_end_liquidate", "破产清算", "end_liquidate", "🧳"),
-        Ending("ach_end_fade", "无疾而终", "end_fade", "📄"),
+        Ending("ach_end_ipo", "end_ipo"),
+        Ending("ach_end_union", "end_union"),
+        Ending("ach_end_liquidate", "end_liquidate"),
+        Ending("ach_end_fade", "end_fade"),
     ];
 
     /// <summary>
@@ -96,12 +96,12 @@ internal static class Endings
             Finished,
             UnlockCondition.StanceWeight(stanceId, Stances.EndingThreshold));
 
-    private static AchievementDefinition Ending(string id, string name, string endingId, string icon) => new()
+    private static AchievementDefinition Ending(string id, string endingId) => new()
     {
         Id = id,
-        Name = name,
-        Icon = icon,
-        Description = $"抵达结局「{name}」。",
+        Name = Prose.Text("achievements", id, "name"),
+        Icon = Prose.Text("achievements", id, "icon"),
+        Description = Prose.Text("achievements", id, "description"),
         Unlock = UnlockCondition.EndingReached(endingId),
     };
 }

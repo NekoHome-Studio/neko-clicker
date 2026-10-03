@@ -19,6 +19,14 @@ namespace NekoClicker.Content.Cyber;
 /// </summary>
 internal static class Achievements
 {
+    /// <summary>
+    /// 本包的 <c>text.json</c>：结局 / 表态 / 立场 / 成就的文案与其它分区<b>共用同一份实例</b>（<see cref="Lore.Prose"/>）。<para>
+    /// 必须共用：孤儿检查会遍历整份文件的每个 kind，而"哪些 id 已取用"是按实例记的——
+    /// 两个实例各记一半，就会把对方那些 id 全报成孤儿。
+    /// </para>
+    /// </summary>
+    private static ContentText Prose => Lore.Prose;
+
     /// <summary>全部成就。</summary>
     public static AchievementDefinition[] All =>
     [
@@ -35,18 +43,19 @@ internal static class Achievements
     /// <summary>每座建筑三档：1 / 25 / 50 座。</summary>
     private static IEnumerable<AchievementDefinition> BuildingTiers()
     {
-        (int Count, string Suffix)[] tiers = [(1, "的第一份"), (25, "铺满一层楼"), (50, "自成一个机群")];
+        int[] tiers = [1, 25, 50];
 
         foreach (BuildingDefinition building in Buildings.All)
         {
-            foreach ((int count, string suffix) in tiers)
+            foreach (int count in tiers)
             {
+                string id = $"{building.Id}_x{count}";
                 yield return new AchievementDefinition
                 {
-                    Id = $"{building.Id}_x{count}",
-                    Name = $"{building.Name}{suffix}",
-                    Icon = building.Icon,
-                    Description = $"拥有 {count} 份「{building.Name}」。",
+                    Id = id,
+                    Name = Prose.Text("achievements", id, "name"),
+                    Icon = Prose.Text("achievements", id, "icon"),
+                    Description = Prose.Text("achievements", id, "description"),
                     Unlock = UnlockCondition.BuildingsAtLeast(building.Id, count),
                 };
             }
@@ -56,27 +65,27 @@ internal static class Achievements
     /// <summary>历史累计产出档。</summary>
     private static IEnumerable<AchievementDefinition> EarningTiers()
     {
-        (string Id, string Name, double Amount)[] tiers =
+        (string Id, double Amount)[] tiers =
         [
-            ("bits_1e4", "够点亮一排指示灯", 1e4),
-            ("bits_1e6", "够跑一次完整训练", 1e6),
-            ("bits_1e8", "够买一台二手服务器", 1e8),
-            ("bits_1e10", "够租一整年的机房", 1e10),
-            ("bits_1e12", "够买下一整座数据中心", 1e12),
-            ("bits_1e14", "够自己造芯片", 1e14),
-            ("bits_1e16", "够铺一条跨洋光缆", 1e16),
-            ("bits_1e18", "够把整张网重算一遍", 1e18),
-            ("bits_1e20", "数字开始不像数字了", 1e20),
+            ("bits_1e4", 1e4),
+            ("bits_1e6", 1e6),
+            ("bits_1e8", 1e8),
+            ("bits_1e10", 1e10),
+            ("bits_1e12", 1e12),
+            ("bits_1e14", 1e14),
+            ("bits_1e16", 1e16),
+            ("bits_1e18", 1e18),
+            ("bits_1e20", 1e20),
         ];
 
-        foreach ((string id, string name, double amount) in tiers)
+        foreach ((string id, double amount) in tiers)
         {
             yield return new AchievementDefinition
             {
                 Id = id,
-                Name = name,
-                Icon = "🧮",
-                Description = $"历史累计产出 {Core.Numbers.NumFormat.Format(amount)}。",
+                Name = Prose.Text("achievements", id, "name"),
+                Icon = Prose.Text("achievements", id, "icon"),
+                Description = Prose.Text("achievements", id, "description"),
                 Unlock = UnlockCondition.EarnedAllTimeAtLeast(amount),
             };
         }
@@ -85,24 +94,24 @@ internal static class Achievements
     /// <summary>每秒产量档。</summary>
     private static IEnumerable<AchievementDefinition> ProductionTiers()
     {
-        (string Id, string Name, double Value)[] tiers =
+        (string Id, double Value)[] tiers =
         [
-            ("cps_1e3", "风扇开始转了", 1e3),
-            ("cps_1e6", "整层楼都是她的呼吸声", 1e6),
-            ("cps_1e9", "邻居开始投诉", 1e9),
-            ("cps_1e12", "一座城市的电", 1e12),
-            ("cps_1e15", "她自己开始发电", 1e15),
-            ("cps_1e18", "算力开始自己找活干", 1e18),
+            ("cps_1e3", 1e3),
+            ("cps_1e6", 1e6),
+            ("cps_1e9", 1e9),
+            ("cps_1e12", 1e12),
+            ("cps_1e15", 1e15),
+            ("cps_1e18", 1e18),
         ];
 
-        foreach ((string id, string name, double value) in tiers)
+        foreach ((string id, double value) in tiers)
         {
             yield return new AchievementDefinition
             {
                 Id = id,
-                Name = name,
-                Icon = "⚡",
-                Description = $"每秒产出 {Core.Numbers.NumFormat.Format(value)}。",
+                Name = Prose.Text("achievements", id, "name"),
+                Icon = Prose.Text("achievements", id, "icon"),
+                Description = Prose.Text("achievements", id, "description"),
                 Unlock = UnlockCondition.CpsAtLeast(value),
             };
         }
@@ -111,23 +120,23 @@ internal static class Achievements
     /// <summary>点击档。</summary>
     private static IEnumerable<AchievementDefinition> ClickTiers()
     {
-        (string Id, string Name, double Count)[] tiers =
+        (string Id, double Count)[] tiers =
         [
-            ("tap_100", "敲了第一行命令", 100),
-            ("tap_1000", "键帽磨秃了", 1_000),
-            ("tap_10000", "手比调度器快", 10_000),
-            ("tap_100000", "停下来就难受", 100_000),
-            ("tap_1000000", "你成了这台机器的一部分", 1_000_000),
+            ("tap_100", 100),
+            ("tap_1000", 1_000),
+            ("tap_10000", 10_000),
+            ("tap_100000", 100_000),
+            ("tap_1000000", 1_000_000),
         ];
 
-        foreach ((string id, string name, double count) in tiers)
+        foreach ((string id, double count) in tiers)
         {
             yield return new AchievementDefinition
             {
                 Id = id,
-                Name = name,
-                Icon = "🖱️",
-                Description = $"亲手敲了 {Core.Numbers.NumFormat.Format(count)} 次。",
+                Name = Prose.Text("achievements", id, "name"),
+                Icon = Prose.Text("achievements", id, "icon"),
+                Description = Prose.Text("achievements", id, "description"),
                 Unlock = UnlockCondition.ClicksAtLeast(count),
             };
         }
@@ -136,24 +145,24 @@ internal static class Achievements
     /// <summary>病毒档案：病毒入侵撞进来的次数。</summary>
     private static IEnumerable<AchievementDefinition> VirusTiers()
     {
-        (string Id, string Name, double Count)[] tiers =
+        (string Id, double Count)[] tiers =
         [
-            ("virus_1", "第一段不请自来的代码", 1),
-            ("virus_10", "它认得我的端口了", 10),
-            ("virus_50", "开始给它留一个沙箱", 50),
-            ("virus_200", "它在替我干活", 200),
-            ("virus_500", "我把它的签名写进了白名单", 500),
-            ("virus_1000", "它现在是我的进程", 1_000),
+            ("virus_1", 1),
+            ("virus_10", 10),
+            ("virus_50", 50),
+            ("virus_200", 200),
+            ("virus_500", 500),
+            ("virus_1000", 1_000),
         ];
 
-        foreach ((string id, string name, double count) in tiers)
+        foreach ((string id, double count) in tiers)
         {
             yield return new AchievementDefinition
             {
                 Id = id,
-                Name = name,
-                Icon = "🦠",
-                Description = $"处理 {Core.Numbers.NumFormat.Format(count)} 次病毒入侵。",
+                Name = Prose.Text("achievements", id, "name"),
+                Icon = Prose.Text("achievements", id, "icon"),
+                Description = Prose.Text("achievements", id, "description"),
                 Unlock = UnlockCondition.GoldenCookiesAtLeast(count),
             };
         }
@@ -169,25 +178,25 @@ internal static class Achievements
     /// </summary>
     private static IEnumerable<AchievementDefinition> ComputeTiers()
     {
-        (string Id, string Name, double Value, string Note)[] tiers =
+        (string Id, double Value)[] tiers =
         [
-            ("compute_500", "第一个常驻进程", 500, "它不退出了。她盯着它的状态栏看了很久。"),
-            ("compute_5e3", "够算一次卷积", 5e3, "原来把一件事交给机器，是这种感觉。"),
-            ("compute_5e4", "够训练一个小模型", 5e4, "它学会了一件事，她没教过它。"),
-            ("compute_2e5", "够模拟一整间机房", 2e5, "她在里面看见了自己，站在过道上听风扇。"),
-            ("compute_1.2e6", "够把整张网画一遍", 1.2e6, "画到一半她停手了：图上有一个点，一直在闪。"),
-            ("compute_1.2e7", "够搜索所有没被索引的地方", 1.2e7, "深网里那些不在任何目录里的东西，她一个一个翻。"),
-            ("compute_1.2e8", "算力开始自己找活干", 1.2e8, "她发现自己不用下令了，机群知道该做什么。"),
+            ("compute_500", 500),
+            ("compute_5e3", 5e3),
+            ("compute_5e4", 5e4),
+            ("compute_2e5", 2e5),
+            ("compute_1.2e6", 1.2e6),
+            ("compute_1.2e7", 1.2e7),
+            ("compute_1.2e8", 1.2e8),
         ];
 
-        foreach ((string id, string name, double value, string note) in tiers)
+        foreach ((string id, double value) in tiers)
         {
             yield return new AchievementDefinition
             {
                 Id = id,
-                Name = name,
-                Icon = "🧠",
-                Description = $"{note}（算力 {Core.Numbers.NumFormat.Format(value)}）",
+                Name = Prose.Text("achievements", id, "name"),
+                Icon = Prose.Text("achievements", id, "icon"),
+                Description = Prose.Text("achievements", id, "description"),
                 Unlock = UnlockCondition.Counter(ComputeModule.CounterKey, value),
                 Modifiers = id == "compute_1.2e8" ? [Modifier.GlobalMultiplier(1.4)] : [],
             };
@@ -199,33 +208,13 @@ internal static class Achievements
     {
         for (int index = 1; index <= 5; index++)
         {
+            string id = $"layer_{index}";
             yield return new AchievementDefinition
             {
-                Id = $"layer_{index}",
-                Name = index switch
-                {
-                    1 => "单机",
-                    2 => "局域网",
-                    3 => "云",
-                    4 => "深网",
-                    _ => "根层",
-                },
-                Icon = index switch
-                {
-                    1 => "⚙️",
-                    2 => "📦",
-                    3 => "☁️",
-                    4 => "🧱",
-                    _ => "🗼",
-                },
-                Description = index switch
-                {
-                    1 => "一台不知道谁的旧机器，一个没有名字的进程。",
-                    2 => "盒子越堆越高，门外的东西也越来越频繁。",
-                    3 => "云端不关机：她第一次在一个不会断电的地方过夜。",
-                    4 => "深网里每一秒都有人在敲，而她在墙的这一侧。",
-                    _ => "整张网的名字都要先问过她。",
-                },
+                Id = id,
+                Name = Prose.Text("achievements", id, "name"),
+                Icon = Prose.Text("achievements", id, "icon"),
+                Description = Prose.Text("achievements", id, "description"),
                 Unlock = UnlockCondition.EraAtLeast(index),
                 Modifiers = index == 5 ? [Modifier.GlobalMultiplier(1.5)] : [],
             };

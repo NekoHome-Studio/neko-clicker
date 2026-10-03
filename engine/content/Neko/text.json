@@ -50,5 +50,337 @@
       "description": "一个由猫构成、为猫运行、最终也会被猫推下桌的宇宙。",
       "icon": "🌌"
     }
+  },
+  "achievements": {
+    "curled_cat_x1": {
+      "name": "蜷缩的猫的开端",
+      "icon": "🐈",
+      "description": "拥有 1 个「蜷缩的猫」。"
+    },
+    "curled_cat_x25": {
+      "name": "蜷缩的猫收藏家",
+      "icon": "🐈",
+      "description": "拥有 25 个「蜷缩的猫」。"
+    },
+    "curled_cat_x50": {
+      "name": "蜷缩的猫军团",
+      "icon": "🐈",
+      "description": "拥有 50 个「蜷缩的猫」。"
+    },
+    "curled_cat_x100": {
+      "name": "蜷缩的猫帝国",
+      "icon": "🐈",
+      "description": "拥有 100 个「蜷缩的猫」。"
+    },
+    "scratching_post_x1": {
+      "name": "猫抓板的开端",
+      "icon": "🪵",
+      "description": "拥有 1 个「猫抓板」。"
+    },
+    "scratching_post_x25": {
+      "name": "猫抓板收藏家",
+      "icon": "🪵",
+      "description": "拥有 25 个「猫抓板」。"
+    },
+    "scratching_post_x50": {
+      "name": "猫抓板军团",
+      "icon": "🪵",
+      "description": "拥有 50 个「猫抓板」。"
+    },
+    "scratching_post_x100": {
+      "name": "猫抓板帝国",
+      "icon": "🪵",
+      "description": "拥有 100 个「猫抓板」。"
+    },
+    "cat_bed_x1": {
+      "name": "猫窝的开端",
+      "icon": "🛏️",
+      "description": "拥有 1 个「猫窝」。"
+    },
+    "cat_bed_x25": {
+      "name": "猫窝收藏家",
+      "icon": "🛏️",
+      "description": "拥有 25 个「猫窝」。"
+    },
+    "cat_bed_x50": {
+      "name": "猫窝军团",
+      "icon": "🛏️",
+      "description": "拥有 50 个「猫窝」。"
+    },
+    "cat_bed_x100": {
+      "name": "猫窝帝国",
+      "icon": "🛏️",
+      "description": "拥有 100 个「猫窝」。"
+    },
+    "auto_feeder_x1": {
+      "name": "自动喂食器的开端",
+      "icon": "🍽️",
+      "description": "拥有 1 个「自动喂食器」。"
+    },
+    "auto_feeder_x25": {
+      "name": "自动喂食器收藏家",
+      "icon": "🍽️",
+      "description": "拥有 25 个「自动喂食器」。"
+    },
+    "auto_feeder_x50": {
+      "name": "自动喂食器军团",
+      "icon": "🍽️",
+      "description": "拥有 50 个「自动喂食器」。"
+    },
+    "auto_feeder_x100": {
+      "name": "自动喂食器帝国",
+      "icon": "🍽️",
+      "description": "拥有 100 个「自动喂食器」。"
+    },
+    "cat_cafe_x1": {
+      "name": "猫咪咖啡馆的开端",
+      "icon": "☕",
+      "description": "拥有 1 个「猫咪咖啡馆」。"
+    },
+    "cat_cafe_x25": {
+      "name": "猫咪咖啡馆收藏家",
+      "icon": "☕",
+      "description": "拥有 25 个「猫咪咖啡馆」。"
+    },
+    "cat_cafe_x50": {
+      "name": "猫咪咖啡馆军团",
+      "icon": "☕",
+      "description": "拥有 50 个「猫咪咖啡馆」。"
+    },
+    "cat_cafe_x100": {
+      "name": "猫咪咖啡馆帝国",
+      "icon": "☕",
+      "description": "拥有 100 个「猫咪咖啡馆」。"
+    },
+    "catnip_field_x1": {
+      "name": "猫薄荷田的开端",
+      "icon": "🌿",
+      "description": "拥有 1 个「猫薄荷田」。"
+    },
+    "catnip_field_x25": {
+      "name": "猫薄荷田收藏家",
+      "icon": "🌿",
+      "description": "拥有 25 个「猫薄荷田」。"
+    },
+    "catnip_field_x50": {
+      "name": "猫薄荷田军团",
+      "icon": "🌿",
+      "description": "拥有 50 个「猫薄荷田」。"
+    },
+    "catnip_field_x100": {
+      "name": "猫薄荷田帝国",
+      "icon": "🌿",
+      "description": "拥有 100 个「猫薄荷田」。"
+    },
+    "cat_portal_x1": {
+      "name": "猫咪传送门的开端",
+      "icon": "🌀",
+      "description": "拥有 1 个「猫咪传送门」。"
+    },
+    "cat_portal_x25": {
+      "name": "猫咪传送门收藏家",
+      "icon": "🌀",
+      "description": "拥有 25 个「猫咪传送门」。"
+    },
+    "cat_portal_x50": {
+      "name": "猫咪传送门军团",
+      "icon": "🌀",
+      "description": "拥有 50 个「猫咪传送门」。"
+    },
+    "cat_portal_x100": {
+      "name": "猫咪传送门帝国",
+      "icon": "🌀",
+      "description": "拥有 100 个「猫咪传送门」。"
+    },
+    "time_cat_x1": {
+      "name": "时间猫的开端",
+      "icon": "⏳",
+      "description": "拥有 1 个「时间猫」。"
+    },
+    "time_cat_x25": {
+      "name": "时间猫收藏家",
+      "icon": "⏳",
+      "description": "拥有 25 个「时间猫」。"
+    },
+    "time_cat_x50": {
+      "name": "时间猫军团",
+      "icon": "⏳",
+      "description": "拥有 50 个「时间猫」。"
+    },
+    "time_cat_x100": {
+      "name": "时间猫帝国",
+      "icon": "⏳",
+      "description": "拥有 100 个「时间猫」。"
+    },
+    "cat_temple_x1": {
+      "name": "维度猫神殿的开端",
+      "icon": "🏛️",
+      "description": "拥有 1 个「维度猫神殿」。"
+    },
+    "cat_temple_x25": {
+      "name": "维度猫神殿收藏家",
+      "icon": "🏛️",
+      "description": "拥有 25 个「维度猫神殿」。"
+    },
+    "cat_temple_x50": {
+      "name": "维度猫神殿军团",
+      "icon": "🏛️",
+      "description": "拥有 50 个「维度猫神殿」。"
+    },
+    "cat_temple_x100": {
+      "name": "维度猫神殿帝国",
+      "icon": "🏛️",
+      "description": "拥有 100 个「维度猫神殿」。"
+    },
+    "cat_universe_x1": {
+      "name": "猫猫宇宙的开端",
+      "icon": "🌌",
+      "description": "拥有 1 个「猫猫宇宙」。"
+    },
+    "cat_universe_x25": {
+      "name": "猫猫宇宙收藏家",
+      "icon": "🌌",
+      "description": "拥有 25 个「猫猫宇宙」。"
+    },
+    "cat_universe_x50": {
+      "name": "猫猫宇宙军团",
+      "icon": "🌌",
+      "description": "拥有 50 个「猫猫宇宙」。"
+    },
+    "cat_universe_x100": {
+      "name": "猫猫宇宙帝国",
+      "icon": "🌌",
+      "description": "拥有 100 个「猫猫宇宙」。"
+    },
+    "earn_1k": {
+      "name": "第一桶金",
+      "icon": "🪙",
+      "description": "历史累计赚取 1,000 条小鱼干。"
+    },
+    "earn_1m": {
+      "name": "小有积蓄",
+      "icon": "💰",
+      "description": "历史累计赚取 1,000,000 条小鱼干。"
+    },
+    "earn_1b": {
+      "name": "猫粮自由",
+      "icon": "🏦",
+      "description": "历史累计赚取 1,000,000,000 条小鱼干。"
+    },
+    "earn_1t": {
+      "name": "兆级猫咖",
+      "icon": "🏛️",
+      "description": "历史累计赚取 1,000,000,000,000 条小鱼干。"
+    },
+    "earn_1q": {
+      "name": "京级猫咖",
+      "icon": "🌆",
+      "description": "历史累计赚取 1,000,000,000,000,000 条小鱼干。"
+    },
+    "earn_1qi": {
+      "name": "猫粮通胀",
+      "icon": "📈",
+      "description": "历史累计赚取 1,000,000,000,000,000,000 条小鱼干。"
+    },
+    "earn_1sx": {
+      "name": "猫粮霸权",
+      "icon": "👑",
+      "description": "历史累计赚取 1e21 条小鱼干。"
+    },
+    "earn_1sp": {
+      "name": "猫粮宇宙",
+      "icon": "🌌",
+      "description": "历史累计赚取 1e24 条小鱼干。"
+    },
+    "cps_1m": {
+      "name": "流量猫咖",
+      "icon": "⚙️",
+      "description": "每秒产量达到 1,000,000。"
+    },
+    "cps_1b": {
+      "name": "十亿产量",
+      "icon": "⚙️",
+      "description": "每秒产量达到 1,000,000,000。"
+    },
+    "cps_1t": {
+      "name": "兆级流水线",
+      "icon": "⚙️",
+      "description": "每秒产量达到 1,000,000,000,000。"
+    },
+    "click_100": {
+      "name": "手有点酸",
+      "icon": "👆",
+      "description": "点击 100 次。"
+    },
+    "click_1000": {
+      "name": "千次撸猫",
+      "icon": "✋",
+      "description": "点击 1,000 次。"
+    },
+    "click_10000": {
+      "name": "万次撸猫",
+      "icon": "💪",
+      "description": "点击 10,000 次。作为奖励，点击收益 ×1.5。"
+    },
+    "click_100000": {
+      "name": "机械手臂",
+      "icon": "🦾",
+      "description": "点击 100,000 次。你已经分不清是你在撸猫还是猫在撸你。"
+    },
+    "golden_1": {
+      "name": "第一只金猫",
+      "icon": "🌟",
+      "description": "点中 1 只金猫。"
+    },
+    "golden_7": {
+      "name": "幸运七",
+      "icon": "🎰",
+      "description": "点中 7 只金猫。"
+    },
+    "golden_27": {
+      "name": "金猫猎人",
+      "icon": "🏹",
+      "description": "点中 27 只金猫。"
+    },
+    "golden_77": {
+      "name": "金猫传说",
+      "icon": "🐱‍🚀",
+      "description": "点中 77 只金猫。"
+    },
+    "scale_100": {
+      "name": "小型猫咖",
+      "icon": "🏠",
+      "description": "拥有 100 座建筑。"
+    },
+    "scale_500": {
+      "name": "连锁猫咖",
+      "icon": "🏢",
+      "description": "拥有 500 座建筑。"
+    },
+    "scale_1000": {
+      "name": "猫咖王国",
+      "icon": "🏰",
+      "description": "拥有 1,000 座建筑。"
+    },
+    "full_house": {
+      "name": "全家福",
+      "icon": "📸",
+      "description": "每种建筑至少拥有 1 个。"
+    },
+    "ascend_1": {
+      "name": "第一次轮回",
+      "icon": "🔁",
+      "description": "完成第一次转生。作为奖励，点击收益 ×1.2。"
+    },
+    "ascend_10": {
+      "name": "十世猫奴",
+      "icon": "♻️",
+      "description": "转生等级达到 10。"
+    },
+    "ascend_100": {
+      "name": "？？？",
+      "icon": "???",
+      "description": "隐藏成就。"
+    }
   }
 }

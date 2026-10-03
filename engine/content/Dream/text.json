@@ -255,5 +255,344 @@
       "exitText": "梦核安静下来。现在整座梦都在等她决定：是醒，还是再往下。",
       "completionHint": "本轮累计 1 trillion，且睡满 6 小时。"
     }
+  },
+  "endings": {
+    "end_wake_her": {
+      "name": "叫醒梦者",
+      "icon": "🌅",
+      "text": "她攒够了力气。不是用来推开某一扇门的力气，是那种「我知道这是梦，而且我还是要出去」的力气。她一层一层往上走：梦核、嵌套塔、清醒区、失眠走廊——每一层都在留她，每一层她都回一次头。最上面那层是浅眠，枕头还是温的。她睁开眼的时候，天刚亮，窗外有人在收摊。她躺了很久，然后坐起来，对着那个还在睡的人说：「该起了。」"
+    },
+    "end_stay_forever": {
+      "name": "永远留在梦里",
+      "icon": "🌙",
+      "text": "她没有上去。梦核旁边很暖，而且这里的时间是她说了算的——她可以让这一晚长到不像一晚。后来她在最里面又搭了一层，再往里又搭了一层，每一层都比外面大一点、软一点、好一点。有一天她试着往上走了走，走到浅眠那一层就停住了：上面那层梦里有个枕头，枕头是凉的。她想了想，转过身，往下走回去了。她说：「再睡五分钟。」"
+    }
+  },
+  "achievements": {
+    "pillow_x1": {
+      "name": "枕头的第一座",
+      "icon": "🛏️",
+      "description": "拥有 1 座「枕头」。"
+    },
+    "pillow_x25": {
+      "name": "枕头铺满一层梦",
+      "icon": "🛏️",
+      "description": "拥有 25 座「枕头」。"
+    },
+    "pillow_x50": {
+      "name": "枕头自己成层",
+      "icon": "🛏️",
+      "description": "拥有 50 座「枕头」。"
+    },
+    "dream_layer_x1": {
+      "name": "梦层的第一座",
+      "icon": "🌙",
+      "description": "拥有 1 座「梦层」。"
+    },
+    "dream_layer_x25": {
+      "name": "梦层铺满一层梦",
+      "icon": "🌙",
+      "description": "拥有 25 座「梦层」。"
+    },
+    "dream_layer_x50": {
+      "name": "梦层自己成层",
+      "icon": "🌙",
+      "description": "拥有 50 座「梦层」。"
+    },
+    "dream_mirror_x1": {
+      "name": "梦镜的第一座",
+      "icon": "🪞",
+      "description": "拥有 1 座「梦镜」。"
+    },
+    "dream_mirror_x25": {
+      "name": "梦镜铺满一层梦",
+      "icon": "🪞",
+      "description": "拥有 25 座「梦镜」。"
+    },
+    "dream_mirror_x50": {
+      "name": "梦镜自己成层",
+      "icon": "🪞",
+      "description": "拥有 50 座「梦镜」。"
+    },
+    "nightmare_nest_x1": {
+      "name": "噩梦巢的第一座",
+      "icon": "🕷️",
+      "description": "拥有 1 座「噩梦巢」。"
+    },
+    "nightmare_nest_x25": {
+      "name": "噩梦巢铺满一层梦",
+      "icon": "🕷️",
+      "description": "拥有 25 座「噩梦巢」。"
+    },
+    "nightmare_nest_x50": {
+      "name": "噩梦巢自己成层",
+      "icon": "🕷️",
+      "description": "拥有 50 座「噩梦巢」。"
+    },
+    "insomnia_corridor_x1": {
+      "name": "失眠走廊的第一座",
+      "icon": "🚪",
+      "description": "拥有 1 座「失眠走廊」。"
+    },
+    "insomnia_corridor_x25": {
+      "name": "失眠走廊铺满一层梦",
+      "icon": "🚪",
+      "description": "拥有 25 座「失眠走廊」。"
+    },
+    "insomnia_corridor_x50": {
+      "name": "失眠走廊自己成层",
+      "icon": "🚪",
+      "description": "拥有 50 座「失眠走廊」。"
+    },
+    "lucid_zone_x1": {
+      "name": "清醒区的第一座",
+      "icon": "💡",
+      "description": "拥有 1 座「清醒区」。"
+    },
+    "lucid_zone_x25": {
+      "name": "清醒区铺满一层梦",
+      "icon": "💡",
+      "description": "拥有 25 座「清醒区」。"
+    },
+    "lucid_zone_x50": {
+      "name": "清醒区自己成层",
+      "icon": "💡",
+      "description": "拥有 50 座「清醒区」。"
+    },
+    "dream_weaver_x1": {
+      "name": "织梦者的第一座",
+      "icon": "🧶",
+      "description": "拥有 1 座「织梦者」。"
+    },
+    "dream_weaver_x25": {
+      "name": "织梦者铺满一层梦",
+      "icon": "🧶",
+      "description": "拥有 25 座「织梦者」。"
+    },
+    "dream_weaver_x50": {
+      "name": "织梦者自己成层",
+      "icon": "🧶",
+      "description": "拥有 50 座「织梦者」。"
+    },
+    "nesting_tower_x1": {
+      "name": "嵌套塔的第一座",
+      "icon": "🗼",
+      "description": "拥有 1 座「嵌套塔」。"
+    },
+    "nesting_tower_x25": {
+      "name": "嵌套塔铺满一层梦",
+      "icon": "🗼",
+      "description": "拥有 25 座「嵌套塔」。"
+    },
+    "nesting_tower_x50": {
+      "name": "嵌套塔自己成层",
+      "icon": "🗼",
+      "description": "拥有 50 座「嵌套塔」。"
+    },
+    "dream_core_x1": {
+      "name": "梦核的第一座",
+      "icon": "🔮",
+      "description": "拥有 1 座「梦核」。"
+    },
+    "dream_core_x25": {
+      "name": "梦核铺满一层梦",
+      "icon": "🔮",
+      "description": "拥有 25 座「梦核」。"
+    },
+    "dream_core_x50": {
+      "name": "梦核自己成层",
+      "icon": "🔮",
+      "description": "拥有 50 座「梦核」。"
+    },
+    "dream_1e4": {
+      "name": "够打一个盹",
+      "icon": "🌙",
+      "description": "历史累计睡出 10,000 点梦。"
+    },
+    "dream_1e6": {
+      "name": "够睡一下午",
+      "icon": "🌙",
+      "description": "历史累计睡出 1 million 点梦。"
+    },
+    "dream_1e8": {
+      "name": "够睡过一整天",
+      "icon": "🌙",
+      "description": "历史累计睡出 100 million 点梦。"
+    },
+    "dream_1e10": {
+      "name": "够睡过一整个冬天",
+      "icon": "🌙",
+      "description": "历史累计睡出 10 billion 点梦。"
+    },
+    "dream_1e12": {
+      "name": "够睡到忘记醒",
+      "icon": "🌙",
+      "description": "历史累计睡出 1 trillion 点梦。"
+    },
+    "dream_1e14": {
+      "name": "够睡完别人一辈子",
+      "icon": "🌙",
+      "description": "历史累计睡出 100 trillion 点梦。"
+    },
+    "dream_1e16": {
+      "name": "够睡到世界换一遍",
+      "icon": "🌙",
+      "description": "历史累计睡出 10 quadrillion 点梦。"
+    },
+    "dream_1e18": {
+      "name": "数字开始不像觉了",
+      "icon": "🌙",
+      "description": "历史累计睡出 1 quintillion 点梦。"
+    },
+    "dream_1e20": {
+      "name": "够睡到梦外面",
+      "icon": "🌙",
+      "description": "历史累计睡出 100 quintillion 点梦。"
+    },
+    "cps_1e3": {
+      "name": "梦里开始有动静",
+      "icon": "⚙️",
+      "description": "每秒睡出 1,000 点梦。"
+    },
+    "cps_1e6": {
+      "name": "整层梦都在响",
+      "icon": "⚙️",
+      "description": "每秒睡出 1 million 点梦。"
+    },
+    "cps_1e9": {
+      "name": "梦自己在长",
+      "icon": "⚙️",
+      "description": "每秒睡出 1 billion 点梦。"
+    },
+    "cps_1e12": {
+      "name": "一座梦抵一座城",
+      "icon": "⚙️",
+      "description": "每秒睡出 1 trillion 点梦。"
+    },
+    "cps_1e15": {
+      "name": "梦开始做梦",
+      "icon": "⚙️",
+      "description": "每秒睡出 1 quadrillion 点梦。"
+    },
+    "cps_1e18": {
+      "name": "梦核转得比心跳快",
+      "icon": "⚙️",
+      "description": "每秒睡出 1 quintillion 点梦。"
+    },
+    "close_100": {
+      "name": "闭上眼",
+      "icon": "😌",
+      "description": "亲手闭眼 100 次。"
+    },
+    "close_1000": {
+      "name": "开始数数",
+      "icon": "😌",
+      "description": "亲手闭眼 1,000 次。"
+    },
+    "close_10000": {
+      "name": "数到记不清",
+      "icon": "😌",
+      "description": "亲手闭眼 10,000 次。"
+    },
+    "close_100000": {
+      "name": "不用数也能睡着",
+      "icon": "😌",
+      "description": "亲手闭眼 100,000 次。"
+    },
+    "close_1000000": {
+      "name": "你已经分不清哪边是醒了",
+      "icon": "😌",
+      "description": "亲手闭眼 1 million 次。"
+    },
+    "nightmare_1": {
+      "name": "第一只",
+      "icon": "👁️",
+      "description": "面对 1 次梦魇。"
+    },
+    "nightmare_10": {
+      "name": "它认得这层梦",
+      "icon": "👁️",
+      "description": "面对 10 次梦魇。"
+    },
+    "nightmare_50": {
+      "name": "开始给它留位置",
+      "icon": "👁️",
+      "description": "面对 50 次梦魇。"
+    },
+    "nightmare_200": {
+      "name": "它比你先到这里",
+      "icon": "👁️",
+      "description": "面对 200 次梦魇。"
+    },
+    "nightmare_500": {
+      "name": "它在替你按着梦",
+      "icon": "👁️",
+      "description": "面对 500 次梦魇。"
+    },
+    "nightmare_1000": {
+      "name": "你把它织进了梦里",
+      "icon": "👁️",
+      "description": "面对 1,000 次梦魇。"
+    },
+    "sleep_1": {
+      "name": "浅眠",
+      "icon": "🛏️",
+      "description": "半梦半醒：床垫的纹路还压在小腿上。"
+    },
+    "sleep_2": {
+      "name": "深眠",
+      "icon": "😴",
+      "description": "睡得更沉：梦层开始自己长，离线的收益也更好。"
+    },
+    "sleep_3": {
+      "name": "清明梦",
+      "icon": "💡",
+      "description": "她意识到自己在做梦，于是整层梦都开始听她的。"
+    },
+    "sleep_4": {
+      "name": "噩梦层",
+      "icon": "🕷️",
+      "description": "梦的褶皱里全是没做完的坏事，而这里的梦最浓。"
+    },
+    "sleep_5": {
+      "name": "梦核",
+      "icon": "🔮",
+      "description": "所有梦层套着的那一颗芯。走到这里只有两件事可做。"
+    },
+    "energy_2000": {
+      "name": "梦开始变浓",
+      "icon": "🔮",
+      "description": "她伸手的时候，梦里的空气是有一点阻力的。（梦境能量 2,000）"
+    },
+    "energy_300000": {
+      "name": "梦能拧出水",
+      "icon": "🔮",
+      "description": "她把手指按在墙上，墙面凹下去一小块，慢慢又弹回来。（梦境能量 300,000）"
+    },
+    "energy_20000000": {
+      "name": "这一层我们说了算",
+      "icon": "🔮",
+      "description": "她抬了一下手，楼自己往旁边挪了半米。（梦境能量 20 million）"
+    },
+    "energy_600000000": {
+      "name": "梦里能造东西",
+      "icon": "🔮",
+      "description": "她试着捏了一只猫，捏出来是热的。（梦境能量 600 million）"
+    },
+    "energy_2000000000": {
+      "name": "梦核认出了她",
+      "icon": "🔮",
+      "description": "最里面那颗东西转得和她心跳一样快。（梦境能量 2 billion）"
+    },
+    "ach_end_wake_her": {
+      "name": "叫醒梦者",
+      "icon": "🌅",
+      "description": "抵达结局「叫醒梦者」。"
+    },
+    "ach_end_stay_forever": {
+      "name": "永远留在梦里",
+      "icon": "🌙",
+      "description": "抵达结局「永远留在梦里」。"
+    }
   }
 }

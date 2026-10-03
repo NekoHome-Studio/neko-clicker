@@ -255,5 +255,379 @@
       "exitText": "直播到最后一秒，在线人数停在一个谁也数不清的数上。她关掉补光灯，屋子里第一次全是暗的。",
       "completionHint": "本轮累计 100 billion 香火，且「直播在线人数」峰值达到 200,000。本层全局产量 ×3，但增益时长减半。"
     }
+  },
+  "endings": {
+    "end_main_god": {
+      "name": "成为主神",
+      "icon": "👑",
+      "text": "第五套神话收摊那天，她把五套体系的账本摞在一起，摞起来比她还高。祭司、算法、英灵、弹幕，全部到齐，谁也没先开口。她清了清嗓子，说的是这个包里最不像神的一句话：「先说好，我不发工资。」然后她签了第一份神谕——上面只有一条：「以后谁问起我是谁，你们就把这五本书递给他，别编。」从那天起，她不再是一个被供着的名字，而是一套有人真的读过的规矩。"
+    },
+    "end_meme": {
+      "name": "变成 meme",
+      "icon": "😹",
+      "text": "她的香火多到能烧一整座山，可是没有一个人能把她的故事讲完整。他们记得她打翻供品的表情，记得她在直播间卡壳的三秒，记得那句被剪成循环的「这个我会，但我先吃口鱼」。有信徒认真地写了一部《猫神本纪》，第一卷卖出去七本，其中六本是祭司团自己买的，第七本被做成了贴纸。她看完销量报表，把报表叠成一只纸猫，放在神龛最中间：「也行，」她说，「反正他们笑的时候是在想我。」"
+    },
+    "end_forgotten": {
+      "name": "被遗忘",
+      "icon": "🌫️",
+      "text": "五套神话走完，她的名字一次也没有被写下来。神殿还在，直播间还在，供品每天准时出现在祭坛上，只是没有任何一个人说得清这些东西是给谁的——祭司换了几代，流程一次也没有断过。她在最后一座空殿里坐了很久，把补光灯调暗，然后在访客簿上签了个字。那一页后来被雨水泡烂了。"
+    }
+  },
+  "achievements": {
+    "house_shrine_x1": {
+      "name": "家神龛的第一座",
+      "icon": "🏠",
+      "description": "拥有 1 座「家神龛」。"
+    },
+    "house_shrine_x25": {
+      "name": "家神龛香火鼎盛",
+      "icon": "🏠",
+      "description": "拥有 25 座「家神龛」。"
+    },
+    "house_shrine_x50": {
+      "name": "家神龛自成一派",
+      "icon": "🏠",
+      "description": "拥有 50 座「家神龛」。"
+    },
+    "stone_temple_x1": {
+      "name": "石造神殿的第一座",
+      "icon": "🏛️",
+      "description": "拥有 1 座「石造神殿」。"
+    },
+    "stone_temple_x25": {
+      "name": "石造神殿香火鼎盛",
+      "icon": "🏛️",
+      "description": "拥有 25 座「石造神殿」。"
+    },
+    "stone_temple_x50": {
+      "name": "石造神殿自成一派",
+      "icon": "🏛️",
+      "description": "拥有 50 座「石造神殿」。"
+    },
+    "offering_altar_x1": {
+      "name": "祭坛的第一座",
+      "icon": "🕯️",
+      "description": "拥有 1 座「祭坛」。"
+    },
+    "offering_altar_x25": {
+      "name": "祭坛香火鼎盛",
+      "icon": "🕯️",
+      "description": "拥有 25 座「祭坛」。"
+    },
+    "offering_altar_x50": {
+      "name": "祭坛自成一派",
+      "icon": "🕯️",
+      "description": "拥有 50 座「祭坛」。"
+    },
+    "sun_obelisk_x1": {
+      "name": "太阳方尖碑的第一座",
+      "icon": "☀️",
+      "description": "拥有 1 座「太阳方尖碑」。"
+    },
+    "sun_obelisk_x25": {
+      "name": "太阳方尖碑香火鼎盛",
+      "icon": "☀️",
+      "description": "拥有 25 座「太阳方尖碑」。"
+    },
+    "sun_obelisk_x50": {
+      "name": "太阳方尖碑自成一派",
+      "icon": "☀️",
+      "description": "拥有 50 座「太阳方尖碑」。"
+    },
+    "oracle_grove_x1": {
+      "name": "神谕林的第一座",
+      "icon": "🌳",
+      "description": "拥有 1 座「神谕林」。"
+    },
+    "oracle_grove_x25": {
+      "name": "神谕林香火鼎盛",
+      "icon": "🌳",
+      "description": "拥有 25 座「神谕林」。"
+    },
+    "oracle_grove_x50": {
+      "name": "神谕林自成一派",
+      "icon": "🌳",
+      "description": "拥有 50 座「神谕林」。"
+    },
+    "thunder_hall_x1": {
+      "name": "雷霆殿的第一座",
+      "icon": "⚡",
+      "description": "拥有 1 座「雷霆殿」。"
+    },
+    "thunder_hall_x25": {
+      "name": "雷霆殿香火鼎盛",
+      "icon": "⚡",
+      "description": "拥有 25 座「雷霆殿」。"
+    },
+    "thunder_hall_x50": {
+      "name": "雷霆殿自成一派",
+      "icon": "⚡",
+      "description": "拥有 50 座「雷霆殿」。"
+    },
+    "stream_studio_x1": {
+      "name": "直播间的第一座",
+      "icon": "📹",
+      "description": "拥有 1 座「直播间」。"
+    },
+    "stream_studio_x25": {
+      "name": "直播间香火鼎盛",
+      "icon": "📹",
+      "description": "拥有 25 座「直播间」。"
+    },
+    "stream_studio_x50": {
+      "name": "直播间自成一派",
+      "icon": "📹",
+      "description": "拥有 50 座「直播间」。"
+    },
+    "merch_factory_x1": {
+      "name": "周边工厂的第一座",
+      "icon": "🧸",
+      "description": "拥有 1 座「周边工厂」。"
+    },
+    "merch_factory_x25": {
+      "name": "周边工厂香火鼎盛",
+      "icon": "🧸",
+      "description": "拥有 25 座「周边工厂」。"
+    },
+    "merch_factory_x50": {
+      "name": "周边工厂自成一派",
+      "icon": "🧸",
+      "description": "拥有 50 座「周边工厂」。"
+    },
+    "abyssal_cathedral_x1": {
+      "name": "深渊大教堂的第一座",
+      "icon": "🐙",
+      "description": "拥有 1 座「深渊大教堂」。"
+    },
+    "abyssal_cathedral_x25": {
+      "name": "深渊大教堂香火鼎盛",
+      "icon": "🐙",
+      "description": "拥有 25 座「深渊大教堂」。"
+    },
+    "abyssal_cathedral_x50": {
+      "name": "深渊大教堂自成一派",
+      "icon": "🐙",
+      "description": "拥有 50 座「深渊大教堂」。"
+    },
+    "incense_1e4": {
+      "name": "够点一整年的香",
+      "icon": "🕯️",
+      "description": "历史累计收到 10,000 点香火。"
+    },
+    "incense_1e6": {
+      "name": "够翻修一次屋顶",
+      "icon": "🕯️",
+      "description": "历史累计收到 1 million 点香火。"
+    },
+    "incense_1e8": {
+      "name": "够盖一座像样的神殿",
+      "icon": "🕯️",
+      "description": "历史累计收到 100 million 点香火。"
+    },
+    "incense_1e10": {
+      "name": "够养活一个祭司团",
+      "icon": "🕯️",
+      "description": "历史累计收到 10 billion 点香火。"
+    },
+    "incense_1e12": {
+      "name": "够买下一座城",
+      "icon": "🕯️",
+      "description": "历史累计收到 1 trillion 点香火。"
+    },
+    "incense_1e14": {
+      "name": "够做一次全球投放",
+      "icon": "🕯️",
+      "description": "历史累计收到 100 trillion 点香火。"
+    },
+    "incense_1e16": {
+      "name": "够供五套神话同时开张",
+      "icon": "🕯️",
+      "description": "历史累计收到 10 quadrillion 点香火。"
+    },
+    "incense_1e18": {
+      "name": "够把神龛开成连锁",
+      "icon": "🕯️",
+      "description": "历史累计收到 1 quintillion 点香火。"
+    },
+    "incense_1e20": {
+      "name": "数字开始不像钱了",
+      "icon": "🕯️",
+      "description": "历史累计收到 100 quintillion 点香火。"
+    },
+    "cps_1e3": {
+      "name": "有人开始许愿",
+      "icon": "⚙️",
+      "description": "每秒收到 1,000 点香火。"
+    },
+    "cps_1e6": {
+      "name": "许愿要排队",
+      "icon": "⚙️",
+      "description": "每秒收到 1 million 点香火。"
+    },
+    "cps_1e9": {
+      "name": "愿望开始自动实现",
+      "icon": "⚙️",
+      "description": "每秒收到 1 billion 点香火。"
+    },
+    "cps_1e12": {
+      "name": "一整个时区在烧香",
+      "icon": "⚙️",
+      "description": "每秒收到 1 trillion 点香火。"
+    },
+    "cps_1e15": {
+      "name": "神龛自己在长",
+      "icon": "⚙️",
+      "description": "每秒收到 1 quadrillion 点香火。"
+    },
+    "cps_1e18": {
+      "name": "香火开始自己收自己",
+      "icon": "⚙️",
+      "description": "每秒收到 1 quintillion 点香火。"
+    },
+    "bless_100": {
+      "name": "第一次显灵",
+      "icon": "✨",
+      "description": "亲手显灵 100 次。"
+    },
+    "bless_1000": {
+      "name": "手比法杖快",
+      "icon": "✨",
+      "description": "亲手显灵 1,000 次。"
+    },
+    "bless_10000": {
+      "name": "显灵成瘾",
+      "icon": "✨",
+      "description": "亲手显灵 10,000 次。"
+    },
+    "bless_100000": {
+      "name": "信徒开始怀疑这是特效",
+      "icon": "✨",
+      "description": "亲手显灵 100,000 次。"
+    },
+    "bless_1000000": {
+      "name": "你自己也信了",
+      "icon": "✨",
+      "description": "亲手显灵 1 million 次。"
+    },
+    "miracle_1": {
+      "name": "第一次神迹",
+      "icon": "🌟",
+      "description": "经历 1 次神迹。"
+    },
+    "miracle_10": {
+      "name": "神迹开始规律出现",
+      "icon": "🌟",
+      "description": "经历 10 次神迹。"
+    },
+    "miracle_50": {
+      "name": "信徒学会了掐点",
+      "icon": "🌟",
+      "description": "经历 50 次神迹。"
+    },
+    "miracle_200": {
+      "name": "神迹写进了日历",
+      "icon": "🌟",
+      "description": "经历 200 次神迹。"
+    },
+    "miracle_500": {
+      "name": "神迹变成了综艺",
+      "icon": "🌟",
+      "description": "经历 500 次神迹。"
+    },
+    "miracle_1000": {
+      "name": "你已经分不清哪个是安排的",
+      "icon": "🌟",
+      "description": "经历 1,000 次神迹。"
+    },
+    "myth_1": {
+      "name": "家猫神",
+      "icon": "🏠",
+      "description": "一块木板，半条鱼，一个不敢许愿的人。"
+    },
+    "myth_2": {
+      "name": "埃及猫神",
+      "icon": "🐈",
+      "description": "有组织的神：账本、祭司排班表，以及第一座会漏雨的方尖碑。"
+    },
+    "myth_3": {
+      "name": "希腊猫神",
+      "icon": "🏺",
+      "description": "话多的神：神谕天天有，八卦比预言准。"
+    },
+    "myth_4": {
+      "name": "北欧猫神",
+      "icon": "⚡",
+      "description": "加班的神：英灵殿不打烊，员工也不打卡。"
+    },
+    "myth_5": {
+      "name": "克苏鲁猫",
+      "icon": "🐙",
+      "description": "不可名状的神：全球同步直播，弹幕全是乱码，收视率爆了。"
+    },
+    "faith_500": {
+      "name": "第一个常客",
+      "icon": "🙏",
+      "description": "他每天都来，每次都只求同一件事。（信仰 500）"
+    },
+    "faith_5k": {
+      "name": "有人替你说话",
+      "icon": "🙏",
+      "description": "集市上出现了替她辩护的陌生人。（信仰 5,000）"
+    },
+    "faith_40k": {
+      "name": "有人替你写书",
+      "icon": "🙏",
+      "description": "第一本《猫神言行录》出版，作者署的是别人的名字。（信仰 40,000）"
+    },
+    "faith_300k": {
+      "name": "有人替你吵架",
+      "icon": "🙏",
+      "description": "两座城为「她更喜欢谁」打了一仗，谁也没赢。（信仰 300,000）"
+    },
+    "faith_1_2m": {
+      "name": "有人替你不甘心",
+      "icon": "🙏",
+      "description": "祭司团开始研究怎么让她永远别退休。（信仰 1.2 million）"
+    },
+    "faith_3m": {
+      "name": "香火自己在产能",
+      "icon": "🙏",
+      "description": "供品多到需要单独建一座仓库，仓库也满了。（信仰 3 million）"
+    },
+    "viewers_100": {
+      "name": "开播第一个观众",
+      "icon": "📹",
+      "description": "「直播在线人数」峰值达到 100。"
+    },
+    "viewers_2500": {
+      "name": "弹幕开始刷屏",
+      "icon": "📹",
+      "description": "「直播在线人数」峰值达到 2,500。"
+    },
+    "viewers_20000": {
+      "name": "上了首页推荐",
+      "icon": "📹",
+      "description": "「直播在线人数」峰值达到 20,000。"
+    },
+    "viewers_80000": {
+      "name": "全球同步直播",
+      "icon": "📹",
+      "description": "「直播在线人数」峰值达到 80,000。"
+    },
+    "ach_end_main_god": {
+      "name": "成为主神",
+      "icon": "👑",
+      "description": "抵达结局「成为主神」。"
+    },
+    "ach_end_meme": {
+      "name": "变成 meme",
+      "icon": "😹",
+      "description": "抵达结局「变成 meme」。"
+    },
+    "ach_end_forgotten": {
+      "name": "被遗忘",
+      "icon": "🌫️",
+      "description": "抵达结局「被遗忘」。"
+    }
   }
 }

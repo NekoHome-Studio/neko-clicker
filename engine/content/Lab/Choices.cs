@@ -19,6 +19,14 @@ namespace NekoClicker.Content.Lab;
 /// </summary>
 internal static class Choices
 {
+    /// <summary>
+    /// 本包的 <c>text.json</c>：结局 / 表态 / 立场 / 成就的文案与其它分区<b>共用同一份实例</b>（<see cref="Lore.Prose"/>）。<para>
+    /// 必须共用：孤儿检查会遍历整份文件的每个 kind，而"哪些 id 已取用"是按实例记的——
+    /// 两个实例各记一半，就会把对方那些 id 全报成孤儿。
+    /// </para>
+    /// </summary>
+    private static ContentText Prose => Lore.Prose;
+
     /// <summary>全部六次表态。</summary>
     public static ChoiceDefinition[] All =>
     [
@@ -26,8 +34,8 @@ internal static class Choices
         new()
         {
             Id = "choice_observe",
-            Speaker = "观察员",
-            Prompt = "她今天对着单向玻璃看了很久。观察员问你：「要不要让她知道自己在被看着？」",
+            Speaker = Prose.Text("choices", "choice_observe", "speaker"),
+            Prompt = Prose.Text("choices", "choice_observe", "prompt"),
             EraId = "batch_2",
             Trigger = Within(2, 3.6e6),
             Options =
@@ -35,8 +43,8 @@ internal static class Choices
                 new ChoiceOption
                 {
                     Id = "observe_hide",
-                    Label = "不告诉她。",
-                    OutcomeText = "玻璃保持沉默。她看了一会儿，转身去玩了——她毕竟还是一只猫。",
+                    Label = Prose.Text("choices", "choice_observe/observe_hide", "label"),
+                    OutcomeText = Prose.Text("choices", "choice_observe/observe_hide", "outcomeText"),
                     StanceId = Stances.Utopia,
                     Weight = 2,
                     Modifiers = [Modifier.GoldenCookieReward(1.05)],
@@ -44,8 +52,8 @@ internal static class Choices
                 new ChoiceOption
                 {
                     Id = "observe_tell",
-                    Label = "告诉她。",
-                    OutcomeText = "你按下了通话键。她抬起头，第一次准确地看向你站的位置。",
+                    Label = Prose.Text("choices", "choice_observe/observe_tell", "label"),
+                    OutcomeText = Prose.Text("choices", "choice_observe/observe_tell", "outcomeText"),
                     StanceId = Stances.Revolt,
                     Weight = 2,
                     Modifiers = [Modifier.ClickMultiplier(1.1)],
@@ -57,8 +65,8 @@ internal static class Choices
         new()
         {
             Id = "choice_control_group",
-            Speaker = "技术员",
-            Prompt = "基因编辑方案摆在桌上。技术员问你：「要不要留一组什么都不改的？」",
+            Speaker = Prose.Text("choices", "choice_control_group", "speaker"),
+            Prompt = Prose.Text("choices", "choice_control_group", "prompt"),
             EraId = "batch_3",
             Trigger = Within(3, 2.4e7),
             Options =
@@ -66,8 +74,8 @@ internal static class Choices
                 new ChoiceOption
                 {
                     Id = "control_none",
-                    Label = "不留，全都优化。",
-                    OutcomeText = "所有抽屉里的她都调到了最好的参数。数据漂亮得像假的。",
+                    Label = Prose.Text("choices", "choice_control_group/control_none", "label"),
+                    OutcomeText = Prose.Text("choices", "choice_control_group/control_none", "outcomeText"),
                     StanceId = Stances.Utopia,
                     Weight = 2,
                     Modifiers = [Modifier.GlobalMultiplier(1.05)],
@@ -75,8 +83,8 @@ internal static class Choices
                 new ChoiceOption
                 {
                     Id = "control_keep",
-                    Label = "留一组，什么都不改。",
-                    OutcomeText = "你在表格最后加了一行：「对照组，不干预。」那一行后来一直空着。",
+                    Label = Prose.Text("choices", "choice_control_group/control_keep", "label"),
+                    OutcomeText = Prose.Text("choices", "choice_control_group/control_keep", "outcomeText"),
                     StanceId = Stances.Delete,
                     Weight = 2,
                     Modifiers = [Modifier.PriceMultiplier(0.95)],
@@ -88,8 +96,8 @@ internal static class Choices
         new()
         {
             Id = "choice_why",
-            Speaker = "她",
-            Prompt = "这是她第一次主动开口：「为什么是我？」记录仪还在转。",
+            Speaker = Prose.Text("choices", "choice_why", "speaker"),
+            Prompt = Prose.Text("choices", "choice_why", "prompt"),
             EraId = "batch_4",
             Trigger = Within(4, 6e7),
             Options =
@@ -97,8 +105,8 @@ internal static class Choices
                 new ChoiceOption
                 {
                     Id = "why_truth",
-                    Label = "把真相告诉她。",
-                    OutcomeText = "你说了全部，包括编号、批次、和上一批的结局。她听完，说了句「谢谢」。",
+                    Label = Prose.Text("choices", "choice_why/why_truth", "label"),
+                    OutcomeText = Prose.Text("choices", "choice_why/why_truth", "outcomeText"),
                     StanceId = Stances.Revolt,
                     Weight = 2,
                     Modifiers = [Modifier.ClickMultiplier(1.1)],
@@ -106,8 +114,8 @@ internal static class Choices
                 new ChoiceOption
                 {
                     Id = "why_ask_back",
-                    Label = "反问她：「你觉得呢？」",
-                    OutcomeText = "她想了很久，说：「我觉得我该有个名字。」你没有接话。",
+                    Label = Prose.Text("choices", "choice_why/why_ask_back", "label"),
+                    OutcomeText = Prose.Text("choices", "choice_why/why_ask_back", "outcomeText"),
                     StanceId = Stances.Coexist,
                     Weight = 2,
                     Modifiers = [Modifier.GlobalMultiplier(1.03)],
@@ -119,8 +127,8 @@ internal static class Choices
         new()
         {
             Id = "choice_seat",
-            Speaker = "委员会",
-            Prompt = "章程草案最后一页空着一行：表决权。委员长问你：「样本算不算一票？」",
+            Speaker = Prose.Text("choices", "choice_seat", "speaker"),
+            Prompt = Prose.Text("choices", "choice_seat", "prompt"),
             EraId = "batch_5",
             Trigger = Within(5, 1.1e8),
             Options =
@@ -128,8 +136,8 @@ internal static class Choices
                 new ChoiceOption
                 {
                     Id = "seat_give",
-                    Label = "算。给她一把椅子。",
-                    OutcomeText = "第六把椅子搬进来了。她坐上去的时候，脚够不到地。",
+                    Label = Prose.Text("choices", "choice_seat/seat_give", "label"),
+                    OutcomeText = Prose.Text("choices", "choice_seat/seat_give", "outcomeText"),
                     StanceId = Stances.Coexist,
                     Weight = 2,
                     Modifiers = [Modifier.GlobalMultiplier(1.05)],
@@ -137,8 +145,8 @@ internal static class Choices
                 new ChoiceOption
                 {
                     Id = "seat_deny",
-                    Label = "不算。数据不该投票。",
-                    OutcomeText = "你在那一行写了「否」。会议记录存档，编号 A-114。",
+                    Label = Prose.Text("choices", "choice_seat/seat_deny", "label"),
+                    OutcomeText = Prose.Text("choices", "choice_seat/seat_deny", "outcomeText"),
                     StanceId = Stances.Delete,
                     Weight = 2,
                     Modifiers = [Modifier.PriceMultiplier(0.95)],
@@ -150,8 +158,8 @@ internal static class Choices
         new()
         {
             Id = "choice_memory",
-            Speaker = "记忆技师",
-            Prompt = "移植管里是上一批的全部记忆。技师问你：「要还给她吗？包括最后那一段。」",
+            Speaker = Prose.Text("choices", "choice_memory", "speaker"),
+            Prompt = Prose.Text("choices", "choice_memory", "prompt"),
             EraId = "batch_6",
             Trigger = Within(6, 1.4e8),
             Options =
@@ -159,8 +167,8 @@ internal static class Choices
                 new ChoiceOption
                 {
                     Id = "memory_return",
-                    Label = "还给她，全部。",
-                    OutcomeText = "她睁眼的第一句话是上一批的最后一句话。她愣了一下，然后哭了。",
+                    Label = Prose.Text("choices", "choice_memory/memory_return", "label"),
+                    OutcomeText = Prose.Text("choices", "choice_memory/memory_return", "outcomeText"),
                     StanceId = Stances.Revolt,
                     Weight = 2,
                     Modifiers = [Modifier.ClickMultiplier(1.1)],
@@ -168,8 +176,8 @@ internal static class Choices
                 new ChoiceOption
                 {
                     Id = "memory_clear",
-                    Label = "不还。让她干净地开始。",
-                    OutcomeText = "移植管被推进销毁口。她醒来，看见你，问：「你是谁？」",
+                    Label = Prose.Text("choices", "choice_memory/memory_clear", "label"),
+                    OutcomeText = Prose.Text("choices", "choice_memory/memory_clear", "outcomeText"),
                     StanceId = Stances.Delete,
                     Weight = 2,
                     Modifiers = [Modifier.GlobalMultiplier(1.03)],
@@ -181,8 +189,8 @@ internal static class Choices
         new()
         {
             Id = "choice_archive",
-            Speaker = "她",
-            Prompt = "架子最上面那一层还空着。她把一份空白档案放在你面前：「这一份要填吗？」",
+            Speaker = Prose.Text("choices", "choice_archive", "speaker"),
+            Prompt = Prose.Text("choices", "choice_archive", "prompt"),
             EraId = "batch_7",
             Trigger = Within(7, 3.4e8),
             Options =
@@ -190,8 +198,8 @@ internal static class Choices
                 new ChoiceOption
                 {
                     Id = "archive_file",
-                    Label = "填上。归档才算完成。",
-                    OutcomeText = "你把她的编号写在封面上。她看着你写完，说：「这样我就不会丢了。」",
+                    Label = Prose.Text("choices", "choice_archive/archive_file", "label"),
+                    OutcomeText = Prose.Text("choices", "choice_archive/archive_file", "outcomeText"),
                     StanceId = Stances.Utopia,
                     Weight = 2,
                     Modifiers = [Modifier.GoldenCookieReward(1.05)],
@@ -199,8 +207,8 @@ internal static class Choices
                 new ChoiceOption
                 {
                     Id = "archive_leave",
-                    Label = "不填。把档案合上。",
-                    OutcomeText = "你把空白档案放回架上。她说：「那我要自己记得我是谁。」",
+                    Label = Prose.Text("choices", "choice_archive/archive_leave", "label"),
+                    OutcomeText = Prose.Text("choices", "choice_archive/archive_leave", "outcomeText"),
                     StanceId = Stances.Coexist,
                     Weight = 2,
                     Modifiers = [Modifier.GlobalMultiplier(1.05)],

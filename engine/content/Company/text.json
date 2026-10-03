@@ -239,5 +239,465 @@
       "exitText": "钟声之后，一切都会写进财报——包括你没写进合同的那部分。",
       "completionHint": "本轮累计 500 million，并解锁 12 个成就。"
     }
+  },
+  "endings": {
+    "end_ipo": {
+      "name": "上市",
+      "icon": "🔔",
+      "text": "钟声在九点三十分响起。你站在台上，身后是她的名字和整个团队的名单。闪光灯亮成一片的时候，你忽然想起车库那扇要手动摇起来的卷帘门——那扇门后来被拆掉了，没人记得是谁拆的。"
+    },
+    "end_union": {
+      "name": "工会胜利",
+      "icon": "✊",
+      "text": "上市材料里夹着一份章程，第一页写着：重大事项须经工会同意。投行的人问这是不是必须的，你说：「是。」那天下午，她在办公室里贴了张纸：「这家公司有主，主是我们。」"
+    },
+    "end_liquidate": {
+      "name": "破产清算",
+      "icon": "🧳",
+      "text": "清算完成的那个下午，财务把最后一笔钱打给了每一个人，包括已经离职的。钥匙交还给房东，灯一盏一盏关掉。她最后一个走，出门前回头看了一眼，然后说：「其实这样也挺好——至少没有人是被扔下的。」"
+    },
+    "end_fade": {
+      "name": "无疾而终",
+      "icon": "📄",
+      "text": "公司活了下来，不好也不坏。没有人问过你那些问题，所以你一个也没有回答。几年后的一次聚会上，有人提起这家公司，想了半天才说：「哦，他们啊，还在。」她坐在角落里笑了笑，没说话。"
+    }
+  },
+  "stances": {
+    "ipo": {
+      "name": "上市派",
+      "theme": "把公司做大，敲钟，然后再说别的。",
+      "icon": "🔔",
+      "costText": "全局产量 ×1.3，但事故奖励 ×0.85——增长要花钱，也要花人。"
+    },
+    "union": {
+      "name": "工会派",
+      "theme": "员工不是资源。先把人当人，再谈增长。",
+      "icon": "✊",
+      "costText": "全局产量 ×0.85，但点击收益 ×2——慢一点，但每一步都是自己走的。"
+    },
+    "liquidate": {
+      "name": "清算派",
+      "theme": "见好就收：卖掉、清算、每人分一笔，然后散伙。",
+      "icon": "🧳",
+      "costText": "设备价格 ×0.75、事故奖励 ×1.25，但全局产量 ×0.9——你在准备随时走人。"
+    }
+  },
+  "choices": {
+    "choice_first_order": {
+      "speaker": "她",
+      "prompt": "第一笔订单来了，对方要三天交付。她拿着排期表问你：「接吗？三天的话，我今晚得睡在公司。」",
+      "options": {
+        "order_take": {
+          "label": "接，通宵也要交。",
+          "outcomeText": "她抱着睡袋进了会议室。第三天早上，订单交付了，她的黑眼圈成了公司最早的 Logo。"
+        },
+        "order_negotiate": {
+          "label": "不接，先谈条件。",
+          "outcomeText": "你回了封邮件：「五天可以，三天不行。」对方沉默了半天，答应了。她长出一口气。"
+        }
+      }
+    },
+    "choice_runway": {
+      "speaker": "合伙人",
+      "prompt": "账上还剩六个月的钱。合伙人把两份预算推到你面前：「全投进增长，还是留一半？」",
+      "options": {
+        "runway_all_in": {
+          "label": "全投增长。",
+          "outcomeText": "预算表上只剩一行字：「要么做大，要么没有。」"
+        },
+        "runway_reserve": {
+          "label": "留一半当遣散费。",
+          "outcomeText": "你在表格最后加了一栏「退路」。没人提它，但所有人都看见了。"
+        }
+      }
+    },
+    "choice_layoff": {
+      "speaker": "投资人",
+      "prompt": "投资人把一份名单推过来：「把团队砍掉一半，数据会好看很多。你砍不砍？」",
+      "options": {
+        "layoff_yes": {
+          "label": "砍。数据优先。",
+          "outcomeText": "名单上的人当天下午就收拾好了东西。会议室空了一半，报表好看了不少。"
+        },
+        "layoff_no": {
+          "label": "不砍。",
+          "outcomeText": "你把名单推了回去。投资人的脸色不太好看，但那天晚上，办公室的灯一直亮着。"
+        }
+      }
+    },
+    "choice_acquisition": {
+      "speaker": "她自己",
+      "prompt": "收购报价摆在桌上，够每个人分一笔。她问你：「卖了，还是自己做下去？」",
+      "options": {
+        "acquisition_sell": {
+          "label": "卖掉，套现离场。",
+          "outcomeText": "交割那天大家在楼下合影，照片里每个人都笑得很轻松。"
+        },
+        "acquisition_hold": {
+          "label": "不卖，自己敲钟。",
+          "outcomeText": "你在报价单背面写了一行字：「再等等。」然后把它塞进了抽屉。"
+        }
+      }
+    },
+    "choice_union": {
+      "speaker": "工会代表",
+      "prompt": "工会成立大会定在周五。代表把章程放你桌上：「我们只是想要一个能签字的地方。你签不签？」",
+      "options": {
+        "union_sign": {
+          "label": "签。承认它。",
+          "outcomeText": "你签完字，会议室里第一次响起了掌声——不是给你的。"
+        },
+        "union_refuse": {
+          "label": "不签，准备清算。",
+          "outcomeText": "你把章程推了回去，同时让财务开始算另一笔账：如果现在关掉，每个人能分多少。"
+        }
+      }
+    },
+    "choice_ring": {
+      "speaker": "她自己",
+      "prompt": "敲钟前一天，期权池只剩最后一格。她把文件递给你：「分给大家，还是你自己拿走？」",
+      "options": {
+        "ring_share": {
+          "label": "分给所有人。",
+          "outcomeText": "名单上有前台、有实习生、有已经离职的人。她问：「离职的也分？」你说：「也分。」"
+        },
+        "ring_keep": {
+          "label": "自己拿走，套现。",
+          "outcomeText": "你在受让方那一栏签了自己的名字。钟声第二天照常响起。"
+        }
+      }
+    }
+  },
+  "achievements": {
+    "desk_x1": {
+      "name": "工位的第一台",
+      "icon": "🪑",
+      "description": "拥有 1 台「工位」。"
+    },
+    "desk_x25": {
+      "name": "工位成线",
+      "icon": "🪑",
+      "description": "拥有 25 台「工位」。"
+    },
+    "desk_x50": {
+      "name": "工位成规模",
+      "icon": "🪑",
+      "description": "拥有 50 台「工位」。"
+    },
+    "meeting_room_x1": {
+      "name": "会议室的第一台",
+      "icon": "🗣️",
+      "description": "拥有 1 台「会议室」。"
+    },
+    "meeting_room_x25": {
+      "name": "会议室成线",
+      "icon": "🗣️",
+      "description": "拥有 25 台「会议室」。"
+    },
+    "meeting_room_x50": {
+      "name": "会议室成规模",
+      "icon": "🗣️",
+      "description": "拥有 50 台「会议室」。"
+    },
+    "outsourcing_base_x1": {
+      "name": "外包基地的第一台",
+      "icon": "🧵",
+      "description": "拥有 1 台「外包基地」。"
+    },
+    "outsourcing_base_x25": {
+      "name": "外包基地成线",
+      "icon": "🧵",
+      "description": "拥有 25 台「外包基地」。"
+    },
+    "outsourcing_base_x50": {
+      "name": "外包基地成规模",
+      "icon": "🧵",
+      "description": "拥有 50 台「外包基地」。"
+    },
+    "server_room_x1": {
+      "name": "服务器的第一台",
+      "icon": "🖥️",
+      "description": "拥有 1 台「服务器」。"
+    },
+    "server_room_x25": {
+      "name": "服务器成线",
+      "icon": "🖥️",
+      "description": "拥有 25 台「服务器」。"
+    },
+    "server_room_x50": {
+      "name": "服务器成规模",
+      "icon": "🖥️",
+      "description": "拥有 50 台「服务器」。"
+    },
+    "growth_team_x1": {
+      "name": "增长团队的第一台",
+      "icon": "📈",
+      "description": "拥有 1 台「增长团队」。"
+    },
+    "growth_team_x25": {
+      "name": "增长团队成线",
+      "icon": "📈",
+      "description": "拥有 25 台「增长团队」。"
+    },
+    "growth_team_x50": {
+      "name": "增长团队成规模",
+      "icon": "📈",
+      "description": "拥有 50 台「增长团队」。"
+    },
+    "roadshow_hall_x1": {
+      "name": "IPO 路演厅的第一台",
+      "icon": "🎤",
+      "description": "拥有 1 台「IPO 路演厅」。"
+    },
+    "roadshow_hall_x25": {
+      "name": "IPO 路演厅成线",
+      "icon": "🎤",
+      "description": "拥有 25 台「IPO 路演厅」。"
+    },
+    "roadshow_hall_x50": {
+      "name": "IPO 路演厅成规模",
+      "icon": "🎤",
+      "description": "拥有 50 台「IPO 路演厅」。"
+    },
+    "data_center_x1": {
+      "name": "数据中心的第一台",
+      "icon": "🗄️",
+      "description": "拥有 1 台「数据中心」。"
+    },
+    "data_center_x25": {
+      "name": "数据中心成线",
+      "icon": "🗄️",
+      "description": "拥有 25 台「数据中心」。"
+    },
+    "data_center_x50": {
+      "name": "数据中心成规模",
+      "icon": "🗄️",
+      "description": "拥有 50 台「数据中心」。"
+    },
+    "overseas_branch_x1": {
+      "name": "海外分部的第一台",
+      "icon": "🌏",
+      "description": "拥有 1 台「海外分部」。"
+    },
+    "overseas_branch_x25": {
+      "name": "海外分部成线",
+      "icon": "🌏",
+      "description": "拥有 25 台「海外分部」。"
+    },
+    "overseas_branch_x50": {
+      "name": "海外分部成规模",
+      "icon": "🌏",
+      "description": "拥有 50 台「海外分部」。"
+    },
+    "headquarters_x1": {
+      "name": "总部大楼的第一台",
+      "icon": "🏢",
+      "description": "拥有 1 台「总部大楼」。"
+    },
+    "headquarters_x25": {
+      "name": "总部大楼成线",
+      "icon": "🏢",
+      "description": "拥有 25 台「总部大楼」。"
+    },
+    "headquarters_x50": {
+      "name": "总部大楼成规模",
+      "icon": "🏢",
+      "description": "拥有 50 台「总部大楼」。"
+    },
+    "revenue_1e4": {
+      "name": "第一笔像样的收入",
+      "icon": "💰",
+      "description": "历史累计赚取 10,000 营收。"
+    },
+    "revenue_1e6": {
+      "name": "够发一次工资",
+      "icon": "💰",
+      "description": "历史累计赚取 1 million 营收。"
+    },
+    "revenue_1e8": {
+      "name": "够租一层楼",
+      "icon": "💰",
+      "description": "历史累计赚取 100 million 营收。"
+    },
+    "revenue_1e10": {
+      "name": "够开一场发布会",
+      "icon": "💰",
+      "description": "历史累计赚取 10 billion 营收。"
+    },
+    "revenue_1e12": {
+      "name": "够买一栋楼",
+      "icon": "💰",
+      "description": "历史累计赚取 1 trillion 营收。"
+    },
+    "revenue_1e14": {
+      "name": "够收购一家公司",
+      "icon": "💰",
+      "description": "历史累计赚取 100 trillion 营收。"
+    },
+    "revenue_1e16": {
+      "name": "够重来三次",
+      "icon": "💰",
+      "description": "历史累计赚取 10 quadrillion 营收。"
+    },
+    "revenue_1e18": {
+      "name": "够忘记为什么开始",
+      "icon": "💰",
+      "description": "历史累计赚取 1 quintillion 营收。"
+    },
+    "revenue_1e20": {
+      "name": "够把自己买回来",
+      "icon": "💰",
+      "description": "历史累计赚取 100 quintillion 营收。"
+    },
+    "cps_1e3": {
+      "name": "现金流为正",
+      "icon": "📈",
+      "description": "每秒营收达到 1,000。"
+    },
+    "cps_1e6": {
+      "name": "一个月回本",
+      "icon": "📈",
+      "description": "每秒营收达到 1 million。"
+    },
+    "cps_1e9": {
+      "name": "独角兽的速度",
+      "icon": "📈",
+      "description": "每秒营收达到 1 billion。"
+    },
+    "cps_1e12": {
+      "name": "城市听得到",
+      "icon": "📈",
+      "description": "每秒营收达到 1 trillion。"
+    },
+    "cps_1e15": {
+      "name": "数字开始不像钱",
+      "icon": "📈",
+      "description": "每秒营收达到 1 quadrillion。"
+    },
+    "cps_1e18": {
+      "name": "你不再看报表",
+      "icon": "📈",
+      "description": "每秒营收达到 1 quintillion。"
+    },
+    "pitch_100": {
+      "name": "亲手谈了一百次",
+      "icon": "🤝",
+      "description": "亲手谈单 100 次。"
+    },
+    "pitch_1000": {
+      "name": "名片发完了",
+      "icon": "🤝",
+      "description": "亲手谈单 1,000 次。"
+    },
+    "pitch_10000": {
+      "name": "嗓子哑了",
+      "icon": "🤝",
+      "description": "亲手谈单 10,000 次。"
+    },
+    "pitch_100000": {
+      "name": "你成了销售本身",
+      "icon": "🤝",
+      "description": "亲手谈单 100,000 次。"
+    },
+    "pitch_1000000": {
+      "name": "客户开始躲你",
+      "icon": "🤝",
+      "description": "亲手谈单 1 million 次。"
+    },
+    "requirement_1": {
+      "name": "第一次改需求",
+      "icon": "📩",
+      "description": "处理 1 次甲方改需求。"
+    },
+    "requirement_10": {
+      "name": "见过十次了",
+      "icon": "📩",
+      "description": "处理 10 次甲方改需求。"
+    },
+    "requirement_50": {
+      "name": "应急预案背下来了",
+      "icon": "📩",
+      "description": "处理 50 次甲方改需求。"
+    },
+    "requirement_200": {
+      "name": "你开始提前改",
+      "icon": "📩",
+      "description": "处理 200 次甲方改需求。"
+    },
+    "requirement_500": {
+      "name": "需求也是数据",
+      "icon": "📩",
+      "description": "处理 500 次甲方改需求。"
+    },
+    "requirement_1000": {
+      "name": "甲方的甲方也是甲方",
+      "icon": "📩",
+      "description": "处理 1,000 次甲方改需求。"
+    },
+    "round_1": {
+      "name": "车库创业",
+      "icon": "🚲",
+      "description": "从一张桌子开始。第一笔订单还没谈成。"
+    },
+    "round_2": {
+      "name": "A 轮",
+      "icon": "🚀",
+      "description": "钱进来了，人进来了，加班也进来了。"
+    },
+    "round_3": {
+      "name": "上市",
+      "icon": "🔔",
+      "description": "走到最后一轮。接下来要决定这家公司是谁的。"
+    },
+    "morale_100": {
+      "name": "大家还愿意来",
+      "icon": "❤️‍🔥",
+      "description": "茶水间第一次有人笑出声。（士气 100）"
+    },
+    "morale_500": {
+      "name": "有人开始留下",
+      "icon": "❤️‍🔥",
+      "description": "下班后有人自愿多坐了一会儿。（士气 500）"
+    },
+    "morale_2000": {
+      "name": "团队成形",
+      "icon": "❤️‍🔥",
+      "description": "有人开始说「我们」而不是「你们」。（士气 2,000）"
+    },
+    "morale_8000": {
+      "name": "自愿加班",
+      "icon": "❤️‍🔥",
+      "description": "这一次不是被要求的。（士气 8,000）"
+    },
+    "morale_20000": {
+      "name": "不需要打卡",
+      "icon": "❤️‍🔥",
+      "description": "考勤机坏了一个月，没人提。（士气 20,000）"
+    },
+    "morale_50000": {
+      "name": "别人想来的地方",
+      "icon": "❤️‍🔥",
+      "description": "招聘邮箱开始收到主动投递。（士气 50,000）"
+    },
+    "ach_end_ipo": {
+      "name": "上市",
+      "icon": "🔔",
+      "description": "抵达结局「上市」。"
+    },
+    "ach_end_union": {
+      "name": "工会胜利",
+      "icon": "✊",
+      "description": "抵达结局「工会胜利」。"
+    },
+    "ach_end_liquidate": {
+      "name": "破产清算",
+      "icon": "🧳",
+      "description": "抵达结局「破产清算」。"
+    },
+    "ach_end_fade": {
+      "name": "无疾而终",
+      "icon": "📄",
+      "description": "抵达结局「无疾而终」。"
+    }
   }
 }

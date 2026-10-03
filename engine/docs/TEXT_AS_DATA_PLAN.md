@@ -366,3 +366,117 @@ Description = Prose.Text("buildings", "incubator", "description"),
 `Upgrades.cs`（≈444）、`Buffs.cs`（≈212）、`Endings.cs`（58）、`Choices.cs`（36）、
 `Achievements.cs`（36）、`Stances.cs`（33）。**纪元的六个字段与建筑的三个字段是全部已迁完的**
 （剧情散文 / 建筑 / 纪元）。
+
+---
+
+## 11. 执行记录：结局 / 表态 / 立场 / 成就（第四轮，实际是怎么做的）
+
+> 本轮做的是 §10.5 那张清单里 `Endings` / `Choices` / `Stances` / `Achievements` 四项。
+> 和前三轮一样：**没有改 `engine/core` 一行**（`EndingDefinition` / `StanceDefinition` /
+> `ChoiceDefinition` / `AchievementDefinition` 四个记录一行未动），没有动存档格式、
+> 没有动快照协议、没有升版本——改的只是那些字符串**从哪里来**。
+
+### 11.1 交付与形状
+
+| 项 | 结果 |
+|---|---|
+| 结局 | **9 个包、29 个结局** → `endings.<id>.{name, icon, text}`（`Neko` / `Cafe` 没有结局） |
+| 立场 | **3 个包、11 条立场** → `stances.<id>.{name, theme, icon, costText}` |
+| 表态 | **3 个包、18 次表态、36 个选项** → `choices.<表态 id>.{speaker, prompt}` + `choices.<表态 id>.options.<选项 id>.{label, outcomeText}` |
+| 成就 | **11 个包、712 条成就** → `achievements.<id>.{name, icon, description}` |
+| 代码侧 | 一律 `Prose.Text("<分区>", "<id>", "<字段>")`；选项那一层是 `"表态id/选项id"` |
+| 文件 | 仍是同一份 `content/<包>/text.json`，四个新根节**追加在末尾**，EOL 跟随原文件 |
+| 用例 | **472 → 484**（`ContentTextFileTests` 10 → 22；`tools/build.ps1 -Strict` 两个 sln 0 警告、退出码 0） |
+| 版本 | **不动**（公开 API 一行未改，无 minor 可升） |
+
+**什么留在代码里、为什么**——与 §10.1 同一栏性质的判断：
+
+| 字段 | 处置 | 为什么 |
+|---|---|---|
+| `EndingDefinition.Id` / `Priority` / `Condition` | 留 | 存档键 / 互斥顺序 / 条件树（逻辑） |
+| `StanceDefinition.Id` / `Modifiers` | 留 | 引用键 / 数值管线 |
+| `ChoiceDefinition.Id` / `EraId` / `Trigger` | 留 | 引用键、楼层硬门、条件树 |
+| `ChoiceOption.Id` / `StanceId` / `Weight` / `Modifiers` | 留 | 键、立场归属、"这题值几分"（逻辑） |
+| `AchievementDefinition.Id` / `Unlock` / `Modifiers` / `Category` / `Tier` / `Hidden` | 留 | 键、条件树、数值、分组标签、排序档位、显隐开关 |
+| `Name` / `Icon` / `Text`（结局） | **搬** | 玩家读得到 |
+| `Name` / `Theme` / `Icon` / `CostText`（立场） | **搬** | 同上（`CostText` 是 UI 与结算展示的代价说明） |
+| `Speaker` / `Prompt` / `Label` / `OutcomeText`（表态） | **搬** | 同上（`Speaker` 是"谁在说话"，也显示给玩家） |
+| `Name` / `Icon` / `Description`（成就） | **搬** | 同上 |
+
+**成就这一类有一处与其它三类本质不同，值得单独说。** 成就表大多由循环铺出来
+（"每座建筑三档"、`data_1e4`… 这类阈值档），名字里带建筑名、说明里带数字——
+它们是**算出来的**，不是写死的。而外置机制只有"id → 字段"这一种（方案 §3 定下的），
+所以写进文件的是**按 id 展开后的成品**：712 条各自一条文本，id 仍由代码算
+（`$"{building.Id}_x{count}"`）。改名一座建筑，那三条成就的文案不会跟着变——
+这是"按 id 展开"的代价，也是守卫必须逐条比对"代码值 == 文件值"的原因。
+**没有为此发明模板引擎**：那会是一个新机制，超出"只搬散文"的范围。
+
+**`Icon` 也搬了**（包括按建筑派生的那部分）。理由沿用 OPEN_WORK 的 L 条那条判据：
+"一切玩家可见的东西都进文件"，图标既不是数值也不是逻辑。代价是
+`buildings.<建筑>.icon` 与 `achievements.<建筑>_x1.icon` 现在是两份值——
+`ContentText` 的守卫保证"代码读到的 == 文件里的"，但不保证两份文件值一致；
+这一点是**已知且刻意接受**的（同性质的重复还有 `endings.<id>.name` 与
+`achievements.ach_end_<id>.name`）。
+
+### 11.2 方法：还是"判据落在运行期"
+
+与 §8.2 / §9.2 / §10.2 同一条：
+
+1. **迁移前**：一次性探针 `.tmp/Round4Dump`（独立小工程，不在 sln 里）读**运行期**的
+   `GameContent.Endings` / `Stances` / `Choices` / `Achievements`，把**每个字段**（含
+   `Priority`、条件树的 `Describe`、`Weight`、`Modifiers.Describe`、`Category`、`Tier`、
+   `Hidden` 等**不搬**的字段）dump 成四份 JSON 基线——共 **345,460 字节**：
+   `endings-baseline.json` 31,916（SHA-256 `23AE2BD7…`）、
+   `stances-baseline.json` 6,669（`DEC91D1A…`）、
+   `choices-baseline.json` 26,278（`DC8F5348…`）、
+   `achievements-baseline.json` 280,597（`4DC44384…`）。
+2. **生成**：四个分区**由这四份 dump 生成**，生成脚本每写一个包就把文件读回来、
+   逐字段与运行期基线核对一遍（任一处不符即中止）。
+3. **改写源码**：扫描器把字面量换成 `Prose.Text(...)`；能对上基线的字面量**先断言相等**
+   （结局 / 立场 / 表态全部，成就里 id 与文本都是字面量的那些），任一处不符即整体中止。
+   成就那边是"引用式正确"：查找用的 id 表达式**就是**该对象自己 `Id = …` 的那个表达式，
+   所以不存在"id 与文案配错"的可能——配错只可能发生在"表里删错一列"，
+   而那会改变数值与解锁条件，被下面第 4 步抓住。
+4. **迁移后**：同一个探针再跑一次，四份 dump 与基线**逐字节相同**
+   （`identical=True`，字节数与 SHA-256 一个都没变）。这是本轮最硬的那条证据。
+
+**先把一个包走完再铺开**：试点仍是**实验室**（四个分区都有，5 结局 + 4 立场 + 6 表态 +
+66 成就），试点后 dump 就已经逐字节相同；随后才铺其余 10 个包。
+（成就那一步踩了两次编译期坑，都是**响的**、没有静默：① 单例成就的字面量 id 被误"提升"成
+`string id = "click_100";`，同一方法里连写几处就重复声明；② 一个 `foreach` 体内有两处提升，
+同名冲突。修法：id 表达式本身是标识符或字符串字面量时**直接用**，其余提升成
+`id` / `id2` / … 各自独立的局部变量。）
+
+### 11.3 守卫（`ContentTextFileTests`，10 → **22** 条）
+
+| 新增/扩写 | 守什么 |
+|---|---|
+| **新增** `ExpectedEndings` / `ExpectedStances` / `ExpectedChoices` / `ExpectedAchievements` + 四条 `…CountTable_CoversExactlyTheGuardTable` | **写死每包条数**（四张表都是 11 个包；没有这一类内容的包写 **0**）。这是唯一能发现"代码与文件**同时**少一条"的守卫 |
+| **新增** `EveryEnding_ResolvesItsTextFromTheFile` | 代码 ↔ 文件**两个方向** × 三字段逐字 + 非空；**期望 0 的包还要求文件里没有 `endings` 分区** |
+| **新增** `EveryStance_ResolvesItsTextFromTheFile` | 同上 × 四字段 |
+| **新增** `EveryChoice_ResolvesItsTextFromTheFile` | 问句两字段 + **选项两层 id**（`表态id/选项id`）两字段 + 条数（表态数与选项数）双向 |
+| **新增** `EveryAchievement_ResolvesItsTextFromTheFile` | 同上 × 三字段（**11 个包全部有成就**，示例包也在内） |
+| **新增** `EditingTheEndingTextWrongly_FailsLoudly` 等四条 | 少一条（取它那刻抛、点名 id）/ 多一条（孤儿检查点名）两种坏文件都要响 |
+| **扩写** `ReadAll` / `ReadAllExcept` + 新的 `ReadEndings` / `ReadStances` / `ReadChoices` / `ReadAchievements` | 夹具读法必须覆盖**整份文件**，否则孤儿检查会把新分区全报成孤儿。跳过的写法统一成 `"分区/id"`（旧的三处调用点一并改成这个写法） |
+
+> `Speaker` 与 `CostText` 这类字段没有单独的字段级孤儿检查，理由与 §10.3 的 `Icon` 相同：
+> `ContentText.IsUsed` 是**按条目**记的，座位的粒度就是"这条有没有人读"。
+
+### 11.4 反例证明（三处故意改坏，都在**真文件/真守卫**上做）
+
+| 故意改坏 | 红在哪 | 原文 |
+|---|---|---|
+| 真文件里删掉 Lab 的 `end_open` 整条 | 整个包 `Build()` 当场抛（22 条守卫里 14 条红） | `…\content\Lab\text.json：endings 里没有 id「end_open」。` |
+| 真文件里给 Lab 的 `achievements` 加一条 `zz_orphan_achievement` | 孤儿检查（14 条红） | `内容包「Lab」的剧情文本里有 1 条没人取用（孤儿条目）：achievements/zz_orphan_achievement。…` |
+| 期望成就数 `Lab: 66` 改成 `65` | **只有** `EveryAchievement_ResolvesItsTextFromTheFile` 一条红 | `Lab: 代码里的成就数与期望值对不上。｜期望 <65>，实际 <66>。` |
+
+第三处是这三条里最说明问题的：**双向比对全绿，只有写死的条数表响了**——
+正是"代码与 JSON 同时少一条"那个盲区。三处都还原，还原后 22 条全绿
+（`21 通过 / 1 失败` → `全部通过：22 个用例`），且 `text.json` 的 SHA-256 与改坏前逐一相同。
+
+### 11.5 这一轮之后还没做
+
+`Upgrades.cs`（≈444 处）与 `Buffs.cs`（≈212 处）——**"面向玩家的文案"这一类里就剩这两个**。
+至此已迁完的是：剧情散文（10 包 421 条）、建筑（11 包 104 座 × 3 字段）、
+纪元（9 包 49 层 × 6 字段）、结局（9 包 29 个 × 3）、立场（3 包 11 条 × 4）、
+表态（3 包 18 次 × 2 + 36 选项 × 2）、成就（11 包 712 条 × 3）。

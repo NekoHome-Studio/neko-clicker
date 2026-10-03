@@ -23,55 +23,47 @@ namespace NekoClicker.Content.God;
 /// </summary>
 internal static class Endings
 {
+    /// <summary>
+    /// 本包的 <c>text.json</c>：结局 / 表态 / 立场 / 成就的文案与其它分区<b>共用同一份实例</b>（<see cref="Lore.Prose"/>）。<para>
+    /// 必须共用：孤儿检查会遍历整份文件的每个 kind，而"哪些 id 已取用"是按实例记的——
+    /// 两个实例各记一半，就会把对方那些 id 全报成孤儿。
+    /// </para>
+    /// </summary>
+    private static ContentText Prose => Lore.Prose;
+
     /// <summary>三个结局，按 Priority 升序。</summary>
     public static EndingDefinition[] All =>
     [
         new()
         {
             Id = "end_main_god",
-            Name = "成为主神",
-            Icon = "👑",
+            Name = Prose.Text("endings", "end_main_god", "name"),
+            Icon = Prose.Text("endings", "end_main_god", "icon"),
             Priority = 0,
             Condition = UnlockCondition.All(
                 Finished,
                 UnlockCondition.LoreAtLeast(LoreForGod)),
-            Text = "第五套神话收摊那天，她把五套体系的账本摞在一起，摞起来比她还高。"
-                   + "祭司、算法、英灵、弹幕，全部到齐，谁也没先开口。"
-                   + "她清了清嗓子，说的是这个包里最不像神的一句话：「先说好，我不发工资。」"
-                   + "然后她签了第一份神谕——上面只有一条："
-                   + "「以后谁问起我是谁，你们就把这五本书递给他，别编。」"
-                   + "从那天起，她不再是一个被供着的名字，而是一套有人真的读过的规矩。",
+            Text = Prose.Text("endings", "end_main_god", "text"),
         },
         new()
         {
             Id = "end_meme",
-            Name = "变成 meme",
-            Icon = "😹",
+            Name = Prose.Text("endings", "end_meme", "name"),
+            Icon = Prose.Text("endings", "end_meme", "icon"),
             Priority = 1,
             Condition = UnlockCondition.All(
                 Finished,
                 UnlockCondition.LoreAtLeast(LoreForMeme)),
-            Text = "她的香火多到能烧一整座山，可是没有一个人能把她的故事讲完整。"
-                   + "他们记得她打翻供品的表情，记得她在直播间卡壳的三秒，"
-                   + "记得那句被剪成循环的「这个我会，但我先吃口鱼」。"
-                   + "有信徒认真地写了一部《猫神本纪》，第一卷卖出去七本，"
-                   + "其中六本是祭司团自己买的，第七本被做成了贴纸。"
-                   + "她看完销量报表，把报表叠成一只纸猫，放在神龛最中间："
-                   + "「也行，」她说，「反正他们笑的时候是在想我。」",
+            Text = Prose.Text("endings", "end_meme", "text"),
         },
         new()
         {
             Id = "end_forgotten",
-            Name = "被遗忘",
-            Icon = "🌫️",
+            Name = Prose.Text("endings", "end_forgotten", "name"),
+            Icon = Prose.Text("endings", "end_forgotten", "icon"),
             Priority = 100,
             Condition = Finished,
-            Text = "五套神话走完，她的名字一次也没有被写下来。"
-                   + "神殿还在，直播间还在，供品每天准时出现在祭坛上，"
-                   + "只是没有任何一个人说得清这些东西是给谁的——"
-                   + "祭司换了几代，流程一次也没有断过。"
-                   + "她在最后一座空殿里坐了很久，把补光灯调暗，"
-                   + "然后在访客簿上签了个字。那一页后来被雨水泡烂了。",
+            Text = Prose.Text("endings", "end_forgotten", "text"),
         },
     ];
 
@@ -83,9 +75,9 @@ internal static class Endings
     /// </summary>
     public static AchievementDefinition[] Achievements =>
     [
-        Ending("ach_end_main_god", "成为主神", "end_main_god", "👑"),
-        Ending("ach_end_meme", "变成 meme", "end_meme", "😹"),
-        Ending("ach_end_forgotten", "被遗忘", "end_forgotten", "🌫️"),
+        Ending("ach_end_main_god", "end_main_god"),
+        Ending("ach_end_meme", "end_meme"),
+        Ending("ach_end_forgotten", "end_forgotten"),
     ];
 
     /// <summary>
@@ -111,12 +103,12 @@ internal static class Endings
             UnlockCondition.EraAtLeast(5),
             Eras.FinalCompletion);
 
-    private static AchievementDefinition Ending(string id, string name, string endingId, string icon) => new()
+    private static AchievementDefinition Ending(string id, string endingId) => new()
     {
         Id = id,
-        Name = name,
-        Icon = icon,
-        Description = $"抵达结局「{name}」。",
+        Name = Prose.Text("achievements", id, "name"),
+        Icon = Prose.Text("achievements", id, "icon"),
+        Description = Prose.Text("achievements", id, "description"),
         Unlock = UnlockCondition.EndingReached(endingId),
     };
 }

@@ -14,6 +14,14 @@ namespace NekoClicker.Content.NineLives;
 /// </summary>
 internal static class Achievements
 {
+    /// <summary>
+    /// 本包的 <c>text.json</c>：结局 / 表态 / 立场 / 成就的文案与其它分区<b>共用同一份实例</b>（<see cref="Lore.Prose"/>）。<para>
+    /// 必须共用：孤儿检查会遍历整份文件的每个 kind，而"哪些 id 已取用"是按实例记的——
+    /// 两个实例各记一半，就会把对方那些 id 全报成孤儿。
+    /// </para>
+    /// </summary>
+    private static ContentText Prose => Lore.Prose;
+
     /// <summary>全部成就。</summary>
     public static AchievementDefinition[] All =>
     [
@@ -25,18 +33,19 @@ internal static class Achievements
 
     private static IEnumerable<AchievementDefinition> BuildingMilestones()
     {
-        (int Count, string Suffix)[] tiers = [(1, "的开端"), (10, "成排"), (25, "成林")];
+        int[] tiers = [1, 10, 25];
 
         foreach (BuildingDefinition building in Buildings.All)
         {
-            foreach ((int count, string suffix) in tiers)
+            foreach (int count in tiers)
             {
+                string id = $"{building.Id}_x{count}";
                 yield return new AchievementDefinition
                 {
-                    Id = $"{building.Id}_x{count}",
-                    Name = $"{building.Name}{suffix}",
-                    Icon = building.Icon,
-                    Description = $"拥有 {count} 个「{building.Name}」。",
+                    Id = id,
+                    Name = Prose.Text("achievements", id, "name"),
+                    Icon = Prose.Text("achievements", id, "icon"),
+                    Description = Prose.Text("achievements", id, "description"),
                     Unlock = UnlockCondition.BuildingsAtLeast(building.Id, count),
                     Category = "building",
                     Tier = count switch { 1 => 1, 10 => 2, _ => 3 },
@@ -47,44 +56,44 @@ internal static class Achievements
 
     private static IEnumerable<AchievementDefinition> EarningMilestones()
     {
-        (double Amount, string Id, string Name, string Icon)[] earnings =
+        (double Amount, string Id)[] earnings =
         [
-            (1_000, "earn_1e3", "第一桶鱼干", "🪙"),
-            (1_000_000, "earn_1e6", "够活了", "💰"),
-            (1_000_000_000, "earn_1e9", "够养一屋子猫", "🏦"),
-            (1_000_000_000_000, "earn_1e12", "兆级小店", "🏛️"),
-            (1_000_000_000_000_000, "earn_1e15", "京级产业", "🌆"),
-            (1e18, "earn_1e18", "鱼干通胀", "📈"),
-            (1e21, "earn_1e21", "鱼干霸权", "👑"),
-            (1e24, "earn_1e24", "鱼干宇宙", "🌌"),
+            (1_000, "earn_1e3"),
+            (1_000_000, "earn_1e6"),
+            (1_000_000_000, "earn_1e9"),
+            (1_000_000_000_000, "earn_1e12"),
+            (1_000_000_000_000_000, "earn_1e15"),
+            (1e18, "earn_1e18"),
+            (1e21, "earn_1e21"),
+            (1e24, "earn_1e24"),
         ];
-        foreach ((double amount, string id, string name, string icon) in earnings)
+        foreach ((double amount, string id) in earnings)
         {
             yield return new AchievementDefinition
             {
                 Id = id,
-                Name = name,
-                Icon = icon,
-                Description = $"历史累计赚取 {Plain(amount)} 条小鱼干。",
+                Name = Prose.Text("achievements", id, "name"),
+                Icon = Prose.Text("achievements", id, "icon"),
+                Description = Prose.Text("achievements", id, "description"),
                 Unlock = UnlockCondition.EarnedAllTimeAtLeast(amount),
                 Category = "progress",
             };
         }
 
-        (double Cps, string Id, string Name, string Icon)[] cps =
+        (double Cps, string Id)[] cps =
         [
-            (1_000_000, "cps_1e6", "每分钟都在呼噜", "🎵"),
-            (1_000_000_000, "cps_1e9", "整栋楼都在响", "🔊"),
-            (1_000_000_000_000, "cps_1e12", "世界的心跳", "💗"),
+            (1_000_000, "cps_1e6"),
+            (1_000_000_000, "cps_1e9"),
+            (1_000_000_000_000, "cps_1e12"),
         ];
-        foreach ((double value, string id, string name, string icon) in cps)
+        foreach ((double value, string id) in cps)
         {
             yield return new AchievementDefinition
             {
                 Id = id,
-                Name = name,
-                Icon = icon,
-                Description = $"每秒产量达到 {Plain(value)}。",
+                Name = Prose.Text("achievements", id, "name"),
+                Icon = Prose.Text("achievements", id, "icon"),
+                Description = Prose.Text("achievements", id, "description"),
                 Unlock = UnlockCondition.CpsAtLeast(value),
                 Category = "progress",
             };
@@ -96,12 +105,13 @@ internal static class Achievements
     {
         for (int era = 2; era <= 9; era++)
         {
+            string id = $"wake_{era}";
             yield return new AchievementDefinition
             {
-                Id = $"wake_{era}",
-                Name = $"第 {era} 次醒来",
-                Icon = "🌙",
-                Description = $"进入第 {era} 纪元。她记得的东西又多了一点。",
+                Id = id,
+                Name = Prose.Text("achievements", id, "name"),
+                Icon = Prose.Text("achievements", id, "icon"),
+                Description = Prose.Text("achievements", id, "description"),
                 Unlock = UnlockCondition.EraAtLeast(era),
                 Category = "era",
                 Tier = era,
@@ -111,21 +121,21 @@ internal static class Achievements
 
     private static IEnumerable<AchievementDefinition> InteractionMilestones()
     {
-        (double Count, string Id, string Name, string Icon)[] clicks =
+        (double Count, string Id)[] clicks =
         [
-            (100, "click_100", "手有点酸", "👆"),
-            (1_000, "click_1000", "她把头靠过来了", "✋"),
-            (10_000, "click_10000", "闭上眼也知道是你", "💪"),
-            (100_000, "click_100000", "不用睁眼的默契", "🦾"),
+            (100, "click_100"),
+            (1_000, "click_1000"),
+            (10_000, "click_10000"),
+            (100_000, "click_100000"),
         ];
-        foreach ((double count, string id, string name, string icon) in clicks)
+        foreach ((double count, string id) in clicks)
         {
             yield return new AchievementDefinition
             {
                 Id = id,
-                Name = name,
-                Icon = icon,
-                Description = $"摸头 {Plain(count)} 次。",
+                Name = Prose.Text("achievements", id, "name"),
+                Icon = Prose.Text("achievements", id, "icon"),
+                Description = Prose.Text("achievements", id, "description"),
                 Unlock = UnlockCondition.ClicksAtLeast(count),
                 // 少数成就直接给数值：不是每个里程碑都要走"呼噜线"。
                 Modifiers = id == "click_10000" ? [Modifier.ClickMultiplier(1.5)] : [],
@@ -134,21 +144,21 @@ internal static class Achievements
             };
         }
 
-        (double Count, string Id, string Name, string Icon)[] events =
+        (double Count, string Id)[] events =
         [
-            (1, "echo_1", "第一次残响", "🌟"),
-            (7, "echo_7", "她开始记得路", "🎐"),
-            (27, "echo_27", "残响也会呼噜", "🔔"),
-            (77, "echo_77", "九命共鸣", "⛓️"),
+            (1, "echo_1"),
+            (7, "echo_7"),
+            (27, "echo_27"),
+            (77, "echo_77"),
         ];
-        foreach ((double count, string id, string name, string icon) in events)
+        foreach ((double count, string id) in events)
         {
             yield return new AchievementDefinition
             {
                 Id = id,
-                Name = name,
-                Icon = icon,
-                Description = $"捕捉 {Plain(count)} 次情感残响。",
+                Name = Prose.Text("achievements", id, "name"),
+                Icon = Prose.Text("achievements", id, "icon"),
+                Description = Prose.Text("achievements", id, "description"),
                 Unlock = UnlockCondition.GoldenCookiesAtLeast(count),
                 Category = "echo",
             };

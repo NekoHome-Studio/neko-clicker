@@ -16,6 +16,14 @@ namespace NekoClicker.Content.Company;
 /// </summary>
 public static class Stances
 {
+    /// <summary>
+    /// 本包的 <c>text.json</c>：结局 / 表态 / 立场 / 成就的文案与其它分区<b>共用同一份实例</b>（<see cref="Lore.Prose"/>）。<para>
+    /// 必须共用：孤儿检查会遍历整份文件的每个 kind，而"哪些 id 已取用"是按实例记的——
+    /// 两个实例各记一半，就会把对方那些 id 全报成孤儿。
+    /// </para>
+    /// </summary>
+    private static ContentText Prose => Lore.Prose;
+
     /// <summary>上市派 —— 把公司做大，敲钟之后再说别的。</summary>
     public const string Ipo = "ipo";
 
@@ -31,28 +39,28 @@ public static class Stances
         new()
         {
             Id = Ipo,
-            Name = "上市派",
-            Icon = "🔔",
-            Theme = "把公司做大，敲钟，然后再说别的。",
-            CostText = "全局产量 ×1.3，但事故奖励 ×0.85——增长要花钱，也要花人。",
+            Name = Prose.Text("stances", "ipo", "name"),
+            Icon = Prose.Text("stances", "ipo", "icon"),
+            Theme = Prose.Text("stances", "ipo", "theme"),
+            CostText = Prose.Text("stances", "ipo", "costText"),
             Modifiers = [Modifier.GlobalMultiplier(1.3), Modifier.GoldenCookieReward(0.85)],
         },
         new()
         {
             Id = Union,
-            Name = "工会派",
-            Icon = "✊",
-            Theme = "员工不是资源。先把人当人，再谈增长。",
-            CostText = "全局产量 ×0.85，但点击收益 ×2——慢一点，但每一步都是自己走的。",
+            Name = Prose.Text("stances", "union", "name"),
+            Icon = Prose.Text("stances", "union", "icon"),
+            Theme = Prose.Text("stances", "union", "theme"),
+            CostText = Prose.Text("stances", "union", "costText"),
             Modifiers = [Modifier.GlobalMultiplier(0.85), Modifier.ClickMultiplier(2)],
         },
         new()
         {
             Id = Liquidate,
-            Name = "清算派",
-            Icon = "🧳",
-            Theme = "见好就收：卖掉、清算、每人分一笔，然后散伙。",
-            CostText = "设备价格 ×0.75、事故奖励 ×1.25，但全局产量 ×0.9——你在准备随时走人。",
+            Name = Prose.Text("stances", "liquidate", "name"),
+            Icon = Prose.Text("stances", "liquidate", "icon"),
+            Theme = Prose.Text("stances", "liquidate", "theme"),
+            CostText = Prose.Text("stances", "liquidate", "costText"),
             Modifiers =
             [
                 Modifier.PriceMultiplier(0.75),

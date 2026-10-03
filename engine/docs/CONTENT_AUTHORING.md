@@ -699,6 +699,38 @@ private static LoreEntry Make(string id, int order, UnlockCondition reveal, Lore
   `EveryEra_ResolvesItsTextFromTheFile`（六字段双向 + 非空）+
   `EditingTheEraTextWrongly_FailsLoudly`（少一层 / 多一层都要响）。
 
+### 12.0.3 结局 / 表态 / 立场 / 成就也外置了（2026-10-03 起）
+
+第四轮把剩下四类"面向玩家的字符串"搬进同一个 `text.json`，用四个新的根节：
+`endings` / `stances` / `choices` / `achievements`。判据仍是同一条：**能进数据的只有散文**。
+
+| 分区 | 形状 | 代码侧 | 留在代码里的 |
+|---|---|---|---|
+| `endings` | `"<结局 id>": { "name", "icon", "text" }` | `Prose.Text("endings", id, "text")` | `Id` / `Priority` / `Condition` |
+| `stances` | `"<立场 id>": { "name", "theme", "icon", "costText" }` | `Prose.Text("stances", id, "theme")` | `Id` / `Modifiers` |
+| `choices` | `"<表态 id>": { "speaker", "prompt", "options": { "<选项 id>": { "label", "outcomeText" } } }` | 问句 `Prose.Text("choices", id, "prompt")`，选项 `Prose.Text("choices", "表态id/选项id", "label")` | 表态的 `Id` / `EraId` / `Trigger`；选项的 `Id` / `StanceId` / `Weight` / `Modifiers` |
+| `achievements` | `"<成就 id>": { "name", "icon", "description" }` | `Prose.Text("achievements", id, "name")` | `Id` / `Unlock` / `Modifiers` / `Category` / `Tier` / `Hidden` |
+
+三处与前三轮不同的地方，值得记住：
+
+1. **`choices` 的 id 是两层**：`ContentText` 支持 `"表态id/选项id"`，`EnsureNoOrphans`
+   也会钻进 `options` 逐条查孤儿——所以选项漏一条、多一条都会响。
+2. **成就的文案是"按 id 展开后的成品"，不是模板**。成就表大多由循环铺出来
+   （"每座建筑三档"），名字里带建筑名、说明里带数字；外置的机制只有"id → 字段"这一种，
+   所以写进文件的是**展开之后**的那一条条文本，id 仍由代码算（`$"{building.Id}_x{count}"`）。
+   换一座建筑的名字，那三条成就的文案**不会**跟着变——这正是"按 id 展开"的代价，
+   也是守卫要逐条比对"代码值 == 文件值"的原因。
+3. **没有这一类内容的包，文件里不许有那个分区**：`Neko`（示例包）没有结局、立场、表态，
+   `Cafe` 也没有；期望条数表里都写 **0**。**但十一个包都有成就**。
+
+- **守卫**：四张写死的条数表（`ExpectedEndings` / `ExpectedStances` / `ExpectedChoices` /
+  `ExpectedAchievements`）+ 四条 `…CountTable_CoversExactlyTheGuardTable` +
+  四条 `Every…_ResolvesItsTextFromTheFile`（双向 + 非空）+
+  四条 `EditingThe…TextWrongly_FailsLoudly`（少一条 / 多一条都要响）。
+  条数表是**唯一**能发现"代码与文件同时少一条"的守卫。
+- **写作形态**之外还有一条给内容作者的提醒：这四类的文案**不参与**条件判断，
+  改文案不会影响任何解锁——条件树、权重、修饰符留在代码里，两边只靠 id 关联。
+
 ---
 
 ### 12.1 条件编排：三条硬规则

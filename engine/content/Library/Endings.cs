@@ -22,36 +22,36 @@ namespace NekoClicker.Content.Library;
 /// </summary>
 internal static class Endings
 {
+    /// <summary>
+    /// 本包的 <c>text.json</c>：结局 / 表态 / 立场 / 成就的文案与其它分区<b>共用同一份实例</b>（<see cref="Lore.Prose"/>）。<para>
+    /// 必须共用：孤儿检查会遍历整份文件的每个 kind，而"哪些 id 已取用"是按实例记的——
+    /// 两个实例各记一半，就会把对方那些 id 全报成孤儿。
+    /// </para>
+    /// </summary>
+    private static ContentText Prose => Lore.Prose;
+
     /// <summary>两个结局，按 Priority 升序。</summary>
     public static EndingDefinition[] All =>
     [
         new()
         {
             Id = "end_read_to_the_end",
-            Name = "被读到最后",
-            Icon = "🕯️",
+            Name = Prose.Text("endings", "end_read_to_the_end", "name"),
+            Icon = Prose.Text("endings", "end_read_to_the_end", "icon"),
             Priority = 0,
             Condition = UnlockCondition.All(
                 Finished,
                 UnlockCondition.Counter(ReadershipModule.CounterKey, ReadershipForEnding)),
-            Text = "最后一本写完那天，闭馆时间早就过了，阅览室还亮着两盏灯："
-                   + "一盏是她开的，一盏是那个读到最后一页的人开的。"
-                   + "她没有过去，也没有催，只是在门口站了一会儿，"
-                   + "然后转身去做了一件事——她给自己也办了一张借阅卡，"
-                   + "编号是最后一个，名字那一栏写的是「读者」。",
+            Text = Prose.Text("endings", "end_read_to_the_end", "text"),
         },
         new()
         {
             Id = "end_no_one_reads",
-            Name = "无人再读",
-            Icon = "🌑",
+            Name = Prose.Text("endings", "end_no_one_reads", "name"),
+            Icon = Prose.Text("endings", "end_no_one_reads", "icon"),
             Priority = 100,
             Condition = Finished,
-            Text = "五本书都写完了，书架上排得整整齐齐。合上最后一页的那天晚上，"
-                   + "阅览室一个人也没有——不是没人来，是她把灯关早了。"
-                   + "后来那些书一直在那儿，借阅卡上最晚的一个日期停在很多年以前。"
-                   + "有人问她后不后悔，她说：「我写的时候，它们是真的。」"
-                   + "说完她把灯又关了，这次是最后一盏。",
+            Text = Prose.Text("endings", "end_no_one_reads", "text"),
         },
     ];
 
@@ -63,8 +63,8 @@ internal static class Endings
     /// </summary>
     public static AchievementDefinition[] Achievements =>
     [
-        Ending("ach_end_read_to_the_end", "被读到最后", "end_read_to_the_end", "🕯️"),
-        Ending("ach_end_no_one_reads", "无人再读", "end_no_one_reads", "🌑"),
+        Ending("ach_end_read_to_the_end", "end_read_to_the_end"),
+        Ending("ach_end_no_one_reads", "end_no_one_reads"),
     ];
 
     /// <summary>
@@ -87,12 +87,12 @@ internal static class Endings
             UnlockCondition.EraAtLeast(5),
             Eras.FinalCompletion);
 
-    private static AchievementDefinition Ending(string id, string name, string endingId, string icon) => new()
+    private static AchievementDefinition Ending(string id, string endingId) => new()
     {
         Id = id,
-        Name = name,
-        Icon = icon,
-        Description = $"抵达结局「{name}」。",
+        Name = Prose.Text("achievements", id, "name"),
+        Icon = Prose.Text("achievements", id, "icon"),
+        Description = Prose.Text("achievements", id, "description"),
         Unlock = UnlockCondition.EndingReached(endingId),
     };
 }

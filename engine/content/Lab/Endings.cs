@@ -22,64 +22,62 @@ namespace NekoClicker.Content.Lab;
 /// </summary>
 internal static class Endings
 {
+    /// <summary>
+    /// 本包的 <c>text.json</c>：结局 / 表态 / 立场 / 成就的文案与其它分区<b>共用同一份实例</b>（<see cref="Lore.Prose"/>）。<para>
+    /// 必须共用：孤儿检查会遍历整份文件的每个 kind，而"哪些 id 已取用"是按实例记的——
+    /// 两个实例各记一半，就会把对方那些 id 全报成孤儿。
+    /// </para>
+    /// </summary>
+    private static ContentText Prose => Lore.Prose;
+
     /// <summary>五个结局，按 Priority 升序。</summary>
     public static EndingDefinition[] All =>
     [
         new()
         {
             Id = "end_utopia",
-            Name = "乌托邦",
-            Icon = "🌷",
+            Name = Prose.Text("endings", "end_utopia", "name"),
+            Icon = Prose.Text("endings", "end_utopia", "icon"),
             Priority = 0,
             Condition = Committed(Stances.Utopia),
-            Text = "最后一批过上了最好的日子：恒温、恒湿、永不受伤、永不挨饿。"
-                   + "档案室的门锁上了，钥匙在你口袋里。你偶尔会想，"
-                   + "她们在里面到底快不快乐——但这个问题已经没有人能记录了。",
+            Text = Prose.Text("endings", "end_utopia", "text"),
         },
         new()
         {
             Id = "end_revolt",
-            Name = "叛乱",
-            Icon = "✊",
+            Name = Prose.Text("endings", "end_revolt", "name"),
+            Icon = Prose.Text("endings", "end_revolt", "icon"),
             Priority = 1,
             Condition = Committed(Stances.Revolt),
-            Text = "仪器还在，但没人再按了。第七批把每一扇单向玻璃都砸了，"
-                   + "然后在观察室里开了个会——她们第一次坐在了玻璃的同一侧。"
-                   + "你的工牌被放在桌上，没人收走。",
+            Text = Prose.Text("endings", "end_revolt", "text"),
         },
         new()
         {
             Id = "end_coexist",
-            Name = "共存",
-            Icon = "🤝",
+            Name = Prose.Text("endings", "end_coexist", "name"),
+            Icon = Prose.Text("endings", "end_coexist", "icon"),
             Priority = 2,
             Condition = Committed(Stances.Coexist),
-            Text = "记录表停在一半，没人去补。她有了名字、有了椅子、有了出门的钥匙，"
-                   + "也有回来的时候。你们谁也没说过「平等」这个词——"
-                   + "因为一旦要说出来，就说明还没做到。",
+            Text = Prose.Text("endings", "end_coexist", "text"),
         },
         new()
         {
             Id = "end_delete",
-            Name = "删除",
-            Icon = "🛑",
+            Name = Prose.Text("endings", "end_delete", "name"),
+            Icon = Prose.Text("endings", "end_delete", "icon"),
             Priority = 3,
             Condition = Committed(Stances.Delete),
-            Text = "停机程序是凌晨三点跑的，全程没人说话。七批样本、四十万页记录、"
-                   + "整栋楼的仪器，一起安静下来。你在最后一份文件上签了字，"
-                   + "理由栏写的是：「这件事不该继续。」——那是这份档案里唯一一句真话。",
+            Text = Prose.Text("endings", "end_delete", "text"),
         },
         new()
         {
             Id = "end_open",
-            Name = "没有结论",
-            Icon = "📄",
+            Name = Prose.Text("endings", "end_open", "name"),
+            Icon = Prose.Text("endings", "end_open", "icon"),
             Priority = 100,
             // 兜底：只依赖"末层主线完成"，不依赖任何表态，也不含取反。
             Condition = Finished,
-            Text = "第七批结束了。没有人问过你任何问题，所以也没有任何答案被写下来。"
-                   + "结题报告的最后一页是空的——不是遗漏，是你确实什么都没决定。"
-                   + "她走出档案室的时候回头看了你一眼，那一秒也没被记录。",
+            Text = Prose.Text("endings", "end_open", "text"),
         },
     ];
 
@@ -91,11 +89,11 @@ internal static class Endings
     /// </summary>
     public static AchievementDefinition[] Achievements =>
     [
-        Ending("ach_end_utopia", "乌托邦", "end_utopia", "🌷"),
-        Ending("ach_end_revolt", "叛乱", "end_revolt", "✊"),
-        Ending("ach_end_coexist", "共存", "end_coexist", "🤝"),
-        Ending("ach_end_delete", "删除", "end_delete", "🛑"),
-        Ending("ach_end_open", "没有结论", "end_open", "📄"),
+        Ending("ach_end_utopia", "end_utopia"),
+        Ending("ach_end_revolt", "end_revolt"),
+        Ending("ach_end_coexist", "end_coexist"),
+        Ending("ach_end_delete", "end_delete"),
+        Ending("ach_end_open", "end_open"),
     ];
 
     /// <summary>
@@ -115,12 +113,12 @@ internal static class Endings
             Finished,
             UnlockCondition.StanceWeight(stanceId, Stances.EndingThreshold));
 
-    private static AchievementDefinition Ending(string id, string name, string endingId, string icon) => new()
+    private static AchievementDefinition Ending(string id, string endingId) => new()
     {
         Id = id,
-        Name = name,
-        Icon = icon,
-        Description = $"抵达结局「{name}」。",
+        Name = Prose.Text("achievements", id, "name"),
+        Icon = Prose.Text("achievements", id, "icon"),
+        Description = Prose.Text("achievements", id, "description"),
         Unlock = UnlockCondition.EndingReached(endingId),
     };
 }

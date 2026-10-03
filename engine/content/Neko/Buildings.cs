@@ -27,8 +27,14 @@ internal static class Buildings
     /// </summary>
     private static readonly Lazy<ContentText> ProseCache = new(() => ContentText.Load("Neko"));
 
-    /// <summary>文本文件；取不到就抛，绝不回退成空白。</summary>
-    private static ContentText Prose => ProseCache.Value;
+    /// <summary>
+    /// 文本文件；取不到就抛，绝不回退成空白。<para>
+    /// <c>internal</c> 而不是 <c>private</c>：成就文案住在同一份 <c>text.json</c> 里
+    /// （<c>Achievements.Prose</c> 就是它），<b>必须共用同一个实例</b>——
+    /// 孤儿检查遍历整份文件的每个 kind，两份实例各记一半会把对方的条目全报成孤儿。
+    /// </para>
+    /// </summary>
+    internal static ContentText Prose => ProseCache.Value;
 
     /// <summary>
     /// 文本文件里"有、但代码从不取用"的条目会在这里抛（孤儿文本）。<para>

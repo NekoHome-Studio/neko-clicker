@@ -20,6 +20,14 @@ namespace NekoClicker.Content.Company;
 /// </summary>
 internal static class Choices
 {
+    /// <summary>
+    /// 本包的 <c>text.json</c>：结局 / 表态 / 立场 / 成就的文案与其它分区<b>共用同一份实例</b>（<see cref="Lore.Prose"/>）。<para>
+    /// 必须共用：孤儿检查会遍历整份文件的每个 kind，而"哪些 id 已取用"是按实例记的——
+    /// 两个实例各记一半，就会把对方那些 id 全报成孤儿。
+    /// </para>
+    /// </summary>
+    private static ContentText Prose => Lore.Prose;
+
     /// <summary>全部六次表态。</summary>
     public static ChoiceDefinition[] All =>
     [
@@ -27,8 +35,8 @@ internal static class Choices
         new()
         {
             Id = "choice_first_order",
-            Speaker = "她",
-            Prompt = "第一笔订单来了，对方要三天交付。她拿着排期表问你：「接吗？三天的话，我今晚得睡在公司。」",
+            Speaker = Prose.Text("choices", "choice_first_order", "speaker"),
+            Prompt = Prose.Text("choices", "choice_first_order", "prompt"),
             EraId = "garage",
             Trigger = Within(1, 2e4),
             Options =
@@ -36,8 +44,8 @@ internal static class Choices
                 new ChoiceOption
                 {
                     Id = "order_take",
-                    Label = "接，通宵也要交。",
-                    OutcomeText = "她抱着睡袋进了会议室。第三天早上，订单交付了，她的黑眼圈成了公司最早的 Logo。",
+                    Label = Prose.Text("choices", "choice_first_order/order_take", "label"),
+                    OutcomeText = Prose.Text("choices", "choice_first_order/order_take", "outcomeText"),
                     StanceId = Stances.Ipo,
                     Weight = 2,
                     Modifiers = [Modifier.GlobalMultiplier(1.05)],
@@ -45,8 +53,8 @@ internal static class Choices
                 new ChoiceOption
                 {
                     Id = "order_negotiate",
-                    Label = "不接，先谈条件。",
-                    OutcomeText = "你回了封邮件：「五天可以，三天不行。」对方沉默了半天，答应了。她长出一口气。",
+                    Label = Prose.Text("choices", "choice_first_order/order_negotiate", "label"),
+                    OutcomeText = Prose.Text("choices", "choice_first_order/order_negotiate", "outcomeText"),
                     StanceId = Stances.Union,
                     Weight = 2,
                     Modifiers = [Modifier.PriceMultiplier(0.95)],
@@ -58,8 +66,8 @@ internal static class Choices
         new()
         {
             Id = "choice_runway",
-            Speaker = "合伙人",
-            Prompt = "账上还剩六个月的钱。合伙人把两份预算推到你面前：「全投进增长，还是留一半？」",
+            Speaker = Prose.Text("choices", "choice_runway", "speaker"),
+            Prompt = Prose.Text("choices", "choice_runway", "prompt"),
             EraId = "garage",
             Trigger = Within(1, 6e4),
             Options =
@@ -67,8 +75,8 @@ internal static class Choices
                 new ChoiceOption
                 {
                     Id = "runway_all_in",
-                    Label = "全投增长。",
-                    OutcomeText = "预算表上只剩一行字：「要么做大，要么没有。」",
+                    Label = Prose.Text("choices", "choice_runway/runway_all_in", "label"),
+                    OutcomeText = Prose.Text("choices", "choice_runway/runway_all_in", "outcomeText"),
                     StanceId = Stances.Ipo,
                     Weight = 2,
                     Modifiers = [Modifier.GlobalMultiplier(1.05)],
@@ -76,8 +84,8 @@ internal static class Choices
                 new ChoiceOption
                 {
                     Id = "runway_reserve",
-                    Label = "留一半当遣散费。",
-                    OutcomeText = "你在表格最后加了一栏「退路」。没人提它，但所有人都看见了。",
+                    Label = Prose.Text("choices", "choice_runway/runway_reserve", "label"),
+                    OutcomeText = Prose.Text("choices", "choice_runway/runway_reserve", "outcomeText"),
                     StanceId = Stances.Liquidate,
                     Weight = 2,
                     Modifiers = [Modifier.PriceMultiplier(0.95)],
@@ -89,8 +97,8 @@ internal static class Choices
         new()
         {
             Id = "choice_layoff",
-            Speaker = "投资人",
-            Prompt = "投资人把一份名单推过来：「把团队砍掉一半，数据会好看很多。你砍不砍？」",
+            Speaker = Prose.Text("choices", "choice_layoff", "speaker"),
+            Prompt = Prose.Text("choices", "choice_layoff", "prompt"),
             EraId = "series_a",
             Trigger = Within(2, 3e7),
             Options =
@@ -98,8 +106,8 @@ internal static class Choices
                 new ChoiceOption
                 {
                     Id = "layoff_yes",
-                    Label = "砍。数据优先。",
-                    OutcomeText = "名单上的人当天下午就收拾好了东西。会议室空了一半，报表好看了不少。",
+                    Label = Prose.Text("choices", "choice_layoff/layoff_yes", "label"),
+                    OutcomeText = Prose.Text("choices", "choice_layoff/layoff_yes", "outcomeText"),
                     StanceId = Stances.Ipo,
                     Weight = 2,
                     Modifiers = [Modifier.PriceMultiplier(0.95)],
@@ -107,8 +115,8 @@ internal static class Choices
                 new ChoiceOption
                 {
                     Id = "layoff_no",
-                    Label = "不砍。",
-                    OutcomeText = "你把名单推了回去。投资人的脸色不太好看，但那天晚上，办公室的灯一直亮着。",
+                    Label = Prose.Text("choices", "choice_layoff/layoff_no", "label"),
+                    OutcomeText = Prose.Text("choices", "choice_layoff/layoff_no", "outcomeText"),
                     StanceId = Stances.Union,
                     Weight = 2,
                     Modifiers = [Modifier.ClickMultiplier(1.1)],
@@ -120,8 +128,8 @@ internal static class Choices
         new()
         {
             Id = "choice_acquisition",
-            Speaker = "她自己",
-            Prompt = "收购报价摆在桌上，够每个人分一笔。她问你：「卖了，还是自己做下去？」",
+            Speaker = Prose.Text("choices", "choice_acquisition", "speaker"),
+            Prompt = Prose.Text("choices", "choice_acquisition", "prompt"),
             EraId = "series_a",
             Trigger = Within(2, 6e7),
             Options =
@@ -129,8 +137,8 @@ internal static class Choices
                 new ChoiceOption
                 {
                     Id = "acquisition_sell",
-                    Label = "卖掉，套现离场。",
-                    OutcomeText = "交割那天大家在楼下合影，照片里每个人都笑得很轻松。",
+                    Label = Prose.Text("choices", "choice_acquisition/acquisition_sell", "label"),
+                    OutcomeText = Prose.Text("choices", "choice_acquisition/acquisition_sell", "outcomeText"),
                     StanceId = Stances.Liquidate,
                     Weight = 2,
                     Modifiers = [Modifier.GoldenCookieReward(1.05)],
@@ -138,8 +146,8 @@ internal static class Choices
                 new ChoiceOption
                 {
                     Id = "acquisition_hold",
-                    Label = "不卖，自己敲钟。",
-                    OutcomeText = "你在报价单背面写了一行字：「再等等。」然后把它塞进了抽屉。",
+                    Label = Prose.Text("choices", "choice_acquisition/acquisition_hold", "label"),
+                    OutcomeText = Prose.Text("choices", "choice_acquisition/acquisition_hold", "outcomeText"),
                     StanceId = Stances.Ipo,
                     Weight = 2,
                     Modifiers = [Modifier.GlobalMultiplier(1.03)],
@@ -151,8 +159,8 @@ internal static class Choices
         new()
         {
             Id = "choice_union",
-            Speaker = "工会代表",
-            Prompt = "工会成立大会定在周五。代表把章程放你桌上：「我们只是想要一个能签字的地方。你签不签？」",
+            Speaker = Prose.Text("choices", "choice_union", "speaker"),
+            Prompt = Prose.Text("choices", "choice_union", "prompt"),
             EraId = "ipo",
             Trigger = Within(3, 2e8),
             Options =
@@ -160,8 +168,8 @@ internal static class Choices
                 new ChoiceOption
                 {
                     Id = "union_sign",
-                    Label = "签。承认它。",
-                    OutcomeText = "你签完字，会议室里第一次响起了掌声——不是给你的。",
+                    Label = Prose.Text("choices", "choice_union/union_sign", "label"),
+                    OutcomeText = Prose.Text("choices", "choice_union/union_sign", "outcomeText"),
                     StanceId = Stances.Union,
                     Weight = 2,
                     Modifiers = [Modifier.GlobalMultiplier(1.05)],
@@ -169,8 +177,8 @@ internal static class Choices
                 new ChoiceOption
                 {
                     Id = "union_refuse",
-                    Label = "不签，准备清算。",
-                    OutcomeText = "你把章程推了回去，同时让财务开始算另一笔账：如果现在关掉，每个人能分多少。",
+                    Label = Prose.Text("choices", "choice_union/union_refuse", "label"),
+                    OutcomeText = Prose.Text("choices", "choice_union/union_refuse", "outcomeText"),
                     StanceId = Stances.Liquidate,
                     Weight = 2,
                     Modifiers = [Modifier.PriceMultiplier(0.95)],
@@ -182,8 +190,8 @@ internal static class Choices
         new()
         {
             Id = "choice_ring",
-            Speaker = "她自己",
-            Prompt = "敲钟前一天，期权池只剩最后一格。她把文件递给你：「分给大家，还是你自己拿走？」",
+            Speaker = Prose.Text("choices", "choice_ring", "speaker"),
+            Prompt = Prose.Text("choices", "choice_ring", "prompt"),
             EraId = "ipo",
             Trigger = Within(3, 4e8),
             Options =
@@ -191,8 +199,8 @@ internal static class Choices
                 new ChoiceOption
                 {
                     Id = "ring_share",
-                    Label = "分给所有人。",
-                    OutcomeText = "名单上有前台、有实习生、有已经离职的人。她问：「离职的也分？」你说：「也分。」",
+                    Label = Prose.Text("choices", "choice_ring/ring_share", "label"),
+                    OutcomeText = Prose.Text("choices", "choice_ring/ring_share", "outcomeText"),
                     StanceId = Stances.Union,
                     Weight = 2,
                     Modifiers = [Modifier.ClickMultiplier(1.1)],
@@ -200,8 +208,8 @@ internal static class Choices
                 new ChoiceOption
                 {
                     Id = "ring_keep",
-                    Label = "自己拿走，套现。",
-                    OutcomeText = "你在受让方那一栏签了自己的名字。钟声第二天照常响起。",
+                    Label = Prose.Text("choices", "choice_ring/ring_keep", "label"),
+                    OutcomeText = Prose.Text("choices", "choice_ring/ring_keep", "outcomeText"),
                     StanceId = Stances.Liquidate,
                     Weight = 2,
                     Modifiers = [Modifier.GoldenCookieReward(1.05)],

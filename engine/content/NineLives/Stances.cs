@@ -20,6 +20,14 @@ namespace NekoClicker.Content.NineLives;
 /// </summary>
 public static class Stances
 {
+    /// <summary>
+    /// 本包的 <c>text.json</c>：结局 / 表态 / 立场 / 成就的文案与其它分区<b>共用同一份实例</b>（<see cref="Lore.Prose"/>）。<para>
+    /// 必须共用：孤儿检查会遍历整份文件的每个 kind，而"哪些 id 已取用"是按实例记的——
+    /// 两个实例各记一半，就会把对方那些 id 全报成孤儿。
+    /// </para>
+    /// </summary>
+    private static ContentText Prose => Lore.Prose;
+
     /// <summary>神性 —— 拼回完整、接上那个名字。</summary>
     public const string Divine = "divine";
 
@@ -38,10 +46,10 @@ public static class Stances
         new()
         {
             Id = Divine,
-            Name = "神性",
-            Icon = "👁️",
-            Theme = "她想把自己拼回去，哪怕拼回来的那个不记得纸箱。",
-            CostText = "产量 ×1.25，但她越来越不像是会撞见意外的生物——金猫出现频率 ×0.75。",
+            Name = Prose.Text("stances", "divine", "name"),
+            Icon = Prose.Text("stances", "divine", "icon"),
+            Theme = Prose.Text("stances", "divine", "theme"),
+            CostText = Prose.Text("stances", "divine", "costText"),
             Modifiers =
             [
                 Modifier.GlobalMultiplier(1.25),
@@ -51,10 +59,10 @@ public static class Stances
         new()
         {
             Id = Human,
-            Name = "人形",
-            Icon = "🧍",
-            Theme = "她想学会用两条腿走路，把想说的话说完。",
-            CostText = "点击收益 ×2，但自动化让步于亲手——全局产量 ×0.85。",
+            Name = Prose.Text("stances", "human", "name"),
+            Icon = Prose.Text("stances", "human", "icon"),
+            Theme = Prose.Text("stances", "human", "theme"),
+            CostText = Prose.Text("stances", "human", "costText"),
             Modifiers =
             [
                 Modifier.ClickMultiplier(2),
@@ -64,10 +72,10 @@ public static class Stances
         new()
         {
             Id = Cat,
-            Name = "猫形",
-            Icon = "🐾",
-            Theme = "她只想晒太阳。九个世界来来回回，地板还是那一块。",
-            CostText = "金猫奖励 ×1.3，但产量 ×0.9——她不太在意剩下的世界。",
+            Name = Prose.Text("stances", "cat", "name"),
+            Icon = Prose.Text("stances", "cat", "icon"),
+            Theme = Prose.Text("stances", "cat", "theme"),
+            CostText = Prose.Text("stances", "cat", "costText"),
             Modifiers =
             [
                 Modifier.GoldenCookieReward(1.3),
@@ -77,10 +85,10 @@ public static class Stances
         new()
         {
             Id = Sever,
-            Name = "断绝",
-            Icon = "🕯️",
-            Theme = "她想把九节一起点亮，然后什么都不做。",
-            CostText = "建筑价格 ×0.8（她开始拆东西），但金猫奖励 ×0.7。",
+            Name = Prose.Text("stances", "sever", "name"),
+            Icon = Prose.Text("stances", "sever", "icon"),
+            Theme = Prose.Text("stances", "sever", "theme"),
+            CostText = Prose.Text("stances", "sever", "costText"),
             Modifiers =
             [
                 Modifier.PriceMultiplier(0.8),

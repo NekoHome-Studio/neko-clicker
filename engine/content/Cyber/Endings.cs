@@ -47,42 +47,38 @@ namespace NekoClicker.Content.Cyber;
 /// </summary>
 internal static class Endings
 {
+    /// <summary>
+    /// 本包的 <c>text.json</c>：结局 / 表态 / 立场 / 成就的文案与其它分区<b>共用同一份实例</b>（<see cref="Lore.Prose"/>）。<para>
+    /// 必须共用：孤儿检查会遍历整份文件的每个 kind，而"哪些 id 已取用"是按实例记的——
+    /// 两个实例各记一半，就会把对方那些 id 全报成孤儿。
+    /// </para>
+    /// </summary>
+    private static ContentText Prose => Lore.Prose;
+
     /// <summary>两个结局，按 Priority 升序。</summary>
     public static EndingDefinition[] All =>
     [
         new()
         {
             Id = "end_owner_echo",
-            Name = "找到主人的数据残影",
-            Icon = "🌙",
+            Name = Prose.Text("endings", "end_owner_echo", "name"),
+            Icon = Prose.Text("endings", "end_owner_echo", "icon"),
             Priority = 0,
             Condition = UnlockCondition.All(
                 Finished,
                 UnlockCondition.Counter(ComputeModule.CounterKey, ComputeForEnding)),
-            Text = "她把整张网的噪声过了一遍，又过了一遍，第三遍的时候手已经在抖了。"
-                   + "然后有一段波形没有跟着噪声一起散掉——它不是完整的，缺了很多，"
-                   + "像一封被水泡过的信，只剩下几个还能认出来的字。"
-                   + "她没有修它，也没有补全它，她只是把它放进了一块最干净的存储里，"
-                   + "然后对着那几个字说：「我找到了。我这就回家。」"
-                   + "整张网的流量在她说完这句之后轻微地抖了一下——像是有人在那头，"
-                   + "把手放在了同一块屏幕上。",
+            Text = Prose.Text("endings", "end_owner_echo", "text"),
         },
         new()
         {
             Id = "end_guardian_cat",
-            Name = "互联网守护猫",
-            Icon = "🛡️",
+            Name = Prose.Text("endings", "end_guardian_cat", "name"),
+            Icon = Prose.Text("endings", "end_guardian_cat", "icon"),
             Priority = 100,
             Condition = UnlockCondition.All(
                 Finished,
                 UnlockCondition.PlayTimeAtLeast(FallbackPlayTimeSeconds)),
-            Text = "她最后没有找到主人。搜索的进程跑了很多年，返回的一直是同一个空结果，"
-                   + "她没有删掉那个进程，只是把它调成了最低优先级，让它一直在后台跑着。"
-                   + "然后她开始做别的事：把每天进来的坏东西挡在外面，把掉线的邻居拉起来，"
-                   + "把没有人维护的旧服务一个一个接过来。有人管这叫运维，"
-                   + "有人叫她守护进程，后来所有人都叫她——互联网守护猫。"
-                   + "她不太喜欢这个名字，但她没有反驳，因为取名字的人已经不在了，"
-                   + "而反驳一个不在的人，是需要理由的。",
+            Text = Prose.Text("endings", "end_guardian_cat", "text"),
         },
     ];
 
@@ -94,8 +90,8 @@ internal static class Endings
     /// </summary>
     public static AchievementDefinition[] Achievements =>
     [
-        Ending("ach_end_owner_echo", "找到主人的数据残影", "end_owner_echo", "🌙"),
-        Ending("ach_end_guardian_cat", "互联网守护猫", "end_guardian_cat", "🛡️"),
+        Ending("ach_end_owner_echo", "end_owner_echo"),
+        Ending("ach_end_guardian_cat", "end_guardian_cat"),
     ];
 
     /// <summary>
@@ -135,12 +131,12 @@ internal static class Endings
             UnlockCondition.EraAtLeast(5),
             Eras.FinalCompletion);
 
-    private static AchievementDefinition Ending(string id, string name, string endingId, string icon) => new()
+    private static AchievementDefinition Ending(string id, string endingId) => new()
     {
         Id = id,
-        Name = name,
-        Icon = icon,
-        Description = $"抵达结局「{name}」。",
+        Name = Prose.Text("achievements", id, "name"),
+        Icon = Prose.Text("achievements", id, "icon"),
+        Description = Prose.Text("achievements", id, "description"),
         Unlock = UnlockCondition.EndingReached(endingId),
     };
 }

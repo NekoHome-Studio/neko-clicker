@@ -25,6 +25,14 @@ namespace NekoClicker.Content.NineLives;
 /// </summary>
 internal static class Choices
 {
+    /// <summary>
+    /// 本包的 <c>text.json</c>：结局 / 表态 / 立场 / 成就的文案与其它分区<b>共用同一份实例</b>（<see cref="Lore.Prose"/>）。<para>
+    /// 必须共用：孤儿检查会遍历整份文件的每个 kind，而"哪些 id 已取用"是按实例记的——
+    /// 两个实例各记一半，就会把对方那些 id 全报成孤儿。
+    /// </para>
+    /// </summary>
+    private static ContentText Prose => Lore.Prose;
+
     /// <summary>全部六次表态。</summary>
     public static ChoiceDefinition[] All =>
     [
@@ -32,8 +40,8 @@ internal static class Choices
         new()
         {
             Id = "choice_name",
-            Speaker = "她",
-            Prompt = "她坐在吧台上，看你把最后一块招牌留白。她问：“要不要给我起个名字？”",
+            Speaker = Prose.Text("choices", "choice_name", "speaker"),
+            Prompt = Prose.Text("choices", "choice_name", "prompt"),
             EraId = "life_cafe",
             Trigger = Within(2, 3.6e6),
             Options =
@@ -41,8 +49,8 @@ internal static class Choices
                 new ChoiceOption
                 {
                     Id = "name_write",
-                    Label = "写上去。",
-                    OutcomeText = "你写了一个名字。她念了两遍，说：“这个好像本来就是我的。”",
+                    Label = Prose.Text("choices", "choice_name/name_write", "label"),
+                    OutcomeText = Prose.Text("choices", "choice_name/name_write", "outcomeText"),
                     StanceId = Stances.Divine,
                     Weight = 2,
                     Modifiers = [Modifier.GlobalMultiplier(1.05)],
@@ -50,8 +58,8 @@ internal static class Choices
                 new ChoiceOption
                 {
                     Id = "name_blank",
-                    Label = "先空着。",
-                    OutcomeText = "她把爪子按在招牌上，留下一个印子。她说：“这样也行。”",
+                    Label = Prose.Text("choices", "choice_name/name_blank", "label"),
+                    OutcomeText = Prose.Text("choices", "choice_name/name_blank", "outcomeText"),
                     StanceId = Stances.Cat,
                     Weight = 2,
                     Modifiers = [Modifier.GoldenCookieReward(1.05)],
@@ -63,8 +71,8 @@ internal static class Choices
         new()
         {
             Id = "choice_records",
-            Speaker = "记录员",
-            Prompt = "培养舱的玻璃上有雾，她正在写那个字。记录员问你：“要让她看记录表吗？上面写着她是什么。”",
+            Speaker = Prose.Text("choices", "choice_records", "speaker"),
+            Prompt = Prose.Text("choices", "choice_records", "prompt"),
             EraId = "life_lab",
             Trigger = Within(3, 2.4e7),
             Options =
@@ -72,8 +80,8 @@ internal static class Choices
                 new ChoiceOption
                 {
                     Id = "records_show",
-                    Label = "给她看。",
-                    OutcomeText = "她读了很久，读到第三页停住了。她说：“原来我有个编号。”",
+                    Label = Prose.Text("choices", "choice_records/records_show", "label"),
+                    OutcomeText = Prose.Text("choices", "choice_records/records_show", "outcomeText"),
                     StanceId = Stances.Human,
                     Weight = 2,
                     Modifiers = [Modifier.ClickMultiplier(1.1)],
@@ -81,8 +89,8 @@ internal static class Choices
                 new ChoiceOption
                 {
                     Id = "records_hide",
-                    Label = "收起来。",
-                    OutcomeText = "你把它折进口袋。她在玻璃后面看了你一会儿，然后开始舔爪子。",
+                    Label = Prose.Text("choices", "choice_records/records_hide", "label"),
+                    OutcomeText = Prose.Text("choices", "choice_records/records_hide", "outcomeText"),
                     StanceId = Stances.Cat,
                     Weight = 2,
                     Modifiers = [Modifier.GlobalMultiplier(1.03)],
@@ -94,8 +102,8 @@ internal static class Choices
         new()
         {
             Id = "choice_statue",
-            Speaker = "城里的人",
-            Prompt = "有人画好了图纸：广场中央，一座她的石像。他们问你：“立吗？”",
+            Speaker = Prose.Text("choices", "choice_statue", "speaker"),
+            Prompt = Prose.Text("choices", "choice_statue", "prompt"),
             EraId = "life_civilization",
             Trigger = Within(4, 6e7),
             Options =
@@ -103,8 +111,8 @@ internal static class Choices
                 new ChoiceOption
                 {
                     Id = "statue_build",
-                    Label = "立。",
-                    OutcomeText = "石像立起来那天，她绕着走了三圈，说：“这个比我完整。”",
+                    Label = Prose.Text("choices", "choice_statue/statue_build", "label"),
+                    OutcomeText = Prose.Text("choices", "choice_statue/statue_build", "outcomeText"),
                     StanceId = Stances.Divine,
                     Weight = 2,
                     Modifiers = [Modifier.GlobalMultiplier(1.05)],
@@ -112,8 +120,8 @@ internal static class Choices
                 new ChoiceOption
                 {
                     Id = "statue_refuse",
-                    Label = "不立。",
-                    OutcomeText = "你把图纸退了回去。她说：“对，站着的东西不会晒太阳。”",
+                    Label = Prose.Text("choices", "choice_statue/statue_refuse", "label"),
+                    OutcomeText = Prose.Text("choices", "choice_statue/statue_refuse", "outcomeText"),
                     StanceId = Stances.Sever,
                     Weight = 2,
                     Modifiers = [Modifier.PriceMultiplier(0.95)],
@@ -125,8 +133,8 @@ internal static class Choices
         new()
         {
             Id = "choice_instance",
-            Speaker = "另一份她",
-            Prompt = "屏幕上，实例 1 在等你的答复：“要不要把实例 0 也留着？”",
+            Speaker = Prose.Text("choices", "choice_instance", "speaker"),
+            Prompt = Prose.Text("choices", "choice_instance", "prompt"),
             EraId = "life_cyber",
             Trigger = Within(5, 1.1e8),
             Options =
@@ -134,8 +142,8 @@ internal static class Choices
                 new ChoiceOption
                 {
                     Id = "instance_both",
-                    Label = "都留着。",
-                    OutcomeText = "两份她互相看了一眼。她说：“有两个我，就有一个不用害怕忘记。”",
+                    Label = Prose.Text("choices", "choice_instance/instance_both", "label"),
+                    OutcomeText = Prose.Text("choices", "choice_instance/instance_both", "outcomeText"),
                     StanceId = Stances.Divine,
                     Weight = 2,
                     Modifiers = [Modifier.GlobalMultiplier(1.05)],
@@ -143,8 +151,8 @@ internal static class Choices
                 new ChoiceOption
                 {
                     Id = "instance_one",
-                    Label = "只留一份。",
-                    OutcomeText = "你关掉实例 1。她没有反对，只说：“那这一份要好好活。”",
+                    Label = Prose.Text("choices", "choice_instance/instance_one", "label"),
+                    OutcomeText = Prose.Text("choices", "choice_instance/instance_one", "outcomeText"),
                     StanceId = Stances.Human,
                     Weight = 2,
                     Modifiers = [Modifier.ClickMultiplier(1.1)],
@@ -156,8 +164,8 @@ internal static class Choices
         new()
         {
             Id = "choice_puzzle",
-            Speaker = "废墟里的机器",
-            Prompt = "托盘上躺着最后一块拼图。机器问：“要装回去吗？”",
+            Speaker = Prose.Text("choices", "choice_puzzle", "speaker"),
+            Prompt = Prose.Text("choices", "choice_puzzle", "prompt"),
             EraId = "life_posthuman",
             Trigger = Within(6, 1.4e8),
             Options =
@@ -165,8 +173,8 @@ internal static class Choices
                 new ChoiceOption
                 {
                     Id = "puzzle_restore",
-                    Label = "装回去。",
-                    OutcomeText = "拼图归位的一瞬间，她咳了一声——那是她第一次像一个会咳嗽的东西。",
+                    Label = Prose.Text("choices", "choice_puzzle/puzzle_restore", "label"),
+                    OutcomeText = Prose.Text("choices", "choice_puzzle/puzzle_restore", "outcomeText"),
                     StanceId = Stances.Human,
                     Weight = 2,
                     Modifiers = [Modifier.ClickMultiplier(1.1)],
@@ -174,8 +182,8 @@ internal static class Choices
                 new ChoiceOption
                 {
                     Id = "puzzle_leave",
-                    Label = "留在托盘上。",
-                    OutcomeText = "你合上盖子。她说：“缺一块也挺好，至少还知道缺什么。”",
+                    Label = Prose.Text("choices", "choice_puzzle/puzzle_leave", "label"),
+                    OutcomeText = Prose.Text("choices", "choice_puzzle/puzzle_leave", "outcomeText"),
                     StanceId = Stances.Sever,
                     Weight = 2,
                     Modifiers = [Modifier.PriceMultiplier(0.95)],
@@ -187,8 +195,8 @@ internal static class Choices
         new()
         {
             Id = "choice_wake",
-            Speaker = "寐娅",
-            Prompt = "她的声音第一次这么近：“要不要叫醒她？”",
+            Speaker = Prose.Text("choices", "choice_wake", "speaker"),
+            Prompt = Prose.Text("choices", "choice_wake", "prompt"),
             EraId = "life_dream",
             Trigger = Within(8, 3.4e8),
             Options =
@@ -196,8 +204,8 @@ internal static class Choices
                 new ChoiceOption
                 {
                     Id = "wake_later",
-                    Label = "让她再睡一会儿。",
-                    OutcomeText = "你没有叫她。梦里她翻了个身，尾巴扫过你的手背。",
+                    Label = Prose.Text("choices", "choice_wake/wake_later", "label"),
+                    OutcomeText = Prose.Text("choices", "choice_wake/wake_later", "outcomeText"),
                     StanceId = Stances.Cat,
                     Weight = 2,
                     Modifiers = [Modifier.GoldenCookieReward(1.05)],
@@ -205,8 +213,8 @@ internal static class Choices
                 new ChoiceOption
                 {
                     Id = "wake_now",
-                    Label = "叫醒她。",
-                    OutcomeText = "她睁开眼。梦碎得很安静，像一层灰。她说：“我知道会有这一天。”",
+                    Label = Prose.Text("choices", "choice_wake/wake_now", "label"),
+                    OutcomeText = Prose.Text("choices", "choice_wake/wake_now", "outcomeText"),
                     StanceId = Stances.Sever,
                     Weight = 2,
                     Modifiers = [Modifier.PriceMultiplier(0.95)],

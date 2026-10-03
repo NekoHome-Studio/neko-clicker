@@ -28,6 +28,14 @@ namespace NekoClicker.Core.Tests;
 /// （<c>Neko</c> 与 <c>Cafe</c> 连 <c>Eras.cs</c> 都没有），所以这张表里那两个包的期望值是
 /// <b>0</b>，而不是"没有这一行"——"没有这一行"是沉默的，"期望 0"是响的。
 /// </para>
+/// <para>
+/// <b>第四轮加的四个分区也在这张表里</b>：<c>endings</c>（<c>Name</c> / <c>Icon</c> /
+/// <c>Text</c>）、<c>stances</c>（<c>Name</c> / <c>Theme</c> / <c>Icon</c> / <c>CostText</c>）、
+/// <c>choices</c>（<c>Speaker</c> / <c>Prompt</c> / 每个选项的 <c>Label</c> 与
+/// <c>OutcomeText</c>）与 <c>achievements</c>（<c>Name</c> / <c>Icon</c> / <c>Description</c>）。
+/// 与纪元同一条理由：<b>没有这一类内容的包期望值写 0</b>，并要求文件里也没有那个分区。
+/// 成就与其它三类不同——<b>十一个包都有</b>，包括没有纪元、没有表态的示例包。
+/// </para>
 /// </summary>
 public static class ContentTextFileTests
 {
@@ -95,6 +103,83 @@ public static class ContentTextFileTests
     ];
 
     /// <summary>
+    /// 每个包应当有几个结局。<para>
+    /// 与 <see cref="ExpectedBuildings"/> / <see cref="ExpectedEras"/> 同一条理由：
+    /// 双向比对只能发现"两边不一致"，<b>代码与文件同时少一个结局</b>只有这张写死的表看得见——
+    /// 而少一个结局意味着一条完整的故事线永远走不到。
+    /// </para>
+    /// <para><b>十一个包全在这张表里</b>：没有结局的包写 0（并额外要求文件里没有 <c>endings</c> 分区）。</para>
+    /// </summary>
+    private static readonly (string Pack, int Count)[] ExpectedEndings =
+    [
+        ("Apocalypse", 3),
+        ("Cafe", 0),
+        ("Civ", 3),
+        ("Company", 4),
+        ("Cyber", 2),
+        ("Dream", 2),
+        ("God", 3),
+        ("Lab", 5),
+        ("Library", 2),
+        ("Neko", 0),
+        ("NineLives", 5),
+    ];
+
+    /// <summary>每个包应当有几条立场。<b>只有三个包有道德轴</b>，其余八个写 0。</summary>
+    private static readonly (string Pack, int Count)[] ExpectedStances =
+    [
+        ("Apocalypse", 0),
+        ("Cafe", 0),
+        ("Civ", 0),
+        ("Company", 3),
+        ("Cyber", 0),
+        ("Dream", 0),
+        ("God", 0),
+        ("Lab", 4),
+        ("Library", 0),
+        ("Neko", 0),
+        ("NineLives", 4),
+    ];
+
+    /// <summary>每个包应当有几次表态。<b>只有三个包有表态</b>，其余八个写 0。</summary>
+    private static readonly (string Pack, int Count)[] ExpectedChoices =
+    [
+        ("Apocalypse", 0),
+        ("Cafe", 0),
+        ("Civ", 0),
+        ("Company", 6),
+        ("Cyber", 0),
+        ("Dream", 0),
+        ("God", 0),
+        ("Lab", 6),
+        ("Library", 0),
+        ("Neko", 0),
+        ("NineLives", 6),
+    ];
+
+    /// <summary>
+    /// 每个包应当有几条成就。<para>
+    /// 成就的条数是这一类里唯一<b>由生成器写出来</b>的：一个包的成就表通常由"每座建筑三档"
+    /// 之类的循环铺开，所以"代码与文件同时少一条"完全可以由一次改动造成，而双向比对看不见。
+    /// </para>
+    /// <para>十一个包全都有成就，包括没有纪元、没有表态的示例包。</para>
+    /// </summary>
+    private static readonly (string Pack, int Count)[] ExpectedAchievements =
+    [
+        ("Apocalypse", 67),
+        ("Cafe", 45),
+        ("Civ", 65),
+        ("Company", 66),
+        ("Cyber", 67),
+        ("Dream", 65),
+        ("God", 71),
+        ("Lab", 66),
+        ("Library", 66),
+        ("Neko", 66),
+        ("NineLives", 68),
+    ];
+
+    /// <summary>
     /// 覆盖度：仓库里有几个 <c>text.json</c>，这张表就得有几个包。<para>
     /// 这条守的是"守卫自己瞎掉"——新增一个包只加了文件没加守卫时，它会红。
     /// </para>
@@ -142,6 +227,46 @@ public static class ContentTextFileTests
             string.Join("、", Externalized.Select(p => p.Pack).OrderBy(name => name, StringComparer.Ordinal)),
             string.Join("、", ExpectedEras.Select(p => p.Pack).OrderBy(name => name, StringComparer.Ordinal)),
             "纪元条数表与守卫表里的包不一致——加一个包就要在两处各加一行。");
+    }
+
+    /// <summary>结局条数表的对应性守卫——与 <see cref="EraCountTable_CoversExactlyTheGuardTable"/> 同构。</summary>
+    [Test]
+    public static void EndingCountTable_CoversExactlyTheGuardTable()
+    {
+        Check.Equal(
+            string.Join("、", Externalized.Select(p => p.Pack).OrderBy(name => name, StringComparer.Ordinal)),
+            string.Join("、", ExpectedEndings.Select(p => p.Pack).OrderBy(name => name, StringComparer.Ordinal)),
+            "结局条数表与守卫表里的包不一致——加一个包就要在两处各加一行。");
+    }
+
+    /// <summary>立场条数表的对应性守卫——与 <see cref="EraCountTable_CoversExactlyTheGuardTable"/> 同构。</summary>
+    [Test]
+    public static void StanceCountTable_CoversExactlyTheGuardTable()
+    {
+        Check.Equal(
+            string.Join("、", Externalized.Select(p => p.Pack).OrderBy(name => name, StringComparer.Ordinal)),
+            string.Join("、", ExpectedStances.Select(p => p.Pack).OrderBy(name => name, StringComparer.Ordinal)),
+            "立场条数表与守卫表里的包不一致——加一个包就要在两处各加一行。");
+    }
+
+    /// <summary>表态条数表的对应性守卫——与 <see cref="EraCountTable_CoversExactlyTheGuardTable"/> 同构。</summary>
+    [Test]
+    public static void ChoiceCountTable_CoversExactlyTheGuardTable()
+    {
+        Check.Equal(
+            string.Join("、", Externalized.Select(p => p.Pack).OrderBy(name => name, StringComparer.Ordinal)),
+            string.Join("、", ExpectedChoices.Select(p => p.Pack).OrderBy(name => name, StringComparer.Ordinal)),
+            "表态条数表与守卫表里的包不一致——加一个包就要在两处各加一行。");
+    }
+
+    /// <summary>成就条数表的对应性守卫——与 <see cref="EraCountTable_CoversExactlyTheGuardTable"/> 同构。</summary>
+    [Test]
+    public static void AchievementCountTable_CoversExactlyTheGuardTable()
+    {
+        Check.Equal(
+            string.Join("、", Externalized.Select(p => p.Pack).OrderBy(name => name, StringComparer.Ordinal)),
+            string.Join("、", ExpectedAchievements.Select(p => p.Pack).OrderBy(name => name, StringComparer.Ordinal)),
+            "成就条数表与守卫表里的包不一致——加一个包就要在两处各加一行。");
     }
 
     /// <summary>
@@ -341,6 +466,218 @@ public static class ContentTextFileTests
     }
 
     /// <summary>
+    /// <c>EndingDefinition</c> 的三个面向玩家的字段（<c>Name</c> / <c>Icon</c> / <c>Text</c>）
+    /// 都从文件的 <c>endings</c> 分区读，条数与写死的期望值一致。<para>
+    /// 与纪元那条同构：代码 ↔ 文件<b>两个方向</b>都查，再叠一张写死的条数表。
+    /// <b>没有结局的包要求文件里也没有这个分区</b>——反过来（文件有、代码不读）
+    /// 会由孤儿检查抓住，这里先把"根本不该有"说清楚。
+    /// </para>
+    /// </summary>
+    [Test]
+    public static void EveryEnding_ResolvesItsTextFromTheFile()
+    {
+        foreach ((string pack, Func<GameContent> build) in Externalized)
+        {
+            JsonObject file = ShippedJson(pack);
+            GameContent content = build();
+            int expected = ExpectedEndings.Single(entry => entry.Pack == pack).Count;
+
+            Check.Equal(expected, content.Endings.Count, $"{pack}: 代码里的结局数与期望值对不上。");
+
+            if (expected == 0)
+            {
+                Check.False(file["endings"] is JsonObject, $"{pack}: 代码里没有结局，text.json 里却有 endings 分区。");
+                continue;
+            }
+
+            Check.True(file["endings"] is JsonObject, $"{pack}: text.json 里没有 endings 分区。");
+            JsonObject endings = (JsonObject)file["endings"]!;
+            Check.Equal(expected, endings.Count, $"{pack}: 文件里的结局数与期望值对不上。");
+
+            foreach (EndingDefinition ending in content.Endings)
+            {
+                Check.True(
+                    endings.ContainsKey(ending.Id),
+                    $"{pack}: text.json 的 endings 里没有「{ending.Id}」——它会在构建内容时抛。");
+
+                JsonObject row = (JsonObject)endings[ending.Id]!;
+                Check.Equal((string?)row["name"], ending.Name, $"{pack}: 结局「{ending.Id}」的名称不是从文件里读出来的。");
+                Check.Equal((string?)row["icon"], ending.Icon, $"{pack}: 结局「{ending.Id}」的图标不是从文件里读出来的。");
+                Check.Equal((string?)row["text"], ending.Text, $"{pack}: 结局「{ending.Id}」的终局文本不是从文件里读出来的。");
+                Check.False(string.IsNullOrWhiteSpace(ending.Name), $"{pack}: 结局「{ending.Id}」的名称是空的。");
+                Check.False(string.IsNullOrWhiteSpace(ending.Icon), $"{pack}: 结局「{ending.Id}」的图标是空的。");
+                Check.False(string.IsNullOrWhiteSpace(ending.Text), $"{pack}: 结局「{ending.Id}」的终局文本是空的。");
+            }
+        }
+    }
+
+    /// <summary>
+    /// <c>StanceDefinition</c> 的四个面向玩家的字段（<c>Name</c> / <c>Theme</c> / <c>Icon</c> /
+    /// <c>CostText</c>）都从文件的 <c>stances</c> 分区读，条数与写死的期望值一致。
+    /// </summary>
+    [Test]
+    public static void EveryStance_ResolvesItsTextFromTheFile()
+    {
+        foreach ((string pack, Func<GameContent> build) in Externalized)
+        {
+            JsonObject file = ShippedJson(pack);
+            GameContent content = build();
+            int expected = ExpectedStances.Single(entry => entry.Pack == pack).Count;
+
+            Check.Equal(expected, content.Stances.Count, $"{pack}: 代码里的立场数与期望值对不上。");
+
+            if (expected == 0)
+            {
+                Check.False(file["stances"] is JsonObject, $"{pack}: 代码里没有立场，text.json 里却有 stances 分区。");
+                continue;
+            }
+
+            Check.True(file["stances"] is JsonObject, $"{pack}: text.json 里没有 stances 分区。");
+            JsonObject stances = (JsonObject)file["stances"]!;
+            Check.Equal(expected, stances.Count, $"{pack}: 文件里的立场数与期望值对不上。");
+
+            foreach (StanceDefinition stance in content.Stances)
+            {
+                Check.True(
+                    stances.ContainsKey(stance.Id),
+                    $"{pack}: text.json 的 stances 里没有「{stance.Id}」——它会在构建内容时抛。");
+
+                JsonObject row = (JsonObject)stances[stance.Id]!;
+                Check.Equal((string?)row["name"], stance.Name, $"{pack}: 立场「{stance.Id}」的名称不是从文件里读出来的。");
+                Check.Equal((string?)row["theme"], stance.Theme, $"{pack}: 立场「{stance.Id}」的主题不是从文件里读出来的。");
+                Check.Equal((string?)row["icon"], stance.Icon, $"{pack}: 立场「{stance.Id}」的图标不是从文件里读出来的。");
+                Check.Equal(
+                    (string?)row["costText"],
+                    stance.CostText,
+                    $"{pack}: 立场「{stance.Id}」的代价文本不是从文件里读出来的。");
+                Check.False(string.IsNullOrWhiteSpace(stance.Name), $"{pack}: 立场「{stance.Id}」的名称是空的。");
+                Check.False(string.IsNullOrWhiteSpace(stance.Theme), $"{pack}: 立场「{stance.Id}」的主题是空的。");
+                Check.False(string.IsNullOrWhiteSpace(stance.Icon), $"{pack}: 立场「{stance.Id}」的图标是空的。");
+                Check.False(string.IsNullOrWhiteSpace(stance.CostText), $"{pack}: 立场「{stance.Id}」的代价文本是空的。");
+            }
+        }
+    }
+
+    /// <summary>
+    /// <c>ChoiceDefinition</c> 的问句与每个 <c>ChoiceOption</c> 的按钮文字 / 结果文本都从文件的
+    /// <c>choices</c> 分区读。<para>
+    /// 这一类的 id 是<b>两层</b>（<c>选择id/选项id</c>），所以这里是四张表一起查：
+    /// 问题（<c>speaker</c> / <c>prompt</c>）与选项（<c>label</c> / <c>outcomeText</c>）。
+    /// <b>选项 id / 立场 id / 权重 / 触发条件留在代码里</b>——它们是"这题怎么算分"，不是文案。
+    /// </para>
+    /// </summary>
+    [Test]
+    public static void EveryChoice_ResolvesItsTextFromTheFile()
+    {
+        foreach ((string pack, Func<GameContent> build) in Externalized)
+        {
+            JsonObject file = ShippedJson(pack);
+            GameContent content = build();
+            int expected = ExpectedChoices.Single(entry => entry.Pack == pack).Count;
+
+            Check.Equal(expected, content.Choices.Count, $"{pack}: 代码里的表态数与期望值对不上。");
+
+            if (expected == 0)
+            {
+                Check.False(file["choices"] is JsonObject, $"{pack}: 代码里没有表态，text.json 里却有 choices 分区。");
+                continue;
+            }
+
+            Check.True(file["choices"] is JsonObject, $"{pack}: text.json 里没有 choices 分区。");
+            JsonObject choices = (JsonObject)file["choices"]!;
+            Check.Equal(expected, choices.Count, $"{pack}: 文件里的表态数与期望值对不上。");
+
+            foreach (ChoiceDefinition choice in content.Choices)
+            {
+                Check.True(
+                    choices.ContainsKey(choice.Id),
+                    $"{pack}: text.json 的 choices 里没有「{choice.Id}」——它会在构建内容时抛。");
+
+                JsonObject row = (JsonObject)choices[choice.Id]!;
+                Check.Equal((string?)row["speaker"], choice.Speaker, $"{pack}: 表态「{choice.Id}」的说话人不是从文件里读出来的。");
+                Check.Equal((string?)row["prompt"], choice.Prompt, $"{pack}: 表态「{choice.Id}」的问句不是从文件里读出来的。");
+                Check.False(string.IsNullOrWhiteSpace(choice.Speaker), $"{pack}: 表态「{choice.Id}」的说话人是空的。");
+                Check.False(string.IsNullOrWhiteSpace(choice.Prompt), $"{pack}: 表态「{choice.Id}」的问句是空的。");
+
+                Check.True(row["options"] is JsonObject, $"{pack}: 表态「{choice.Id}」在文件里没有 options 分区。");
+                JsonObject options = (JsonObject)row["options"]!;
+                Check.Equal(
+                    choice.Options.Count,
+                    options.Count,
+                    $"{pack}: 表态「{choice.Id}」的选项数与文件里对不上（应当被孤儿检查挡住）。");
+
+                foreach (ChoiceOption option in choice.Options)
+                {
+                    string composite = choice.Id + "/" + option.Id;
+                    Check.True(options.ContainsKey(option.Id), $"{pack}: text.json 的 choices 里没有「{composite}」。");
+
+                    JsonObject optionRow = (JsonObject)options[option.Id]!;
+                    Check.Equal(
+                        (string?)optionRow["label"],
+                        option.Label,
+                        $"{pack}: 选项「{composite}」的按钮文字不是从文件里读出来的。");
+                    Check.Equal(
+                        (string?)optionRow["outcomeText"],
+                        option.OutcomeText,
+                        $"{pack}: 选项「{composite}」的结果文本不是从文件里读出来的。");
+                    Check.False(string.IsNullOrWhiteSpace(option.Label), $"{pack}: 选项「{composite}」的按钮文字是空的。");
+                    Check.False(string.IsNullOrWhiteSpace(option.OutcomeText), $"{pack}: 选项「{composite}」的结果文本是空的。");
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// <c>AchievementDefinition</c> 的三个面向玩家的字段（<c>Name</c> / <c>Icon</c> /
+    /// <c>Description</c>）都从文件的 <c>achievements</c> 分区读，条数与写死的期望值一致。<para>
+    /// <b>这一类与其它三类有一处本质区别</b>：成就的条目大多由生成器铺出来
+    /// （"每座建筑三档"之类），文案里带着建筑名与数字，所以文件里存的是<b>按 id 展开后的成品</b>，
+    /// 而不是模板。id / 解锁条件 / 修饰符 / 分组 / 档位 / 是否隐藏全部留在代码里。
+    /// </para>
+    /// </summary>
+    [Test]
+    public static void EveryAchievement_ResolvesItsTextFromTheFile()
+    {
+        foreach ((string pack, Func<GameContent> build) in Externalized)
+        {
+            JsonObject file = ShippedJson(pack);
+            GameContent content = build();
+            int expected = ExpectedAchievements.Single(entry => entry.Pack == pack).Count;
+
+            Check.Equal(expected, content.Achievements.Count, $"{pack}: 代码里的成就数与期望值对不上。");
+            Check.True(file["achievements"] is JsonObject, $"{pack}: text.json 里没有 achievements 分区。");
+            JsonObject achievements = (JsonObject)file["achievements"]!;
+            Check.Equal(expected, achievements.Count, $"{pack}: 文件里的成就数与期望值对不上。");
+
+            foreach (AchievementDefinition achievement in content.Achievements)
+            {
+                Check.True(
+                    achievements.ContainsKey(achievement.Id),
+                    $"{pack}: text.json 的 achievements 里没有「{achievement.Id}」——它会在构建内容时抛。");
+
+                JsonObject row = (JsonObject)achievements[achievement.Id]!;
+                Check.Equal(
+                    (string?)row["name"],
+                    achievement.Name,
+                    $"{pack}: 成就「{achievement.Id}」的名称不是从文件里读出来的。");
+                Check.Equal(
+                    (string?)row["icon"],
+                    achievement.Icon,
+                    $"{pack}: 成就「{achievement.Id}」的图标不是从文件里读出来的。");
+                Check.Equal(
+                    (string?)row["description"],
+                    achievement.Description,
+                    $"{pack}: 成就「{achievement.Id}」的说明不是从文件里读出来的。");
+                Check.False(string.IsNullOrWhiteSpace(achievement.Name), $"{pack}: 成就「{achievement.Id}」的名称是空的。");
+                Check.False(string.IsNullOrWhiteSpace(achievement.Icon), $"{pack}: 成就「{achievement.Id}」的图标是空的。");
+                Check.False(
+                    string.IsNullOrWhiteSpace(achievement.Description),
+                    $"{pack}: 成就「{achievement.Id}」的说明是空的。");
+            }
+        }
+    }
+
+    /// <summary>
     /// 把真文件改坏的三种形态喂给每个包真实的 id 表，确认它们都会响。<para>
     /// 顺序很重要：先证明"原样读一遍一条都不抛"（反面对照），否则下面两条"抛了"可能只是碰巧。
     /// </para>
@@ -371,7 +708,7 @@ public static class ContentTextFileTests
             {
                 ContentText text = bad.Load();
 
-                ReadAllExcept(text, content, skipLoreId: victim, skipBuildingId: null, skipEraId: null);
+                ReadAllExcept(text, content, "lore/" + victim);
 
                 // 剩下的都被读过了，孤儿检查不该红——把"缺条目"与"多条目"两种错区分开。
                 text.EnsureNoOrphans();
@@ -429,7 +766,7 @@ public static class ContentTextFileTests
             using (var bad = new Fixture(pack, missing.ToJsonString()))
             {
                 ContentText text = bad.Load();
-                ReadAllExcept(text, content, skipLoreId: null, skipBuildingId: victim, skipEraId: null);
+                ReadAllExcept(text, content, "buildings/" + victim);
 
                 // 其余条目都读过了，孤儿检查不该红——把"缺条目"与"多条目"两种错区分开。
                 text.EnsureNoOrphans();
@@ -490,7 +827,7 @@ public static class ContentTextFileTests
             using (var bad = new Fixture(pack, missing.ToJsonString()))
             {
                 ContentText text = bad.Load();
-                ReadAllExcept(text, content, skipLoreId: null, skipBuildingId: null, skipEraId: victim);
+                ReadAllExcept(text, content, "eras/" + victim);
 
                 // 其余条目都读过了，孤儿检查不该红——把"缺条目"与"多条目"两种错区分开。
                 text.EnsureNoOrphans();
@@ -524,6 +861,116 @@ public static class ContentTextFileTests
         }
     }
 
+    /// <summary>
+    /// 结局文案被改坏的两种形态，每个有结局的包都要当场炸——与建筑 / 纪元那两条同构。<para>
+    /// 结局的 id 表来自 <c>Endings.cs</c>，与其余三类各是一个源文件，所以各查一遍。
+    /// 没有结局的包（<c>Neko</c> / <c>Cafe</c>）直接跳过，那件事由
+    /// <see cref="EveryEnding_ResolvesItsTextFromTheFile"/> 的"期望 0"守着。
+    /// </para>
+    /// </summary>
+    [Test]
+    public static void EditingTheEndingTextWrongly_FailsLoudly()
+    {
+        foreach ((string pack, Func<GameContent> build) in Externalized)
+        {
+            GameContent content = build();
+            if (content.Endings.Count == 0) continue;
+
+            ProveCategoryFailsLoudly(
+                (pack, build),
+                "endings",
+                "text",
+                content.Endings[0].Id,
+                "zz_orphan_ending",
+                new JsonObject
+                {
+                    ["name"] = "无主结局",
+                    ["icon"] = "❓",
+                    ["text"] = "无主终局文本",
+                });
+        }
+    }
+
+    /// <summary>立场文案被改坏的两种形态，每个有立场的包都要当场炸。</summary>
+    [Test]
+    public static void EditingTheStanceTextWrongly_FailsLoudly()
+    {
+        foreach ((string pack, Func<GameContent> build) in Externalized)
+        {
+            GameContent content = build();
+            if (content.Stances.Count == 0) continue;
+
+            ProveCategoryFailsLoudly(
+                (pack, build),
+                "stances",
+                "costText",
+                content.Stances[0].Id,
+                "zz_orphan_stance",
+                new JsonObject
+                {
+                    ["name"] = "无主立场",
+                    ["theme"] = "无主主题",
+                    ["icon"] = "❓",
+                    ["costText"] = "无主代价",
+                });
+        }
+    }
+
+    /// <summary>
+    /// 表态文案被改坏的两种形态，每个有表态的包都要当场炸。<para>
+    /// 这一类的"少一条"删的是<b>整块</b>（问句 + 全部选项），所以跳过的是
+    /// <c>choices/表态id</c>——选项那一层由同一个 <see cref="ReadChoices"/> 一并跳过。
+    /// </para>
+    /// </summary>
+    [Test]
+    public static void EditingTheChoiceTextWrongly_FailsLoudly()
+    {
+        foreach ((string pack, Func<GameContent> build) in Externalized)
+        {
+            GameContent content = build();
+            if (content.Choices.Count == 0) continue;
+
+            ProveCategoryFailsLoudly(
+                (pack, build),
+                "choices",
+                "prompt",
+                content.Choices[0].Id,
+                "zz_orphan_choice",
+                new JsonObject
+                {
+                    ["speaker"] = "无主说话人",
+                    ["prompt"] = "无主问句",
+                });
+        }
+    }
+
+    /// <summary>
+    /// 成就文案被改坏的两种形态，<b>每个包</b>都要当场炸——包括没有纪元、没有表态的示例包，
+    /// 所以这条不能像上面三条那样"期望 0 就跳过"。
+    /// </summary>
+    [Test]
+    public static void EditingTheAchievementTextWrongly_FailsLoudly()
+    {
+        foreach ((string pack, Func<GameContent> build) in Externalized)
+        {
+            GameContent content = build();
+            Check.True(content.Achievements.Count > 0, $"{pack}: 这个包一条成就都没有，这条守卫就没有意义了。");
+
+            ProveCategoryFailsLoudly(
+                (pack, build),
+                "achievements",
+                "description",
+                content.Achievements[0].Id,
+                "zz_orphan_achievement",
+                new JsonObject
+                {
+                    ["name"] = "无主成就",
+                    ["icon"] = "❓",
+                    ["description"] = "无主说明",
+                });
+        }
+    }
+
     // ---------------------------------------------------------------- 辅助
     private static string ShippedPath(string pack) =>
         Path.Combine(AppContext.BaseDirectory, "content", pack, "text.json");
@@ -535,48 +982,49 @@ public static class ContentTextFileTests
         (JsonObject)JsonNode.Parse(File.ReadAllText(ShippedPath(pack)))!;
 
     /// <summary>按代码用到的 id 表把一份文本读一遍——即"包在启动时会走的那条路"。</summary>
-    private static void ReadAll(ContentText text, GameContent content) =>
-        ReadAllExcept(text, content, skipLoreId: null, skipBuildingId: null, skipEraId: null);
+    private static void ReadAll(ContentText text, GameContent content) => ReadAllExcept(text, content);
 
     /// <summary>
-    /// 同上，但可以跳过一条剧情条目 / 一座建筑 / 一层纪元。<para>
+    /// 同上，但可以跳过若干条。<para>
+    /// 跳过的写法是 <c>"分区/id"</c>（选项那层是 <c>"choices/选择id/选项id"</c>）；
     /// "文件里少了这一条"那几支要用它：先把其余条目全读过（这样孤儿检查不该红），
     /// 再单独去取被删掉的那一条，才能把"缺条目"与"多条目"两种错区分开。
-    /// 注意必须是"整份文件都读过"，少读一个分区（例如纪元）会立刻被孤儿检查抓成红——
+    /// 注意必须是"<b>整份文件</b>都读过"，少读一个分区会立刻被孤儿检查抓成红——
     /// 这本身就是 <see cref="ContentText.EnsureNoOrphans"/> 覆盖整份文件的证据。
     /// </para>
     /// </summary>
-    private static void ReadAllExcept(
-        ContentText text,
-        GameContent content,
-        string? skipLoreId,
-        string? skipBuildingId,
-        string? skipEraId)
+    private static void ReadAllExcept(ContentText text, GameContent content, params string[] skip)
     {
+        HashSet<string> skipped = [.. skip];
+
         ReadStorylines(text, content);
-        ReadLore(text, content, skipLoreId);
-        ReadBuildings(text, content, skipBuildingId);
-        ReadEras(text, content, skipEraId);
+        ReadLore(text, content, skipped);
+        ReadBuildings(text, content, skipped);
+        ReadEras(text, content, skipped);
+        ReadEndings(text, content, skipped);
+        ReadStances(text, content, skipped);
+        ReadChoices(text, content, skipped);
+        ReadAchievements(text, content, skipped);
     }
 
-    /// <summary>按代码里的图鉴表读标题与正文（跳过 <paramref name="skipId"/> 那一条）。</summary>
-    private static void ReadLore(ContentText text, GameContent content, string? skipId = null)
+    /// <summary>按代码里的图鉴表读标题与正文（跳过 <paramref name="skip"/> 里点到的那一条）。</summary>
+    private static void ReadLore(ContentText text, GameContent content, HashSet<string> skip)
     {
         foreach (LoreEntry entry in content.LoreEntries)
         {
-            if (entry.Id == skipId) continue;
+            if (skip.Contains("lore/" + entry.Id)) continue;
 
             text.Text("lore", entry.Id, "title");
             text.Text("lore", entry.Id, "body");
         }
     }
 
-    /// <summary>按代码里的建筑表读名字、说明与图标（跳过 <paramref name="skipId"/> 那一座）。</summary>
-    private static void ReadBuildings(ContentText text, GameContent content, string? skipId = null)
+    /// <summary>按代码里的建筑表读名字、说明与图标（跳过点到的那一座）。</summary>
+    private static void ReadBuildings(ContentText text, GameContent content, HashSet<string> skip)
     {
         foreach (BuildingDefinition building in content.Buildings)
         {
-            if (building.Id == skipId) continue;
+            if (skip.Contains("buildings/" + building.Id)) continue;
 
             text.Text("buildings", building.Id, "name");
             text.Text("buildings", building.Id, "description");
@@ -584,12 +1032,12 @@ public static class ContentTextFileTests
         }
     }
 
-    /// <summary>按代码里的纪元表读六个面向玩家的字段（跳过 <paramref name="skipId"/> 那一层）。</summary>
-    private static void ReadEras(ContentText text, GameContent content, string? skipId = null)
+    /// <summary>按代码里的纪元表读六个面向玩家的字段（跳过点到的那一层）。</summary>
+    private static void ReadEras(ContentText text, GameContent content, HashSet<string> skip)
     {
         foreach (EraDefinition era in content.Eras)
         {
-            if (era.Id == skipId) continue;
+            if (skip.Contains("eras/" + era.Id)) continue;
 
             text.Text("eras", era.Id, "name");
             text.Text("eras", era.Id, "theme");
@@ -597,6 +1045,127 @@ public static class ContentTextFileTests
             text.Text("eras", era.Id, "entryText");
             text.Text("eras", era.Id, "exitText");
             text.Text("eras", era.Id, "completionHint");
+        }
+    }
+
+    /// <summary>按代码里的结局表读名称、图标与终局文本（跳过点到的那一个结局）。</summary>
+    private static void ReadEndings(ContentText text, GameContent content, HashSet<string> skip)
+    {
+        foreach (EndingDefinition ending in content.Endings)
+        {
+            if (skip.Contains("endings/" + ending.Id)) continue;
+
+            text.Text("endings", ending.Id, "name");
+            text.Text("endings", ending.Id, "icon");
+            text.Text("endings", ending.Id, "text");
+        }
+    }
+
+    /// <summary>按代码里的立场表读四个面向玩家的字段（跳过点到的那一条立场）。</summary>
+    private static void ReadStances(ContentText text, GameContent content, HashSet<string> skip)
+    {
+        foreach (StanceDefinition stance in content.Stances)
+        {
+            if (skip.Contains("stances/" + stance.Id)) continue;
+
+            text.Text("stances", stance.Id, "name");
+            text.Text("stances", stance.Id, "theme");
+            text.Text("stances", stance.Id, "icon");
+            text.Text("stances", stance.Id, "costText");
+        }
+    }
+
+    /// <summary>
+    /// 按代码里的表态表读问句与每个选项的按钮文字 / 结果文本。<para>
+    /// 跳过一条表态就等于跳过它的全部选项（文件里那一条整块没了），
+    /// 也可以只跳过一个选项（<c>"choices/选择id/选项id"</c>）用来单独验证选项那一层。
+    /// </para>
+    /// </summary>
+    private static void ReadChoices(ContentText text, GameContent content, HashSet<string> skip)
+    {
+        foreach (ChoiceDefinition choice in content.Choices)
+        {
+            if (skip.Contains("choices/" + choice.Id)) continue;
+
+            text.Text("choices", choice.Id, "speaker");
+            text.Text("choices", choice.Id, "prompt");
+
+            foreach (ChoiceOption option in choice.Options)
+            {
+                string composite = choice.Id + "/" + option.Id;
+                if (skip.Contains("choices/" + composite)) continue;
+
+                text.Text("choices", composite, "label");
+                text.Text("choices", composite, "outcomeText");
+            }
+        }
+    }
+
+    /// <summary>按代码里的成就表读名称、图标与说明（跳过点到的那一条成就）。</summary>
+    private static void ReadAchievements(ContentText text, GameContent content, HashSet<string> skip)
+    {
+        foreach (AchievementDefinition achievement in content.Achievements)
+        {
+            if (skip.Contains("achievements/" + achievement.Id)) continue;
+
+            text.Text("achievements", achievement.Id, "name");
+            text.Text("achievements", achievement.Id, "icon");
+            text.Text("achievements", achievement.Id, "description");
+        }
+    }
+
+    /// <summary>
+    /// 一类文案的两种坏法都必须当场炸：<b>少一条</b>（取它的那一刻抛，且点名是哪一条）与
+    /// <b>多一条</b>（孤儿检查点名）。<para>
+    /// 四个新分区（结局 / 立场 / 表态 / 成就）的 id 表各来自一个不同的源文件，
+    /// 各有各的漏洞可能，所以每类各跑一遍——这里只是把共同的那套动作收成一个辅助方法。
+    /// </para>
+    /// </summary>
+    private static void ProveCategoryFailsLoudly(
+        (string Pack, Func<GameContent> Content) entry,
+        string section,
+        string probeField,
+        string victim,
+        string orphanId,
+        JsonObject orphanRow)
+    {
+        string pack = entry.Pack;
+        JsonObject real = ShippedJson(pack);
+        GameContent content = entry.Content();
+
+        // 基准：原样读一遍，一条都不该抛。
+        using (var baseline = new Fixture(pack, real.ToJsonString()))
+            ReadAll(baseline.Load(), content);
+
+        // ① 少一条：读它的那一刻抛，且点名是哪一条。
+        JsonObject missing = (JsonObject)real.DeepClone();
+        ((JsonObject)missing[section]!).Remove(victim);
+
+        using (var bad = new Fixture(pack, missing.ToJsonString()))
+        {
+            ContentText text = bad.Load();
+            ReadAllExcept(text, content, section + "/" + victim);
+
+            // 其余条目都读过了，孤儿检查不该红——把"缺条目"与"多条目"两种错区分开。
+            text.EnsureNoOrphans();
+
+            InvalidOperationException ex = Check.Throws<InvalidOperationException>(
+                () => text.Text(section, victim, probeField));
+            Check.Contains(ex.Message, victim);
+        }
+
+        // ② 多一条：孤儿检查点名把它报出来，而不是让它静静躺在文件里。
+        JsonObject extra = (JsonObject)real.DeepClone();
+        ((JsonObject)extra[section]!)[orphanId] = orphanRow;
+
+        using (var bad = new Fixture(pack, extra.ToJsonString()))
+        {
+            ContentText text = bad.Load();
+            ReadAll(text, content);
+
+            InvalidOperationException ex =
+                Check.Throws<InvalidOperationException>(() => text.EnsureNoOrphans());
+            Check.Contains(ex.Message, orphanId);
         }
     }
 

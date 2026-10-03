@@ -22,49 +22,48 @@ namespace NekoClicker.Content.Apocalypse;
 /// </summary>
 internal static class Endings
 {
+    /// <summary>
+    /// 本包的 <c>text.json</c>：结局 / 表态 / 立场 / 成就的文案与其它分区<b>共用同一份实例</b>（<see cref="Lore.Prose"/>）。<para>
+    /// 必须共用：孤儿检查会遍历整份文件的每个 kind，而"哪些 id 已取用"是按实例记的——
+    /// 两个实例各记一半，就会把对方那些 id 全报成孤儿。
+    /// </para>
+    /// </summary>
+    private static ContentText Prose => Lore.Prose;
+
     /// <summary>几个结局，按 Priority 升序。</summary>
     public static EndingDefinition[] All =>
     [
         new()
         {
             Id = "end_revive",
-            Name = "复活人类",
-            Icon = "🌅",
+            Name = Prose.Text("endings", "end_revive", "name"),
+            Icon = Prose.Text("endings", "end_revive", "icon"),
             Priority = 0,
             Condition = UnlockCondition.All(
                 Finished,
                 UnlockCondition.Counter(ShardsModule.CounterKey, ShardsForEnding),
                 UnlockCondition.LoreAtLeast(LoreForRevival)),
-            Text = "她花了十一年，把地下的城市一页一页地读了出来。第 11 年的春天，"
-                   + "第一批人被从档案里叫醒——他们睁眼的方式和当年的她一模一样。"
-                   + "有人问她为什么要这么做，她说：「因为你们会写字，我不会写那么多。」"
-                   + "那天城墙上第一次站满了人，所有人都朝着同一个方向看。",
+            Text = Prose.Text("endings", "end_revive", "text"),
         },
         new()
         {
             Id = "end_newhuman",
-            Name = "成为新人类",
-            Icon = "🌱",
+            Name = Prose.Text("endings", "end_newhuman", "name"),
+            Icon = Prose.Text("endings", "end_newhuman", "icon"),
             Priority = 1,
             Condition = UnlockCondition.All(
                 Finished,
                 UnlockCondition.Counter(ShardsModule.CounterKey, ShardsForEnding)),
-            Text = "她记得足够多，多到能拼出一个人的轮廓，却没多到能拼出他的语气。"
-                   + "于是她没有把任何人叫回来，只是把轮廓挂在了档案馆最显眼的位置，"
-                   + "然后在下面写了一行字：「接下来的这一种，从我开始。」"
-                   + "聚集地的人后来管这行字叫「我们的第一句家谱」。",
+            Text = Prose.Text("endings", "end_newhuman", "text"),
         },
         new()
         {
             Id = "end_quiet",
-            Name = "安静结束",
-            Icon = "🕯️",
+            Name = Prose.Text("endings", "end_quiet", "name"),
+            Icon = Prose.Text("endings", "end_quiet", "icon"),
             Priority = 100,
             Condition = Finished,
-            Text = "文明重启了五次，最后什么也没有被叫回来。城墙外那座城市还是压在地下三米，"
-                   + "档案馆最上面那排抽屉一直是空的。她活到了很老，"
-                   + "最后一次进地下室的时候，把油灯吹灭了才出来——"
-                   + "那盏灯不是她的，是第一次重启时她自己做的。",
+            Text = Prose.Text("endings", "end_quiet", "text"),
         },
     ];
 
@@ -76,9 +75,9 @@ internal static class Endings
     /// </summary>
     public static AchievementDefinition[] Achievements =>
     [
-        Ending("ach_end_revive", "复活人类", "end_revive", "🌅"),
-        Ending("ach_end_newhuman", "成为新人类", "end_newhuman", "🌱"),
-        Ending("ach_end_quiet", "安静结束", "end_quiet", "🕯️"),
+        Ending("ach_end_revive", "end_revive"),
+        Ending("ach_end_newhuman", "end_newhuman"),
+        Ending("ach_end_quiet", "end_quiet"),
     ];
 
     /// <summary>
@@ -103,12 +102,12 @@ internal static class Endings
             UnlockCondition.EraAtLeast(5),
             Eras.FinalCompletion);
 
-    private static AchievementDefinition Ending(string id, string name, string endingId, string icon) => new()
+    private static AchievementDefinition Ending(string id, string endingId) => new()
     {
         Id = id,
-        Name = name,
-        Icon = icon,
-        Description = $"抵达结局「{name}」。",
+        Name = Prose.Text("achievements", id, "name"),
+        Icon = Prose.Text("achievements", id, "icon"),
+        Description = Prose.Text("achievements", id, "description"),
         Unlock = UnlockCondition.EndingReached(endingId),
     };
 }

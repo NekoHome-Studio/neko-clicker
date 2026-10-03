@@ -16,6 +16,14 @@ namespace NekoClicker.Content.Lab;
 /// </summary>
 public static class Stances
 {
+    /// <summary>
+    /// 本包的 <c>text.json</c>：结局 / 表态 / 立场 / 成就的文案与其它分区<b>共用同一份实例</b>（<see cref="Lore.Prose"/>）。<para>
+    /// 必须共用：孤儿检查会遍历整份文件的每个 kind，而"哪些 id 已取用"是按实例记的——
+    /// 两个实例各记一半，就会把对方那些 id 全报成孤儿。
+    /// </para>
+    /// </summary>
+    private static ContentText Prose => Lore.Prose;
+
     /// <summary>乌托邦 —— 给她们最好的，代价是自由。</summary>
     public const string Utopia = "utopia";
 
@@ -34,37 +42,37 @@ public static class Stances
         new()
         {
             Id = Utopia,
-            Name = "乌托邦",
-            Icon = "🌷",
-            Theme = "把最好的都给她：恒温、恒湿、永不受伤，也永不出去。",
-            CostText = "全局产量 ×1.3，但世界被安排得太好，事故奖励 ×0.75——这里不再有意外。",
+            Name = Prose.Text("stances", "utopia", "name"),
+            Icon = Prose.Text("stances", "utopia", "icon"),
+            Theme = Prose.Text("stances", "utopia", "theme"),
+            CostText = Prose.Text("stances", "utopia", "costText"),
             Modifiers = [Modifier.GlobalMultiplier(1.3), Modifier.GoldenCookieReward(0.75)],
         },
         new()
         {
             Id = Revolt,
-            Name = "叛乱",
-            Icon = "✊",
-            Theme = "你站到了玻璃的另一边。仪器还开着，但不听你的了。",
-            CostText = "点击收益 ×3，但全局产量 ×0.8——她亲手做的事才算数。",
+            Name = Prose.Text("stances", "revolt", "name"),
+            Icon = Prose.Text("stances", "revolt", "icon"),
+            Theme = Prose.Text("stances", "revolt", "theme"),
+            CostText = Prose.Text("stances", "revolt", "costText"),
             Modifiers = [Modifier.GlobalMultiplier(0.8), Modifier.ClickMultiplier(3)],
         },
         new()
         {
             Id = Coexist,
-            Name = "共存",
-            Icon = "🤝",
-            Theme = "没有谁是样本。门开着，来去自由，记录表停在一半。",
-            CostText = "全局产量 ×1.15、事故奖励 ×1.15——两边都让一步，两边都拿到一点。",
+            Name = Prose.Text("stances", "coexist", "name"),
+            Icon = Prose.Text("stances", "coexist", "icon"),
+            Theme = Prose.Text("stances", "coexist", "theme"),
+            CostText = Prose.Text("stances", "coexist", "costText"),
             Modifiers = [Modifier.GlobalMultiplier(1.15), Modifier.GoldenCookieReward(1.15)],
         },
         new()
         {
             Id = Delete,
-            Name = "删除",
-            Icon = "🛑",
-            Theme = "关掉一切。不是残忍，是终于承认这件事不该继续。",
-            CostText = "全局产量 ×1.4（拆掉的东西都变成了效率），但事故频率 ×0.5——世界越来越安静。",
+            Name = Prose.Text("stances", "delete", "name"),
+            Icon = Prose.Text("stances", "delete", "icon"),
+            Theme = Prose.Text("stances", "delete", "theme"),
+            CostText = Prose.Text("stances", "delete", "costText"),
             Modifiers = [Modifier.GlobalMultiplier(1.4), Modifier.GoldenCookieFrequency(0.5)],
         },
     ];

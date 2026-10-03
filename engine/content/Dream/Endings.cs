@@ -21,39 +21,36 @@ namespace NekoClicker.Content.Dream;
 /// </summary>
 internal static class Endings
 {
+    /// <summary>
+    /// 本包的 <c>text.json</c>：结局 / 表态 / 立场 / 成就的文案与其它分区<b>共用同一份实例</b>（<see cref="Lore.Prose"/>）。<para>
+    /// 必须共用：孤儿检查会遍历整份文件的每个 kind，而"哪些 id 已取用"是按实例记的——
+    /// 两个实例各记一半，就会把对方那些 id 全报成孤儿。
+    /// </para>
+    /// </summary>
+    private static ContentText Prose => Lore.Prose;
+
     /// <summary>两个结局，按 Priority 升序（小的先判定）。</summary>
     public static EndingDefinition[] All =>
     [
         new()
         {
             Id = "end_wake_her",
-            Name = "叫醒梦者",
-            Icon = "🌅",
+            Name = Prose.Text("endings", "end_wake_her", "name"),
+            Icon = Prose.Text("endings", "end_wake_her", "icon"),
             Priority = 0,
             Condition = UnlockCondition.All(
                 Finished,
                 UnlockCondition.Counter(DreamEnergyModule.CounterKey, DreamEnergyForEnding)),
-            Text = "她攒够了力气。不是用来推开某一扇门的力气，是那种"
-                   + "「我知道这是梦，而且我还是要出去」的力气。"
-                   + "她一层一层往上走：梦核、嵌套塔、清醒区、失眠走廊——每一层都在留她，"
-                   + "每一层她都回一次头。最上面那层是浅眠，枕头还是温的。"
-                   + "她睁开眼的时候，天刚亮，窗外有人在收摊。她躺了很久，"
-                   + "然后坐起来，对着那个还在睡的人说：「该起了。」",
+            Text = Prose.Text("endings", "end_wake_her", "text"),
         },
         new()
         {
             Id = "end_stay_forever",
-            Name = "永远留在梦里",
-            Icon = "🌙",
+            Name = Prose.Text("endings", "end_stay_forever", "name"),
+            Icon = Prose.Text("endings", "end_stay_forever", "icon"),
             Priority = 100,
             Condition = Finished,
-            Text = "她没有上去。梦核旁边很暖，而且这里的时间是她说了算的——"
-                   + "她可以让这一晚长到不像一晚。"
-                   + "后来她在最里面又搭了一层，再往里又搭了一层，"
-                   + "每一层都比外面大一点、软一点、好一点。"
-                   + "有一天她试着往上走了走，走到浅眠那一层就停住了："
-                   + "上面那层梦里有个枕头，枕头是凉的。"
-                   + "她想了想，转过身，往下走回去了。她说：「再睡五分钟。」",
+            Text = Prose.Text("endings", "end_stay_forever", "text"),
         },
     ];
 
@@ -65,8 +62,8 @@ internal static class Endings
     /// </summary>
     public static AchievementDefinition[] Achievements =>
     [
-        Ending("ach_end_wake_her", "叫醒梦者", "end_wake_her", "🌅"),
-        Ending("ach_end_stay_forever", "永远留在梦里", "end_stay_forever", "🌙"),
+        Ending("ach_end_wake_her", "end_wake_her"),
+        Ending("ach_end_stay_forever", "end_stay_forever"),
     ];
 
     /// <summary>
@@ -93,12 +90,12 @@ internal static class Endings
             UnlockCondition.EraAtLeast(5),
             Eras.FinalCompletion);
 
-    private static AchievementDefinition Ending(string id, string name, string endingId, string icon) => new()
+    private static AchievementDefinition Ending(string id, string endingId) => new()
     {
         Id = id,
-        Name = name,
-        Icon = icon,
-        Description = $"抵达结局「{name}」。",
+        Name = Prose.Text("achievements", id, "name"),
+        Icon = Prose.Text("achievements", id, "icon"),
+        Description = Prose.Text("achievements", id, "description"),
         Unlock = UnlockCondition.EndingReached(endingId),
     };
 }

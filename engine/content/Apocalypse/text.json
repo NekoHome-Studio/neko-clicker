@@ -255,5 +255,359 @@
       "exitText": "她站在城墙上，看着下面那些还没被挖出来的东西。风很大，她没说话。",
       "completionHint": "本轮累计 150 billion，并解锁 18 个成就。"
     }
+  },
+  "endings": {
+    "end_revive": {
+      "name": "复活人类",
+      "icon": "🌅",
+      "text": "她花了十一年，把地下的城市一页一页地读了出来。第 11 年的春天，第一批人被从档案里叫醒——他们睁眼的方式和当年的她一模一样。有人问她为什么要这么做，她说：「因为你们会写字，我不会写那么多。」那天城墙上第一次站满了人，所有人都朝着同一个方向看。"
+    },
+    "end_newhuman": {
+      "name": "成为新人类",
+      "icon": "🌱",
+      "text": "她记得足够多，多到能拼出一个人的轮廓，却没多到能拼出他的语气。于是她没有把任何人叫回来，只是把轮廓挂在了档案馆最显眼的位置，然后在下面写了一行字：「接下来的这一种，从我开始。」聚集地的人后来管这行字叫「我们的第一句家谱」。"
+    },
+    "end_quiet": {
+      "name": "安静结束",
+      "icon": "🕯️",
+      "text": "文明重启了五次，最后什么也没有被叫回来。城墙外那座城市还是压在地下三米，档案馆最上面那排抽屉一直是空的。她活到了很老，最后一次进地下室的时候，把油灯吹灭了才出来——那盏灯不是她的，是第一次重启时她自己做的。"
+    }
+  },
+  "achievements": {
+    "ruins_x1": {
+      "name": "废墟的第一座",
+      "icon": "🧱",
+      "description": "拥有 1 座「废墟」。"
+    },
+    "ruins_x25": {
+      "name": "废墟连成片",
+      "icon": "🧱",
+      "description": "拥有 25 座「废墟」。"
+    },
+    "ruins_x50": {
+      "name": "废墟成规模",
+      "icon": "🧱",
+      "description": "拥有 50 座「废墟」。"
+    },
+    "generator_x1": {
+      "name": "发电机的第一座",
+      "icon": "🔌",
+      "description": "拥有 1 座「发电机」。"
+    },
+    "generator_x25": {
+      "name": "发电机连成片",
+      "icon": "🔌",
+      "description": "拥有 25 座「发电机」。"
+    },
+    "generator_x50": {
+      "name": "发电机成规模",
+      "icon": "🔌",
+      "description": "拥有 50 座「发电机」。"
+    },
+    "water_purifier_x1": {
+      "name": "净水器的第一座",
+      "icon": "💧",
+      "description": "拥有 1 座「净水器」。"
+    },
+    "water_purifier_x25": {
+      "name": "净水器连成片",
+      "icon": "💧",
+      "description": "拥有 25 座「净水器」。"
+    },
+    "water_purifier_x50": {
+      "name": "净水器成规模",
+      "icon": "💧",
+      "description": "拥有 50 座「净水器」。"
+    },
+    "shelter_x1": {
+      "name": "避难所的第一座",
+      "icon": "🛖",
+      "description": "拥有 1 座「避难所」。"
+    },
+    "shelter_x25": {
+      "name": "避难所连成片",
+      "icon": "🛖",
+      "description": "拥有 25 座「避难所」。"
+    },
+    "shelter_x50": {
+      "name": "避难所成规模",
+      "icon": "🛖",
+      "description": "拥有 50 座「避难所」。"
+    },
+    "greenhouse_x1": {
+      "name": "温室的第一座",
+      "icon": "🌱",
+      "description": "拥有 1 座「温室」。"
+    },
+    "greenhouse_x25": {
+      "name": "温室连成片",
+      "icon": "🌱",
+      "description": "拥有 25 座「温室」。"
+    },
+    "greenhouse_x50": {
+      "name": "温室成规模",
+      "icon": "🌱",
+      "description": "拥有 50 座「温室」。"
+    },
+    "data_tower_x1": {
+      "name": "数据塔的第一座",
+      "icon": "📡",
+      "description": "拥有 1 座「数据塔」。"
+    },
+    "data_tower_x25": {
+      "name": "数据塔连成片",
+      "icon": "📡",
+      "description": "拥有 25 座「数据塔」。"
+    },
+    "data_tower_x50": {
+      "name": "数据塔成规模",
+      "icon": "📡",
+      "description": "拥有 50 座「数据塔」。"
+    },
+    "archive_x1": {
+      "name": "记忆档案馆的第一座",
+      "icon": "🗄️",
+      "description": "拥有 1 座「记忆档案馆」。"
+    },
+    "archive_x25": {
+      "name": "记忆档案馆连成片",
+      "icon": "🗄️",
+      "description": "拥有 25 座「记忆档案馆」。"
+    },
+    "archive_x50": {
+      "name": "记忆档案馆成规模",
+      "icon": "🗄️",
+      "description": "拥有 50 座「记忆档案馆」。"
+    },
+    "fusion_reactor_x1": {
+      "name": "聚变堆的第一座",
+      "icon": "⚛️",
+      "description": "拥有 1 座「聚变堆」。"
+    },
+    "fusion_reactor_x25": {
+      "name": "聚变堆连成片",
+      "icon": "⚛️",
+      "description": "拥有 25 座「聚变堆」。"
+    },
+    "fusion_reactor_x50": {
+      "name": "聚变堆成规模",
+      "icon": "⚛️",
+      "description": "拥有 50 座「聚变堆」。"
+    },
+    "relic_city_x1": {
+      "name": "遗迹之城的第一座",
+      "icon": "🏚️",
+      "description": "拥有 1 座「遗迹之城」。"
+    },
+    "relic_city_x25": {
+      "name": "遗迹之城连成片",
+      "icon": "🏚️",
+      "description": "拥有 25 座「遗迹之城」。"
+    },
+    "relic_city_x50": {
+      "name": "遗迹之城成规模",
+      "icon": "🏚️",
+      "description": "拥有 50 座「遗迹之城」。"
+    },
+    "supplies_1e4": {
+      "name": "够吃一阵子",
+      "icon": "🥫",
+      "description": "历史累计挖到 10,000 物资。"
+    },
+    "supplies_1e6": {
+      "name": "够过一整个冬天",
+      "icon": "🥫",
+      "description": "历史累计挖到 1 million 物资。"
+    },
+    "supplies_1e8": {
+      "name": "够把地下室填满",
+      "icon": "🥫",
+      "description": "历史累计挖到 100 million 物资。"
+    },
+    "supplies_1e10": {
+      "name": "够养活一群人",
+      "icon": "🥫",
+      "description": "历史累计挖到 10 billion 物资。"
+    },
+    "supplies_1e12": {
+      "name": "够重修一条街",
+      "icon": "🥫",
+      "description": "历史累计挖到 1 trillion 物资。"
+    },
+    "supplies_1e14": {
+      "name": "够让整座城亮起来",
+      "icon": "🥫",
+      "description": "历史累计挖到 100 trillion 物资。"
+    },
+    "supplies_1e16": {
+      "name": "够重启一次文明",
+      "icon": "🥫",
+      "description": "历史累计挖到 10 quadrillion 物资。"
+    },
+    "supplies_1e18": {
+      "name": "够重启很多次",
+      "icon": "🥫",
+      "description": "历史累计挖到 1 quintillion 物资。"
+    },
+    "supplies_1e20": {
+      "name": "够把时间买回来一点",
+      "icon": "🥫",
+      "description": "历史累计挖到 100 quintillion 物资。"
+    },
+    "cps_1e3": {
+      "name": "够她自己用",
+      "icon": "⚙️",
+      "description": "每秒物资达到 1,000。"
+    },
+    "cps_1e6": {
+      "name": "够十个人用",
+      "icon": "⚙️",
+      "description": "每秒物资达到 1 million。"
+    },
+    "cps_1e9": {
+      "name": "够一层楼用",
+      "icon": "⚙️",
+      "description": "每秒物资达到 1 billion。"
+    },
+    "cps_1e12": {
+      "name": "够一条街用",
+      "icon": "⚙️",
+      "description": "每秒物资达到 1 trillion。"
+    },
+    "cps_1e15": {
+      "name": "够一座城用",
+      "icon": "⚙️",
+      "description": "每秒物资达到 1 quadrillion。"
+    },
+    "cps_1e18": {
+      "name": "数字开始不像东西",
+      "icon": "⚙️",
+      "description": "每秒物资达到 1 quintillion。"
+    },
+    "scavenge_100": {
+      "name": "翻了一百次",
+      "icon": "⛏️",
+      "description": "亲手翻找 100 次。"
+    },
+    "scavenge_1000": {
+      "name": "手套破了",
+      "icon": "⛏️",
+      "description": "亲手翻找 1,000 次。"
+    },
+    "scavenge_10000": {
+      "name": "闭着眼都知道挖哪",
+      "icon": "⛏️",
+      "description": "亲手翻找 10,000 次。"
+    },
+    "scavenge_100000": {
+      "name": "手比工具快",
+      "icon": "⛏️",
+      "description": "亲手翻找 100,000 次。"
+    },
+    "scavenge_1000000": {
+      "name": "你成了废墟的一部分",
+      "icon": "⛏️",
+      "description": "亲手翻找 1 million 次。"
+    },
+    "mutant_1": {
+      "name": "第一次见到它",
+      "icon": "🧬",
+      "description": "处理 1 次变异体。"
+    },
+    "mutant_10": {
+      "name": "知道它怕光了",
+      "icon": "🧬",
+      "description": "处理 10 次变异体。"
+    },
+    "mutant_50": {
+      "name": "知道它什么时候来",
+      "icon": "🧬",
+      "description": "处理 50 次变异体。"
+    },
+    "mutant_200": {
+      "name": "开始给它留门",
+      "icon": "🧬",
+      "description": "处理 200 次变异体。"
+    },
+    "mutant_500": {
+      "name": "它开始认得她了",
+      "icon": "🧬",
+      "description": "处理 500 次变异体。"
+    },
+    "mutant_1000": {
+      "name": "你们算是一起活着",
+      "icon": "🧬",
+      "description": "处理 1,000 次变异体。"
+    },
+    "restart_1": {
+      "name": "地下室",
+      "icon": "🕯️",
+      "description": "在没有任何人、任何电、任何信号的地方，从今天算起。"
+    },
+    "restart_2": {
+      "name": "第一盏灯",
+      "icon": "💡",
+      "description": "灯亮了整晚。上一次她也点过一盏灯，只是那时候没觉得值得记。"
+    },
+    "restart_3": {
+      "name": "聚集地",
+      "icon": "🏕️",
+      "description": "有人循着灯光找过来，然后留下来。"
+    },
+    "restart_4": {
+      "name": "记忆网",
+      "icon": "🕸️",
+      "description": "她开始在能被挖出来的地方写字。"
+    },
+    "restart_5": {
+      "name": "最后的遗迹",
+      "icon": "🏚️",
+      "description": "城墙外埋着一整座城市，完整地压在地下三米。"
+    },
+    "shards_500": {
+      "name": "第一片",
+      "icon": "🔮",
+      "description": "玻璃渣一样的东西，举到光下能看见上面有字。（记忆残片 500）"
+    },
+    "shards_4000": {
+      "name": "开始分类",
+      "icon": "🔮",
+      "description": "她给抽屉贴了标签，用的还是上一世的字。（记忆残片 4,000）"
+    },
+    "shards_15000": {
+      "name": "拼出第一句话",
+      "icon": "🔮",
+      "description": "那句话是「不要一个人出去」。（记忆残片 15,000）"
+    },
+    "shards_45000": {
+      "name": "拼出一张脸",
+      "icon": "🔮",
+      "description": "她盯着那张脸看了很久，然后把它收起来了。（记忆残片 45,000）"
+    },
+    "shards_90000": {
+      "name": "拼出一座城",
+      "icon": "🔮",
+      "description": "整座城的轮廓，包括城墙外那一片。（记忆残片 90,000）"
+    },
+    "shards_150000": {
+      "name": "拼出一个人类",
+      "icon": "🔮",
+      "description": "完整的那一种，会说话，会写字，会留下东西。（记忆残片 150,000）"
+    },
+    "ach_end_revive": {
+      "name": "复活人类",
+      "icon": "🌅",
+      "description": "抵达结局「复活人类」。"
+    },
+    "ach_end_newhuman": {
+      "name": "成为新人类",
+      "icon": "🌱",
+      "description": "抵达结局「成为新人类」。"
+    },
+    "ach_end_quiet": {
+      "name": "安静结束",
+      "icon": "🕯️",
+      "description": "抵达结局「安静结束」。"
+    }
   }
 }

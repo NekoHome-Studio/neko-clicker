@@ -342,5 +342,486 @@
       "exitText": "她把书合上了。合上不是结束，是等下一个读者。",
       "completionHint": "本轮累计 1.5 billion，并解锁 30 个成就。走完这一世就是终局。"
     }
+  },
+  "endings": {
+    "end_god": {
+      "name": "成神",
+      "icon": "👁️",
+      "text": "她把九节一起点亮，然后把自己拼回了一份。名字剩下的几笔终于接上——寐娅睁开眼，不是醒来，是成为。她记得纸箱的棱角，也记得每一世你摸她头的位置。神殿主位上坐着一个会数自己有几条腿的神。"
+    },
+    "end_human": {
+      "name": "变人",
+      "icon": "🧍",
+      "text": "她学会了用两条腿走路。第九次醒来之后，她没有再换过身体。她开了一家店，招牌上写着自己的名字——这一次她想起来了。只是每年秋天，她会坐在窗边数鸟，数到第九只就停下来。"
+    },
+    "end_cat": {
+      "name": "永为猫",
+      "icon": "🐾",
+      "text": "她留下最后一节不点亮。九次机会用完了，她把它放回原处，然后继续。阳光还是下午三点那一块，纸箱还是那个纸箱。她会一次又一次地重新认识你——每一次都像第一次。"
+    },
+    "end_sever": {
+      "name": "破轮回",
+      "icon": "🕯️",
+      "text": "她把九节一起点亮，然后什么都不做。钟停了。第九个世界没有结束，也没有继续，只是停在那里。她坐在门槛上，第一次不知道接下来会发生什么。她说这是她想要很久的东西。"
+    },
+    "end_blank": {
+      "name": "无人再读",
+      "icon": "📕",
+      "text": "没有人问过她什么，她也就没有变成任何一种形状。第九次醒来之后，她把书合上，等下一个读者。这一次谁也没有替她做决定——包括她自己。"
+    }
+  },
+  "stances": {
+    "divine": {
+      "name": "神性",
+      "theme": "她想把自己拼回去，哪怕拼回来的那个不记得纸箱。",
+      "icon": "👁️",
+      "costText": "产量 ×1.25，但她越来越不像是会撞见意外的生物——金猫出现频率 ×0.75。"
+    },
+    "human": {
+      "name": "人形",
+      "theme": "她想学会用两条腿走路，把想说的话说完。",
+      "icon": "🧍",
+      "costText": "点击收益 ×2，但自动化让步于亲手——全局产量 ×0.85。"
+    },
+    "cat": {
+      "name": "猫形",
+      "theme": "她只想晒太阳。九个世界来来回回，地板还是那一块。",
+      "icon": "🐾",
+      "costText": "金猫奖励 ×1.3，但产量 ×0.9——她不太在意剩下的世界。"
+    },
+    "sever": {
+      "name": "断绝",
+      "theme": "她想把九节一起点亮，然后什么都不做。",
+      "icon": "🕯️",
+      "costText": "建筑价格 ×0.8（她开始拆东西），但金猫奖励 ×0.7。"
+    }
+  },
+  "choices": {
+    "choice_name": {
+      "speaker": "她",
+      "prompt": "她坐在吧台上，看你把最后一块招牌留白。她问：“要不要给我起个名字？”",
+      "options": {
+        "name_write": {
+          "label": "写上去。",
+          "outcomeText": "你写了一个名字。她念了两遍，说：“这个好像本来就是我的。”"
+        },
+        "name_blank": {
+          "label": "先空着。",
+          "outcomeText": "她把爪子按在招牌上，留下一个印子。她说：“这样也行。”"
+        }
+      }
+    },
+    "choice_records": {
+      "speaker": "记录员",
+      "prompt": "培养舱的玻璃上有雾，她正在写那个字。记录员问你：“要让她看记录表吗？上面写着她是什么。”",
+      "options": {
+        "records_show": {
+          "label": "给她看。",
+          "outcomeText": "她读了很久，读到第三页停住了。她说：“原来我有个编号。”"
+        },
+        "records_hide": {
+          "label": "收起来。",
+          "outcomeText": "你把它折进口袋。她在玻璃后面看了你一会儿，然后开始舔爪子。"
+        }
+      }
+    },
+    "choice_statue": {
+      "speaker": "城里的人",
+      "prompt": "有人画好了图纸：广场中央，一座她的石像。他们问你：“立吗？”",
+      "options": {
+        "statue_build": {
+          "label": "立。",
+          "outcomeText": "石像立起来那天，她绕着走了三圈，说：“这个比我完整。”"
+        },
+        "statue_refuse": {
+          "label": "不立。",
+          "outcomeText": "你把图纸退了回去。她说：“对，站着的东西不会晒太阳。”"
+        }
+      }
+    },
+    "choice_instance": {
+      "speaker": "另一份她",
+      "prompt": "屏幕上，实例 1 在等你的答复：“要不要把实例 0 也留着？”",
+      "options": {
+        "instance_both": {
+          "label": "都留着。",
+          "outcomeText": "两份她互相看了一眼。她说：“有两个我，就有一个不用害怕忘记。”"
+        },
+        "instance_one": {
+          "label": "只留一份。",
+          "outcomeText": "你关掉实例 1。她没有反对，只说：“那这一份要好好活。”"
+        }
+      }
+    },
+    "choice_puzzle": {
+      "speaker": "废墟里的机器",
+      "prompt": "托盘上躺着最后一块拼图。机器问：“要装回去吗？”",
+      "options": {
+        "puzzle_restore": {
+          "label": "装回去。",
+          "outcomeText": "拼图归位的一瞬间，她咳了一声——那是她第一次像一个会咳嗽的东西。"
+        },
+        "puzzle_leave": {
+          "label": "留在托盘上。",
+          "outcomeText": "你合上盖子。她说：“缺一块也挺好，至少还知道缺什么。”"
+        }
+      }
+    },
+    "choice_wake": {
+      "speaker": "寐娅",
+      "prompt": "她的声音第一次这么近：“要不要叫醒她？”",
+      "options": {
+        "wake_later": {
+          "label": "让她再睡一会儿。",
+          "outcomeText": "你没有叫她。梦里她翻了个身，尾巴扫过你的手背。"
+        },
+        "wake_now": {
+          "label": "叫醒她。",
+          "outcomeText": "她睁开眼。梦碎得很安静，像一层灰。她说：“我知道会有这一天。”"
+        }
+      }
+    }
+  },
+  "achievements": {
+    "cardboard_box_x1": {
+      "name": "纸箱的开端",
+      "icon": "📦",
+      "description": "拥有 1 个「纸箱」。"
+    },
+    "cardboard_box_x10": {
+      "name": "纸箱成排",
+      "icon": "📦",
+      "description": "拥有 10 个「纸箱」。"
+    },
+    "cardboard_box_x25": {
+      "name": "纸箱成林",
+      "icon": "📦",
+      "description": "拥有 25 个「纸箱」。"
+    },
+    "cat_bed_x1": {
+      "name": "猫窝的开端",
+      "icon": "🛏️",
+      "description": "拥有 1 个「猫窝」。"
+    },
+    "cat_bed_x10": {
+      "name": "猫窝成排",
+      "icon": "🛏️",
+      "description": "拥有 10 个「猫窝」。"
+    },
+    "cat_bed_x25": {
+      "name": "猫窝成林",
+      "icon": "🛏️",
+      "description": "拥有 25 个「猫窝」。"
+    },
+    "cat_cafe_x1": {
+      "name": "猫娘咖啡馆的开端",
+      "icon": "☕",
+      "description": "拥有 1 个「猫娘咖啡馆」。"
+    },
+    "cat_cafe_x10": {
+      "name": "猫娘咖啡馆成排",
+      "icon": "☕",
+      "description": "拥有 10 个「猫娘咖啡馆」。"
+    },
+    "cat_cafe_x25": {
+      "name": "猫娘咖啡馆成林",
+      "icon": "☕",
+      "description": "拥有 25 个「猫娘咖啡馆」。"
+    },
+    "catnip_field_x1": {
+      "name": "猫薄荷田的开端",
+      "icon": "🌿",
+      "description": "拥有 1 个「猫薄荷田」。"
+    },
+    "catnip_field_x10": {
+      "name": "猫薄荷田成排",
+      "icon": "🌿",
+      "description": "拥有 10 个「猫薄荷田」。"
+    },
+    "catnip_field_x25": {
+      "name": "猫薄荷田成林",
+      "icon": "🌿",
+      "description": "拥有 25 个「猫薄荷田」。"
+    },
+    "cat_tower_x1": {
+      "name": "猫塔的开端",
+      "icon": "🗼",
+      "description": "拥有 1 个「猫塔」。"
+    },
+    "cat_tower_x10": {
+      "name": "猫塔成排",
+      "icon": "🗼",
+      "description": "拥有 10 个「猫塔」。"
+    },
+    "cat_tower_x25": {
+      "name": "猫塔成林",
+      "icon": "🗼",
+      "description": "拥有 25 个「猫塔」。"
+    },
+    "catgirl_lab_x1": {
+      "name": "猫娘实验室的开端",
+      "icon": "🧪",
+      "description": "拥有 1 个「猫娘实验室」。"
+    },
+    "catgirl_lab_x10": {
+      "name": "猫娘实验室成排",
+      "icon": "🧪",
+      "description": "拥有 10 个「猫娘实验室」。"
+    },
+    "catgirl_lab_x25": {
+      "name": "猫娘实验室成林",
+      "icon": "🧪",
+      "description": "拥有 25 个「猫娘实验室」。"
+    },
+    "server_farm_x1": {
+      "name": "服务器农场的开端",
+      "icon": "🖥️",
+      "description": "拥有 1 个「服务器农场」。"
+    },
+    "server_farm_x10": {
+      "name": "服务器农场成排",
+      "icon": "🖥️",
+      "description": "拥有 10 个「服务器农场」。"
+    },
+    "server_farm_x25": {
+      "name": "服务器农场成林",
+      "icon": "🖥️",
+      "description": "拥有 25 个「服务器农场」。"
+    },
+    "memory_vault_x1": {
+      "name": "记忆金库的开端",
+      "icon": "🗄️",
+      "description": "拥有 1 个「记忆金库」。"
+    },
+    "memory_vault_x10": {
+      "name": "记忆金库成排",
+      "icon": "🗄️",
+      "description": "拥有 10 个「记忆金库」。"
+    },
+    "memory_vault_x25": {
+      "name": "记忆金库成林",
+      "icon": "🗄️",
+      "description": "拥有 25 个「记忆金库」。"
+    },
+    "temple_x1": {
+      "name": "猫神神殿的开端",
+      "icon": "🏛️",
+      "description": "拥有 1 个「猫神神殿」。"
+    },
+    "temple_x10": {
+      "name": "猫神神殿成排",
+      "icon": "🏛️",
+      "description": "拥有 10 个「猫神神殿」。"
+    },
+    "temple_x25": {
+      "name": "猫神神殿成林",
+      "icon": "🏛️",
+      "description": "拥有 25 个「猫神神殿」。"
+    },
+    "stream_studio_x1": {
+      "name": "直播间的开端",
+      "icon": "📺",
+      "description": "拥有 1 个「直播间」。"
+    },
+    "stream_studio_x10": {
+      "name": "直播间成排",
+      "icon": "📺",
+      "description": "拥有 10 个「直播间」。"
+    },
+    "stream_studio_x25": {
+      "name": "直播间成林",
+      "icon": "📺",
+      "description": "拥有 25 个「直播间」。"
+    },
+    "dream_library_x1": {
+      "name": "梦境图书馆的开端",
+      "icon": "📚",
+      "description": "拥有 1 个「梦境图书馆」。"
+    },
+    "dream_library_x10": {
+      "name": "梦境图书馆成排",
+      "icon": "📚",
+      "description": "拥有 10 个「梦境图书馆」。"
+    },
+    "dream_library_x25": {
+      "name": "梦境图书馆成林",
+      "icon": "📚",
+      "description": "拥有 25 个「梦境图书馆」。"
+    },
+    "cat_universe_x1": {
+      "name": "猫娘宇宙的开端",
+      "icon": "🌌",
+      "description": "拥有 1 个「猫娘宇宙」。"
+    },
+    "cat_universe_x10": {
+      "name": "猫娘宇宙成排",
+      "icon": "🌌",
+      "description": "拥有 10 个「猫娘宇宙」。"
+    },
+    "cat_universe_x25": {
+      "name": "猫娘宇宙成林",
+      "icon": "🌌",
+      "description": "拥有 25 个「猫娘宇宙」。"
+    },
+    "earn_1e3": {
+      "name": "第一桶鱼干",
+      "icon": "🪙",
+      "description": "历史累计赚取 1,000 条小鱼干。"
+    },
+    "earn_1e6": {
+      "name": "够活了",
+      "icon": "💰",
+      "description": "历史累计赚取 1,000,000 条小鱼干。"
+    },
+    "earn_1e9": {
+      "name": "够养一屋子猫",
+      "icon": "🏦",
+      "description": "历史累计赚取 1,000,000,000 条小鱼干。"
+    },
+    "earn_1e12": {
+      "name": "兆级小店",
+      "icon": "🏛️",
+      "description": "历史累计赚取 1,000,000,000,000 条小鱼干。"
+    },
+    "earn_1e15": {
+      "name": "京级产业",
+      "icon": "🌆",
+      "description": "历史累计赚取 1,000,000,000,000,000 条小鱼干。"
+    },
+    "earn_1e18": {
+      "name": "鱼干通胀",
+      "icon": "📈",
+      "description": "历史累计赚取 1,000,000,000,000,000,000 条小鱼干。"
+    },
+    "earn_1e21": {
+      "name": "鱼干霸权",
+      "icon": "👑",
+      "description": "历史累计赚取 1e21 条小鱼干。"
+    },
+    "earn_1e24": {
+      "name": "鱼干宇宙",
+      "icon": "🌌",
+      "description": "历史累计赚取 1e24 条小鱼干。"
+    },
+    "cps_1e6": {
+      "name": "每分钟都在呼噜",
+      "icon": "🎵",
+      "description": "每秒产量达到 1,000,000。"
+    },
+    "cps_1e9": {
+      "name": "整栋楼都在响",
+      "icon": "🔊",
+      "description": "每秒产量达到 1,000,000,000。"
+    },
+    "cps_1e12": {
+      "name": "世界的心跳",
+      "icon": "💗",
+      "description": "每秒产量达到 1,000,000,000,000。"
+    },
+    "wake_2": {
+      "name": "第 2 次醒来",
+      "icon": "🌙",
+      "description": "进入第 2 纪元。她记得的东西又多了一点。"
+    },
+    "wake_3": {
+      "name": "第 3 次醒来",
+      "icon": "🌙",
+      "description": "进入第 3 纪元。她记得的东西又多了一点。"
+    },
+    "wake_4": {
+      "name": "第 4 次醒来",
+      "icon": "🌙",
+      "description": "进入第 4 纪元。她记得的东西又多了一点。"
+    },
+    "wake_5": {
+      "name": "第 5 次醒来",
+      "icon": "🌙",
+      "description": "进入第 5 纪元。她记得的东西又多了一点。"
+    },
+    "wake_6": {
+      "name": "第 6 次醒来",
+      "icon": "🌙",
+      "description": "进入第 6 纪元。她记得的东西又多了一点。"
+    },
+    "wake_7": {
+      "name": "第 7 次醒来",
+      "icon": "🌙",
+      "description": "进入第 7 纪元。她记得的东西又多了一点。"
+    },
+    "wake_8": {
+      "name": "第 8 次醒来",
+      "icon": "🌙",
+      "description": "进入第 8 纪元。她记得的东西又多了一点。"
+    },
+    "wake_9": {
+      "name": "第 9 次醒来",
+      "icon": "🌙",
+      "description": "进入第 9 纪元。她记得的东西又多了一点。"
+    },
+    "click_100": {
+      "name": "手有点酸",
+      "icon": "👆",
+      "description": "摸头 100 次。"
+    },
+    "click_1000": {
+      "name": "她把头靠过来了",
+      "icon": "✋",
+      "description": "摸头 1,000 次。"
+    },
+    "click_10000": {
+      "name": "闭上眼也知道是你",
+      "icon": "💪",
+      "description": "摸头 10,000 次。"
+    },
+    "click_100000": {
+      "name": "不用睁眼的默契",
+      "icon": "🦾",
+      "description": "摸头 100,000 次。"
+    },
+    "echo_1": {
+      "name": "第一次残响",
+      "icon": "🌟",
+      "description": "捕捉 1 次情感残响。"
+    },
+    "echo_7": {
+      "name": "她开始记得路",
+      "icon": "🎐",
+      "description": "捕捉 7 次情感残响。"
+    },
+    "echo_27": {
+      "name": "残响也会呼噜",
+      "icon": "🔔",
+      "description": "捕捉 27 次情感残响。"
+    },
+    "echo_77": {
+      "name": "九命共鸣",
+      "icon": "⛓️",
+      "description": "捕捉 77 次情感残响。"
+    },
+    "ach_end_god": {
+      "name": "成神",
+      "icon": "👁️",
+      "description": "抵达结局「成神」。"
+    },
+    "ach_end_human": {
+      "name": "变人",
+      "icon": "🧍",
+      "description": "抵达结局「变人」。"
+    },
+    "ach_end_cat": {
+      "name": "永为猫",
+      "icon": "🐾",
+      "description": "抵达结局「永为猫」。"
+    },
+    "ach_end_sever": {
+      "name": "破轮回",
+      "icon": "🕯️",
+      "description": "抵达结局「破轮回」。"
+    },
+    "ach_end_blank": {
+      "name": "无人再读",
+      "icon": "📕",
+      "description": "抵达结局「无人再读」。"
+    }
   }
 }

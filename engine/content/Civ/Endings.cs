@@ -36,57 +36,47 @@ namespace NekoClicker.Content.Civ;
 /// </summary>
 internal static class Endings
 {
+    /// <summary>
+    /// 本包的 <c>text.json</c>：结局 / 表态 / 立场 / 成就的文案与其它分区<b>共用同一份实例</b>（<see cref="Lore.Prose"/>）。<para>
+    /// 必须共用：孤儿检查会遍历整份文件的每个 kind，而"哪些 id 已取用"是按实例记的——
+    /// 两个实例各记一半，就会把对方那些 id 全报成孤儿。
+    /// </para>
+    /// </summary>
+    private static ContentText Prose => Lore.Prose;
+
     /// <summary>三个结局，按 Priority 升序。</summary>
     public static EndingDefinition[] All =>
     [
         new()
         {
             Id = "end_interstellar",
-            Name = "星际文明",
-            Icon = "🌌",
+            Name = Prose.Text("endings", "end_interstellar", "name"),
+            Icon = Prose.Text("endings", "end_interstellar", "icon"),
             Priority = 0,
             Condition = UnlockCondition.All(
                 Finished,
                 UnlockCondition.Counter(CultureModule.CounterKey, CultureForInterstellar)),
-            Text = "最后一艘船离港那天，她没有去送。她留在学院最下面那间屋子里，"
-                   + "把从第一个时代起所有的记录按年份重新排了一遍——石堆上那道痕、"
-                   + "第一条写在墙上的规矩、第一本册子、第一张星图。"
-                   + "排完之后她发现有一件事很明显：这些东西没有一样是她一个人做的。"
-                   + "「原来文明不是我造出来的，」她说，「是它自己长出来的，我只是没让它断掉。」"
-                   + "她把这句写在了最后一页。写完，她关上灯，走出门去——外面天已经亮了，"
-                   + "而这一次，抬头能看见船。",
+            Text = Prose.Text("endings", "end_interstellar", "text"),
         },
         new()
         {
             Id = "end_self_destruction",
-            Name = "自我毁灭",
-            Icon = "☄️",
+            Name = Prose.Text("endings", "end_self_destruction", "name"),
+            Icon = Prose.Text("endings", "end_self_destruction", "icon"),
             Priority = 1,
             Condition = UnlockCondition.All(
                 Finished,
                 UnlockCondition.AchievementsAtLeast(AchievementsForSelfDestruction)),
-            Text = "这个文明什么都会造。它能围住一颗恒星，也能让一整条街在一夜之间安静下来——"
-                   + "两件事用的是同一双手。她早就该看出来的：洪水冲掉的东西，"
-                   + "和城墙挡住的东西，是同一批。"
-                   + "最后一次事故没有幸存者名单，因为名单也在里面。"
-                   + "到最后只剩下一块烧黑的地基，和上面一个很浅的坑——"
-                   + "形状和她第一个时代围出来的那个一模一样。"
-                   + "她留下的最后一句记录只有六个字：「下次别造这个。」",
+            Text = Prose.Text("endings", "end_self_destruction", "text"),
         },
         new()
         {
             Id = "end_stagnation",
-            Name = "停滞",
-            Icon = "⏳",
+            Name = Prose.Text("endings", "end_stagnation", "name"),
+            Icon = Prose.Text("endings", "end_stagnation", "icon"),
             Priority = 100,
             Condition = Finished,
-            Text = "文明走到了它自己的长度，然后就不再长了。"
-                   + "城墙还是那三道，学院里还是那句「你不必相信我」，星港里停着一艘没造完的船。"
-                   + "没有人毁灭它，也没有人再往前推它——它只是每天都和昨天一模一样。"
-                   + "很多年以后有个小孩问她：「我们以后会去星星那里吗？」"
-                   + "她想了一会儿，说：「我们本来是要去的。」"
-                   + "「那为什么没去？」「因为有一天我发现，明天和今天一样，也挺好的。」"
-                   + "小孩点点头跑开了。她站在城墙上又看了一会儿，天没有变。",
+            Text = Prose.Text("endings", "end_stagnation", "text"),
         },
     ];
 
@@ -98,9 +88,9 @@ internal static class Endings
     /// </summary>
     public static AchievementDefinition[] Achievements =>
     [
-        Ending("ach_end_interstellar", "星际文明", "end_interstellar", "🌌"),
-        Ending("ach_end_self_destruction", "自我毁灭", "end_self_destruction", "☄️"),
-        Ending("ach_end_stagnation", "停滞", "end_stagnation", "⏳"),
+        Ending("ach_end_interstellar", "end_interstellar"),
+        Ending("ach_end_self_destruction", "end_self_destruction"),
+        Ending("ach_end_stagnation", "end_stagnation"),
     ];
 
     /// <summary>
@@ -132,12 +122,12 @@ internal static class Endings
             UnlockCondition.EraAtLeast(5),
             Eras.FinalCompletion);
 
-    private static AchievementDefinition Ending(string id, string name, string endingId, string icon) => new()
+    private static AchievementDefinition Ending(string id, string endingId) => new()
     {
         Id = id,
-        Name = name,
-        Icon = icon,
-        Description = $"抵达结局「{name}」。",
+        Name = Prose.Text("achievements", id, "name"),
+        Icon = Prose.Text("achievements", id, "icon"),
+        Description = Prose.Text("achievements", id, "description"),
         Unlock = UnlockCondition.EndingReached(endingId),
     };
 }
