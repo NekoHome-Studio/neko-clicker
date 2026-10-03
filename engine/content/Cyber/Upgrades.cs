@@ -133,6 +133,33 @@ internal static class Upgrades
             Tier = 4,
             Tags = ["cyber", "click"],
         };
+
+        // 「点击 × 建筑」的桥：点击线四档清一色是**固定**倍率，与这层网络里跑着多少东西无关。
+        // 这一条把点击收益接到**持有建筑总数**上（本包唯一使用 ScalingSource.TotalBuildings 的地方），
+        // 每座 +0.5%、最多算 120 座（+60%）——上限是作者手册 §3(b) 的硬规则。
+        // 门槛 80 座：实测本包一局（贪心机器人，5.28 游戏小时）最多持有 1845 座建筑。
+        yield return new()
+        {
+            Id = "swarm_pointer",
+            Name = Prose.Text("upgrades", "swarm_pointer", "name"),
+            Icon = Prose.Text("upgrades", "swarm_pointer", "icon"),
+            Description = Prose.Text("upgrades", "swarm_pointer", "description"),
+            Price = 2_000_000_000,
+            Unlock = UnlockCondition.All(
+                UnlockCondition.TotalBuildingsAtLeast(80),
+                UnlockCondition.UpgradeOwned("autocomplete")),
+            Modifiers =
+            [
+                new Modifier(
+                    ModifierTarget.ClickPower,
+                    ModifierOperation.AdditivePercent,
+                    0,
+                    new Scaling(ScalingSource.TotalBuildings, 0.005, Cap: 120)),
+            ],
+            Category = "click",
+            Tier = 5,
+            Tags = ["cyber", "click"],
+        };
     }
 
     /// <summary>

@@ -37,6 +37,12 @@ public static class PrestigeTests
         {
             double deadlineSeconds = deadlineHours * 3600;
 
+            // 「点击 × 建筑」的桥（门槛：持有 80 座建筑）必须在一局自然游玩里真的买到过。
+            // 记的是"见过"而不是"结尾还持有"：普通升级会被舍命清掉，所以结尾查 UpgradeCount
+            // 会把"买到过、后来又重开了一层"误判成"够不着"。形状与效果由 ClickBridgeTests 守，
+            // 它们都不回答"够不够得着"这个问题——而够不着的内容不会报错，只会一直不亮。
+            bool bridgeSeen = false;
+
             // 后期用 0.25 秒细步：末层表态门槛与完成门槛之间只隔几秒，细步长让那个形状真的出现。
             // （1.5.0 之前这里是"机器人来不及答最后一次表态"，靠 30 模拟秒的定时宽限兜住；
             //   1.5.0 到 1.6.0 之间靠"报告看过"；**1.6.0 起必须真的作答**——所以下面那行
@@ -57,6 +63,8 @@ public static class PrestigeTests
 
                 if (engine.EraGate.CanAdvance) engine.Ascend();
                 engine.Simulate(engine.State.Era >= 5 ? 0.25 : 30);
+
+                if (!bridgeSeen) bridgeSeen = AnyClickBridgeOwned(engine);
             }
 
             // 到不了结局必须**明确失败**，而不是默默把预算烧完。
@@ -80,7 +88,8 @@ public static class PrestigeTests
             Console.WriteLine(
                 $"      {name}：{engine.State.PlayTimeSeconds / 3600:F1} 游戏小时走到结局，"
                 + $"结算 {chips:F0} 点转生货币，永久线总价 {total:F0}"
-                + $"（{string.Join(" / ", line.Select(u => u.Price.ToString("F0")))}）");
+                + $"（{string.Join(" / ", line.Select(u => u.Price.ToString("F0")))}），"
+                + $"点击桥买到过：{(bridgeSeen ? "是" : "否")}");
 
             Check.True(line.Count > 0, $"{name} 没有任何永久升级。");
             Check.AtLeast(
@@ -88,6 +97,11 @@ public static class PrestigeTests
                 total,
                 $"{name} 一次自然游玩只结算出 {chips:F0} 点转生货币，"
                 + $"而永久线总价 {total:F0}——这条线里有内容永远买不到。");
+            Check.True(
+                bridgeSeen,
+                $"{name} 一局里从没买到过「点击 × 建筑」的桥（门槛是持有 80 座建筑）——"
+                + $"它在自然游玩里够不着。这类缺陷不会报错，只会「一直不亮」；"
+                + $"先按实测包络降门槛或降价，不要直接放宽这条断言。");
         }
     }
 
@@ -275,5 +289,21 @@ public static class PrestigeTests
             if (!engine.State.PendingChoices.Contains(choice.Id)) continue;
             Check.True(engine.AnswerChoice(choice.Id, choice.Options[0].Id), $"作答 {choice.Id} 失败。");
         }
+    }
+
+    /// <summary>
+    /// 本包是否已经买了「点击 × 建筑」的桥——即**唯一**那条"点击收益上带成长曲线"的升级。
+    /// 形状与效果由 <see cref="ClickBridgeTests"/> 守；这里只问"这一局里够不够得着"。
+    /// </summary>
+    /// <param name="engine">跑图中的引擎。</param>
+    private static bool AnyClickBridgeOwned(GameEngine engine)
+    {
+        foreach (UpgradeDefinition upgrade in engine.Content.Upgrades)
+        {
+            bool isBridge = upgrade.Modifiers.Any(
+                m => m.Target.Kind == ModifierTargetKind.ClickPower && m.Scaling is not null);
+            if (isBridge && engine.State.UpgradeCount(upgrade.Id) > 0) return true;
+        }
+        return false;
     }
 }

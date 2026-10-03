@@ -148,6 +148,34 @@ internal static class Upgrades
             Tier = 5,
             Tags = ["click"],
         };
+
+        // 「点击 × 建筑」的桥：点击线的五档清一色是**固定**倍率（+1 / ×2 / ×2 / ×3 / +25%），
+        // 与"你养了多少猫"完全无关。这一条把点击收益接到**持有建筑总数**上
+        // （本包唯一使用 ScalingSource.TotalBuildings 的地方），每座 +0.5%、最多算 120 座（+60%）。
+        // 上限是作者手册 §3(b) 的硬规则：不设的话后期一个升级就吃掉整条曲线。
+        // 门槛 80 座：实测本包一局（贪心机器人，6 游戏小时）最多持有 1112 座建筑。
+        yield return new()
+        {
+            Id = "paws_everywhere",
+            Name = Prose.Text("upgrades", "paws_everywhere", "name"),
+            Icon = Prose.Text("upgrades", "paws_everywhere", "icon"),
+            Description = Prose.Text("upgrades", "paws_everywhere", "description"),
+            Price = 2_000_000_000,
+            Unlock = UnlockCondition.All(
+                UnlockCondition.TotalBuildingsAtLeast(80),
+                UnlockCondition.UpgradeOwned("plush_gloves")),
+            Modifiers =
+            [
+                new Modifier(
+                    ModifierTarget.ClickPower,
+                    ModifierOperation.AdditivePercent,
+                    0,
+                    new Scaling(ScalingSource.TotalBuildings, 0.005, Cap: 120)),
+            ],
+            Category = "click",
+            Tier = 6,
+            Tags = ["click"],
+        };
     }
 
     /// <summary>联动成长：效果随另一座建筑的数量线性增长。</summary>

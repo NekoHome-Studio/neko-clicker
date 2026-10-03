@@ -111,6 +111,33 @@ internal static class Upgrades
             Tier = 3,
             Tags = ["lab", "click"],
         };
+
+        // 「点击 × 建筑」的桥：本包点击线只有三档，且清一色是**固定**倍率。
+        // 这一条把点击收益接到**持有建筑总数**上（本包唯一使用 ScalingSource.TotalBuildings 的地方），
+        // 每座 +0.5%、最多算 120 座（+60%）——上限是作者手册 §3(b) 的硬规则。
+        // 门槛 80 座：实测本包一局（贪心机器人，4.5 游戏小时）最多持有 374 座建筑。
+        yield return new()
+        {
+            Id = "distributed_haptics",
+            Name = Prose.Text("upgrades", "distributed_haptics", "name"),
+            Icon = Prose.Text("upgrades", "distributed_haptics", "icon"),
+            Description = Prose.Text("upgrades", "distributed_haptics", "description"),
+            Price = 5_000_000,
+            Unlock = UnlockCondition.All(
+                UnlockCondition.TotalBuildingsAtLeast(80),
+                UnlockCondition.UpgradeOwned("two_hands_log")),
+            Modifiers =
+            [
+                new Modifier(
+                    ModifierTarget.ClickPower,
+                    ModifierOperation.AdditivePercent,
+                    0,
+                    new Scaling(ScalingSource.TotalBuildings, 0.005, Cap: 120)),
+            ],
+            Category = "click",
+            Tier = 4,
+            Tags = ["lab", "click"],
+        };
     }
 
     /// <summary>

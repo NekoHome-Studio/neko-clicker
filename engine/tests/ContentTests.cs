@@ -14,7 +14,7 @@ public static class ContentTests
 
         // 这些数字是内容包的回归基线：改动内容时应当同步更新，避免"悄悄少了一条升级"。
         Check.Equal(10, content.Buildings.Count);
-        Check.Equal(49, content.Upgrades.Count);
+        Check.Equal(50, content.Upgrades.Count);
         Check.Equal(66, content.Achievements.Count);
         Check.Equal(6, content.Buffs.Count);
         Check.Equal(10, content.GoldenCookieOutcomes.Count);
