@@ -114,9 +114,9 @@
 | **W11**（Web 建筑卡片补「单个 X/s」） | **`618a46c`**（2026-10-03：第一层落地——`buildings[].cpsEach` 并进卡片那一行；同一个提交还给"引擎算了、快照推了、前端没画"这一类缺陷加了 §23 那条守卫。第二层是 D11，仍未做。详见 §0.14） |
 | **W13**（Web 的导出/导入窗口） | **`2323a2a`**（2026-10-04：点「存档」开第三张 sheet——导出只读文本框 + 复制 + 下载 `.json`；导入文本框 + 引擎原话的结果行；`#save` 不再直接发 `save`，手动存档挪进窗口里）。宿主侧补 `GameHost.PackId`、`ExportAsync`/`ImportAsync`、`export`/`import` 两条命令与 `CommandOutcome.Text`。证据：`web-smoke` 第 24 节 27 条、`SaveTransferHostTests` 8 条、`api-test` 新增 10 处（真宿主）；详见 §0.18 |
 | **W14**（终端的导出/导入） | **`2323a2a`**（2026-10-04：`E` / `I` 开一次**文件路径提示**——终端没有弹窗，这就是它那边"窗口"的诚实形态；提示预填到存档旁边，Enter 确认 / Esc 取消 / 退格删字 / Ctrl+U 清空；导出文件**不带 BOM**）。`GameSession.Saves.PackId = package.Id` 也接上了。证据：`SaveTransferHostTests` 的后 5 条 + "提示帧仍然每行恰好 N 列"那条；详见 §0.18 |
-| `STRUCTURE_OPTIMIZATION` 的 **S2 / S3** | **2026-10-04**（提交号见 §0.19）：`tools/capture-fixture.ps1` 进了仓库并实跑过一次（真实 `saves/` 与 `artifacts/latency.txt` 指纹未变）；`build.ps1` 的失败分支现在点名占 `bin` 的 PID + 端口 + image（只报告、不杀）。详见 §0.19.3 / §0.19.4 |
-| **新增守卫**：`.ps1` 的 UTF-8 BOM | **2026-10-04**（提交号见 §0.19）：`engine/tests/ToolingHygieneTests.PowerShellScripts_CarryTheUtf8Bom`，在 `-Strict` 里扫全仓 `*.ps1`，**点名到文件**；判别力用"剥掉 `public-api.ps1` 的 BOM ⇒ 1/11 红"证明过（PS 5.1 解析器对同一份字节报 `TerminatorExpectedAtEndOfString`）。详见 §0.19.1 |
-| **W15 的 `RELEASING.md` 那半** | **2026-10-04**（提交号见 §0.19）：`git grep` 否掉了它——`RELEASING.md` 里没有现在时版本行，W15 已收窄到只指 `STATUS.md`；`SAVE_TRANSFER_PLAN` §6 那句同样的错话也一并更正。**W15 本身仍然开着**（改不改 `STATUS.md` 由 D8 定） |
+| `STRUCTURE_OPTIMIZATION` 的 **S2 / S3** | **`cf40b9d`**（2026-10-04，见 §0.19）：`tools/capture-fixture.ps1` 进了仓库并实跑过一次（真实 `saves/` 与 `artifacts/latency.txt` 指纹未变）；`build.ps1` 的失败分支现在点名占 `bin` 的 PID + 端口 + image（只报告、不杀）。详见 §0.19.3 / §0.19.4 |
+| **新增守卫**：`.ps1` 的 UTF-8 BOM | **`cf40b9d`**（2026-10-04，见 §0.19）：`engine/tests/ToolingHygieneTests.PowerShellScripts_CarryTheUtf8Bom`，在 `-Strict` 里扫全仓 `*.ps1`，**点名到文件**；判别力用"剥掉 `public-api.ps1` 的 BOM ⇒ 1/11 红"证明过（PS 5.1 解析器对同一份字节报 `TerminatorExpectedAtEndOfString`）。详见 §0.19.1 |
+| **W15 的 `RELEASING.md` 那半** | **`cf40b9d`**（2026-10-04，见 §0.19）：`git grep` 否掉了它——`RELEASING.md` 里没有现在时版本行，W15 已收窄到只指 `STATUS.md`；`SAVE_TRANSFER_PLAN` §6 那句同样的错话也一并更正。**W15 本身仍然开着**（改不改 `STATUS.md` 由 D8 定） |
 
 #### 合并（同一件活原先写了不止一处）
 
@@ -1155,7 +1155,8 @@ S	2026-10-03T15:36:25.707Z	company	choice_first_order	order_take	3.833	0.004	30	
 
 ## 0.19 工具链四件：BOM 守卫 · W15 收窄 · 夹具抓取脚本进仓库 · `build.ps1` 认得占 `bin` 的人（2026-10-04）
 
-四项在同一棵隔离 worktree（`.tmp/wt-struct`，从 **`04c67e0`** 起）里做完，本地提交、**没有推送、没有打 tag**。
+四项在同一棵隔离 worktree（`.tmp/wt-struct`，从 **`04c67e0`** 起）里做完，提交 **`cf40b9d`**
+（分支 `struct-optimization-bom-w15-s2-s3`；本地提交、**没有推送、没有打 tag**）。
 `engine/core` 一行未改、`engine/core/PublicApi.txt` 逐字节未变，改的全是 `tools/`、`engine/tests/`
 与文档 ⇒ 按 `VERSIONING` §2 与 **D3 的先例**（近期工具/文档改动**刻意不升版本**），这一轮**不升版本**。
 
