@@ -56,9 +56,10 @@ function Invoke-Git {
 
 function Get-LastErrorLine([string]$Text) {
   if ([string]::IsNullOrWhiteSpace($Text)) { return '(无输出)' }
-  $lines = $Text -split "`r?`n" | Where-Object { $_.Trim() -ne '' }
+  $lines = @($Text -split "`r?`n" | Where-Object { $_.Trim() -ne '' } | ForEach-Object { $_.Trim() })
   if ($lines.Count -eq 0) { return '(无输出)' }
-  return $lines[-1].Trim()
+  # 失败原因往往不在最后一行（末行常常只是 git 的补充说明），所以把尾部三行一起留下。
+  return ((@($lines | Select-Object -Last 3)) -join ' ｜ ')
 }
 
 function Get-RemoteMain {
