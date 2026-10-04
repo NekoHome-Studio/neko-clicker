@@ -21,8 +21,9 @@
 // 覆盖边界（诚实）: 它证明的是"真的被执行过的路径不抛异常"。没被执行到的分支
 // （`if (!pill) return` 这类防御）只有 node --check 的语法保证。
 //
-// 这个脚本**从 2026-10 起进了 tools/build.ps1**（也进了 CI）：一条 203 条断言（2026-10-04 起；
-// §26 的「富余高度钉在最后一行」之前是 202 条、§26 的「等高」之前是 199 条、
+// 这个脚本**从 2026-10 起进了 tools/build.ps1**（也进了 CI）：一条 208 条断言（2026-10-04 起；
+// §26 的「右栏填满」之前是 203 条、§26 的「富余高度钉在最后一行」之前是 202 条、
+// §26 的「等高」之前是 199 条、
 // §27「批量档位下的总价」之前是 193 条、
 // §25「缩放适配」与 §26「两栏对齐」之前是 162 条、
 // 第 24 节「存档的导出/导入窗口」之前是
@@ -2234,6 +2235,15 @@ section("25. 缩放适配：视口单位、相对尺寸、断点（结构性可�
     if (!/max-height:\s*min\(26rem,\s*60dvh\)/.test(block)) {
       throw new Error(".list 没有 dvh：26rem = 416px，在 384px 高的视口里比整个窗口还高");
     }
+    // ⚠️ 这条上限现在管的是**高度由内容自己定**的那几种列表（单栏、sheet 里的表态列表）。
+    // 两栏那一档里列表的高度由**卡片**给（卡片的高度由左栏给），于是这条上限被让开
+    // （`max-height: none`）—— 不让开的话 `flex: 1` 长不过 416px，"填满卡片"根本无从发生。
+    // 那一半（连同 `contain: size` 为什么必须同时在）由 §26 的「右栏填满」那一组（5 条）盯着。
+    const fill = mediaOf("(min-width: 62.0625rem)");
+    if (!fill) throw new Error("找不到两栏那一档（62.0625rem）：上限被让开的那一半没有人管");
+    if (!/max-height:\s*none/.test(fill)) {
+      throw new Error("两栏那一档没有把上限让开（max-height: none）：`flex: 1` 长不过 416px，右栏那一截空白照旧");
+    }
   });
 
   check("背景光不再是尺寸写死的图形（1200×600 在窄屏上有一大半在屏幕外）", () => {
@@ -2427,18 +2437,20 @@ section("25. 缩放适配：视口单位、相对尺寸、断点（结构性可�
   });
 }
 
-// 26. 两栏的对齐：左栏那张大框（.hero）与右栏那张卡片（.panel）的**上沿与下沿**。
+// 26. 两栏的对齐：左栏那张大框（.hero）与右栏那张卡片（.panel）的**上沿、下沿与填充**。
 //
 // 这一节守的是**结构**：页签行与面板各自是 main 的网格项、两张卡片从同一行开始、
 // 两块卡片的**高度**由它们自己 opt in 拉伸（下沿因此也落在同一条线上）、
 // 拉伸多出来的高度**钉在 hero 的最后一行上**（`.meta` 拿 `margin-top: auto`
 // 落在内容盒的下沿 —— 只把空留在卡片底部的话，人看到的就是"内容没有触底"）、
+// 右栏**用列表把自己填满**（两栏那一档里 `.panel` 是 flex 纵列 ＋ `contain: size`、
+// 列表拿 `flex: 1` 与 `space-between`，见下面「右栏填满」那一组）、
 // 单栏时那套落位必须被重置（否则 `grid-column: 2` 会造出隐式的第 2 列），
 // 而且单栏里"拉伸"必须无从发生（一列一项 ⇒ 行高就是内容高，不会造出大空盒，
-// 钉底边那一句在那里因此是恒等变换）。
-// ⚠️ 它证明不了"看上去对齐了 / 看上去一样高了 / 最后一行真的贴到底了" ——
+// 钉底边那一句在那里因此是恒等变换；填满那一套则被证明**只在两栏那一档里**）。
+// ⚠️ 它证明不了"看上去对齐了 / 看上去一样高了 / 最后一行真的贴到底了 / 列表真的填满了" ——
 // 那个桩件没有布局引擎，最后一眼只能是人看的（OPEN_WORK H3）。
-section("26. 两栏对齐：左栏大框与右栏卡片的上沿 ＋ 下沿");
+section("26. 两栏对齐：左栏大框与右栏卡片的上沿 ＋ 下沿 ＋ 右栏的填满");
 {
   const blockOf = (selector) =>
     new RegExp(selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + " \\{([\\s\\S]*?)\\}").exec(cssRules)?.[1] ?? "";
@@ -2694,6 +2706,139 @@ section("26. 两栏对齐：左栏大框与右栏卡片的上沿 ＋ 下沿");
     if (offset < 40) throw new Error(`算出来的错位只有 ${offset.toFixed(1)}px——这条守卫的前提变了`);
     if (!/\.hero \{ grid-area: 2 \/ 1; \}/.test(cssRules)) {
       throw new Error(`左栏大框的上沿比右栏那张卡片高 ${offset.toFixed(1)}px（页签 ${tabHeight.toFixed(1)} ＋ 行间距 ${(rowGap * REM).toFixed(1)}）`);
+    }
+  });
+
+  // ── 右栏填满：人 2026-10-04 的第三句话（问清是哪个框之后）──
+  // **「右栏：选项卡里那个列表的下面空了一截」**。§0.22 的等高把右栏那张卡片拉到了左栏的
+  // 高度，而卡片里的内容还停在上面。三条出路里人选的是**让列表填满卡片**（见 `OPEN_WORK` §0.23.5）。
+  //
+  // 机制是两句话，缺任何一句这份填满都是空的：
+  //   · `.list` 的基规则带着 `max-height: min(26rem, 60dvh)`（＝ 416px）——**硬上限**。
+  //     只要它还在，`flex: 1` 就长不过它：列表一动不动，`justify-content` 也没有富余可摊。
+  //     所以两栏这一档必须把它让开（`max-height: none`），高度改由**卡片**给。
+  //   · 让开之后必须换个东西收住它，否则列表的内容会反过来给第 2 行定高（67 条成就
+  //     ≈ 4200px ⇒ 左栏被拉成一张 4200px 高的空卡片）⇒ `contain: size`：右栏的内容
+  //     不参与第 2 行的高度计算，第 2 行只由左栏决定（左栏本来就更高，见 §0.23.2）。
+  //
+  // ⚠️ 这个桩件**没有布局引擎**：它证明的是 CSS 里写着这一套、且这一套只在两栏那一档里
+  // （于是单栏是**可 grep 的**恒等变换，而不是推理出来的）；摊开之后**看上去**好不好看、
+  // `contain: size` 在真浏览器里是不是真的让右栏拿到了"左栏那么高"，只有眼睛能判（H3）。
+  const twoCol = mediaOf("(min-width: 62.0625rem)");
+  /** 某一节媒体查询里每条规则（`[选择器, 规则体]`）；`@media` 那层壳先剥掉。 */
+  const fillRulesIn = (sectionCss) => {
+    const open = sectionCss.indexOf("{");
+    const body = open < 0 ? "" : sectionCss.slice(open + 1, sectionCss.lastIndexOf("}"));
+    return [...body.matchAll(/([^{}]+)\{([^}]*)\}/g)].map(([, selector, rule]) => [selector.trim(), rule]);
+  };
+  /** 那一节里选择器**完全相等**的那条规则的规则体（找不到返回空串，理由与 §26 上面那条注释同理）。 */
+  const fillRule = (selector) => fillRulesIn(twoCol).filter(([s]) => s === selector).map(([, rule]) => rule).join("\n");
+
+  check("右栏填满：两栏那一档里 `.panel` 是 flex 纵列 ＋ `contain: size`（右栏的内容不许给第 2 行定高）", () => {
+    if (!twoCol) throw new Error("找不到 `min-width: 62.0625rem` 那一档（= `max-width: 62rem` 的补集）：右栏列表底下那一截没人在管");
+    const panel = fillRule(".panel");
+    if (!/display:\s*flex/.test(panel) || !/flex-direction:\s*column/.test(panel)) {
+      throw new Error(`两栏那一档里 .panel 不是 flex 纵列，列表的 flex: 1 无处可长：<${panel.trim() || "(没有这条规则)"}>`);
+    }
+    if (!/contain:\s*size/.test(panel)) {
+      throw new Error("两栏那一档里 .panel 没有 contain: size：上限一让开，列表一长（67 条成就 ≈ 4200px）就会反过来把第 2 行顶高，左栏被拉成一张 4200px 高的空卡片");
+    }
+    const list = fillRule(".panel > .list");
+    for (const [what, pattern] of [
+      ["flex: 1（长得满）", /flex:\s*1\b/],
+      ["min-height: 0（缩得回 ⇒ 内容多时在列表内部滚动，而不是把卡片顶高）", /min-height:\s*0\b/],
+      ["max-height: none（把那条 416px 的硬上限让开）", /max-height:\s*none\b/],
+      ["justify-content: space-between（富余摊进卡片之间的间隙）", /justify-content:\s*space-between\b/],
+    ]) {
+      if (!pattern.test(list)) throw new Error(`两栏那一档里 .panel > .list 少了 ${what}：<${list.trim() || "(没有这条规则)"}>`);
+    }
+    if (!/gap:\s*\.4rem/.test(blockOf(".list"))) {
+      throw new Error(".list 的最小间距（gap: .4rem）没了：space-between 只该在它**之上**再加富余，不该替掉它");
+    }
+  });
+
+  check("这一套只在两栏那一档：把它整段挖掉之后，块外一处都没有（单栏因此是恒等变换，可 grep 证明）", () => {
+    if (!twoCol) throw new Error("找不到两栏那一档");
+    const outside = cssRules.replace(twoCol, "");
+    const declarations = [...outside.matchAll(/([^{}]+)\{([^}]*)\}/g)].map(([, selector, rule]) => [selector.trim(), rule]);
+    const offenders = declarations
+      .filter(([selector]) => selector === ".panel" || selector === ".panel > .list")
+      .filter(([, rule]) => /contain\s*:|display\s*:|flex\s*:|min-height\s*:|max-height\s*:|justify-content\s*:/.test(rule))
+      .map(([selector, rule]) => `${selector} { ${rule.trim().replace(/\s+/g, " ")} }`);
+    if (offenders.length > 0) {
+      throw new Error(`这些声明出现在两栏那一档之外（单栏因此不再与改动前等价 —— 单栏每行只有一项、行高就是内容高，这些声明在那里全是多余的赌注）：${offenders.join(" ；")}`);
+    }
+    // 自查：挖掉那一档之后 `.panel` 的基规则还在（否则上面那条是在空扫一份读不出来的 CSS）。
+    if (!declarations.some(([selector]) => selector === ".panel")) {
+      throw new Error("挖掉那一档之后连 .panel 的基规则都找不到了——这条守卫在证明一件不存在的事");
+    }
+  });
+
+  check("溢出时不打架：滚动容器仍是列表自己（`overflow-y: auto` ＋ `min-height: 0`），而列表的子项没有被允许收缩", () => {
+    if (!/overflow-y:\s*auto/.test(blockOf(".list"))) {
+      throw new Error(".list 不再是滚动容器：列表一长就会溢出到卡片外面（或把卡片顶高）");
+    }
+    if (!/min-height:\s*0\b/.test(fillRule(".panel > .list"))) {
+      throw new Error("列表自己没有 min-height: 0：溢出时它会去撑卡片（第 2 行因此被顶高），而不是自己滚");
+    }
+    // 列方向 flex 里"子项不被压扁"靠的是它自己的 `min-height: auto`（自动最小尺寸 = 内容）。
+    // 一旦有人给卡片那一类子项写上 `min-height: 0`，`flex: 1` 就能把它们压扁 ——
+    // 这是这一改动最容易翻车的一处（也是任务书点名要验的那一处）。
+    const zeroMinimums = [...cssRules.matchAll(/([^{}]+)\{([^}]*)\}/g)]
+      .filter(([, , rule]) => /min-height\s*:\s*0\s*(?:;|$)/.test(rule))
+      .map(([, selector]) => selector.trim());
+    const squashed = zeroMinimums.filter((selector) => /\.(card|note|building)\b|\.list\s*>/.test(selector));
+    if (squashed.length > 0) {
+      throw new Error(`这些规则允许把列表的子项压扁（自动最小尺寸被拿掉了）：${squashed.join(" ；")}`);
+    }
+    if (!zeroMinimums.includes(".panel > .list")) {
+      throw new Error(`那条 min-height: 0 不在列表自己身上（判据落空）：${zeroMinimums.join(" / ") || "(一处都没有)"}`);
+    }
+  });
+
+  check("两条断点都不碰这一套：手机（≤34rem）与又宽又矮（max-height: 34rem）里，凡是提到面板 / 列表的规则都不写填满那一套", () => {
+    for (const query of ["(max-width: 34rem)", "(max-height: 34rem)"]) {
+      const section = mediaOf(query);
+      if (!section) throw new Error(`找不到 ${query} 那一节`);
+      const rules = fillRulesIn(section);
+      if (rules.length === 0) throw new Error(`${query} 那一节里一条规则都没读到——这条守卫在空扫`);
+      for (const [selector, rule] of rules) {
+        if (!/\.panel\b|\.list\b/.test(selector)) continue;
+        for (const prop of ["contain", "display", "flex", "flex-direction", "min-height", "max-height", "justify-content", "overflow"]) {
+          if (new RegExp(`[;{\\s]${prop}\\s*:`).test(rule)) {
+            throw new Error(`${query} 那一节的 <${selector}> 写了 ${prop}：填满那一套只在两栏那一档（62.0625rem）里成立，两处断点只该管它们自己那件事`);
+          }
+        }
+      }
+    }
+  });
+
+  // 这条把"上限为什么必须让开"变成可复算的数：列表内容**已经**超过那条 416px 的硬上限。
+  // 数字全部从 CSS 常量 ＋ 5273 上那一局（末世包、Era 3、8 座可见建筑）算出来；
+  // 算出来的富余（≈ 57.5px）摊进 7 段 ≈ 8.2px，也就是行距 6.4px → 约 14.6px
+  // —— 这一局摊得并不开，理由写在 app.css 同一段注释里。
+  check("量一下为什么上限必须让开：这一局的列表内容（8 座可见建筑 ≈ 543.6px）比那条 416px 的硬上限高出一截", () => {
+    const rulesOf = (selector) => [...cssRules.matchAll(/([^{}]+)\{([^}]*)\}/g)]
+      .filter(([, s]) => s.trim() === selector).map(([, , rule]) => rule).join("\n");
+    const cardPadding = Number(/padding:\s*([\d.]+)rem/.exec(blockOf(".card"))?.[1]); // .5rem 上下
+    const cardRowGap = Number(/gap:\s*([\d.]+)rem/.exec(blockOf(".card"))?.[1]);     // .1rem 行间距
+    const nameSize = Number(/font-size:\s*([\d.]+)rem/.exec(rulesOf(".card .name"))?.[1]);
+    const shareSize = Number(/font-size:\s*([\d.]+)rem/.exec(rulesOf(".card .share"))?.[1]);
+    const lineHeight = Number(/line-height:\s*([\d.]+)/.exec(blockOf("body"))?.[1]);
+    const listGap = Number(/gap:\s*([\d.]+)rem/.exec(blockOf(".list"))?.[1]);
+    for (const [what, value] of [["卡片上下内边距", cardPadding], ["卡片行间距", cardRowGap], ["名字字号", nameSize],
+      ["占比那一行字号", shareSize], ["body 行高", lineHeight], ["列表间距", listGap]]) {
+      if (!Number.isFinite(value)) throw new Error(`读不出${what}——这条预算的前提变了`);
+    }
+    const rows = 8; // 5273 上那一局的 /api/snapshot 里 isVisible 的建筑数
+    const cardHeight = 2 * cardPadding * REM + 2 + cardRowGap * REM + (nameSize + shareSize) * lineHeight * REM;
+    const content = rows * cardHeight + (rows - 1) * listGap * REM;
+    const cap = 26 * REM; // min(26rem, 60dvh)：1080p 上 60dvh = 648px，于是取 26rem = 416px
+    if (content <= cap + 60) {
+      throw new Error(`这一局的列表内容只有 ${content.toFixed(1)}px，离 ${cap}px 的旧上限不远——"上限必须让开"这个前提不成立（重新量一次，别照抄这个数）`);
+    }
+    if (!/max-height:\s*none/.test(fillRule(".panel > .list"))) {
+      throw new Error(`列表内容 ${content.toFixed(1)}px 已经把 ${cap}px 的上限撑满：不让开的话 flex: 1 一步都长不动，富余也无从摊开`);
     }
   });
 }
