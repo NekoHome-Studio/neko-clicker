@@ -112,8 +112,8 @@
 | `DEVELOPMENT_SUMMARY` §8.1 / §8.3 / §8.4 | `e62400b` / `3312715` + `b625dd5` / `f27a2e7`（"52 处 vs 51 项"已改由脚本收尾自审接管） |
 | §0.4「本节没做的事」第 1 条 | 本次整合做了：§0.3 第 3、7 条并入本清单，第 5 条见 §3-M |
 | **W11**（Web 建筑卡片补「单个 X/s」） | **`618a46c`**（2026-10-03：第一层落地——`buildings[].cpsEach` 并进卡片那一行；同一个提交还给"引擎算了、快照推了、前端没画"这一类缺陷加了 §23 那条守卫。第二层是 D11，仍未做。详见 §0.14） |
-| **W13**（Web 的导出/导入窗口） | **本轮**（2026-10-04：点「存档」开第三张 sheet——导出只读文本框 + 复制 + 下载 `.json`；导入文本框 + 引擎原话的结果行；`#save` 不再直接发 `save`，手动存档挪进窗口里）。宿主侧补 `GameHost.PackId`、`ExportAsync`/`ImportAsync`、`export`/`import` 两条命令与 `CommandOutcome.Text`。证据：`web-smoke` 第 24 节 27 条、`SaveTransferHostTests` 8 条、`api-test` 新增 10 处（真宿主）；详见 §0.18 |
-| **W14**（终端的导出/导入） | **本轮**（2026-10-04：`E` / `I` 开一次**文件路径提示**——终端没有弹窗，这就是它那边"窗口"的诚实形态；提示预填到存档旁边，Enter 确认 / Esc 取消 / 退格删字 / Ctrl+U 清空；导出文件**不带 BOM**）。`GameSession.Saves.PackId = package.Id` 也接上了。证据：`SaveTransferHostTests` 的后 5 条 + `FrameRenderTests` 之外新增的"提示帧宽度不变量"；详见 §0.18 |
+| **W13**（Web 的导出/导入窗口） | **`2323a2a`**（2026-10-04：点「存档」开第三张 sheet——导出只读文本框 + 复制 + 下载 `.json`；导入文本框 + 引擎原话的结果行；`#save` 不再直接发 `save`，手动存档挪进窗口里）。宿主侧补 `GameHost.PackId`、`ExportAsync`/`ImportAsync`、`export`/`import` 两条命令与 `CommandOutcome.Text`。证据：`web-smoke` 第 24 节 27 条、`SaveTransferHostTests` 8 条、`api-test` 新增 10 处（真宿主）；详见 §0.18 |
+| **W14**（终端的导出/导入） | **`2323a2a`**（2026-10-04：`E` / `I` 开一次**文件路径提示**——终端没有弹窗，这就是它那边"窗口"的诚实形态；提示预填到存档旁边，Enter 确认 / Esc 取消 / 退格删字 / Ctrl+U 清空；导出文件**不带 BOM**）。`GameSession.Saves.PackId = package.Id` 也接上了。证据：`SaveTransferHostTests` 的后 5 条 + "提示帧仍然每行恰好 N 列"那条；详见 §0.18 |
 
 #### 合并（同一件活原先写了不止一处）
 
@@ -1068,9 +1068,11 @@ S	2026-10-03T15:36:25.707Z	company	choice_first_order	order_take	3.833	0.004	30	
 ## 0.18 W13 / W14：存档导出/导入的两个「窗口」（2026-10-04）
 
 `SAVE_TRANSFER_PLAN` 的第二刀（Web）与第三刀（终端）在同一棵隔离 worktree
-（`.tmp/wt-transfer`，从 **`d02ab95`** 起）里做完。这两刀**一行引擎都不改**——
-引擎那半（信封 / 校验和 / 七道闸）1.10.0 就已经在树上，这一次补的是它**外面**缺的入口，
-也就是缺口 D 那句话（"`ExportShareCode()` 这个公开 API 至今零调用者"）。
+（`.tmp/wt-transfer`，从 **`d02ab95`** 起）里做完，提交是 **`2323a2a`**
+（分支 `save-transfer-windows-w13-w14`；**本地提交，没有推送、没有打 tag**）。
+这两刀**一行引擎都不改**——引擎那半（信封 / 校验和 / 七道闸）1.10.0 就已经在树上，
+这一次补的是它**外面**缺的入口，也就是缺口 D 那句话（"`ExportShareCode()` 这个公开 API
+至今零调用者"）。
 
 **两个宿主各自的入口**：
 
