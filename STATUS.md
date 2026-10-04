@@ -1,7 +1,7 @@
 # 现状
 
-> 记录时间：**2026-10-02**（版本行 / 整合补记 **2026-10-03**）｜ 分支 `main` ｜ 工作树版本 **1.9.0**
-> （`stage-work` 分支上落地，**未打 tag / 未推送**；已发布的最后一个 tag 仍是 `v1.4.0`）
+> 记录时间：**2026-10-02**（版本行 / 整合补记 **2026-10-03**；**1.10.1 发布补记 2026-10-04**）｜ 分支 `main` ｜ 工作树版本 **1.10.1**
+> （tag `v1.10.1` 已在本地打好，**未推送**；已发布的最后一个 tag 仍是 `v1.4.0`）
 >
 > 这份文档只回答一个问题：**现在是什么状况**。它不重复别处已有的内容——
 > 架构看 [ARCHITECTURE](engine/docs/ARCHITECTURE.md)，规划与决策看 [ROADMAP](games/docs/ROADMAP.md)，
@@ -16,7 +16,7 @@
 
 | 分支 / tag | 内容 | 状态 |
 |---|---|---|
-| `main` | **唯一的开发线** | 工作树 = **1.9.0**（`stage-work` 分支上落地，**未打 tag / 未推送**） |
+| `main` | **唯一的开发线** | 工作树 = **1.10.1**（tag `v1.10.1` 已在本地打好，**未推送**） |
 | `v1.4.0` | 1.3.0 + 升级行的货币语义（`UpgradeView` 三字段）+ Web 的「永久」面板 | 已发布（tag 已推送）——**已发布的最新版** |
 | `v1.3.0` | 1.2.1 + 离线收益进快照（`GameSnapshot.Offline`）+ Web 弹窗 + 打包产物内容根修复 | 已发布 |
 | `v1.2.1` | 1.2.0 + 421 条散文铺满十个包 + `ContentText` 并发修复 | 已发布 |
@@ -25,7 +25,24 @@
 | `v1.0.0` | 首个承诺公开 API 稳定的版本 | 已发布 |
 | `feature/web-frontend-ui` | 旧分支，已并入 `main` | **作废**（远端还在，可删） |
 
-**工作树版本 `1.9.0`**（`NekoClicker.Core` 的公开 API 版本）：**minor**——公开 API **只增不改**：
+**工作树版本 `1.10.1`**（`NekoClicker.Core` 的公开 API 版本）：**patch——公开 API 一行没动**。
+这一版把 `CHANGELOG` 的 `[未发布]` 桶结掉（登记册 **D3** 那条决定的落地），
+内容全在**内容包 / 宿主 / 前端 / 工具**里：导出/导入第一次有了两个宿主里的入口
+（**W13** Web 的「存档」窗口 / **W14** 终端宿主的 `E` / `I` 路径提示）、十一个包各补一条
+「点击 × 建筑」的桥（内容）、两条宿主修复（关停时真的会存档、坏内容不再静默地成为当前存档），
+外加一条工具链守卫（`.ps1` 的 BOM 守卫改成枚举 `git ls-files '*.ps1'`——它此前会被
+**别人留在工作区里的未追踪草稿**判红，实测 `1/14`；主树上的 `.probe/*.ps1` 原样留着，闸门现在绿）。
+**公开表面没动的证据是快照本身**：`engine/core/PublicApi.txt` 与 `v1.10.0` 是**同一个 blob**
+（`014bd15e…`），重新生成之后**除首行 `version=` 外逐字节相同**（**2026 行**不变）。
+实测：`tools/build.ps1 -Strict` **566** 全绿 0 警告（基线 565）、`tools/api-test.ps1` **65**、
+`node tools/web-smoke.mjs` **162**；产物 `artifacts/neko-clicker-1.10.1-win-x64.zip` 与两个 exe
+都实跑验过（原文见 [RELEASING](engine/docs/RELEASING.md) §6、[CHANGELOG](CHANGELOG.md) 的 1.10.1）。
+**D8 也由真人拍定**：`v1.5.0`…`v1.10.0` 已在本地补打 tag（**未推送**），tag 身份沿用仓库配置
+`NekoHome Studio <dev@nekohome.studio>`。
+**未推送**——推提交与 tag、看 CI 两个作业是下一轮的第一件事；要精确到当前提交，用 `git log -1`
+（本文不写 HEAD，见上）。
+
+**`1.9.0`（已并入 `main`；下面这段只作历史）**：**minor**——公开 API **只增不改**：
 新增 `EraStage` / `EraStageGate` 两个类型、`EraDefinition.Stages`、
 `EraSystem.Stage(GameEngine)` / `CheckStage(GameEngine)` / `StageCounterPrefix`、
 `GameEngine.CheckEraStage()`，以及 `EraView` 上阶段那六个只读字段

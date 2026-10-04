@@ -22,11 +22,11 @@
 | ④ | `CHANGELOG.md`：加 `## [<版本>] - YYYY-MM-DD` | 写清兼容性影响；`VersionTests` 会验"有带日期的条目" |
 | ⑤ | **先构建一次**，再跑 `tools\public-api.ps1` | 快照由测试程序集打印，`ApiVersion.Current` 读程序集元数据——版本号改了没重编，快照会带**旧版本号**且看起来完全正常 |
 | ⑥ | 扫一遍所有"当前版本"字样 | 清单见 §2；判据是 `git grep <旧版本号>`，不是记性 |
-| ⑦ | `tools\build.ps1 -Strict` | 564 用例 + 公开 API 快照 + 版本守卫 + 前端冒烟；**0 警告**（2026-10-04 实测；数会涨，以它打印的那一行为准） |
+| ⑦ | `tools\build.ps1 -Strict` | 566 用例 + 公开 API 快照 + 版本守卫 + 前端冒烟；**0 警告**（2026-10-04 实测；数会涨，以它打印的那一行为准） |
 | ⑧ | `tools\api-test.ps1` | 全部端到端检查通过（真起宿主、真读 SSE；当前 65 项，脚本收尾还会自己做检查点覆盖审计）；动了宿主/前端时必跑 |
 | ⑧b | `node tools\web-smoke.mjs` | 全部无头前端检查通过（当前 **162** 条；不执行它就没有东西会证明 `app.js` 真的跑得起来）；动了 `wwwroot/` 或快照必跑。**S1 起它也是 `build.ps1 -Strict` 里的一道闸门**，所以第 ⑦ 步已经会替它红 |
-| ⑨ | `tools\pack.ps1` + **自检产物** | 产出 `artifacts\neko-clicker-<版本>-win-x64.zip`；**解开它**，在**包根目录**起 `web\neko-clicker-web.dll`，确认 `/`、`/app.js`、`/api/ping` 与快照里的新字段。这一层没有用例守着（端到端探针只跑开发期路径）——1.3.0 的首页 404 就是这么逮到的 |
-| ⑩ | `git commit` → `git tag -a v<版本>` → 推送 | 本机 HTTPS 不通，走 SSH（见 §6） |
+| ⑨ | `tools\pack.ps1` + **自检产物** | 产出 `artifacts\neko-clicker-<版本>-win-x64.zip`；**解开它**，在**包根目录**起 `web\neko-clicker-web.exe`（或 `dotnet web\neko-clicker-web.dll`），确认 `/`、`/app.js`、`/api/ping` 与快照里的新字段。这一层没有用例守着（端到端探针只跑开发期路径）——1.3.0 的首页 404 就是这么逮到的 |
+| ⑩ | `git commit` → `git tag -a v<版本>` → 推送 | 本机 HTTPS 不通，走 SSH（见 §7） |
 | ⑪ | 看 CI 的三个作业（`build-and-test` / `web-smoke` / `end-to-end`），把结果写回 `STATUS.md` §6 | "本地全绿"不等于"runner 上全绿" |
 
 第 ⑤ 步拆成两步是 1.2.1 才写清楚的细节；在此之前它只是 VERSIONING 里的一句
@@ -87,7 +87,7 @@ git grep -n "1\.2\.0"        # 换成你刚发完的那个版本号
    重写出来的 `ssh://git@github.com/NekoHome-Studio/...` **缺前导斜杠**，GitHub 拒收
    （`... is not a valid repository name`，5 次重试全是这个错——它不是网络抖动，重试没用）。
    换成**显式 URL** 第一次就成功：`git push git@github.com:NekoHome-Studio/neko-clicker.git main`。
-   STATUS §7 第 10 条与本文 §6 都已改。
+   STATUS §7 第 10 条与本文 §7 都已改。
    **教训：文档里的命令如果从没在真操作里跑过，它就不是"已验证"，只是"看起来对"。**
 
 ### 3.3 CI 首跑
@@ -177,7 +177,62 @@ git grep -n "1\.2\.0"        # 换成你刚发完的那个版本号
 
 ---
 
-## 6. 本机特有的坑（一条条都踩过）
+## 6. 执行记录：1.10.1（2026-10-04）
+
+> 这是 1.4.0 之后**第一次真的走完这张表**（登记册 **W8** 要的就是这个）。
+> 唯一没走的是第 ⑪ 步：本机不推，CI 要等推送之后。
+
+### 6.1 结果
+
+| 步 | 结果 |
+|---|---|
+| ② 升位 | **patch**——公开 API 一行没动。判据是快照本身：`v1.10.0` 与树上的 `engine/core/PublicApi.txt` 是**同一个 blob**（`014bd15e…`、**2026 行**），重新生成后 `git diff v1.10.0 -- engine/core/PublicApi.txt` 只有 **1 行**（首行 `version=1.10.0` → `version=1.10.1`） |
+| ③ 版本号 | `1.10.0` → `1.10.1`（`Directory.Build.props` 的 `Version` / `AssemblyVersion` / `FileVersion` 三处一起） |
+| ④ CHANGELOG | 新增 `## [1.10.1] - 2026-10-04`，并把 `[未发布]` 桶**结掉**（桶留在文件顶部、写明"目前是空的"）——登记册 **D3** 那条决定的落地 |
+| ⑤ 快照 | **先构建再生成**（`dnet.ps1 build NekoClicker.sln`：42.7 秒；再跑 `tools\public-api.ps1`）：**2026 行**，只有首行变 |
+| ⑥ "当前版本"字样 | `git grep -n "1\.10\.0"` **现数**（不是记性）：`Directory.Build.props`(3) / `README.md`(5) / `engine/README.md`(2) / `VERSIONING.md`(4) / `STATUS.md`(3 处现在时) / `OPEN_WORK.md` §1(1) / `PublicApi.txt`(首行) / `tools/web-smoke.mjs`(2 处桩件文本) / `SaveTransfer.cs`(1 处 XML 样例) / `SAVE_TRANSFER_PLAN.md`(1 处样例) 都改了；剩下的命中**逐条核过**都是历史（旧版本条目、`.github/workflows/ci.yml` 里的分支名 `save-transfer-1.10.0`、`SAVE_TRANSFER_PLAN` §6 的版本决定记录） |
+| ⑦ 验收 | `tools\build.ps1 -Strict`：**566 全绿、0 警告**（动手前基线 **565**），其中前端冒烟 **162 / 162**；`PublicApiTests` 四条与 `VersionTests` 四条全绿 |
+| ⑧ 验收 | `tools\api-test.ps1`：**65 项全过**（源码 65 处检查点 / 执行到 65 处 / 跳过 0）。其中 `GET /api/ping` 报 `apiVersion=1.10.1`（**动态**读 `Directory.Build.props`，不是写死的），导入成功那句话里写的是「框架 1.10.1」 |
+| ⑨ 打包 + 自检 | `artifacts\neko-clicker-1.10.1-win-x64.zip`：**109 个文件**、压缩后 **1.85 MB**（未压缩 5.56 MB、sha256 `4602AD9A…C2F3`）；解开到临时目录后**两个 exe 都真的跑起来**（见 6.2） |
+| ⑩ tag | `v1.10.1`——**annotated**，一行消息 `NekoClicker.Core 1.10.1`（与 `v1.4.0`…`v1.10.0` 同形、无正文无日期），tag 身份走仓库配置 `NekoHome Studio <dev@nekohome.studio>`。**未推送** |
+| ⑪ CI | **没看**——本机不推，三个作业要等推送之后（父代理推提交与 tag）。这一格空着就是空着 |
+
+### 6.2 产物自检（这一层仍然没有用例守着）
+
+**解包后再跑，不在 `artifacts\neko-clicker-1.10.1\` 这个 stage 目录里跑**
+（1.3.0 的首页 404 正是"从包根目录起"才露出来的）：
+
+| 检查 | 命令 / 判据 | 结果 |
+|---|---|---|
+| 终端宿主 `--help` | `demo\neko-clicker.exe --help` | 退出码 **0**、56 行帮助，里面有 `--simulate` / `--no-save` |
+| 终端宿主真的能模拟 | `demo\neko-clicker.exe --simulate 300 --auto --no-save --no-latency-log --no-color` | 退出码 **0**、55 行报告（总览 / 建筑 / 升级 / 金猫 / 转生各节都在）；**`--no-save` 下那个临时存档目录里一个文件都没有** |
+| Web 宿主真的能起 | `web\neko-clicker-web.exe --urls http://127.0.0.1:5412 --save-root <临时> --latency-log <临时>` | 两次轮询内就绪；控制台第 2 行：`框架版本 1.10.1｜内容包 11 个｜存档目录 <临时>` |
+| Web 元信息 | `GET /api/ping` | `{"apiVersion":"1.10.1","assemblyVersion":"1.10.1.0","runtime":"8.0.8",…}` |
+| 静态资源 | `GET /`、`/app.js`、`/app.css`、`/api/packs` | 全 **200**（14216 / 85289 / 33439 / 904 字节）；首页里有 `save-sheet` 那个挂载点、有 `offline` 挂载点 |
+
+**结论**：1.3.0 那类"从包根目录起就 404"的产物布局问题这次**没有**——说明书、`wwwroot/`、`content/` 都在位。
+**没验到的**：真人浏览器仍然没打开过（登记册 **H3**）——上面全是 HTTP 层的证据。
+
+### 6.3 这一轮记下的两条
+
+1. **"当前版本"清单又漏了几处，还是 `git grep` 翻出来的**（1.2.1 的同一条教训）。
+   漏的是样例、不是声明：`engine/core/Persistence/SaveTransfer.cs` 的 XML 注释与
+   `engine/docs/SAVE_TRANSFER_PLAN.md` §2 里那份信封样例（`"FrameworkVersion": "1.10.0"`），
+   以及 `tools/web-smoke.mjs` §24 桩件的假回复（`框架 1.10.0`）。
+   它们既不在 §2 那张表里、也不在任何守卫的射程里——**判据只能是 `git grep`。**
+   （改 `SaveTransfer.cs` 只动了一行注释：快照看不见注释，`PublicApi.txt` 仍然只有首行变。）
+2. **守卫的判据本身也可能依赖本地文件。** `ToolingHygieneTests` 的 BOM 守卫第一版扫**工作目录**，
+   于是三个**别人留下的、未被追踪的** `.probe/*.ps1` 让它变红（`3/14`、`564 通过 / 1 失败`），
+   而作者那棵 worktree 里没有那个目录、量到的是 `565/565`。改成枚举 `git ls-files '*.ps1'` 之后：
+   **一个都没删**、把那三个文件逐字节复制进跑闸门的那棵 worktree（sha256 逐个核对过）、
+   它们照样没有 BOM，`-Strict` 仍然是 **566 全绿**。
+   **教训：一条守卫如果读了工作区里"谁都能放进去"的东西，它的结果就不是关于这个仓库的。**
+   顺带一条边界：这条守卫现在需要 git 元数据，没有时它会**响亮地失败**——退化成"扫当前目录"
+   正是它被修掉的那个缺陷本身。
+
+---
+
+## 7. 本机特有的坑（一条条都踩过）
 
 - **推送走 SSH**：`github.com:443` 结构性不通，重试不会好；SSH 正常。**用显式 URL**：
 
@@ -201,7 +256,7 @@ git grep -n "1\.2\.0"        # 换成你刚发完的那个版本号
 
 ---
 
-## 7. 这份文档保证不了什么
+## 8. 这份文档保证不了什么
 
 - **没有独立的发布脚本**：步骤还是人来点的。`tools/pack.ps1` 只做打包，`public-api.ps1`
   只做快照——它们刻意不"一键发布"，因为 ②（升哪一位）与 ④（兼容性怎么写）是判断，不是命令。

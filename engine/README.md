@@ -73,16 +73,20 @@ dotnet build NekoClicker.sln     # 或者用仓库根的 .\tools\build.ps1
 
 ## 版本与兼容性
 
-**当前 `1.10.0`。从 `1.0.0` 起，`NekoClicker.Core` 的公开 API 只增不改**，
+**当前 `1.10.1`。从 `1.0.0` 起，`NekoClicker.Core` 的公开 API 只增不改**，
 由 `core/PublicApi.txt`（快照，**嵌进 dll**）加四条守卫强制执行。
-规矩见 [docs/VERSIONING.md](docs/VERSIONING.md)。1.10.0 是**纯新增**：
+规矩见 [docs/VERSIONING.md](docs/VERSIONING.md)。1.10.1 是 **patch：公开 API 一行没动**
+（快照除首行版本号外逐字节不变）——那两件攒在 `[未发布]` 里的事随它发布：
+把 1.10.0 的导出/导入接到**两个宿主**上（Web 的「存档」窗口、终端宿主的 `E` / `I` 路径提示），
+以及十一个内容包各补的一条「点击 × 建筑」桥（内容侧）。方案见
+[docs/SAVE_TRANSFER_PLAN.md](docs/SAVE_TRANSFER_PLAN.md) 与
+[docs/OPEN_WORK.md](docs/OPEN_WORK.md) 的 §0.18。
+上一个版本 1.10.0 是**纯新增**：
 `SaveTransfer`（信封格式：格式标签 + 包 id + 存档格式版本 + 校验和 + 尺寸闸）+
 `SaveTransferKind` + `SaveTransferResult` + `SaveManager.PackId` / `Export()` / `Import()`——
 把"玩家自己复制粘贴一份存档"变成一条**坏输入绝不弄坏能用的存档**的路。
 **存档格式一个字都没改**（`CurrentVersion` 仍是 `1`，没有迁移）：信封在存档**外面**。
-方案与第二、三刀（Web 窗口 / 终端路径提示）见
-[docs/SAVE_TRANSFER_PLAN.md](docs/SAVE_TRANSFER_PLAN.md)。
-上一个版本 1.9.0 也是纯新增：
+再上一个版本 1.9.0 也是纯新增：
 `EraStage` + `EraStageGate` + `EraDefinition.Stages` + `EraSystem.Stage` /
 `CheckStage` / `StageCounterPrefix` + `GameEngine.CheckEraStage()` +
 `EraView` 上阶段那六个只读字段——把"**一层之内的第几段**"变成内容可以声明、

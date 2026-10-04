@@ -94,7 +94,7 @@ public sealed record SaveTransferResult(
 ///   "FormatVersion": 1,
 ///   "PackId": "neko",
 ///   "SaveVersion": 1,
-///   "FrameworkVersion": "1.10.0",
+///   "FrameworkVersion": "1.10.1",
 ///   "ExportedAt": "2026-10-04T02:11:33.4120000+00:00",
 ///   "Checksum": "sha256:...",
 ///   "Save": "{\"Version\":1,\"Cookies\":1234}"

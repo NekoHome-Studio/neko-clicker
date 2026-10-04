@@ -5,21 +5,28 @@
 + #3《猫娘实验室》+ #10《猫娘公司》+ #6《猫娘末世》+ #9《猫娘图书馆》
 + #7《猫娘神明》+ #4《猫娘文明》+ #5《赛博猫娘》+ #8《猫娘梦境》）和一个可玩的终端 Demo。
 
-**当前版本 `1.10.0`**（`NekoClicker.Core` 的公开 API 版本）。从 `1.0.0` 起
+**当前版本 `1.10.1`**（`NekoClicker.Core` 的公开 API 版本）。从 `1.0.0` 起
 **公开 API 只增不改**，而且有测试守着——见 [版本与兼容性承诺](#版本与兼容性承诺)。
-1.10.0 是纯新增：**存档的导出与导入**——一份能被人复制粘贴的文本（外层是信封：格式标签、
+1.10.1 是 **patch：公开 API 一行没动**——动的全在内容包、宿主与前端：存档的导出/导入第一次
+有了**界面入口**（Web 的「存档」窗口：只读文本框 + 复制 + 下载 `.json`、导入 + 引擎原话的结果；
+终端宿主的 `E` / `I` 两个键各开一次路径提示），十一个包各补一条「点击 × 建筑」的桥
+（每座建筑 +0.5%、最多算 120 座，持有建筑越多点一下越值钱），外加两条宿主修复
+（关停时真的会存档、坏内容不再静默地成为当前存档）与一条工具链守卫。详见
+[CHANGELOG](CHANGELOG.md) 的 1.10.1。
+上一版 1.10.0 是纯新增：**存档的导出与导入**——一份能被人复制粘贴的文本（外层是信封：格式标签、
 包 id、存档格式版本、校验和；内层是存档本体），以及"导入一份坏东西绝不弄坏能用的存档"
 那条不变量（新增 `SaveTransfer`、`SaveTransferKind`、`SaveTransferResult`，以及
 `SaveManager` 上的 `PackId` / `Export()` / `Import()`）。**存档格式一个字都没改**
 （`SaveSerializer.CurrentVersion` 仍是 `1`，不需要任何迁移）：信封是存档**外面**的一层。
-前一版 1.9.0 是**纪元内的阶段**——一层之内分段推进，跨过一段什么都不清
+再上一版 1.9.0 是**纪元内的阶段**——一层之内分段推进，跨过一段什么都不清
 （`EraStage`、`EraDefinition.Stages`、`EraStageGate`、`EraSystem.Stage` /
 `EraSystem.CheckStage`，以及 `EraView` 上的六个只读字段）。
-再前一版 1.8.0 是**建筑升级系统**——把 `UpgradeDefinition.Category` 上那条
+1.8.0 是**建筑升级系统**——把 `UpgradeDefinition.Category` 上那条
 `"building:<id>"` 约定（"这条升级属于哪座建筑"）变成**被校验、被索引、也被界面用上**的
 （新增 `UpgradeCategories`、`GameContent.UpgradesForBuilding`、`BuildingView.UpgradeIds`；
 1.7.0 是 `GameSnapshot.ModeName` + `PurchaseModes.WireName()`，修掉"前端拿枚举序数
-当档位名用"那条线上故障）。这五版都是**只增不改**：老字段原样留着，没有破坏任何消费者。
+当档位名用"那条线上故障）。这些版本**没有一处不兼容改动**：老字段原样留着，
+没有破坏任何消费者——1.10.1 更是连一行公开 API 都没动。
 语义层面的破坏性变更至今有三处，而且是**同一件事的三次决定**：1.1.0 让结局条件成立后
 先等一段作答宽限期（默认 30 **模拟**秒）；1.5.0 把那段时间换成条件——玩家
 **被展示过**那批待答表态之后结局才允许落定；**1.6.0 又把条件收紧成"玩家把它们答完"**
@@ -339,7 +346,7 @@ Console.WriteLine(engine.Save());           // JSON 存档
 
 ## 版本与兼容性承诺
 
-**当前版本 `1.10.0`。从 `1.0.0` 起，`NekoClicker.Core` 的公开 API 只增不改。**
+**当前版本 `1.10.1`。从 `1.0.0` 起，`NekoClicker.Core` 的公开 API 只增不改。**
 
 | 改动 | 升哪一位 |
 |---|---|
@@ -357,8 +364,8 @@ Console.WriteLine(engine.Save());           // JSON 存档
 ```csharp
 using NekoClicker.Core;
 
-Console.WriteLine(ApiVersion.Current);         // "1.10.0"
-Console.WriteLine(ApiVersion.AssemblyVersion);  // 1.10.0.0
+Console.WriteLine(ApiVersion.Current);         // "1.10.1"
+Console.WriteLine(ApiVersion.AssemblyVersion);  // 1.10.1.0
 ```
 
 ### 这条承诺是怎么被守住的
@@ -530,9 +537,11 @@ Console.WriteLine(ApiVersion.AssemblyVersion);  // 1.10.0.0
   ROADMAP 规划范围内的**十个内容包至此全部交付**，
   四个引擎能力里只有 S-A / S-B / S-C 动过核心（S-D 一行核心代码都没写）。
 
-**接下来做什么**：见 [STATUS.md 的 §8「下一步与交接」](STATUS.md)——工作树是 **1.10.0**
-（存档的导出与导入：信封 + 校验和 + 尺寸闸 + "坏输入绝不弄坏能用的存档"的 12 类失败语义，
-**存档格式一个字没改**；第二、三刀是把导出/导入做成两个宿主里的窗口，见
+**接下来做什么**：见 [STATUS.md 的 §8「下一步与交接」](STATUS.md)——工作树是 **1.10.1**
+（patch：导出/导入第一次有了两个宿主里的窗口（W13 / W14）+ 十一个包的「点击 × 建筑」桥
++ 两处宿主修复；**公开 API 一行没动**，快照除首行版本号外逐字节不变。
+上一版 1.10.0 是引擎侧那一半：信封 + 校验和 + 尺寸闸 + "坏输入绝不弄坏能用的存档"的
+12 类失败语义，**存档格式一个字没改**，见
 [SAVE_TRANSFER_PLAN](engine/docs/SAVE_TRANSFER_PLAN.md)。
 1.9.0 是**纪元内的阶段**：`EraStage` + `EraDefinition.Stages` + `EraSystem.Stage` +
 `EraView` 的阶段六字段，试点只有公司包 5/8/8 段，**一行数值都没改**；
@@ -540,7 +549,8 @@ Console.WriteLine(ApiVersion.AssemblyVersion);  // 1.10.0.0
 `UpgradeCategories` + `GameContent.UpgradesForBuilding` + `BuildingView.UpgradeIds`；
 1.7.0 是那条线之外的纯新增 `GameSnapshot.ModeName`。
 结局的落定条件那三次改动（定时 → 被展示过 → **被答完**）各配了一次 minor 升版与快照再生成），
-**发布还没走**：
-打包 / 打 tag / 推送 / 看 CI 是下一轮的第一件事；再往后是二周目界面（要先定语义）
+**这一版的发布走到打 tag 为止**：
+打包产物与两个 exe 实跑都验过（原文见 [RELEASING](engine/docs/RELEASING.md) §6），
+**推送与看 CI 还没做**（提交与 tag 一起推）；再往后是二周目界面（要先定语义）
 与 `PackageId` 打包元数据。1.2.1 / 1.3.0 / 1.4.0 是怎么发的（含发布流程与实际执行记录）
 见 [engine/docs/RELEASING.md](engine/docs/RELEASING.md)。

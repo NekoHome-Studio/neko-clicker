@@ -1925,7 +1925,7 @@ section("24. 存档的导出 / 导入窗口（入口 / 复制 / 下载 / 导入�
     '  "FormatVersion": 1,',
     '  "PackId": "neko",',
     '  "SaveVersion": 1,',
-    '  "FrameworkVersion": "1.10.0",',
+    '  "FrameworkVersion": "1.10.1",',
     '  "Checksum": "sha256:deadbeef",',
     '  "Save": "{\\"Version\\":1,\\"Cookies\\":1234.5}"',
     "}",
@@ -1939,7 +1939,7 @@ section("24. 存档的导出 / 导入窗口（入口 / 复制 / 下载 / 导入�
     别的包: "这份存档是内容包「cafe」的，当前会话是「neko」——两个包的建筑 / 升级 id 不一样，灌进来只会得到一份这个包答不上的存档，所以拒绝导入。磁盘上原来的存档与备份都没有被动过。",
     被改过: "校验和对不上（信封里写的是 sha256:deadbeef…，这份内容的实际值是 sha256:1234abcd…）——文本被改动或被截断过。请整份重新复制一次。",
   };
-  const IMPORT_OK = "已导入：内容包「neko」｜存档格式 1｜框架 1.10.0｜当前会话与 neko.json 都已换成这一份｜已核对包标识（neko）｜存档里的 id 这个包全都认识。";
+  const IMPORT_OK = "已导入：内容包「neko」｜存档格式 1｜框架 1.10.1｜当前会话与 neko.json 都已换成这一份｜已核对包标识（neko）｜存档里的 id 这个包全都认识。";
 
   /** 一个按命令回答的宿主桩：export 给文本，import 按内容给上面那几句。 */
   const reply = (body) => {

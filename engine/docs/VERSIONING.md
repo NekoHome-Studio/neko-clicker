@@ -5,13 +5,21 @@
 > 一句话版本：**从 1.0.0 起，公开 API 只增不改。** 删改任何公开成员都必须升主版本号，
 > 而且这条规矩不是靠自觉——有测试守着。
 >
-> 当前版本 **1.10.0**：minor——公开 API **只增不改**：新增 `SaveTransfer` 类型、
+> 当前版本 **1.10.1**：**patch——公开 API 一行没动**（依据下面 §2 那张表）。
+> 这一版把 `[未发布]` 桶结掉了，内容全在**内容包 / 宿主 / 前端 / 工具**里：
+> 存档的导出/导入第一次有了两个宿主里的入口（Web 的「存档」窗口、终端宿主的 `E` / `I` 路径提示），
+> 十一个包各补一条「点击 × 建筑」的桥，外加两条宿主修复与一条工具链守卫。
+> 公开表面没动的证据是快照本身：`engine/core/PublicApi.txt` 与 `v1.10.0` 是**同一个 blob**
+> （`014bd15e…`），重新生成之后**除首行 `version=` 外逐字节相同**（**2026 行**不变）。
+> 细节见 [CHANGELOG](../../CHANGELOG.md) 的 1.10.1。
+>
+> 上一版 **1.10.0**：minor——公开 API **只增不改**：新增 `SaveTransfer` 类型、
 > `SaveTransferKind` 枚举、`SaveTransferResult` 记录，以及 `SaveManager` 上的
 > `PackId` 属性、`Export()` / `Import(string)` 两个方法。
-> **它同时是一处与"版本"有关的事实澄清**：这次新增的 `SaveTransfer.FormatVersion`
+> **它同时是一处与"版本"有关的事实澄清**：那次新增的 `SaveTransfer.FormatVersion`
 > 是**信封自己**的格式版本，与存档格式版本（`SaveSerializer.CurrentVersion`，仍然 `1`）
 > 是两条独立的轴；**存档格式一个字都没改、没有新增任何 `ISaveMigration`**，
-> 所以 §6 第 3 条（存档兼容由迁移机制负责）在这次改动里**没有被动过**。
+> 所以 §6 第 3 条（存档兼容由迁移机制负责）在那次改动里**没有被动过**。
 > 细节与判别力见 [CHANGELOG](../../CHANGELOG.md) 的 1.10.0、
 > [SAVE_TRANSFER_PLAN](SAVE_TRANSFER_PLAN.md)。
 >
@@ -71,9 +79,9 @@
 单一事实来源是 **`Directory.Build.props` 里的 `<Version>`**：
 
 ```xml
-<Version>1.10.0</Version>
-<AssemblyVersion>1.10.0.0</AssemblyVersion>
-<FileVersion>1.10.0.0</FileVersion>
+<Version>1.10.1</Version>
+<AssemblyVersion>1.10.1.0</AssemblyVersion>
+<FileVersion>1.10.1.0</FileVersion>
 ```
 
 这个值会同时成为程序集版本、文件版本，以及 `ApiVersion.Current` 报告的版本。
@@ -89,8 +97,8 @@
 ```csharp
 using NekoClicker.Core;
 
-Console.WriteLine(ApiVersion.Current);        // "1.10.0"
-Console.WriteLine(ApiVersion.AssemblyVersion); // 1.10.0.0
+Console.WriteLine(ApiVersion.Current);        // "1.10.1"
+Console.WriteLine(ApiVersion.AssemblyVersion); // 1.10.1.0
 Console.WriteLine(ApiVersion.Major);           // 1
 ```
 
@@ -160,7 +168,8 @@ engine/core/PublicApi.txt     ← 公开表面的逐项清单（行数随公开�
                                 EraSystem.Stage 一族 + EraView 的阶段六字段；
                                 1.10.0 加了 SaveTransfer / SaveTransferKind /
                                 SaveTransferResult + SaveManager 的三个成员，
-                                所以现在是 2026 行）
+                                所以现在是 2026 行；1.10.1 是一行没动的 patch，
+                                所以仍然是 2026 行）
 ```
 
 它被**嵌进 `NekoClicker.Core.dll`**，随 dll 一起走。任何拿到这个 dll 的宿主都能断言
