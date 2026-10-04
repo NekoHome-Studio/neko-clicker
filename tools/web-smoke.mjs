@@ -21,8 +21,9 @@
 // 覆盖边界（诚实）: 它证明的是"真的被执行过的路径不抛异常"。没被执行到的分支
 // （`if (!pill) return` 这类防御）只有 node --check 的语法保证。
 //
-// 这个脚本**从 2026-10 起进了 tools/build.ps1**（也进了 CI）：一条 202 条断言（2026-10-04 起；
-// §26 的「等高」之前是 199 条、§27「批量档位下的总价」之前是 193 条、
+// 这个脚本**从 2026-10 起进了 tools/build.ps1**（也进了 CI）：一条 203 条断言（2026-10-04 起；
+// §26 的「富余高度钉在最后一行」之前是 202 条、§26 的「等高」之前是 199 条、
+// §27「批量档位下的总价」之前是 193 条、
 // §25「缩放适配」与 §26「两栏对齐」之前是 162 条、
 // 第 24 节「存档的导出/导入窗口」之前是
 // 135 条）、其中 210 行
@@ -2430,10 +2431,13 @@ section("25. 缩放适配：视口单位、相对尺寸、断点（结构性可�
 //
 // 这一节守的是**结构**：页签行与面板各自是 main 的网格项、两张卡片从同一行开始、
 // 两块卡片的**高度**由它们自己 opt in 拉伸（下沿因此也落在同一条线上）、
+// 拉伸多出来的高度**钉在 hero 的最后一行上**（`.meta` 拿 `margin-top: auto`
+// 落在内容盒的下沿 —— 只把空留在卡片底部的话，人看到的就是"内容没有触底"）、
 // 单栏时那套落位必须被重置（否则 `grid-column: 2` 会造出隐式的第 2 列），
-// 而且单栏里"拉伸"必须无从发生（一列一项 ⇒ 行高就是内容高，不会造出大空盒）。
-// ⚠️ 它证明不了"看上去对齐了 / 看上去一样高了" —— 那个桩件没有布局引擎，
-// 最后一眼只能是人看的（OPEN_WORK H3）。
+// 而且单栏里"拉伸"必须无从发生（一列一项 ⇒ 行高就是内容高，不会造出大空盒，
+// 钉底边那一句在那里因此是恒等变换）。
+// ⚠️ 它证明不了"看上去对齐了 / 看上去一样高了 / 最后一行真的贴到底了" ——
+// 那个桩件没有布局引擎，最后一眼只能是人看的（OPEN_WORK H3）。
 section("26. 两栏对齐：左栏大框与右栏卡片的上沿 ＋ 下沿");
 {
   const blockOf = (selector) =>
@@ -2451,6 +2455,29 @@ section("26. 两栏对齐：左栏大框与右栏卡片的上沿 ＋ 下沿");
     return "";
   };
   const REM = 16;
+
+  /**
+   * hero 那一段 HTML 里**直接子元素**的 class（按文档顺序）。
+   * 只为"`.meta` 是不是最后一个"这一条断言服务，所以不引 HTML 解析器：注释先剥掉
+   * （注释里的标签在浏览器里不存在），再扫一遍开始 / 结束标签、按深度只收第 0 层的。
+   * app.css 那一套规则里读不出 DOM，而"钉的是最后一行"这句话只在 DOM 上才成立 ——
+   * 这一条因此必须从 `index.html` 里读，不能从 CSS 里推。
+   */
+  const heroChildren = (sectionHtml) => {
+    const source = sectionHtml.replace(/<!--[\s\S]*?-->/g, "");
+    const voidTags = new Set(["area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source", "track", "wbr"]);
+    const found = [];
+    let depth = 0;
+    for (const m of source.matchAll(/<(\/?)([a-zA-Z][\w-]*)((?:"[^"]*"|[^>"])*?)(\/?)>/g)) {
+      const closing = m[1];
+      const name = m[2];
+      const attrs = m[3];
+      if (closing) { depth--; continue; }
+      if (depth === 0) found.push(/\bclass="([^"]*)"/.exec(attrs)?.[1] ?? name.toLowerCase());
+      if (!voidTags.has(name.toLowerCase()) && m[4] !== "/") depth++;
+    }
+    return found;
+  };
 
   check(".panels 这层壳被去掉了（display: contents），页签行与面板因此各自是 main 的网格项", () => {
     if (!/\.panels \{ display: contents; \}/.test(cssRules)) {
@@ -2495,29 +2522,117 @@ section("26. 两栏对齐：左栏大框与右栏卡片的上沿 ＋ 下沿");
     }
   });
 
-  // 等高只许改**外框**：多出来的高度必须落在卡片内部的**底部**，内容一个像素都不许被抻长
-  // （否则大猫会被拉长、按钮会变高、渐变会被摊开）。两条前提，缺一不可：
+  // 等高之后富余的高度**落在哪一行**（人 2026-10-04 的第二句话：「框里的内容没有触底」）：
+  // 只把空留在卡片底部，看到的就是"卡片长高了一截、内容还停在上面"。这一版把 hero 的
+  // **最后一行**（`.meta`：成就 / 立场 / 存档，自带一条 `border-top` 分隔线，本来就长成
+  // 一条页脚）钉在内容盒的下沿 —— `margin-top: auto`。逐条核过：
   //   · `.hero` 是 flex 纵列，`justify-content` 没写过（默认 flex-start）；
   //   · 里面**没有**任何子项声明过 `flex-grow` / `flex: <正数>`（全表唯一一条是存档窗口的
-  //     `.sheet-row .ghost`，不在 hero 里）。
-  check("拉伸多出来的空间落在底部：hero 是 flex 纵列、且没有任何子项会长（没有 flex-grow）", () => {
+  //     `.sheet-row .ghost`，不在 hero 里）——富余不会被某个元素吃掉；
+  //   · 那一句**恰好一条**、钉在 `.meta` 上，而 `.meta` 自己没有被写死一条 `margin-top`
+  //     （两条叠起来才是"双份间距"）；
+  //   · hero 的 `gap` 还在：`auto` 只吃**扣掉 gap 之后**的富余，所以那一行的最小间距不变。
+  // 桩件证明不了"富余为 0 时 auto 解析成 0"（没有布局引擎），能证明的就是上面这四条
+  // 结构事实；"看上去真的贴到底了吗"见 H3。
+  check("富余高度钉在底边上：`.meta` 是 hero 的最后一行，且唯一那条 margin-top: auto 就钉在它身上（没有子项会长）", () => {
     const hero = blockOf(".hero");
     if (!/display:\s*flex/.test(hero) || !/flex-direction:\s*column/.test(hero)) {
       throw new Error(`.hero 不再是 flex 纵列，空白落哪儿要重新判断：<${hero.trim()}>`);
     }
     if (/justify-content/.test(hero)) {
-      throw new Error(`.hero 新写了 justify-content：内容会被推开（我们要的是"内容留在顶部、空在底部"）:<${hero.trim()}>`);
+      throw new Error(`.hero 新写了 justify-content：富余会被摊进每一段间距（我们要的是"只钉最后一行"）:<${hero.trim()}>`);
+    }
+    if (!/gap:\s*1rem/.test(hero)) {
+      throw new Error(`.hero 的 gap 没了：钉底边那一句只吃"扣掉 gap 之后"的富余，gap 是那一行的最小间距`);
     }
     const growers = [...cssRules.matchAll(/([^{}]+)\{([^}]*)\}/g)]
       .filter(([, , body]) => /(?:^|;)\s*flex\s*:\s*[1-9]/.test(body) || /flex-grow\s*:\s*(?!0\b)[\d.]+/.test(body))
       .map(([, selector]) => selector.trim());
     const inHero = growers.filter((s) => /\.(hero|big-cat|buffs|era|counter|rates|meta)\b/.test(s));
     if (inHero.length > 0) {
-      throw new Error(`hero 里有子项会把空白吃掉（它会长高，而不是让空留在底部）：${inHero.join(" ；")}`);
+      throw new Error(`hero 里有子项会把空白吃掉（它会长高，而不是让富余钉到底边）：${inHero.join(" ；")}`);
     }
     if (growers.length === 0) throw new Error("全表一条 flex-grow 都没有了——这条守卫的判据（拿它当反例清单）已经失效");
     if (!/aspect-ratio:\s*1\s*\/\s*\.72/.test(blockOf(".big-cat"))) {
       throw new Error("大猫不再由 aspect-ratio ＋ 宽度定高：容器变高时它会被抻长");
+    }
+
+    // 钉底边那一句：全表只许有**一处** `margin-top: auto`，而且必须钉在 hero 的最后一行上。
+    const pins = [...cssRules.matchAll(/([^{}]+)\{([^}]*margin-top\s*:\s*auto[^}]*)\}/g)]
+      .map(([, selector]) => selector.trim());
+    if (pins.length !== 1) {
+      throw new Error(`钉底边那一句期望恰好一条（"富余钉在最后一行"只该有一个出处），实际 ${pins.length} 条：${pins.join(" / ") || "(一条都没有 —— 富余又成了卡片底部的一段空白)"}`);
+    }
+    if (!/^\.hero\s*>\s*\.meta$/.test(pins[0])) {
+      throw new Error(`钉错了元素：<${pins[0]}> —— 钉的必须是 hero 的最后一行（`.meta`）`);
+    }
+    // ⚠️ 这里**不能**用 `blockOf(".meta")`：它按 `\.meta \{` 找，而 `.hero > .meta {`
+    // 里正好含这个子串（那一句写在前面），于是读到的会是钉底边那一条自己。
+    // 按**选择器完全相等**扫，才问得到"`.meta` 自己那条规则里还有没有 `margin-top`"。
+    const metaBodies = [...cssRules.matchAll(/([^{}]+)\{([^}]*)\}/g)]
+      .filter(([, selector]) => selector.trim() === ".meta")
+      .map(([, , body]) => body);
+    if (metaBodies.length !== 1) throw new Error(`选择器正好是 .meta 的规则有 ${metaBodies.length} 条（期望 1 条）`);
+    const fixedMargin = /margin-top\s*:[^;]+/.exec(metaBodies[0]);
+    if (fixedMargin) {
+      throw new Error(`.meta 自己又写了一条 ${fixedMargin[0].trim()} —— 与 .hero > .meta 的 auto 叠加就是双份间距`);
+    }
+
+    // "最后一行"是 **DOM 事实**、不是 CSS 事实：`index.html` 里 `.meta` 之后再加一块，
+    // 被钉住的就不再是底边那一行了（那时该钉的是新加的那一块）。
+    const heroHtml = /<section class="hero">([\s\S]*?)<\/section>/.exec(html)?.[1] ?? "";
+    if (!heroHtml) throw new Error("index.html 里找不到 <section class=\"hero\">");
+    const children = heroChildren(heroHtml);
+    if (children[children.length - 1] !== "meta") {
+      throw new Error(`hero 的直接子元素最后一个是 <${children[children.length - 1] ?? "(空)"}>，不是 .meta：${children.join(" / ")}`);
+    }
+  });
+
+  // 钉底边那一句**不许**被两条断点碰：`max-height: 34rem` 那一档 hero 仍然被
+  // `align-self: stretch` 拉伸（它只关吸顶），有没有富余由右栏决定；`max-width: 34rem`
+  // （手机）那一档 hero 在单栏里不可能有富余，只该改内边距与间距。两处都不写
+  // hero / `.meta` 的主轴 · 对齐 · 外边距，也不重复一遍 `.meta` 的规则 —— 于是
+  // "没有富余时恒等变换"这个前提不会被某条断点偷偷推翻。
+  check("两条断点都不碰「钉最后一行」：又宽又矮只关吸顶、手机只改内边距与间距", () => {
+    /**
+     * 某一节里所有"选择器提到 .hero / .meta"的规则（`[选择器, 规则体]`）。
+     * ⚠️ 要先剥掉 `@media (...) {` 那层壳：直接扫整节的话，第一个 `{` 被当成
+     * `@media` 的前奏、规则体会被截在第一个 `}` 上（这两节里没有嵌套的媒体查询）。
+     */
+    const heroRulesIn = (sectionCss) => {
+      const open = sectionCss.indexOf("{");
+      const body = open < 0 ? "" : sectionCss.slice(open + 1, sectionCss.lastIndexOf("}"));
+      return [...body.matchAll(/([^{}]+)\{([^}]*)\}/g)]
+        .map(([, selector, rule]) => [selector.trim(), rule])
+        .filter(([selector]) => /\.hero\b|\.meta\b/.test(selector));
+    };
+
+    const short = mediaOf("(max-height: 34rem)");
+    if (!short) throw new Error("找不到 max-height: 34rem 那一节");
+    const shortHero = heroRulesIn(short);
+    if (!shortHero.some(([, body]) => /position:\s*static/.test(body))) {
+      throw new Error("又宽又矮那一节没关吸顶：hero 比可视高度还高时下半截永远够不着");
+    }
+    for (const [selector, body] of shortHero) {
+      for (const prop of ["align-self", "align-items", "margin-top", "justify-content"]) {
+        if (new RegExp(`[;{\\s]${prop}\\s*:`).test(body)) {
+          throw new Error(`又宽又矮那一节的 <${selector}> 写了 ${prop}：它只该关吸顶（position: static），等高与钉底边都由基规则说了算`);
+        }
+      }
+    }
+
+    const narrow = mediaOf("(max-width: 34rem)");
+    if (!narrow) throw new Error("找不到 max-width: 34rem 那一节");
+    const narrowHero = heroRulesIn(narrow);
+    if (!narrowHero.some(([, body]) => /gap:\s*\.75rem/.test(body))) {
+      throw new Error("手机那一节不再管 hero 的内边距与间距了——这条守卫的判据没了（它盯的是「那一节只碰这两样」）");
+    }
+    for (const [selector, body] of narrowHero) {
+      for (const prop of ["align-self", "margin-top", "justify-content"]) {
+        if (new RegExp(`[;{\\s]${prop}\\s*:`).test(body)) {
+          throw new Error(`手机那一节的 <${selector}> 写了 ${prop}：窄屏上要做的是内边距与间距（见那一节的注释），主轴那一套留给基规则`);
+        }
+      }
     }
   });
 
