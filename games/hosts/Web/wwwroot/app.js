@@ -1265,8 +1265,22 @@ function updateBuildingRow(node, building) {
   setText(node.name, unlocked ? `${building.icon} ${building.name}` : `🔒 ${building.name}`);
 
   if (unlocked) {
-    const bulk = building.batchAmount > 1 ? ` ×${building.batchAmount}` : "";
-    setText(node.price, `${state.currencyIcon} ${number(building.batchPrice)}${bulk}`);
+    // 批量档位（×10 / ×100 / 买满）下那个数**是整批的总价**：服务端已经按价格曲线把这一批
+    // 加起来算好（`BuildingView.BatchPrice` = `Pricing.BulkPrice(...)`，等比数列求和），
+    // 前端一个乘号都没做、也不许做（价格倍率与曲线只在引擎里）。
+    //
+    // 但它此前只跟着一个 `×10` 记号：`🐟 7.58千 ×10` 读起来像"单价 7.58千 × 10"，
+    // 而真值恰好相反（单价 373、整批 7.58千）。人 2026-10-04 报的就是这一处
+    // （「x10 和 x100 在切换之后要显示总价」）——数一直是对的，缺的是**说清它是总价**。
+    // 所以批量档位把「总价」写出来，并把原来的 `×N` 记号收进括号（`×N` 还要留着：
+    // 「买满」那一档的 N 是服务端按钱包算出来的可变数量，页面上别处没有这个数）。
+    //
+    // `batchAmount == 1` 一个字不加：一个的总价就是单价，写「×1 总价」只是噪音。
+    // 这与批量档位那一行的高亮是同一件事的两种说法，不冲突（那一行说的是"按哪一档买"）。
+    const batch = building.batchAmount > 1
+      ? `${priceText(building.batchPrice)} 总价（×${building.batchAmount}）`
+      : priceText(building.batchPrice);
+    setText(node.price, `${state.currencyIcon} ${batch}`);
   } else {
     setText(node.price, `${building.unlockHint}（${percent(building.unlockProgress)}）`);
   }
@@ -1732,6 +1746,22 @@ function unitRate(value) {
   const abs = Math.abs(value);
   if (abs >= 1000) return number(value);
   return value.toFixed(abs >= 1 ? 3 : 5).replace(/\.?0+$/, "");
+}
+
+/**
+ * 价格的格式化：`number()` 的口径，只补一条 —— **一个正的价格不许被抹成 `0`**。
+ *
+ * 平时就是 `number()`（≥1000 走中文量级缩写，那正是价格行要的）。但 `number()` 在 1000
+ * 以下取整，而价格可以小于 1（价格倍率降过价的建筑；批量的总价在早期也可能是 0.4 这种数）
+ * ——那时 `number(0.4)` 是 `"0"`，而卡片上写「🐟 0 总价（×10）」是一句明确的假话，
+ * 与 `unitRate()` 存在的理由逐字相同（0.225/s 画成 0/s）。所以这一档退回小数口径。
+ *
+ * 名字不叫 `price`：app.js 里有十几处局部量叫 `price`（DOM 节点、升级行……），
+ * 同名函数会被那些局部量遮住——读起来像是同一件东西，而它不是。
+ */
+function priceText(value) {
+  const text = number(value);
+  return text === "0" && value > 0 ? unitRate(value) : text;
 }
 
 /**
