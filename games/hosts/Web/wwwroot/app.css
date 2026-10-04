@@ -17,6 +17,13 @@
   --bad: #ff8f8f;
   --gold: #ffd479;
   --radius: 12px;
+  /* 金猫唯一的尺寸来源：宽 / 高 / 字号都从它算出来，而 app.js 用
+     `calc(100% - var(--golden-cat-size))` 把它的位置夹在视口里 —— 位置与尺寸永远是
+     同一个数，JS 因此不必量任何布局。下限 2.75rem = 44px（与 .choices-pill / .sheet-ok
+     同一个触屏下限），上限 3.4rem = 54.4px（与加这一行之前逐像素相同）。
+     12vmin 在 ≥453px 宽的视口上就取到上限，所以桌面与手机横屏都是原来那只金猫；
+     只有更窄的屏（≤453px）才把它收小，免得它占掉半个视野。 */
+  --golden-cat-size: clamp(2.75rem, 12vmin, 3.4rem);
   font-family: "Segoe UI", "Microsoft YaHei UI", system-ui, sans-serif;
 }
 
@@ -25,9 +32,15 @@
 body {
   margin: 0;
   padding: 1.25rem clamp(1rem, 4vw, 3rem) 2rem;
-  background: radial-gradient(1200px 600px at 20% -10%, #241f38 0%, var(--bg) 60%);
+  /* 这块背景光是全文件唯一"尺寸写死的图形"：1200×600 的椭圆在 320~683px 宽的视口里
+     （手机 / 200% 缩放）有一大半在屏幕外，看到的是被切掉的一块。位置、颜色、两个色标
+     一个没动，只让椭圆的尺寸跟着视口走 —— 宽屏上仍取到原来的 1200×600。 */
+  background: radial-gradient(min(1200px, 120vw) min(600px, 90vh) at 20% -10%, #241f38 0%, var(--bg) 60%);
   color: var(--fg);
+  /* 100vh 在手机上等于**大视口**（地址栏藏起来时的高度），于是 body 永远比看得见的
+     区域高一截、多出一段空滚。dvh 跟当前可见视口走；旧浏览器丢掉的是后面那一行。 */
   min-height: 100vh;
+  min-height: 100dvh;
   line-height: 1.6;
 }
 
@@ -60,7 +73,11 @@ h1 { font-size: 1.35rem; margin: 0; }
 main {
   display: grid;
   grid-template-columns: minmax(20rem, 26rem) 1fr;
-  gap: 1.5rem;
+  /* 两个方向的间距分开写：列间距仍是 1.5rem；行间距 1.25rem 接的是 `.panels` 原来那条
+     `gap: 1.25rem` —— 也就是"页签行与卡片之间"原本就有的那一档（见下面那张卡片的落位）。
+     单栏时 hero 与页签之间因此从 1.5rem 变成 1.25rem（−4px），换来的是一处真对齐。 */
+  column-gap: 1.5rem;
+  row-gap: 1.25rem;
   align-items: start;
   /* 超宽屏的行宽上限。原先这里没有上限，而 footer 早就有 max-width: 60rem——
      于是 2560px 宽的屏上右栏卡片正文一行能到约 1964px（按 .card .name 的 .92rem 算是
@@ -72,9 +89,11 @@ main {
   margin-inline: auto;
 }
 
-@media (max-width: 62rem) {
-  main { grid-template-columns: 1fr; }
-}
+/* ⚠️ 断点与落位都不在这里：`main` 的单栏那条、两栏的落位、以及 hero 在单栏 / 又宽又矮时
+   不吸顶这两条，全部写在下面「两栏的对齐 ＋ 短视口」那一节里。理由只有一个 ——
+   **媒体查询不加特异度、只看源顺序**：那条 `.hero { position: sticky }` 的基规则在
+   「左栏」一节（也就是这一节的**后面**），把 `position: static` 写在它前面等于没写。
+   这一轮第一版就是那么写的，`web-smoke` 的 §26 现在专门盯着这条顺序（见那一节）。 */
 
 /* ---------------------------------------------------------------- 左栏 */
 
@@ -89,6 +108,58 @@ main {
   gap: 1rem;
   position: sticky;
   top: 1rem;
+}
+
+/* ---------------------------------------------------------------- 两栏的对齐 ＋ 短视口
+   ⚠️ **位置是这条规则的一部分**：这一整节必须写在 `.hero` 的基规则（上面那条
+   `position: sticky`）**之后**。媒体查询不加特异度，断点与覆盖靠的是源顺序 ——
+   把 `position: static` 写在 `position: sticky` 前面等于没写。这个文件里已经有过一次
+   同样的教训（`.counter` 那条 `font-size` 一次都没生效过，因为 `#cookies` 自己有字号），
+   而这一轮的第一版**又踩了一次**：把下面两条断点写在 `main` 后面（`< .hero`），
+   于是单栏时的落位重置被后面的基规则盖掉、`grid-column: 2` 赢了，单栏会造出隐式的第 2 列。
+   `web-smoke` §26 现在有两个用例专门盯这个顺序。
+
+   ── 对齐：左栏那张大框（.hero）与右栏那张**卡片**（.panel）的上沿必须在同一条线上 ──
+
+   原先不是：`.panels` 是一个 flex 列（页签 + 面板），而 hero 与这个列同属网格的第 1 行，
+   于是 hero 的边框上沿落在 y=0（与**页签按钮**齐平），而右栏那张卡片的上沿还要再往下
+   让出一整行页签 —— 页签按钮高 2.2rem（.86rem × 1.6 行高 ＋ .35rem×2 内边距 ＋ 2px 边框
+   = 35.2px），再加行间距 1.25rem，左边就比右边高出 **55.2px**。两块卡片本身几乎一样高
+   （hero ≈ 493px；列表满时 .panel = 1rem 上内边距 + 36.3px 表头 + 26rem 列表 + 1.1rem
+   下内边距 ≈ 486px），所以那 55.2px 是这张页面上最显眼的一条错位。
+
+   修法只用网格本身，不引入任何写死的偏移：`display: contents` 把 `.panels` 这层壳去掉，
+   页签行与面板因此直接成为 main 的网格项，可以各自占一行 —— 页签仍在右栏、仍在最上面
+   （位置一个像素没动），两张卡片则都从第 2 行开始，上沿严格落在同一条线上。
+   `align-items: start` 让两块各自保持内容高度（不拉伸、不等高，那是另一件事）。 */
+.panels { display: contents; }
+.tabs { grid-area: 1 / 2; }
+.hero { grid-area: 2 / 1; }
+/* 面板只钉列、不钉行：第 1 行被页签占了，自动排布于是把第一张**可见**的面板放在第 2 行
+   —— 与 .hero 同一行。（其余面板都是 .hidden = display: none，不参与排布；
+   将来若真有两张同时可见，第二张会落到第 3 行而不是叠在第 2 行上。） */
+.panel { grid-column: 2; }
+
+@media (max-width: 62rem) {
+  main { grid-template-columns: 1fr; }
+
+  /* 单栏：两栏那套显式落位全部作废。**必须重置**——`.tabs` 的 `grid-area: 1 / 2`
+     在只有一列的网格里会造出一个隐式的第 2 列，整个页面会缩成一半宽。
+     回到自动排布之后，顺序与今天一样：hero / 页签 / 面板（DOM 顺序）。 */
+  .tabs, .hero, .panel { grid-area: auto; }
+
+  /* 单栏时 hero 在列表**上面**（两者在同一个滚动流里），吸顶会一直把列表压在它下面
+     —— 这正是 ≤34rem 那节写的理由，但"单栏"的分界是 62rem，于是 544~992px 这一段
+     （平板、分屏窗口、200% 缩放下的笔记本）此前一直漏着。窄屏那节里的同名一条
+     因此成了历史的重复项，见文件末尾的说明。 */
+  .hero { position: static; }
+}
+
+/* 又宽又矮的视口（超宽屏 + 200% 缩放：2560×1080 → 1280×540）仍是两栏，但 hero 的
+   内容比整个可视高度还高，吸顶时它的下半截永远够不着，不如让它跟着页面走。
+   34rem = 544px 是按 hero 静止时的高度（约 513px：大猫 300 + 大数字 + 两行 meta）定的。 */
+@media (max-height: 34rem) {
+  .hero { position: static; }
 }
 
 .counter {
@@ -109,7 +180,11 @@ main {
 .rates { display: flex; gap: 1rem; color: var(--dim); font-size: .9rem; font-variant-numeric: tabular-nums; }
 
 .big-cat {
-  width: 100%;
+  /* 上限 26rem 与两栏布局里 hero 列的上限（minmax(20rem, 26rem)）是同一个数。
+     62rem 以下 main 变单栏，而这里原本是 width: 100% —— 于是 900px 宽的窗口拿到一只
+     662px 高的大猫（(900 − 2×40) × .72），比大多数窗口的可视高度还高，"图形跟着窗口
+     无限变大"就是这么来的。手机（≤34rem）上 26rem 比屏幕还宽，那一行依旧是占满。 */
+  width: min(100%, 26rem);
   aspect-ratio: 1 / .72;
   border: 1px solid var(--line);
   border-radius: var(--radius);
@@ -180,7 +255,10 @@ kbd {
 
 /* ---------------------------------------------------------------- 右栏 */
 
-.panels { display: flex; flex-direction: column; gap: 1.25rem; }
+/* ⚠️ 原先这里是一条 `.panels { display: flex; flex-direction: column; gap: 1.25rem }`。
+   它现在是 `display: contents`，与 `.tabs` / `.hero` / `.panel` 的落位一起写在
+   「主布局」那节的「两栏的对齐」里 —— 理由也在那里（页签行与面板必须各自成为
+   main 的网格项，两张卡片才能从同一行开始）。这里不再重复声明。 */
 
 .panel {
   background: var(--bg-soft);
@@ -194,6 +272,10 @@ kbd {
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
+  /* 标题 + 批量档位在 320px 宽里放不下：四个档位按钮按 1em/字符 的上界要 223.7px
+     （11 个字符 × .78rem + 4×16px 内边距 + 4×2px 边框 + 3×.3rem 间隙），而这一行
+     减去「建筑」两个字（30.4px）与 1rem 间隙只剩 187.2px —— 差 36.5px 就得折行。 */
+  flex-wrap: wrap;
   margin-bottom: .75rem;
 }
 
@@ -206,7 +288,8 @@ kbd {
 .panel > p.muted { margin: 0 0 .6rem; }
 .list > p.muted { margin: 0; }
 
-.batch { display: flex; gap: .3rem; }
+/* 折行是必需的而不只是保险：见 .panel-head 上算的那 36.5px。 */
+.batch { display: flex; flex-wrap: wrap; gap: .3rem; }
 
 .batch button {
   background: transparent;
@@ -221,7 +304,17 @@ kbd {
 .batch button:hover { color: var(--fg); }
 .batch button.active { background: var(--accent-deep); border-color: var(--accent-deep); color: #1a1220; font-weight: 600; }
 
-.list { display: flex; flex-direction: column; gap: .4rem; max-height: 26rem; overflow-y: auto; }
+/* 26rem = 416px：在 384px 高的视口里（200% 缩放的 1366×768、横过来的手机）
+   一个面板的列表比整个窗口还高，面板头与页签都被顶出视野。再跟一条视口高度上限，
+   宽屏上仍然取到 26rem（1080p 的 60dvh = 648px > 416px）。dvh 那条写在后面。 */
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: .4rem;
+  max-height: min(26rem, 60vh);
+  max-height: min(26rem, 60dvh);
+  overflow-y: auto;
+}
 
 /* ---------------------------------------------------------------- 卡片 */
 
@@ -573,6 +666,10 @@ kbd {
   align-items: center;
   gap: .4rem;
   min-height: 44px; /* 触屏目标下限，与窄屏那节的 .tabs button 同一个理由 */
+  /* 条数多了文本会变长，而它是 fixed + translateX(-50%)：没有上限时
+     320px 宽里它会从两侧同时溢出（居中元素溢出时两头都出界）。 */
+  max-width: calc(100vw - 2rem);
+  overflow-wrap: anywhere;
   padding: .5rem 1.1rem;
   border-radius: 999px;
   border: 1px solid var(--accent-deep);
@@ -604,9 +701,13 @@ kbd {
 
 .golden-cat {
   position: absolute;
-  width: 3.4rem;
-  height: 3.4rem;
-  font-size: 1.9rem;
+  /* 宽 / 高 / 字号都从 --golden-cat-size 来。emoji 是字体里的**矢量**图形：跟着字号
+     缩放、任何缩放比下都不模糊，也不需要 devicePixelRatio（页面里没有 <img>、
+     没有 canvas、没有 background-image: url(...)，见 §25 那条守卫）。
+     字号是尺寸的 .56 倍 —— 与改动前的 1.9rem / 3.4rem 逐像素相同。 */
+  width: var(--golden-cat-size);
+  height: var(--golden-cat-size);
+  font-size: calc(var(--golden-cat-size) * .56);
   line-height: 1;
   border-radius: 50%;
   border: 2px solid var(--gold);
@@ -629,6 +730,11 @@ kbd {
   left: 50%;
   bottom: 1.5rem;
   transform: translate(-50%, 1rem);
+  /* 提示条上会出现**引擎写的整句话**（"钱不够"、存档失败、导入失败的原因），
+     长度不由前端定。给它一个跟着视口走的宽度上限，并让折不断的 token 就地折行
+     —— 中文会自然折行，长英文名 / 连写的 id 不会。 */
+  max-width: min(32rem, calc(100vw - 2rem));
+  overflow-wrap: anywhere;
   background: var(--card-hi);
   border: 1px solid var(--line);
   color: var(--fg);
@@ -705,9 +811,11 @@ footer code { background: #00000055; padding: .05rem .3rem; border-radius: 4px; 
    内边距、间距、以及 `position: sticky` 的 hero 都没跟着变，手机（<480px）
    完全没有适配。这里补的是手机上真正会咬人的那几处。 */
 @media (max-width: 34rem) {
-  /* sticky 的 hero 在单栏布局里会一直粘在顶上，往下翻列表时可能占掉整屏。 */
+  /* ⚠️ 这里原先写着 `position: static`。那条理由与作用都成立，但**位置不对**：
+     "单栏"的分界是 62rem 而不是 34rem，544~992px 这一段因此一直漏着。现在它写在
+     62rem 那节里（`max-height: 34rem` 那一条管又宽又矮的视口）。这里只剩手机上
+     真正独有的一档：内边距与间距。 */
   .hero {
-    position: static;
     padding: 1rem;
     gap: .75rem;
   }
@@ -725,6 +833,13 @@ footer code { background: #00000055; padding: .05rem .3rem; border-radius: 4px; 
   /* 日志行：三列在窄屏会把正文挤成一条，时间挪到正文下面。 */
   .note { grid-template-columns: 1.2rem 1fr; }
   .note-time { grid-column: 2; }
+
+  /* 立场轴：基规则里 9rem 的固定首列在 320px 里要吃掉 sheet 内宽的 58%
+     （内宽 246.4px 里的 144px），留给进度条只剩 46.4px——那是这张 sheet 上
+     唯一"看得见偏向"的图形。首列改成相对量之后：320px 下首列 93.6px、
+     进度条 96.8px（正是 §17 在 400px 上守的那个 96px 下限）。
+     4.5rem 的下限保证立场名（2~4 个汉字）不会被压成一个字一列。 */
+  .stance { grid-template-columns: minmax(4.5rem, 38%) 1fr 2.5rem; }
 
   /* 大数字在小屏上要收一点，否则会把自己挤出容器。
      ⚠️ 这一条原先写的是 `.counter { font-size: clamp(1.4rem, 7vw, 2rem) }`——它**一次都没生效过**：
@@ -774,15 +889,35 @@ footer code { background: #00000055; padding: .05rem .3rem; border-radius: 4px; 
   padding: 1.2rem 1.3rem 1.1rem;
   box-shadow: 0 18px 60px #000000aa;
   animation: sheet-in .18s ease-out;
-  /* The only way out is the button at the bottom: without a height cap and scroll it is unreachable on short windows. */
+  /* 唯一的出路是底部那颗按钮：没有高度上限与滚动，短窗口里它够不着。
+     上限用**视口单位**，而且必须跟当前可见视口走：100vh 在手机上等于大视口
+     （地址栏藏起来时的高度），于是 sheet 会比看得见的区域高一截，而 .sheet-layer 是
+     place-items: center 的居中容器——居中元素两头溢出时，上面那一截在滚动容器里
+     是**够不着**的（底部溢出能滚到，顶部溢出不能）。dvh 写在 vh 之后：旧浏览器丢掉
+     的就是后面那一行，退回原来的行为而不是没有上限。 */
   max-height: calc(100vh - 2rem);
+  max-height: calc(100dvh - 2rem);
   overflow-y: auto;
 }
 
 /* 标题行：标题 / 说明 / 收起按钮。表态那张比离线收益高得多（选项 + 立场轴 + 结局），
    所以它多一个常驻右上角的收起按钮——底部的"收起，稍后再答"可能落在折叠线以下，
-   而"这东西怎么关掉"不该需要先滚动才找得到。 */
+   而"这东西怎么关掉"不该需要先滚动才找得到。
+
+   既然 .sheet 自己是滚动容器，这一行就必须是**吸顶**的：否则内容一滚，唯一的 × 就
+   跟着滚出去了（"需要滚动才找得到"正是上面那句要避免的事）。做法是上内边距搬进这一行
+   ＋一条等量的负上外边距：视觉位置一个像素不变、下面的内容也不动，但这一行从此盖住了
+   sheet 顶部那条内边距带，滚动的内容不会从 × 上面穿过去。
+   底色取的是 .sheet 渐变本身的第一个色标（#2a2135）——**没有引入新颜色**，而且标题的
+   --accent / --dim 与它本来就是页面上已有的一对（对比度那 117 对里就有它）；
+   渐变在这一行的高度（约 63px）上才走过不到 1%，接缝差不到 1/255。 */
 .sheet-head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  margin-top: -1.2rem;
+  padding-top: 1.2rem;
+  background: #2a2135;
   display: flex;
   align-items: center;
   justify-content: space-between;

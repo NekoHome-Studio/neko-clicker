@@ -1031,8 +1031,16 @@ function renderGoldenCookie() {
     button.className = "golden-cat";
     button.textContent = "🐱";
     button.title = `抓住它！（还剩 ${cat.remainingSeconds.toFixed(1)} 秒）`;
-    button.style.left = `${Math.min(92, Math.max(2, cat.x * 100))}%`;
-    button.style.top = `${Math.min(88, Math.max(2, cat.y * 100))}%`;
+    // 位置写成 CSS 自己的钳制，而不是 JS 里的一个光秃秃的百分比上限：
+    // 92% / 88% 是**按"金猫很小"推出来的**（0.08 × 视口 > 3.4rem 只在 ≥680px 宽时成立），
+    // 于是在 320px 宽的手机上它会算到 294 + 54 = 349px——右侧 29px 连同它的点击目标一起
+    // 落到视口之外；384px 高的视口里同样会往下掉出去。
+    // `min(92%, calc(100% - var(--golden-cat-size)))` 把这件事交给布局：尺寸与位置来自
+    // 同一个变量（app.css 的 :root），视口多窄、缩放多大都不会出界，JS 一行也不用量。
+    const place = (value, percent) =>
+      `min(${Math.max(2, Math.min(percent, value * 100))}%, calc(100% - var(--golden-cat-size)))`;
+    button.style.left = place(cat.x, 92);
+    button.style.top = place(cat.y, 88);
     button.addEventListener("click", () => send("grabGolden", { id: cat.instanceId }));
     host.append(button);
   }

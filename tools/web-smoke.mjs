@@ -21,8 +21,9 @@
 // 覆盖边界（诚实）: 它证明的是"真的被执行过的路径不抛异常"。没被执行到的分支
 // （`if (!pill) return` 这类防御）只有 node --check 的语法保证。
 //
-// 这个脚本**从 2026-10 起进了 tools/build.ps1**（也进了 CI）：一条 162 条断言（2026-10-04 起；
-// 第 24 节「存档的导出/导入窗口」之前是 135 条）、其中 210 行
+// 这个脚本**从 2026-10 起进了 tools/build.ps1**（也进了 CI）：一条 193 条断言（2026-10-04 起；
+// §25「缩放适配」与 §26「两栏对齐」之前是 162 条、第 24 节「存档的导出/导入窗口」之前是
+// 135 条）、其中 210 行
 // 专为"复发过五次"的 bug 类而写的套件，不进自动闸门就等于没有守卫。
 // 需要 node —— 没有 node 时 build.ps1 **故意红**（并给出 -SkipWebSmoke 这条人工出路），
 // 而不是静默跳过：静默跳过正是它当初缺闸门时的那种失效形态。
@@ -2126,6 +2127,382 @@ section("24. 存档的导出 / 导入窗口（入口 / 复制 / 下载 / 导入�
     const live = [...body.matchAll(/<[^>]*\brole="status"[^>]*>/g)].map((m) => m[0]);
     const ids = live.map((tag) => /\bid="([^"]+)"/.exec(tag)?.[1] ?? "(无 id)").sort();
     eq(ids.join(", "), "import-result, toast", "实时区域");
+  });
+}
+
+// 25. 缩放适配（浏览器 / 系统缩放、窄视口、以及"图形"本身）。
+//
+// 为什么这一节只有这样几条：这个桩件**没有布局引擎**（见文件头部），量不出溢出、折行
+// 与真实尺寸。所以它守的是"把缩放写进规则里"这件事本身——视口单位、相对尺寸、断点、
+// 以及不许出现的 px 字号；"看起来对不对 / 到底会不会溢出"只有人眼能判，登记在
+// OPEN_WORK 的 **H3** 里（这一节不假装能替它）。
+// 两条纪律与 §17 一致：数字只从 app.css / app.js / index.html 的**文本**里读（读不到就红），
+// 算出来的预算把每个中间量都印进消息里 —— 红的时候差额直接看得到，不用再猜。
+section("25. 缩放适配：视口单位、相对尺寸、断点（结构性可查的部分）");
+{
+  const REM = 16;
+  const blockOf = (selector) =>
+    new RegExp(selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + " \\{([\\s\\S]*?)\\}").exec(cssRules)?.[1] ?? "";
+  /** 取一整节媒体查询（从 `@media <query> {` 到与它配对的 `}`）；找不到返回空串。 */
+  const mediaOf = (query) => {
+    const marker = `@media ${query} {`;
+    const start = cssRules.indexOf(marker);
+    if (start < 0) return "";
+    let depth = 0;
+    for (let i = start + marker.length - 1; i < cssRules.length; i++) {
+      if (cssRules[i] === "{") depth++;
+      else if (cssRules[i] === "}" && --depth === 0) return cssRules.slice(start, i + 1);
+    }
+    return "";
+  };
+
+  // ---- A. 缩放本身不许被挡住；文字一律相对量 ----
+
+  check("viewport meta 不挡缩放（没有 maximum-scale / user-scalable=no），并且有 width=device-width", () => {
+    const meta = /<meta name="viewport" content="([^"]*)"/.exec(html)?.[1] ?? "";
+    if (!meta) throw new Error("index.html 里找不到 viewport meta");
+    if (/maximum-scale|user-scalable\s*=\s*no|minimum-scale/i.test(meta)) {
+      throw new Error(`viewport 里出现了挡缩放的指令：<${meta}>`);
+    }
+    if (!/width=device-width/.test(meta)) throw new Error(`没有 width=device-width：<${meta}>`);
+  });
+
+  check("app.css 里一处 px 字号都没有（文字全部跟着浏览器缩放 / 用户字号设置走）", () => {
+    const declarations = [...cssRules.matchAll(/font-size\s*:\s*([^;{}]+)/g)].map((m) => m[1].trim());
+    const px = declarations.filter((value) => /[0-9.]+px/.test(value));
+    if (px.length > 0) throw new Error(`这些 font-size 用了 px（px 不跟用户的默认字号走）：${px.join(" / ")}`);
+    // 空集也满足上面那条，所以再钉一条"这条守卫确实在扫东西"。
+    if (declarations.length < 30) throw new Error(`只数到 ${declarations.length} 处 font-size（期望 ≥30）——这条守卫变得没有内容了`);
+  });
+
+  check("px 只出现在有先例的那批属性上（边框 / 圆角 / 轮廓 / 阴影 / 触屏下限 / 背景光的兜底 / 动画位移）", () => {
+    // 这些 px 是**故意的**：1px 的边与 2px 的轮廓是"发丝线"，跟着 rem 放大会变粗；
+    // 44px 的触屏下限是**物理尺寸**（CSS px ≈ 1/96 英寸），它不该跟字号一起长大；
+    // 12px 的圆角与 8/30px 的阴影是形状与装饰；background 里的 1200px/600px 是 min() 的
+    // 兜底上界（这里只允许它出现在 min() 里，见下面单独一条）；transform 是 float 动画。
+    const allowed = new Set([
+      "--radius", "background", "border", "border-top", "border-bottom", "border-bottom-width",
+      "border-left", "border-radius", "outline", "outline-offset", "box-shadow",
+      "min-width", "min-height", "transform",
+    ]);
+    const found = new Set();
+    for (const m of cssRules.matchAll(/([a-z-]+)\s*:\s*([^;{}]*)/g)) {
+      if (/[0-9.]+px/.test(m[2])) found.add(m[1]);
+    }
+    const unexpected = [...found].filter((prop) => !allowed.has(prop));
+    if (unexpected.length > 0) throw new Error(`这些属性上没有先例地用了 px：${unexpected.join("、")}`);
+  });
+
+  check("min-width / min-height 上的 px 只有触屏下限那几个数（2 / 40 / 44）", () => {
+    const values = [...cssRules.matchAll(/min-(?:width|height)\s*:\s*([0-9.]+)px/g)].map((m) => Number(m[1]));
+    const odd = [...new Set(values)].filter((v) => ![2, 40, 44].includes(v));
+    if (odd.length > 0) throw new Error(`不在允许的触屏下限里：${odd.join("、")}px`);
+    if (values.length < 8) throw new Error(`只数到 ${values.length} 处 min-* 的 px（期望 ≥8）——守卫变得没有内容了`);
+  });
+
+  // ---- B. 视口单位：vh 是**大**视口，dvh 才是"现在看得见的那块" ----
+
+  check(".sheet 的高度上限用视口单位，且 dvh 写在 vh 之后（旧浏览器退回 vh，而不是没有上限）", () => {
+    const block = blockOf(".sheet");
+    const vh = block.search(/max-height:\s*calc\(100vh - 2rem\)/);
+    const dvh = block.search(/max-height:\s*calc\(100dvh - 2rem\)/);
+    if (vh < 0) throw new Error(".sheet 没有 vh 那条回退");
+    if (dvh < 0) throw new Error(".sheet 没有 dvh：手机上 100vh = 地址栏藏起来时的高度，sheet 会比看得见的区域高一截");
+    if (dvh < vh) throw new Error("dvh 写在了 vh 前面：不认 dvh 的浏览器会拿到后面那条，回退就白写了");
+  });
+
+  check("body 的 min-height 同样两条都写、顺序同上", () => {
+    const block = blockOf("body");
+    const vh = block.search(/min-height:\s*100vh/);
+    const dvh = block.search(/min-height:\s*100dvh/);
+    if (vh < 0 || dvh < 0) throw new Error(`vh ${vh < 0 ? "缺" : "在"} / dvh ${dvh < 0 ? "缺" : "在"}`);
+    if (dvh < vh) throw new Error("dvh 写在了 vh 前面");
+  });
+
+  check(".list 的高度上限跟着视口收（min(26rem, 60dvh)）", () => {
+    const block = blockOf(".list");
+    if (!/max-height:\s*min\(26rem,\s*60vh\)/.test(block)) throw new Error(".list 没有 vh 那条回退");
+    if (!/max-height:\s*min\(26rem,\s*60dvh\)/.test(block)) {
+      throw new Error(".list 没有 dvh：26rem = 416px，在 384px 高的视口里比整个窗口还高");
+    }
+  });
+
+  check("背景光不再是尺寸写死的图形（1200×600 在窄屏上有一大半在屏幕外）", () => {
+    const block = blockOf("body");
+    if (!/radial-gradient\(min\(1200px,\s*120vw\)\s+min\(600px,\s*90vh\)/.test(block)) {
+      throw new Error(`body 的背景椭圆不是相对的：<${/background:[^;]+/.exec(block)?.[0] ?? "(没有 background)"}>`);
+    }
+  });
+
+  // ---- C. 断点：声称支持的宽度 / 高度都要有 ----
+
+  check("两个宽度断点都在（62rem 单栏、34rem 手机）", () => {
+    for (const query of ["(max-width: 62rem)", "(max-width: 34rem)"]) {
+      if (!cssRules.includes(`@media ${query}`)) throw new Error(`没有 ${query} 这一节`);
+    }
+  });
+
+  check("多一条高度断点（又宽又矮：2560×1080 在 200% 缩放下是 1280×540）", () => {
+    const short = mediaOf("(max-height: 34rem)");
+    if (!short) throw new Error("没有高度断点：hero 会比可视高度还高，吸顶时下半截永远够不着");
+    if (!/\.hero \{[^}]*position:\s*static/.test(short)) throw new Error("高度断点里没有把 hero 的吸顶关掉");
+  });
+
+  check("单栏（≤62rem）时 hero 不吸顶 —— \"单栏\"的分界是 62rem，不是 34rem", () => {
+    // 注意：这里不能用 blockOf(".hero") —— 62rem 那节本身就在基规则**之前**，
+    // 它里面那条 `.hero { position: static }` 才是 cssRules 里的第一处匹配。
+    if (!/\.hero \{[^}]*position:\s*sticky/.test(cssRules)) {
+      throw new Error("没有任何一处 .hero 声明 sticky——这条守卫在证明一条不存在的规则");
+    }
+    const single = mediaOf("(max-width: 62rem)");
+    if (!single) throw new Error("找不到 62rem 那一节");
+    if (!/\.hero \{[^}]*position:\s*static/.test(single)) {
+      throw new Error("62rem 那节没有关掉吸顶：544~992px（平板 / 分屏 / 200% 缩放的笔记本）单栏时列表会被压在 hero 下面");
+    }
+    const narrow = mediaOf("(max-width: 34rem)");
+    if (/\.hero \{[^}]*position:\s*static/.test(narrow)) {
+      throw new Error("34rem 那节又写了一遍同一条：同一条理由留在两处，只会让人以为另一处没有");
+    }
+  });
+
+  check("sheet 的标题行吸顶，且负上外边距与 .sheet 的上内边距等量（视觉位置一个像素不变）", () => {
+    const head = blockOf(".sheet-head");
+    if (!/position:\s*sticky/.test(head) || !/top:\s*0/.test(head)) {
+      throw new Error(".sheet-head 不吸顶：.sheet 自己滚动，内容一滚唯一的 × 就滚出去了");
+    }
+    if (!/background:\s*#2a2135/.test(head)) throw new Error("吸顶的标题行没有底色：滚动的内容会从它上面穿过去");
+    const sheetPad = Number(/padding:\s*([\d.]+)rem/.exec(blockOf(".sheet"))?.[1]);
+    const pull = Number(/margin-top:\s*-([\d.]+)rem/.exec(head)?.[1]);
+    const pad = Number(/padding-top:\s*([\d.]+)rem/.exec(head)?.[1]);
+    if (!Number.isFinite(sheetPad) || sheetPad !== pull || pull !== pad) {
+      throw new Error(`对不上：.sheet 上内边距 ${sheetPad}rem / 标题行 -${pull}rem ＋ ${pad}rem（两者必须相等，否则标题会跳一下）`);
+    }
+  });
+
+  // ---- D. "图形"本身：相对尺寸、位置由 CSS 钳制、没有栅格化 ----
+
+  check("大猫的宽有上限，且那个上限就是两栏布局里 hero 列的上限（26rem）", () => {
+    const cat = blockOf(".big-cat");
+    if (!/width:\s*min\(100%,\s*26rem\)/.test(cat)) {
+      throw new Error(`大猫仍然是"窗口多宽它就多宽"：<${/width:[^;]+/.exec(cat)?.[0] ?? "(没有 width)"}>`);
+    }
+    const heroColumn = /grid-template-columns:\s*minmax\([^)]*\)\s+1fr/.exec(blockOf("main"))?.[0] ?? "";
+    if (!heroColumn.includes("26rem")) throw new Error(`两栏那一列的上限不再是 26rem：<${heroColumn}>`);
+  });
+
+  check("金猫：宽 / 高 / 字号都从 --golden-cat-size 来，字号是它的 .56 倍", () => {
+    if (!/--golden-cat-size:\s*clamp\([^)]*\)/.test(blockOf(":root"))) {
+      throw new Error(":root 里没有 --golden-cat-size，或者它不是相对的（clamp）");
+    }
+    const cat = blockOf(".golden-cat");
+    for (const prop of ["width", "height"]) {
+      if (!new RegExp(`${prop}:\\s*var\\(--golden-cat-size\\)`).test(cat)) {
+        throw new Error(`${prop} 不是从 --golden-cat-size 来的（尺寸与位置必须是同一个数）`);
+      }
+    }
+    if (!/font-size:\s*calc\(var\(--golden-cat-size\)\s*\*\s*\.56\)/.test(cat)) {
+      throw new Error("字号不是尺寸的 .56 倍：改动前是 1.9rem / 3.4rem = .559，别让它另立一个数");
+    }
+  });
+
+  check("金猫的位置由 CSS 钳制（min(92%, calc(100% - var(--golden-cat-size)))，不是光秃秃的百分比）", () => {
+    if (!/button\.style\.left = place\(cat\.x, 92\)/.test(appSource) || !/button\.style\.top = place\(cat\.y, 88\)/.test(appSource)) {
+      throw new Error("那两行位置不再走 place() 了");
+    }
+    const clamp = /min\([^\n]*calc\(100% - var\(--golden-cat-size\)\)[^\n]*/.exec(appSource)?.[0] ?? "";
+    if (!clamp) {
+      throw new Error("找不到 calc(100% - var(--golden-cat-size))：光秃秃的 92% 在 320px 下算到 294+54 = 349px，右侧 29px 连同点击目标一起出界");
+    }
+  });
+
+  check("提示条与药丸的宽度跟着视口收（fixed + 居中：溢出时两头都出界）", () => {
+    if (!/max-width:\s*min\(32rem,\s*calc\(100vw - 2rem\)\)/.test(blockOf(".toast"))) {
+      throw new Error(".toast 没有跟着视口走的宽度上限");
+    }
+    if (!/overflow-wrap:\s*anywhere/.test(blockOf(".toast"))) throw new Error(".toast 里折不断的 token 会直接顶出去");
+    if (!/max-width:\s*calc\(100vw - 2rem\)/.test(blockOf(".choices-pill"))) {
+      throw new Error(".choices-pill 没有跟着视口走的宽度上限");
+    }
+  });
+
+  check("面板头允许折行（300~360px 的窗口里标题与控件同一行放不下）", () => {
+    if (!/flex-wrap:\s*wrap/.test(blockOf(".panel-head"))) throw new Error(".panel-head 不许折行");
+  });
+
+  check("页面里没有栅格化图形，也没有人需要 devicePixelRatio", () => {
+    const rasters = [
+      ["<img>", html, /<img\b/i],
+      ["<canvas>", html, /<canvas\b/i],
+      ["background-image: url(...)", cssRules, /background-image:\s*url\(/],
+    ];
+    for (const [what, text, pattern] of rasters) {
+      if (pattern.test(text)) {
+        throw new Error(`出现了 ${what}：栅格图形要自己按 devicePixelRatio 处理尺寸（150%~400% 缩放会模糊）——处理它，或者把这一条与那段处理一起更新`);
+      }
+    }
+    if (/devicePixelRatio/.test(appSource)) {
+      throw new Error("app.js 用了 devicePixelRatio：今天页面里没有栅格图形，不需要手工换算");
+    }
+  });
+
+  check("两处 emoji 都是相对字号（大猫的 🐱 是 clamp，金猫的 🐱 是那个变量）", () => {
+    const icon = blockOf(".big-cat span:first-child");
+    if (!/font-size:\s*clamp\([^)]*\)/.test(icon)) throw new Error(`大猫的图标字号不是 clamp：<${icon.trim()}>`);
+    if (!/font-size:\s*calc\(var\(--golden-cat-size\)/.test(blockOf(".golden-cat"))) {
+      throw new Error("金猫的 🐱 不是从 --golden-cat-size 算出来的");
+    }
+  });
+
+  // ---- F. 这次真踩到的一条：漏一个 `*/` 会静默吞掉后面的规则 ----
+  // （2026-10-04 就在这一轮里发生过：`.panels` 那条注释漏了 `*/`，于是 `.panel` 与
+  //   `.panel-head` 两条规则整段进了注释——浏览器里面板当场变形，而**原始字节里
+  //   花括号是配平的**，所以"括号平衡"这种检查只有在剥掉注释之后才看得见。）
+
+  check("app.css 的注释都是闭合的（/* 与 */ 一样多）", () => {
+    const opens = (css.match(/\/\*/g) ?? []).length;
+    const closes = (css.match(/\*\//g) ?? []).length;
+    if (opens !== closes) throw new Error(`/* 出现 ${opens} 次、*/ 出现 ${closes} 次——有一个注释没闭合，它后面的规则会被吞掉`);
+  });
+
+  check("剥掉注释之后 app.css 的花括号仍然配平", () => {
+    const opens = (cssRules.match(/\{/g) ?? []).length;
+    const closes = (cssRules.match(/\}/g) ?? []).length;
+    if (opens !== closes) throw new Error(`剥掉注释后 ${opens} 个 { / ${closes} 个 }——有选择器或规则被注释吞了`);
+  });
+
+  // ---- E. 预算：把 CSS 里那些数拿来算一遍（每个中间量都印在消息里） ----
+
+  check("320px（本仓库支持的最窄一档）下建筑行仍放得下：两个 44px 按钮之后卡片 ≥100px", () => {
+    const bodyPad = Math.max(16, Math.min(0.04 * 320, 48)); // clamp(1rem, 4vw, 3rem)，320px 时取到 1rem
+    const mainPad = 0.6 * REM;    // ≤34rem 那节的 main 内边距
+    const columnGap = 0.35 * REM; // .building 的列间距（两处）
+    const available = 320 - 2 * bodyPad - 2 * mainPad;
+    const left = available - (2 * 44 + 2 * columnGap);
+    if (left < 100) throw new Error(`卡片只剩 ${left.toFixed(1)}px（可用 ${available.toFixed(1)} − 按钮 ${(2 * 44 + 2 * columnGap).toFixed(1)}）`);
+  });
+
+  check("320px 下立场轴的进度条 ≥96px（窄屏那条把 9rem 的固定首列变成相对量）", () => {
+    const stance = /\.stance \{([^}]*)\}/.exec(mediaOf("(max-width: 34rem)"))?.[1] ?? "";
+    if (!/minmax\(4\.5rem,\s*38%\)/.test(stance)) {
+      throw new Error(`窄屏那节没有把立场轴的首列改成相对量：<${stance.trim() || "(没有 .stance 规则)"}>`);
+    }
+    const outer = Math.min(26 * REM, 320 - 2 * REM); // .sheet 宽 + .sheet-layer 的 1rem 内边距
+    const inner = outer - 2 * 1.3 * REM;             // .sheet 的左右内边距
+    const first = Math.max(4.5 * REM, Math.min(0.38 * inner, 9 * REM));
+    const bar = inner - first - 2.5 * REM - 2 * 0.5 * REM;
+    if (bar < 96) throw new Error(`进度条只剩 ${bar.toFixed(1)}px（sheet 内宽 ${inner.toFixed(1)} − 首列 ${first.toFixed(1)} − 权重列 ${(2.5 * REM).toFixed(1)} − 间隙 ${REM}）`);
+  });
+
+  check("320px 下批量档位这一行确实放不下（算出差额），所以 .batch 必须折行", () => {
+    const glyph = 0.78 * REM;
+    const chars = 2 + 3 + 4 + 2;                     // "×1" / "×10" / "×100" / "买满"（1em/字符的上界）
+    const batch = chars * glyph + 4 * 0.5 * REM * 2 + 4 * 2 + 3 * 0.3 * REM;
+    const panelInner = 320 - 2 * REM - 2 * 0.6 * REM - 2 * 1.1 * REM; // body / main / panel 的内边距
+    const room = panelInner - 2 * 0.95 * REM - 1 * REM;               // 减去「建筑」两个字与 .panel-head 的 1rem 间隙
+    if (batch <= room) {
+      throw new Error(`算出来放得下（${batch.toFixed(1)} ≤ ${room.toFixed(1)}px）——这条预算的前提变了，折行那两条要重新判断`);
+    }
+    if (!/flex-wrap:\s*wrap/.test(blockOf(".batch"))) {
+      throw new Error(`差 ${(batch - room).toFixed(1)}px 却不让折行（档位要 ${batch.toFixed(1)}px，只有 ${room.toFixed(1)}px）`);
+    }
+  });
+
+  check("单栏窗口里的\"巨猫\"有上限：900px 宽的窗口原本会得到一只 596px 高的大猫", () => {
+    const bodyPad = Math.max(16, Math.min(0.04 * 900, 48)); // 4vw = 36px
+    const full = 900 - 2 * bodyPad;
+    const capped = Math.min(full, 26 * REM);
+    if (!/width:\s*min\(100%,\s*26rem\)/.test(blockOf(".big-cat"))) {
+      throw new Error(`大猫会拿到 ${full}px 宽 = ${(full * 0.72).toFixed(1)}px 高，比多数窗口的可视高度还高`);
+    }
+    if (capped * 0.72 >= full * 0.72) throw new Error("上限没起作用");
+  });
+}
+
+// 26. 两栏的对齐：左栏那张大框（.hero）与右栏那张卡片（.panel）的上沿。
+//
+// 这一节守的是**结构**：页签行与面板各自是 main 的网格项、两张卡片从同一行开始、
+// 单栏时那套落位必须被重置（否则 `grid-column: 2` 会造出隐式的第 2 列）。
+// ⚠️ 它证明不了"看上去对齐了" —— 那个桩件没有布局引擎，最后一眼只能是人看的（OPEN_WORK H3）。
+section("26. 两栏对齐：左栏大框与右栏卡片的上沿");
+{
+  const blockOf = (selector) =>
+    new RegExp(selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + " \\{([\\s\\S]*?)\\}").exec(cssRules)?.[1] ?? "";
+  /** 取一整节媒体查询（同 §25；这里再写一遍是因为 §17 / §25 的辅助函数都是块级的）。 */
+  const mediaOf = (query) => {
+    const marker = `@media ${query} {`;
+    const start = cssRules.indexOf(marker);
+    if (start < 0) return "";
+    let depth = 0;
+    for (let i = start + marker.length - 1; i < cssRules.length; i++) {
+      if (cssRules[i] === "{") depth++;
+      else if (cssRules[i] === "}" && --depth === 0) return cssRules.slice(start, i + 1);
+    }
+    return "";
+  };
+  const REM = 16;
+
+  check(".panels 这层壳被去掉了（display: contents），页签行与面板因此各自是 main 的网格项", () => {
+    if (!/\.panels \{ display: contents; \}/.test(cssRules)) {
+      throw new Error(`.panels 还不是 display: contents：<${blockOf(".panels").trim() || "(没有 .panels 规则)"}>`);
+    }
+    if (/\.panels \{ display: flex/.test(cssRules)) throw new Error("旧的 flex 版本还在（同一件事有两个出处）");
+  });
+
+  check("页签钉在第 1 行 / 两张卡片都从第 2 行开始（上沿因此严格落在同一条线上）", () => {
+    if (!/\.tabs \{ grid-area: 1 \/ 2; \}/.test(cssRules)) throw new Error("页签没有被钉在「第 1 行第 2 列」");
+    if (!/\.hero \{ grid-area: 2 \/ 1; \}/.test(cssRules)) throw new Error("左栏大框没有被钉在「第 2 行第 1 列」——它就又和页签齐平了");
+    if (!/\.panel \{ grid-column: 2; \}/.test(cssRules)) {
+      throw new Error("面板只该钉列（行交给自动排布：第 1 行被页签占了，第一张可见面板才会落在第 2 行）");
+    }
+    // 卡片同行的前提：第 2 行里两块都从行首开始。
+    if (!/align-items:\s*start/.test(blockOf("main"))) throw new Error("main 不是 align-items: start：两块会被拉伸成等高，那是另一件事");
+  });
+
+  check("单栏（≤62rem）时那套落位全部重置为 auto（不重置会造出隐式的第 2 列，整页缩成一半宽）", () => {
+    const single = mediaOf("(max-width: 62rem)");
+    if (!single) throw new Error("找不到 62rem 那一节");
+    if (!/\.tabs, \.hero, \.panel \{ grid-area: auto; \}/.test(single)) {
+      throw new Error("62rem 那节没有重置 .tabs / .hero / .panel 的落位");
+    }
+  });
+
+  check("顺序：`.hero` 的 `position: static` 写在基规则 `position: sticky` **之后**（媒体查询不加特异度，只看源顺序）", () => {
+    const base = /\.hero \{[^}]*position:\s*sticky/.exec(cssRules);
+    if (!base) throw new Error("找不到基规则里的 sticky");
+    const statics = [...cssRules.matchAll(/\.hero \{[^}]*position:\s*static/g)];
+    if (statics.length < 2) throw new Error(`只找到 ${statics.length} 处 position: static（期望两处：单栏 ＋ 又宽又矮）`);
+    const early = statics.filter((m) => m.index < base.index);
+    if (early.length > 0) {
+      const lines = early.map((m) => cssRules.slice(0, m.index).split("\n").length).join(" / ");
+      throw new Error(`${early.length} 处写在基规则之前（第 ${lines} 行）：会被后面那条 sticky 盖掉，等于没写`);
+    }
+  });
+
+  check("顺序：单栏那套落位重置写在两栏落位**之后**（否则 `grid-column: 2` 赢，造出隐式的第 2 列）", () => {
+    const place = /\.tabs \{ grid-area: 1 \/ 2; \}/.exec(cssRules);
+    const reset = /\.tabs, \.hero, \.panel \{ grid-area: auto; \}/.exec(cssRules);
+    if (!place || !reset) throw new Error("两栏落位或单栏重置不见了");
+    if (reset.index < place.index) {
+      const at = (i) => cssRules.slice(0, i).split("\n").length;
+      throw new Error(`重置在第 ${at(reset.index)} 行、落位在第 ${at(place.index)} 行——同特异度时后者赢，单栏会变成两列`);
+    }
+  });
+
+  check("量一下这次改动消掉的那条错位：页签行高 ＋ 行间距（数字全部从 CSS 常量算出来）", () => {
+    const tab = blockOf(".tabs button");
+    const fontSize = Number(/font-size:\s*([\d.]+)rem/.exec(tab)?.[1]);
+    const padding = Number(/padding:\s*([\d.]+)rem/.exec(tab)?.[1]);
+    const lineHeight = Number(/line-height:\s*([\d.]+)/.exec(blockOf("body"))?.[1]);
+    const rowGap = Number(/row-gap:\s*([\d.]+)rem/.exec(blockOf("main"))?.[1]);
+    for (const [what, value] of [["页签字号", fontSize], ["页签内边距", padding], ["body 行高", lineHeight], ["行间距", rowGap]]) {
+      if (!Number.isFinite(value)) throw new Error(`读不出${what}——这条预算的前提变了`);
+    }
+    const tabHeight = fontSize * REM * lineHeight + 2 * padding * REM + 2; // ＋上下各 1px 边框
+    const offset = tabHeight + rowGap * REM;
+    if (offset < 40) throw new Error(`算出来的错位只有 ${offset.toFixed(1)}px——这条守卫的前提变了`);
+    if (!/\.hero \{ grid-area: 2 \/ 1; \}/.test(cssRules)) {
+      throw new Error(`左栏大框的上沿比右栏那张卡片高 ${offset.toFixed(1)}px（页签 ${tabHeight.toFixed(1)} ＋ 行间距 ${(rowGap * REM).toFixed(1)}）`);
+    }
   });
 }
 
