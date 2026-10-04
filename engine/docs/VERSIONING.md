@@ -246,9 +246,9 @@ git tag -a v1.0.0 -m "NekoClicker.Core 1.0.0"
 > [RELEASING](RELEASING.md)。下面是判据清单。
 
 - [ ] `pwsh -File tools/build.ps1 -Strict` 退出码 0，0 警告
-- [ ] 全部用例通过（当前 **564** 个；2026-10-04 实测）
+- [ ] 全部用例通过（当前 **567** 个；2026-10-04 实测——这行此前写的 **564** 早就不是当前值了）
 - [ ] 若这次动了 Web 宿主：`pwsh -File tools/api-test.ps1` 全部端到端检查通过（当前 65 项；脚本收尾自己核对"源码几处检查点 / 这次执行到几处"）
-- [ ] 若这次动了 Web 前端：`node tools/web-smoke.mjs` 全绿（当前 **193** 条；S1 起它也在 `-Strict` 里跑）
+- [ ] 若这次动了 Web 前端：`node tools/web-smoke.mjs` 全绿（当前 **199** 条；S1 起它也在 `-Strict` 里跑）
 - [ ] `Directory.Build.props` 的 `Version` / `AssemblyVersion` / `FileVersion` 三处一致
 - [ ] `CHANGELOG.md` 有当前版本的带日期条目，写清了兼容性影响
 - [ ] 若公开 API 有变动：快照已更新，且**确实**是有意为之

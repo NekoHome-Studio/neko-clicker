@@ -74,6 +74,48 @@ public static class ViewTests
         Check.AtMost(cat.BatchPrice, 100 + 1e-9);
     }
 
+    /// <summary>
+    /// 批量档位下 <see cref="BuildingView.BatchPrice"/> 是**整批的总价**，不是单价。<para>
+    /// 它钉的是一个"两个宿主都赖以为生、却一直没有用例正面说过"的事实：Web 建筑卡片上那个数
+    /// （`batchPrice`，批量档位下还写明「总价」，见 `tools/web-smoke.mjs` §27）与终端详情面板的
+    /// 「本次花费」（`TerminalUi.DetailLine`）都是服务端算好的这**一个**数——两个前端一个乘号都不做。
+    /// 它错了的话，两个宿主会一起把"单价"说成"总价"，而今天没有任何东西会因此变红。
+    /// </para>
+    /// <para>
+    /// 对法用的是**逐个累加未来 N 个的单价**：与 <see cref="Pricing.BulkPrice"/> 的闭式解
+    /// （等比数列求和）是两条独立的路，顺带把"整批价 **不是** 单价 ×N"也钉住了——
+    /// 价格曲线是等比增长，第 10 个比第 1 个贵。
+    /// </para>
+    /// </summary>
+    [Test]
+    public static void Snapshot_BatchModePricesTheWholeBatch()
+    {
+        GameEngine engine = TestGame.CreateNekoFunded(out _);
+        engine.BuyBuilding("curled_cat", 3); // 持有数 > 0，价格曲线才拉得开
+
+        BuildingView one = engine.Snapshot(PurchaseMode.Buy1).Buildings.First(b => b.Id == "curled_cat");
+        BuildingView ten = engine.Snapshot(PurchaseMode.Buy10).Buildings.First(b => b.Id == "curled_cat");
+        BuildingView hundred = engine.Snapshot(PurchaseMode.Buy100).Buildings.First(b => b.Id == "curled_cat");
+
+        Check.Equal(1, one.BatchAmount);
+        Check.Equal(10, ten.BatchAmount);
+        Check.Equal(100, hundred.BatchAmount);
+
+        // 单价不随档位变：跟着档位变的是"这一批要几个、一共多少钱"。
+        Check.CloseRelative(one.UnitPrice, ten.UnitPrice, 1e-12, "单价不该跟着档位变。");
+        Check.CloseRelative(one.UnitPrice, hundred.UnitPrice, 1e-12, "单价不该跟着档位变。");
+
+        BuildingDefinition definition = engine.Content.BuildingById["curled_cat"];
+        double multiplier = one.UnitPrice / Pricing.UnitPrice(definition, one.Owned, 1.0);
+
+        double byHand = 0;
+        for (int i = 0; i < 10; i++) byHand += Pricing.UnitPrice(definition, one.Owned + i, multiplier);
+        Check.CloseRelative(byHand, ten.BatchPrice, 1e-9, "×10 的批价不是这 10 个各自单价之和。");
+
+        Check.Greater(ten.BatchPrice, one.UnitPrice * 10, "×10 的批价不该等于（或小于）单价 ×10。");
+        Check.Greater(hundred.BatchPrice, ten.BatchPrice * 10, "×100 的批价不该等于（或小于）×10 的十倍。");
+    }
+
     [Test]
     public static void Snapshot_SellModeReportsRefund()
     {

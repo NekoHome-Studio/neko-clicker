@@ -21,8 +21,9 @@
 // 覆盖边界（诚实）: 它证明的是"真的被执行过的路径不抛异常"。没被执行到的分支
 // （`if (!pill) return` 这类防御）只有 node --check 的语法保证。
 //
-// 这个脚本**从 2026-10 起进了 tools/build.ps1**（也进了 CI）：一条 193 条断言（2026-10-04 起；
-// §25「缩放适配」与 §26「两栏对齐」之前是 162 条、第 24 节「存档的导出/导入窗口」之前是
+// 这个脚本**从 2026-10 起进了 tools/build.ps1**（也进了 CI）：一条 199 条断言（2026-10-04 起；
+// §27「批量档位下的总价」之前是 193 条、§25「缩放适配」与 §26「两栏对齐」之前是 162 条、
+// 第 24 节「存档的导出/导入窗口」之前是
 // 135 条）、其中 210 行
 // 专为"复发过五次"的 bug 类而写的套件，不进自动闸门就等于没有守卫。
 // 需要 node —— 没有 node 时 build.ps1 **故意红**（并给出 -SkipWebSmoke 这条人工出路），
@@ -1489,10 +1490,12 @@ section("17. 触屏下限与 400px 水平预算（CSS 常量算出来的）");
 
   check("400px 下建筑行放得下：两个 44px 按钮之后，卡片还剩 ≥100px（附实际数字）", () => {
     const left = available - toggles;
-    // 卡片自己的 min-content 上界：最长折不断的一段是价格里的 `×100`（4 个字符），
-    // 按 1em/字符这个对任何字体都成立的上界算，在最大的那一档卡片字号（.card .name = .92rem）下
-    // 是 58.9px，加上左右内边距 2×.7rem 与 2px 边框。
-    const bound = 4 * 0.92 * REM + 2 * 0.7 * REM + 2;
+    // 卡片自己的 min-content 上界：最长的一段是价格行里的**数字 + 量级**或批量记号
+    // （`2.92十亿` / `（×100）` 都是 6 个字符；`priceText` 给 1 以下的小价格留了小数，
+    // 那种最多 7 个字符，见 §27）。按 1em/字符这个对任何字体都成立的上界算，
+    // 在最大的那一档卡片字号（.card .name = .92rem）下是 103.0px，
+    // 加上左右内边距 2×.7rem 与 2px 边框。
+    const bound = 7 * 0.92 * REM + 2 * 0.7 * REM + 2;
     if (left < bound) throw new Error(`卡片只剩 ${left.toFixed(1)}px，而它最少要 ${bound.toFixed(1)}px`);
     if (left < 100) throw new Error(`只剩 ${left.toFixed(1)}px（可用 ${available.toFixed(1)} − 按钮 ${toggles.toFixed(1)}），余量不足 100px`);
   });
@@ -1816,7 +1819,7 @@ section("23. 快照里的每个字段都要有人决定过（画了，或写明�
     // ---- buildings[]：五次事故里有三次在这一行
     "buildings[].category": "服务端把分组算成了 upgradeIds；前端不解析 category 的 building: 前缀（既有规矩）",
     "buildings[].hiddenUntilUnlocked": "隐藏规则由服务端算成 isVisible / isUnlocked（Views.cs 的一行属性），前端只读结果",
-    "buildings[].unitPrice": "前端画的是真正会扣的 batchPrice；单价那一份没画（未决定）",
+    "buildings[].unitPrice": "前端画的是真正会扣的 batchPrice，批量档位下还写明「总价」（§27）；单价那一份没画（未决定）",
     "buildings[].nextMilestoneAt": "里程碑那一句今天只活在终端宿主里，§21 明确守着「页面不许画它」",
     "buildings[].nextMilestoneName": "同上：§21 守着它不许跑到阶段那一行上（未决定要不要单独画）",
     "buildings[].sellRefundRate": "页面上没有「卖出」这个动作（终端有卖模式，Web 没有）",
@@ -2503,6 +2506,78 @@ section("26. 两栏对齐：左栏大框与右栏卡片的上沿");
     if (!/\.hero \{ grid-area: 2 \/ 1; \}/.test(cssRules)) {
       throw new Error(`左栏大框的上沿比右栏那张卡片高 ${offset.toFixed(1)}px（页签 ${tabHeight.toFixed(1)} ＋ 行间距 ${(rowGap * REM).toFixed(1)}）`);
     }
+  });
+}
+
+// 27. 批量档位下的「总价」（×10 / ×100 / 买满）。
+//
+// 人 2026-10-04 报的：「x10 和 x100 在切换之后要显示总价」。
+//
+// 动手前先查清了这一件事，它决定了这一节怎么写：**卡片上那个数一直是整批的总价，不是单价。**
+// `buildings[].batchPrice` 由服务端按价格曲线算好（`GameViewFactory` 里的 `Pricing.BulkPrice`
+// 就是等比数列求和），而前端从 d238825（第一个前端提交）起画的一直是它；
+// **单价** `buildings[].unitPrice` 一次都没画过（§23 的 NOT_DRAWN 里写着这一条）。
+// 所以真问题不是"画错了数"，而是"**没说清这个数是总价**"——线上那一行此前是
+// `🐟 7.58千 ×10`，读起来正好像"单价 7.58千，×10 个"（而真值恰好相反：单价 373、整批 7.58千）。
+// 修法：批量档位把「总价」两个字写出来，原来的 `×N` 记号收进括号。
+//
+// 这一节钉四件事：批量档位写出「总价」二字；**切档位时画出来的那个数真的跟着换**（同一座建筑、
+// 同一行 DOM）；×1 一个字不加（一个的总价就是单价，多写是噪音）；小总价不被 `number()` 抹成 0。
+section("27. 批量档位下的「总价」（×10 / ×100 / 买满）");
+{
+  const batch = await loadApp(copyAs("app-batch.mjs", appSource));
+  const priceOf = () => el(batch, "buildings").children[0].children
+    .find((child) => child.classList.contains("card")).children
+    .find((child) => child.classList.contains("price")).textContent;
+
+  // 末世包那一局的真值（从真宿主的 `/api/snapshot` 上读下来的）：🧱 废墟持有 23、
+  // 单价 373.37、×10 整批 7579、×100 整批 117,431,205。
+  const ruins = {
+    id: "b1", isVisible: true, isUnlocked: true, canAfford: true, icon: "🧱", name: "废墟",
+    owned: 23, unitPrice: 373.37, batchAmount: 1, batchPrice: 373.37,
+    cpsEach: 0.225, cpsContribution: 5.2, cpsShare: 0.01,
+    unlockHint: "", unlockProgress: 1, description: "捡来的。", upgradeIds: [],
+  };
+  const frame = (seq, building) => ({ kind: "full", seq, snapshot: snapshot({ buildings: [building] }) });
+
+  await batch.push(frame(1, ruins));
+
+  check("×1：价格行与改动前逐字相同（一个的总价就是单价，不加「总价」两个字）", () => {
+    eq(priceOf(), "🐟 373", "×1 那一行");
+  });
+
+  await batch.push(frame(2, { ...ruins, batchAmount: 10, batchPrice: 7579 }));
+
+  check("×10：写出「总价」，而且那个数就是整批的总价（7.58千），不是单价 373", () => {
+    eq(priceOf(), "🐟 7.58千 总价（×10）", "×10 那一行");
+    if (priceOf().includes("373")) throw new Error(`画的是单价而不是整批总价：<${priceOf()}>`);
+  });
+
+  await batch.push(frame(3, { ...ruins, batchAmount: 100, batchPrice: 117431205 }));
+
+  check("×100：切档位之后，同一行画出来的数跟着换成整批的总价（117百万）", () => {
+    eq(priceOf(), "🐟 117百万 总价（×100）", "×100 那一行");
+  });
+
+  await batch.push(frame(4, { ...ruins, batchAmount: 37, batchPrice: 3.4e6 }));
+
+  check("买满：N 是服务端按钱包算出来的可变数量，所以 `×N` 记号还得留着（页面上别处没有它）", () => {
+    eq(priceOf(), "🐟 3.40百万 总价（×37）", "买满那一行");
+  });
+
+  await batch.push(frame(5, { ...ruins, batchAmount: 10, batchPrice: 0.4 }));
+
+  check("小总价不被抹成 0：0.4 画成「0.4」（`number()` 会把它画成「🐟 0 总价（×10）」那句假话）", () => {
+    eq(priceOf(), "🐟 0.4 总价（×10）", "小总价那一行");
+  });
+
+  await batch.push(frame(6, {
+    ...ruins, isUnlocked: false, batchAmount: 10, batchPrice: 7579,
+    unlockHint: "累计赚到 300", unlockProgress: 0.4,
+  }));
+
+  check("未解锁那一行照旧画解锁条件（不许在锁着的行上摆一个总价）", () => {
+    eq(priceOf(), "累计赚到 300（40%）", "未解锁那一行");
   });
 }
 
