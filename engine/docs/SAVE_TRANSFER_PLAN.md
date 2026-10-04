@@ -4,7 +4,11 @@
 > 本文回答三件事：**今天缺的到底是什么**（§1，带证据）、**要做的形状**（§2~§6）、
 > **分几次做、这次做到哪**（§7）。
 >
-> 状态：**方案已定，第一刀（引擎侧 API + 守卫）已落地**；Web / 终端的「窗口」是第二刀。
+> 状态：**全部落地（2026-10-04）**——第一刀（引擎侧 API + 守卫，随 **1.10.0** 发布）、
+> 第二刀（Web 的导出/导入窗口，`OPEN_WORK` 的 **W13**）、第三刀（终端的 `E` / `I` 路径提示，
+> **W14**）都在树上；实测见 §8（第一刀）与 §9（第二、三刀）。
+> 第四刀（`tools/` 里一条 `--wrap`）**仍然不做**：它等的"我手上只有旧文件"这句真人原话
+> 至今没有出现（§7）。
 > 本文是这一件事的**方案**；「现在是什么样」归 [ARCHITECTURE](ARCHITECTURE.md)，
 > 「还欠什么」归 [OPEN_WORK](OPEN_WORK.md) 的《下一步：唯一权威清单》。
 
@@ -384,18 +388,31 @@
 
 | 刀 | 内容 | 状态 |
 |---|---|---|
-| **一** | 引擎侧：`SaveTransfer`（信封 + 校验和 + 尺寸闸）、`SaveManager.PackId/Export/Import`、`SaveTransferTests` 17 条、文档、1.10.0 升版 | **✅ 本次做完** |
-| 二 | Web 窗口：`.sheet-layer` 复用、`export`/`import` 两条命令、`GameHost.PackId = _package.Id`、`web-smoke` 断言 | 待做（**必须基于那时的 `wwwroot`**——本轮它正被另一个 agent 改） |
-| 三 | 终端窗口：`E`/`I` 两个键 + 路径提示、`GameSession.Saves.PackId = package.Id` 接线 | 待做 |
+| **一** | 引擎侧：`SaveTransfer`（信封 + 校验和 + 尺寸闸）、`SaveManager.PackId/Export/Import`、`SaveTransferTests` 17 条、文档、1.10.0 升版 | **✅ 已完成**（`835f8df` 合进 `main`） |
+| 二 | Web 窗口：`.sheet-layer` 复用、`export`/`import` 两条命令、`GameHost.PackId = _package.Id`、`web-smoke` 断言 | **✅ 本轮做完**（W13；见 §9） |
+| 三 | 终端窗口：`E`/`I` 两个键 + 路径提示、`GameSession.Saves.PackId = package.Id` 接线 | **✅ 本轮做完**（W14；见 §9） |
 | 四 | `tools/` 里一条 `--wrap`：把既有的裸 `saves/<包>.json` 包成信封（给"我手上只有旧文件"的人一条路） | 待做（没有真实需求前不做。第二刀/第三刀之后若真人报"我只有旧文件"，它才变成待办） |
 
-**第二刀要接线的地方（本轮只读、没改）**：
+**第二刀接线的地方（本轮已改）**：
 
-- `GameHost.cs:117`：`new SaveManager(_engine, storage, $"{package.Id}.json")` ⇒ 补 `{ PackId = package.Id }`；
-- `GameHost` 上加 `ExportAsync()` / `ImportAsync(string)`（走 `ExecuteAsync`，与 `SaveAsync` 同一形状，
-  `GameHost.cs:317-330`），`Program.cs` 的 `DispatchAsync`（`:205`）加 `export` / `import` 两条命令；
-- `wwwroot/index.html` + `app.js`：`#save`（`index.html:108` / `app.js:1538`）改成开 sheet；
-- `GameSession.cs:95`（终端）：同样的 `PackId` 接线 + 两个键。
+- `GameHost.cs:117`：`new SaveManager(_engine, storage, $"{package.Id}.json") { PackId = package.Id }`；
+- `GameHost` 上新增 `ExportAsync()` / `ImportAsync(string)`（走 `ExecuteAsync`，与 `SaveAsync` 同一形状），
+  导出文本走 `CommandOutcome.Text` 回浏览器（新字段；`Message` 那一句仍然是给人看的话），
+  `Program.cs` 的 `DispatchAsync` 加 `export` / `import` 两条命令，`/api/command` 的正文多一个 `text` 字段；
+- `wwwroot/index.html` + `app.js`：`#save`（`index.html:108` / `app.js` 的事件段）改成开 sheet，
+  手动存档那条命令挪进 sheet 里的「立刻存一次盘」；
+- `GameSession.cs`：同样的 `PackId` 接线 + `E` / `I` 两个键 + 一行路径提示。
+
+**§7 那三个"留给人的问题"，本轮按方案的选择实现（一个都没改）**：
+
+1. **导入不结算离线收益** —— 引擎侧就是这么做的（`SaveManager.Import` 走 `Apply` 而不是
+   `DeserializeInto` 那条补发的路），本轮一个字节都没碰它。
+2. **导入之后不立刻再存一次** —— 同上：磁盘上那份**已经**是导入的字节，再存一次只会把
+   `LastSavedAt` 刷成现在、并让 `.bak` 变成同一份内容的副本。本轮也没加这一笔。
+   （**前端那一侧也没有偷偷补**：导入成功后重新生成的是**导出文本**，不是存档——它是一次读。）
+3. **Web 的导出同时给「下载 .json」** —— **给了**（方案的建议），而且它与「复制」给的是
+   **同一份字节**（校验和算在文本里，所以两条路等价）；剪贴板写不进去时它是唯一的出路，
+   而那一次失败**不会**被写成"已复制"。
 
 **明确不做**（本次）：
 
@@ -407,7 +424,8 @@
 - **不做签名/防篡改**。这是单机离线游戏，改自己的存档是玩家的正当行为，
   不构成威胁模型；`Checksum` 的职责是**发现意外损坏**，§3.4 末尾已写明这条边界。
 
-**留给人的问题**（不挡第一刀，第二刀之前要有答案）：
+**留给人的问题**（原文保留：它们是"第二刀之前要有答案"的那三条）。
+**2026-10-04 第二、三刀落地时三条全部按上面的选择实现**，实现位置的证据见本节上一段：
 
 1. 导入的**离线收益要不要结算**？本方案选的是**不结算**——
    导入是"把这局恢复成那个样子"，不是"接上那段时间"；而且导入一份三天前的存档
@@ -416,7 +434,7 @@
    再存一次只会把 `LastSavedAt` 刷新成现在（并让 `.bak` 变成同一份内容的副本）。
 3. Web 的导出要不要**同时给"下载 .json"**（而只有复制按钮）？
    本方案建议给（浏览器里"复制"在非 HTTPS 的 `127.0.0.1` 上受剪贴板权限影响），
-   但那是第二刀的实现细节。
+   但那是第二刀的实现细节。→ **给了**，而且两条路给的是同一份字节。
 
 ---
 
@@ -441,3 +459,59 @@
   所以"老存档打不开时长什么样"仍然没验过。
 - **包标识是声明不是证明**：没有验"伪造 `PackId` 会不会被识破"——它**不会**，
   这是设计（§3.4 末尾），不是缺陷。
+
+---
+
+## 9. 实测（第二刀 + 第三刀，2026-10-04）
+
+同一棵隔离 worktree（`.tmp/wt-transfer`，从 `d02ab95` 起）、同一个提交：三条命令各跑一次，
+数字全部是**测出来的**（不是加出来的）。
+
+| 项 | 数字 | 怎么来的 |
+|---|---|---|
+| 基线（`d02ab95`） | `-Strict` **556** ／ 冒烟 **135** ／ api-test **55** | 上一轮三条分支合并后复测的值（`OPEN_WORK` §0.17） |
+| 落地后 | `-Strict` **564**（+8）、冒烟 **162**（+27）、api-test **65**（+10） | 新增 `SaveTransferHostTests` 8 条、`web-smoke` 第 24 节 27 条、api-test 的导出/导入段 10 处 |
+| 公开表面 | **一个字节都没动**（`PublicApi.txt` 逐字节相同） | 本轮只改宿主与前端：`GameHost` / `CommandOutcome` / `GameSession` / `TerminalUi` / `wwwroot/*` 都不在公开快照的射程里（快照只扫 `NekoClicker.Core`）⇒ **不升版本**（理由见 `CHANGELOG` 的 `[未发布]`） |
+| 故障注入 | 3 处，各自把 1~3 条守卫变红（已全部还原） | ① 摘掉 `{ PackId = package.Id }` ⇒ 宿主用例 6/8（含"别的包的存档被收下了"那句原文）；② 导入失败也弹提示条 ⇒ 冒烟 3 条红；③ 拿掉 `#import-result` 的 `role="status"` ⇒ 实时区域计数那条红 |
+| 仓库真实 `saves/` | **本轮一个字节都没写** | 全部用例与探针都指向临时目录；`saves/*.json` 与 `artifacts/latency.txt` 的 size + mtime + sha256 见本节末尾 |
+
+**这一轮真的验到了什么**（每一条都有一条用例）：
+
+- **入口真的存在了**：点「存档」开窗口、`E`/`I` 开路径提示；`save` 这条命令**换了入口而没被删**。
+- **坏输入绝不动盘，而且是在宿主这一层动都没动**：三种坏输入（人话 / 别的包 / 校验和对不上）
+  在 C#（`SaveTransferHostTests`）与 api-test（真宿主 + 真 HTTP）两处都断言了
+  "磁盘文件逐字节不变"；api-test 那一条用的是 `Get-FileHash` 的前后对比。
+- **导入是真的三件事**（校验 → 落盘 → 应用）：api-test 里"盘上那份 = 信封里那段 `Save`（逐字节）"
+  与"导入后立刻取快照就是导入后的状态"各一条。
+- **跨包闸真的拦得住**：cafe 会话拒收 neko 的文本，消息里两个包名都在。
+- **校验和扛得住 HTTP 往返**：api-test 自己对 `Save` 字段算一次 sha256，与信封里的值逐字符相同。
+
+**没验的**（诚实边界，与 §8 同一格式）：
+
+- **真人眼睛**：Web 那张窗口**没有一双眼睛看过**（本机结构性起不了浏览器，`OPEN_WORK` §0.6）。
+  无头 DOM 桩能证明"真的跑起来了、class 与文字对、命令序列对、不抛异常"，
+  **证明不了**它好不好看：42rem 宽的那张 sheet 在窄屏上怎么折、两个文本框的高度合不合适、
+  「复制」/「下载」两个按钮并排的观感——这三样只有人能判。终端那一侧的提示行同理
+  （它至少有一个"每行恰好 N 列"的机器判据，见 `SaveTransferHostTests`）。
+- **`ApplyFailed` 那条路**：仍然不可达（§8 的一条，本轮没变）。
+- **真实跨版本存档**（W9）：仍然没做，本轮也没声称做了。
+- **剪贴板**：只验了"两条分支各自说什么"（有 API 时写进去的是同一份、没有 API 时明说失败），
+  **没有**在真浏览器里点过一次——那需要 HTTPS 或本地回环上的真实权限提示，属于真人那一步。
+
+**真实文件没被动过**（2026-10-04 15:15 量；本轮从 14:45 起）：
+
+| 文件 | size | mtime | sha256 前 16 位 |
+|---|---|---|---|
+| `saves/apocalypse.json` | 1539 | 2026-10-04 **07:01:21** | `9277E69548805BBD` |
+| `saves/cafe.json` | 840 | 2026-10-02 22:32:51 | `AE5C4DC815686EE8` |
+| `saves/lab.json` | 831 | 2026-10-02 22:32:51 | `FF7242EE8402E34A` |
+| `saves/neko.json` | 846 | 2026-10-02 22:32:51 | `0E2015E22D976956` |
+| `saves/ninelines.json` | 3718 | 2026-09-25 22:42:59 | `E4930E5AAB41ECC4` |
+| `artifacts/latency.txt` | 2695 | 2026-10-03 21:46:42 | `FB64894FCE9E0A7E` |
+
+判据是 **mtime**：最新的一份存档写着 **07:01**，比本轮开工（14:45）早 **7 小时 44 分**——
+也就是说这一轮里没有任何一次写入碰过它们。主树的 `git status` 全程为空；
+本轮的改动全部落在隔离 worktree `.tmp/wt-transfer` 里（`.tmp/` 已被 `.gitignore` 忽略）。
+另外，本轮跑测试时唯一被创建过的仓库内目录是 `artifacts/latency-tests/`（空目录，由既有的
+`TerminalLatencyProbeTests` / `WebChoiceLatencyTests` 建、它们自己删子目录）——
+**那份真人埋点文件 `latency.txt` 一次都没被打开过**。

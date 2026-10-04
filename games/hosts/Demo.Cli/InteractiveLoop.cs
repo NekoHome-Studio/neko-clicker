@@ -369,8 +369,22 @@ internal static class InteractiveLoop
         return null;
     }
 
-    private static void HandleKey(GameSession session, ConsoleKeyInfo key)
+    /// <summary>
+    /// 一次按键的路由。<b>internal 而不是 private</b>：这是"按键到底接到了哪件事上"
+    /// 这条接线本身，而它此前一条用例都没有（E / I 开提示、提示开着时别的键不许抢键
+    /// 都只能靠人眼看终端）。测试项目有 <c>InternalsVisibleTo</c>，于是这件事可以被断言。
+    /// </summary>
+    internal static void HandleKey(GameSession session, ConsoleKeyInfo key)
     {
+        // 路径提示**最优先**（比转生确认还靠前）：它开着的时候这一行正在被编辑，
+        // 所有可打印字符都属于那个路径——'q' 不该退出、'x' 不该换档位、'E' 不该再开一层提示。
+        // 这正是交互宿主里"窗口获得焦点"这件事在终端里的等价物。
+        if (session.Prompt is not null)
+        {
+            HandlePromptKey(session, key);
+            return;
+        }
+
         // 转生确认态优先：除了 Y 之外任何键都是取消。
         if (session.AwaitingAscendConfirm)
         {
@@ -422,6 +436,16 @@ internal static class InteractiveLoop
                 session.Save();
                 return;
 
+            // 导出 / 导入：终端里的"窗口"就是一次文件路径提示（SAVE_TRANSFER_PLAN §4.2）。
+            // 两个键都只开提示，真正的读写发生在回车那一刻（见 GameSession.AcceptPrompt）。
+            case ConsoleKey.E:
+                session.BeginExportPrompt();
+                return;
+
+            case ConsoleKey.I:
+                session.BeginImportPrompt();
+                return;
+
             case ConsoleKey.H:
                 session.ToggleHelp();
                 return;
@@ -438,5 +462,42 @@ internal static class InteractiveLoop
             session.SelectByKey(key.KeyChar);
             if (session.Focus != PanelFocus.Achievements) session.Activate();
         }
+    }
+
+    /// <summary>
+    /// 路径提示开着时的一次按键。<para>
+    /// 这里刻意<b>只</b>认四个键（可打印字符、退格、回车、Esc）加一个 Ctrl+U：提示开着时
+    /// 其余按键一律没有别的含义——"输入一个路径"这件事在终端里不该和游戏操作抢键
+    /// （与转生确认态"除了 Y 都是取消"是同一种收口方式）。
+    /// </para>
+    /// </summary>
+    private static void HandlePromptKey(GameSession session, ConsoleKeyInfo key)
+    {
+        // Ctrl+U：清空（换一个文件时比按二十次退格现实）。必须先判修饰键，
+        // 否则普通 u 会走到"追加一个字符"那一支去——而那正是它应当做的事。
+        if ((key.Modifiers & ConsoleModifiers.Control) != 0 && key.Key == ConsoleKey.U)
+        {
+            session.PromptClear();
+            return;
+        }
+
+        switch (key.Key)
+        {
+            case ConsoleKey.Enter:
+                session.AcceptPrompt();
+                return;
+
+            case ConsoleKey.Escape:
+                session.CancelPrompt();
+                return;
+
+            case ConsoleKey.Backspace:
+                session.PromptBackspace();
+                return;
+        }
+
+        // 其余：能变成字符的（含中文、空格、反斜杠、冒号）就是路径的一部分；
+        // 方向键 / 功能键这类 KeyChar 是 '\0'，丢掉即可（提示里没有光标可以挪）。
+        session.PromptAppend(key.KeyChar);
     }
 }

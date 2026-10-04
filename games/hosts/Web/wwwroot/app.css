@@ -836,6 +836,55 @@ footer code { background: #00000055; padding: .05rem .3rem; border-radius: 4px; 
   .sheet { animation: none; }
 }
 
+/* ---------------------------------------------------------------- 存档的导出 / 导入窗口
+   它是第三张 sheet，形态整段复用 `.sheet` 那一套（见 index.html 的注释）——
+   这里只加它自己那三个零件：宽一点的容器、多行文本框、两个按钮并排。
+   为什么宽一点：导出一份真实存档是 1.5~6 KB 的长文本，26rem 里它会折成几十行，
+   而玩家真正要做的事是"整份复制走"——看不看得清内容属于核对身份，值得给它宽度。 */
+.sheet-wide { width: min(42rem, 100%); }
+
+/* 分节标题：一张 sheet 里三节（导出 / 导入 / 存档文件）。
+   用 h3 而不是加粗的 p：读屏可以按标题跳，这在一张有六七个控件的窗口里是有用的。 */
+.sheet h3.sheet-section {
+  margin: 1rem 0 .45rem;
+  font-size: .92rem;
+  color: var(--accent);
+  letter-spacing: .02em;
+}
+
+/* 文本框：**等宽**——导出文本是 JSON，等宽才看得出结构；
+   `resize: vertical` 让玩家自己拉高，`spellcheck` 由标记关掉（红波浪线在这段文字上纯属噪声）。 */
+.sheet .save-text {
+  display: block;
+  width: 100%;
+  min-height: 6rem;
+  padding: .5rem .6rem;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: #171522;
+  color: var(--fg);
+  font-family: "Cascadia Mono", Consolas, "Courier New", monospace;
+  font-size: .78rem;
+  line-height: 1.45;
+  resize: vertical;
+  /* 只读那一份也要能选中、能滚动：它是"要被复制走的东西"。 */
+  overflow: auto;
+}
+
+.sheet .save-text:focus-visible { outline: 2px solid var(--accent-deep); outline-offset: 1px; }
+
+/* 两个次要按钮并排（复制 / 下载）。窄屏折行，不挤成一团。 */
+.sheet-row { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .5rem; }
+.sheet-row .ghost { flex: 1 1 8rem; min-height: 44px; }
+
+/* 每一节自己的结果行：**留在屏幕上**（不是提示条那种 2.6 秒就消失的东西）。
+   成功 / 失败共用同一个元素——同一时刻只可能有一件事刚发生。 */
+.sheet p.bad { color: var(--bad); }
+.sheet p.good { color: var(--ok); }
+
+/* 「立刻存一次盘」是次要动作，但它与上面那一堆控件要拉开距离（它是另一件事）。 */
+.sheet #save-now { margin-top: .1rem; min-height: 44px; }
+
 /* ---------------------------------------------------------------- 永久升级线
    钱包那一行是这块面板的计数器：它回答"我还差多少才能买下一条"。
    金色是因为它数的不是普通货币——与纪元面板上的"可得 🍃 N"是同一套语言。 */

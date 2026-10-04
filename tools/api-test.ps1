@@ -1,4 +1,4 @@
-﻿# api-test.ps1 — Web 宿主的端到端回归：真的把宿主起起来，再真的打一遍它的全部端点。
+# api-test.ps1 — Web 宿主的端到端回归：真的把宿主起起来，再真的打一遍它的全部端点。
 #
 # 为什么它必须存在（而不是"再多写几条单元测试"）：
 #   Web 宿主这一层最典型的失败是**沉默的**——协议、序列化、静态文件、SSE 全是拼装出来的，
@@ -9,7 +9,7 @@
 #     · 增量推送的派生字段没处理干净 → 每帧 28KB，而"变化字段数 ≤ 4"的用例照样绿。
 #   所以这一层的判据只能是**真的通**：起宿主、发请求、读 SSE 流、看着它回话。
 #
-# 与单元测试的分工：`tools/build.ps1 -Strict` 守引擎（556 个用例 + 公开 API 快照），
+# 与单元测试的分工：`tools/build.ps1 -Strict` 守引擎（564 个用例 + 公开 API 快照），
 # 本脚本守"宿主 + 浏览器协议"那一段。CI 里两条都跑（.github/workflows/ci.yml）。
 #
 # 五条刻意为之的行为（都不是默认就该有的，是踩出来的）：
@@ -865,6 +865,130 @@ try {
     Check '重复收下是幂等的（第二个标签页也会发它）' ($null -ne $again -and $again.Success -and $againResult.ok -eq $true) `
         $(if ($null -ne $again) { "HTTP $($again.Status)：$([string]$againResult.message)" } else { '—' }) `
         $host2Missing
+
+    # 存档的导出 / 导入（W13）：端到端走一遍玩家真的会走的那条路。
+    #
+    # 为什么这一段必须在**真宿主**上跑：导出文本是**跨宿主**的东西（终端也能吃），
+    # 而它要经过三段只有真链路才有的关卡——JSON 请求体编码（1~6 KB、里面有引号与换行）、
+    # Kestrel 的请求体上限、以及 `text` 字段真的出现在响应正文里。
+    # C# 那 8 条（SaveTransferHostTests）验的是"会话对象自己"；这一段验的是"HTTP 那一面"。
+    #
+    # 三条判据，对应 SAVE_TRANSFER_PLAN §3 的两条不变量：
+    #   ① 信封自证身份（Format / PackId / 校验和）；
+    #   ② 三种坏输入各自**明确**失败，而且**磁盘上那份能用的存档逐字节不变**
+    #      ——"绝不损坏能用的存档"在端到端这一层的形态；
+    #   ③ 好的那一份必须收得下，而且落盘的就是信封里那段 Save——否则上面那些"拒绝了"
+    #      什么都证明不了（假绿比红更坏）。
+    Write-Section '存档的导出 / 导入（信封 / 坏输入不动盘 / 好文本收得下）'
+
+    $exportCommand = Invoke-PostJson "/api/command?package=$Package" @{ type = 'export' }
+    $exportResult = Convert-FromJsonSafe $exportCommand.Body
+    $exportText = if ($null -ne $exportResult) { [string]$exportResult.text } else { '' }
+    $exportOk = $exportCommand.Success -and ($null -ne $exportResult) -and $exportResult.ok -eq $true `
+        -and $exportText.Length -gt 0
+    Check 'POST /api/command export 带回一份非空文本（走 text 字段，不是 message）' $exportOk `
+        "HTTP $($exportCommand.Status)：$($exportText.Length) 字符"
+
+    $envelope = if ($exportOk) { Convert-FromJsonSafe $exportText } else { $null }
+    $envFields = if ($null -ne $envelope) { @($envelope.PSObject.Properties.Name) } else { @() }
+    $wantedEnv = @('Format', 'FormatVersion', 'PackId', 'SaveVersion', 'Checksum', 'Save')
+    $missingEnv = @($wantedEnv | Where-Object { $envFields -cnotcontains $_ })
+    Check '导出文本是一封完整的信封（六个关键字段都在）' ($null -ne $envelope -and $missingEnv.Count -eq 0) `
+        $(if ($null -eq $envelope) { 'text 不是合法 JSON' } else { "缺 $($missingEnv -join '、')" })
+
+    Check '信封里的包标识 = 本会话的包（跨包闸就是靠它）' `
+        ($null -ne $envelope -and $envelope.PackId -ceq $Package) `
+        "PackId=$(if ($null -ne $envelope) { $envelope.PackId } else { '—' }) / 会话=$Package"
+
+    # 校验和必须恰好等于对 `Save` 字段算出的值。**这一段是唯一能验到"HTTP 往返之后那串字节
+    # 一个都没被改过"的地方**（转义、编码、换行任何一处出问题，都会让它对不上）。
+    $saveBody = if ($null -ne $envelope) { [string]$envelope.Save } else { '' }
+    $sha = [System.Security.Cryptography.SHA256]::Create()
+    try {
+        $digest = $sha.ComputeHash([System.Text.Encoding]::UTF8.GetBytes($saveBody))
+    }
+    finally {
+        $sha.Dispose()
+    }
+    $expectedChecksum = 'sha256:' + (($digest | ForEach-Object { $_.ToString('x2') }) -join '')
+    Check '校验和 = 对 Save 字段算出的 sha256（HTTP 往返没改过那串字节）' `
+        ($null -ne $envelope -and $envelope.Checksum -ceq $expectedChecksum) `
+        "信封 $(if ($null -ne $envelope) { $envelope.Checksum } else { '—' }) / 实算 $expectedChecksum"
+
+    # 三种坏输入。造法刻意都用"重新序列化一份改过的信封"，即等价于玩家用编辑器改过：
+    #  · 人话：压根不是信封；
+    #  · 别的包：改外壳上的 PackId（**校验和只算 Save 字段，所以这一改仍然过得了校验闸**
+    #    ——它验的正是归属闸本身，这也是"包标识是声明不是证明"那条边界的形状）；
+    #  · 被改过：改正文里的一个数字 ⇒ 校验和必须红。
+    $foreignEnvelope = if ($null -ne $envelope) { Convert-FromJsonSafe $exportText } else { $null }
+    # 换成一个**确实不是本会话**的包（`-Package neko` 时也能用，见脚本参数）。
+    $otherPack = if ($Package -ceq 'neko') { 'cafe' } else { 'neko' }
+    if ($null -ne $foreignEnvelope) { $foreignEnvelope.PackId = $otherPack }
+    $foreignText = if ($null -ne $foreignEnvelope) { $foreignEnvelope | ConvertTo-Json -Depth 5 -Compress } else { '' }
+
+    $tamperedEnvelope = if ($null -ne $envelope) { Convert-FromJsonSafe $exportText } else { $null }
+    $tamperedFrom = $saveBody
+    if ($null -ne $tamperedEnvelope) {
+        $tamperedEnvelope.Save = $tamperedEnvelope.Save -replace '"Cookies":\d', '"Cookies":9'
+    }
+    $tamperedText = if ($null -ne $tamperedEnvelope) { $tamperedEnvelope | ConvertTo-Json -Depth 5 -Compress } else { '' }
+    Check '前置条件：那份"被改过"的文本真的与原文不同（否则下面那条什么都没验）' `
+        ($null -ne $tamperedEnvelope -and $tamperedEnvelope.Save -cne $tamperedFrom) `
+        "改前 $($tamperedFrom.Length) 字符 / 改后 $(if ($null -ne $tamperedEnvelope) { $tamperedEnvelope.Save.Length } else { 0 }) 字符"
+
+    # 保护对象：磁盘上那一份（第一段宿主存下来的）。没有它就显式跳过——不能静默空过。
+    $guardSkip = if (-not $savePath -or -not (Test-Path $savePath)) { '没有唯一的存档文件可保护，这一段无从判定' } else { '' }
+    $hashBefore = if ($guardSkip.Length -eq 0) { (Get-FileHash $savePath -Algorithm SHA256).Hash } else { '' }
+
+    $badImports = @(
+        @{ What = '一句人话'; Payload = '这不是存档，只是一句话。'; Fragment = '不是本游戏导出' }
+        @{ What = '别的包的存档'; Payload = $foreignText; Fragment = $otherPack }
+        @{ What = '改过正文的存档'; Payload = $tamperedText; Fragment = '校验和' }
+    )
+
+    $badMisses = New-Object System.Collections.Generic.List[string]
+    foreach ($case in $badImports) {
+        $badResponse = Invoke-PostJson "/api/command?package=$Package" @{ type = 'import'; text = $case.Payload }
+        $badResult = Convert-FromJsonSafe $badResponse.Body
+        $ok = $badResponse.Success -and ($null -ne $badResult) -and $badResult.ok -eq $false
+        if (-not $ok) {
+            $badMisses.Add("$($case.What)：被收下了")
+            continue
+        }
+        if (-not ([string]$badResult.message).Contains($case.Fragment)) {
+            $badMisses.Add("$($case.What)：拒绝理由里没有「$($case.Fragment)」（$([string]$badResult.message)）")
+        }
+    }
+
+    Check '三种坏输入都被明确拒绝，而且理由说的是那一类（人话 / 别的包 / 校验和）' `
+        ($badMisses.Count -eq 0) $(if ($badMisses.Count -eq 0) { '3 / 3' } else { $badMisses -join '；' })
+
+    $hashAfter = if ($guardSkip.Length -eq 0 -and (Test-Path $savePath)) {
+        (Get-FileHash $savePath -Algorithm SHA256).Hash
+    }
+    else { '' }
+    Check '被拒绝的导入一个字节都不许动磁盘上那份能用的存档' `
+        ($guardSkip.Length -gt 0 -or ($hashBefore.Length -gt 0 -and $hashBefore -ceq $hashAfter)) `
+        "sha256 $(if ($hashBefore) { $hashBefore.Substring(0, 12) } else { '—' }) → $(if ($hashAfter) { $hashAfter.Substring(0, 12) } else { '—' })" `
+        $guardSkip
+
+    # 反面：同一份**好的**文本必须收得下——没有这一条，上面三处"拒绝了"可能是"这条路根本不通"。
+    $goodImport = Invoke-PostJson "/api/command?package=$Package" @{ type = 'import'; text = $exportText }
+    $goodResult = Convert-FromJsonSafe $goodImport.Body
+    $goodOk = $goodImport.Success -and ($null -ne $goodResult) -and $goodResult.ok -eq $true
+    Check '同一份好文本必须收得下（否则上面三条拒绝什么都证明不了）' $goodOk `
+        "HTTP $($goodImport.Status)：$(if ($null -ne $goodResult) { [string]$goodResult.message } else { '—' })"
+
+    Check '成功那句话里说得出导入了哪个包' ($goodOk -and ([string]$goodResult.message).Contains($Package)) `
+        $(if ($goodOk) { [string]$goodResult.message } else { '导入没成功' })
+
+    # 落盘的必须**恰好**是信封里那段 Save（逐字节）：这是"校验 → 落盘 → 应用"三件事都做了的证据，
+    # 只做其中一件都会在这里露出来（少落盘 ⇒ 文件没变；少应用 ⇒ 下面那条快照对不上）。
+    $onDisk = if ($guardSkip.Length -eq 0) { Get-Content $savePath -Raw -Encoding UTF8 } else { $null }
+    Check '导入之后磁盘上的存档 = 信封里那段 Save（逐字节）' `
+        ($null -ne $onDisk -and $onDisk -ceq $saveBody) `
+        "盘上 $(if ($null -ne $onDisk) { $onDisk.Length } else { 0 }) 字符 / 信封 $(($saveBody).Length) 字符" `
+        $guardSkip
 }
 finally {
     Write-Host ''

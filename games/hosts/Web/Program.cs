@@ -198,7 +198,11 @@ public static class Program
 
             string type = body?["type"]?.GetValue<string>() ?? string.Empty;
             CommandOutcome outcome = await DispatchAsync(host, type, body).ConfigureAwait(false);
-            return Results.Json(new { ok = outcome.Ok, message = outcome.Message, seq = outcome.Seq }, SnapshotProtocol.Options);
+            // `text` 是命令**带回来的文本**（今天只有 export 用它，别的命令是 null）：
+            // 导出是一份 1.5~6 KB 的机器数据，混进 `message` 那句给人看的话里，界面上就只能二选一。
+            return Results.Json(
+                new { ok = outcome.Ok, message = outcome.Message, seq = outcome.Seq, text = outcome.Text },
+                SnapshotProtocol.Options);
         });
     }
 
@@ -294,6 +298,20 @@ public static class Program
             case "save":
                 return await host.SaveAsync().ConfigureAwait(false);
 
+            // 存档的导出 / 导入（W13）。两条命令都不做任何校验与解析：引擎那边
+            // SaveManager.Export/Import 已经把七道闸排好了，宿主只负责搬运与回报。
+            case "export":
+                return await host.ExportAsync().ConfigureAwait(false);
+
+            case "import":
+            {
+                // 类型不对时**当作没给**，而不是让 GetValue<string>() 抛成 500：
+                // 前端拼错一个字段不该得到一份堆栈，而是一句"缺少参数"。
+                string? text = ReadString(body, "text");
+                if (text is null) return Missing("text");
+                return await host.ImportAsync(text).ConfigureAwait(false);
+            }
+
             // 离线收益弹窗的"看过了"。这是一条**状态**而不是前端的记忆：
             // 放在前端（localStorage / sessionStorage）就一定会错——两次离线补发完全可能
             // 数值一模一样（同样离线到上限、产量也没变），按数值当指纹去重会把第二次吃掉；
@@ -326,6 +344,12 @@ public static class Program
         }
 
         static CommandOutcome Missing(string what) => new(false, $"这条命令缺少参数 {what}。", 0);
+
+        // 读一个字符串字段；缺失**或类型不对**都返回 null。用 TryGetValue 而不是
+        // `GetValue<string>()`：后者对 `{"text": 5}` 会抛 InvalidOperationException，
+        // 顺着请求管道冒出去就是一个 500 —— 那正是"坏输入被说成内部错误"的形状。
+        static string? ReadString(JsonNode? node, string name)
+            => node?[name] is JsonValue value && value.TryGetValue(out string? text) ? text : null;
     }
 
     /// <summary>

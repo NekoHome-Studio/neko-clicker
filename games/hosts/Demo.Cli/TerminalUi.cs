@@ -125,7 +125,10 @@ internal static class TerminalUi
                 lines.Add(Column(layout, leftLine, rightLine));
             }
 
-            lines.Add(FullRow(layout, DetailLine(session, snap)));
+            // 详情行在提示开着时让位给**正在编辑的那一行路径**：提示是这一帧里
+            // 唯一"玩家正在改的东西"，把它塞进日志区（会被下一帧的日志挤掉）等于看不见。
+            // 行的位置与数量一个都没变，所以宽度 / 行数不变量不受影响。
+            lines.Add(FullRow(layout, session.Prompt is { } prompt ? PromptLine(prompt, layout.Inner) : DetailLine(session, snap)));
         }
 
         lines.Add(Border(layout, '├', '┤', null));
@@ -432,6 +435,56 @@ internal static class TerminalUi
 
     // ---------------------------------------------------------------- 详情 / 日志 / 键位
 
+    /// <summary>
+    /// 正在编辑的那一行路径（终端里的"导出/导入窗口"）。<para>
+    /// 它顶掉的是<b>详情行</b>，行数与行位置一个都没变——所以"每行恰好 width 列、整帧恰好
+    /// height 行"那两条不变量照旧成立（<c>FrameRenderTests</c> 现在也会在提示开着时验一遍）。
+    /// </para>
+    /// <para>
+    /// 宽度不够时<b>从左边截</b>：正在被敲进去的是尾部，而终端里没有横向滚动条——
+    /// 把尾部截掉等于让人盲打。尾部那个 <c>_</c> 是光标位置的替代品（我们每帧按行覆盖，
+    /// 没有把真实光标挪到这一行来）。
+    /// </para>
+    /// </summary>
+    private static UiLine PromptLine(TransferPrompt prompt, int width)
+    {
+        bool exporting = prompt.Kind == TransferPromptKind.Export;
+        string head = $" {(exporting ? "📤 导出到" : "📥 导入自")}：";
+
+        int budget = Math.Max(4, width - Ansi.DisplayWidth(head) - 1);
+        string path = prompt.Text;
+        if (Ansi.DisplayWidth(path) > budget) path = ".." + Tail(path, budget - 2);
+
+        return UiLine.New()
+            .Add(head, Ansi.S(Style.Bold + Style.BrightYellow))
+            .Add(path, Ansi.S(Style.Bold))
+            .Add("_", Ansi.S(Style.BrightCyan));
+    }
+
+    /// <summary>取末尾不超过 <paramref name="maxWidth"/> 列的片段（按显示宽度算，代理对不会被切成半个）。</summary>
+    private static string Tail(string text, int maxWidth)
+    {
+        if (maxWidth <= 0) return string.Empty;
+
+        int used = 0;
+        int start = text.Length;
+
+        while (start > 0)
+        {
+            int size = start >= 2 && char.IsLowSurrogate(text[start - 1]) && char.IsHighSurrogate(text[start - 2])
+                ? 2
+                : 1;
+
+            int width = Ansi.DisplayWidth(text.Substring(start - size, size));
+            if (used + width > maxWidth) break;
+
+            used += width;
+            start -= size;
+        }
+
+        return text[start..];
+    }
+
     private static UiLine DetailLine(GameSession session, GameSnapshot snap)
     {
         var line = UiLine.New().Add(" ");
@@ -583,6 +636,29 @@ internal static class TerminalUi
 
     private static UiLine Footer(GameSession session)
     {
+        // 提示开着时，键位行换成**这一件事**的键位：此时别的键一个都不响应
+        // （见 InteractiveLoop.HandlePromptKey），继续挂着 "Q 退出" 那种提示就是在说谎。
+        if (session.Prompt is { } prompt)
+        {
+            (string Key, string Text)[] promptHints =
+            [
+                ("Enter", prompt.Kind == TransferPromptKind.Export ? "写出这个文件" : "读这个文件"),
+                ("Esc", "取消"),
+                ("退格", "删一个字"),
+                ("Ctrl+U", "清空重打"),
+            ];
+
+            var promptLine = UiLine.New().Add(" ");
+            for (int i = 0; i < promptHints.Length; i++)
+            {
+                if (i > 0) promptLine.Add("  ");
+                promptLine.Add(promptHints[i].Key, Ansi.S(Style.Bold + Style.BrightCyan))
+                    .Add(" " + promptHints[i].Text, Ansi.S(Style.Gray));
+            }
+
+            return promptLine;
+        }
+
         GameSnapshot snap = session.Snapshot;
         (string Key, string Text)[] hints =
         [
@@ -594,6 +670,8 @@ internal static class TerminalUi
             ("G", session.Package.GoldenCookieName),
             ("A", session.Package.PrestigeActionName),
             ("F5", "存档"),
+            ("E", "导出"),
+            ("I", "导入"),
             ("H", "帮助"),
             ("Q", "退出"),
         ];
@@ -627,6 +705,8 @@ internal static class TerminalUi
             $"    G           抓住{session.Package.GoldenCookieName}（只停留 {NumFormat.Duration(cookieLifetime)}，出现时顶部会提示）",
             $"    A           {session.Package.PrestigeHint}",
             "    F5          手动存档（默认每 60 秒自动存档一次）",
+            "    E / I       导出 / 导入存档：终端里的「窗口」是一次文件路径提示",
+            "                （提示预填到存档旁边；Enter 确认，Esc 取消，退格删字，Ctrl+U 清空）",
             "    H           关闭本帮助        Q / Esc  存档并退出",
             string.Empty,
             "  玩法要点",

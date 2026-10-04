@@ -298,6 +298,8 @@ internal sealed class CliOptions
           G           抓住随机事件（金猫 / 客人）
           A           转生 / 店休（需要二次确认，按 Y 确认）
           F5          手动存档
+          E / I       导出 / 导入存档（终端没有弹窗：这两个键开的是一次**文件路径提示**，
+                      默认写到存档旁边；Enter 确认，Esc 取消，退格删字，Ctrl+U 清空）
           H           帮助
           Q / Esc     存档并退出
 

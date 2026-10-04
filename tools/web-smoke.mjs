@@ -21,7 +21,8 @@
 // 覆盖边界（诚实）: 它证明的是"真的被执行过的路径不抛异常"。没被执行到的分支
 // （`if (!pill) return` 这类防御）只有 node --check 的语法保证。
 //
-// 这个脚本**从 2026-10 起进了 tools/build.ps1**（也进了 CI）：一条 135 条断言、其中 210 行
+// 这个脚本**从 2026-10 起进了 tools/build.ps1**（也进了 CI）：一条 162 条断言（2026-10-04 起；
+// 第 24 节「存档的导出/导入窗口」之前是 135 条）、其中 210 行
 // 专为"复发过五次"的 bug 类而写的套件，不进自动闸门就等于没有守卫。
 // 需要 node —— 没有 node 时 build.ps1 **故意红**（并给出 -SkipWebSmoke 这条人工出路），
 // 而不是静默跳过：静默跳过正是它当初缺闸门时的那种失效形态。
@@ -91,6 +92,7 @@ class El {
     this._listeners = new Map();
     this._attrs = new Map();
     this._text = "";
+    this._value = "";
     this.children = [];
     this.style = {};
     this.dataset = { ...dataset };
@@ -107,7 +109,40 @@ class El {
   get innerHTML() { return ""; }
   set innerHTML(_) { this._text = ""; this.children = []; }
 
+  /**
+   * 表单控件的当前值。<b>存档窗口那两张文本框靠它</b>：app.js 读 `.value`（不是 textContent），
+   * 而且只读那一份也要能设（宿主回来的文本写进去）。
+   */
+  get value() { return this._value; }
+  set value(value) { this._value = value === undefined || value === null ? "" : String(value); }
+
   append(...nodes) { for (const node of nodes) { node.parent = this; this.children.push(node); } }
+
+  /** 从父节点摘掉（下载用的 <a> 会挂进 body 再摘掉）。 */
+  remove() {
+    if (this.parent) {
+      const at = this.parent.children.indexOf(this);
+      if (at >= 0) this.parent.children.splice(at, 1);
+      this.parent = null;
+    }
+  }
+
+  /**
+   * 焦点。<b>计数而不是布尔</b>：`focus()` 只记"被调过几次"，这样"打开时给导出框、
+   * 关闭时还给入口按钮"可以两条都断言到。
+   */
+  focus() { this.focused = (this.focused ?? 0) + 1; }
+
+  /** 选中（剪贴板写不进去时的退路：把文本选中让人按 Ctrl+C）。 */
+  select() { this.selected = true; }
+
+  /**
+   * 脚本点一下。**只记数、不派发监听器**：真 DOM 里 `click()` 会走一遍 click 监听器，
+   * 而这里派发的话，测试自己用 fire() 触发时就会与它互相干扰。今天的用法只有一处
+   * （下载用的那个 <a>，它没有监听器），所以这条简化不会让任何断言变成假绿。
+   */
+  click() { this.clicked = (this.clicked ?? 0) + 1; }
+
   addEventListener(type, handler) {
     if (!this._listeners.has(type)) this._listeners.set(type, []);
     this._listeners.get(type).push(handler);
@@ -115,6 +150,7 @@ class El {
   setAttribute(name, value) { this._attrs.set(name, String(value)); }
   getAttribute(name) { return this._attrs.has(name) ? this._attrs.get(name) : null; }
   removeAttribute(name) { this._attrs.delete(name); }
+
   closest(selector) { return matches(this, selector) ? this : (this.parent ? this.parent.closest(selector) : null); }
 }
 
@@ -179,6 +215,10 @@ function makeDom() {
     panels,
     tabs,
     missedSelectors: [],
+    /** `document.body`：下载用的 `<a>` 要先挂进文档再点（有些浏览器否则不触发下载）。 */
+    body: new El("body"),
+    /** 脚本创建过的节点（存档窗口的下载链接要在这里面找）。 */
+    created: [],
     _listeners: new Map(),
     querySelector(selector) {
       if (selector === "#tabs button") return tabs[0] ?? null;
@@ -190,7 +230,11 @@ function makeDom() {
       if (selector === "#tabs button") return tabs;
       return all.filter((el) => matches(el, selector));
     },
-    createElement(tag) { return new El(tag); },
+    createElement(tag) {
+      const node = new El(tag);
+      this.created.push(node);
+      return node;
+    },
     addEventListener(type, handler) {
       if (!this._listeners.has(type)) this._listeners.set(type, []);
       this._listeners.get(type).push(handler);
@@ -219,13 +263,24 @@ const copyAs = (name, source) => {
   return pathToFileURL(path).href;
 };
 
-/** 装好全局环境并 import 一份 app.js 副本；返回这一份的观测句柄。 */
-async function loadApp(moduleUrl, { hash = "" } = {}) {
+/**
+ * 装好全局环境并 import 一份 app.js 副本；返回这一份的观测句柄。
+ *
+ * `reply`：**按命令给不同的回答**。默认那份桩对每条命令都回 `{ok:true}`，
+ * 而"导入坏文本要显示引擎那句话"这件事必须能让宿主回一次 `{ok:false, message}` ——
+ * 否则那半条路只能靠人眼看浏览器（本机起不了浏览器，见 OPEN_WORK §0.6）。
+ *
+ * `clipboard`：要不要给一个可用的 `navigator.clipboard`。**两种都要测**：
+ * 一种走"复制成功"，另一种走"写不进去"的退路（那时不许假装成功）。
+ */
+async function loadApp(moduleUrl, { hash = "", reply = null, clipboard = true } = {}) {
   const doc = makeDom();
   const location = { search: "", hash };
   const commands = [];
   const sources = [];
   const frames = [];
+  const blobs = [];
+  const clipboardWrites = [];
   let clock = 0;
 
   class StubEventSource {
@@ -247,8 +302,23 @@ async function loadApp(moduleUrl, { hash = "" } = {}) {
   globalThis.fetch = async (url, options = {}) => {
     const body = options.body ? JSON.parse(options.body) : null;
     if (body) commands.push(body);
-    return { ok: true, json: async () => ({ ok: true, seq: commands.length }) };
+    const answer = reply ? reply(body, commands.length) : null;
+    return { ok: true, json: async () => answer ?? { ok: true, seq: commands.length } };
   };
+
+  // `navigator` 在 Node 21+ 是**只读**的全局 getter：直接赋值在严格模式（ES 模块）下会抛，
+  // 必须用 defineProperty。剪贴板那两条路都要能造出来（见上面的 `clipboard`）。
+  Object.defineProperty(globalThis, "navigator", {
+    value: clipboard
+      ? { clipboard: { writeText: async (text) => { clipboardWrites.push(text); } } }
+      : {},
+    configurable: true,
+    writable: true,
+  });
+
+  // 下载那一路：把 Blob 留下来，测试可以 `await blob.text()` 与文本框逐字节比对。
+  globalThis.URL.createObjectURL = (blob) => { blobs.push(blob); return `blob:stub/${blobs.length}`; };
+  globalThis.URL.revokeObjectURL = () => {};
 
   await import(moduleUrl);
 
@@ -274,7 +344,7 @@ async function loadApp(moduleUrl, { hash = "" } = {}) {
     for (const callback of callbacks) callback(clock);
   };
 
-  return { doc, location, commands, push, sources, frames, source, step };
+  return { doc, location, commands, blobs, clipboardWrites, push, sources, frames, source, step };
 }
 
 const flush = () => new Promise((resolve) => setImmediate(resolve));
@@ -1507,9 +1577,12 @@ section("19. 建筑卡片说得出「已有几个」");
 // 根本没有实时区域——读屏用户既看不到颜色，也读不到类名，那些消息等于不存在。
 section("20. 状态要能被读屏读到（提示条 / 批量档位 / 页签）");
 {
-  check("提示条是页面上唯一的实时区域（role=status：隐含 aria-live=polite + atomic）", () => {
+  check("提示条是一个实时区域（role=status：隐含 aria-live=polite + atomic）", () => {
     if (!/<div id="toast"[^>]*role="status"/.test(html)) throw new Error("#toast 上没有 role=status");
   });
+  // 这一条此前写的是"页面上**唯一**的实时区域"。**加存档窗口之后那句话不再为真**
+  // （导入的失败原因必须留在屏幕上，所以 `#import-result` 也是一条 role=status）——
+  // 于是这里改成"哪一条"的守卫，"**恰好几条**"由 §24 末条盯着（数量比存在更值得钉）。
 
   check("批量档位有一个组名（role=group + aria-label）——四个符号自己说不清是干什么的", () => {
     if (!/<div id="batch"[^>]*role="group"/.test(html)) throw new Error("#batch 上没有 role=group");
@@ -1828,8 +1901,232 @@ section("23. 快照里的每个字段都要有人决定过（画了，或写明�
   });
 }
 
-rmSync(scratch, { recursive: true, force: true });
+// 24. 存档的导出 / 导入窗口（W13）。
+//
+// 引擎侧那 17 条用例（SaveTransferTests）与宿主侧那 8 条（SaveTransferHostTests）都绿着
+// 也说明不了"玩家有一个入口"——缺口 D 的形状恰恰就是"引擎全绿、界面上一个入口都没有"
+// （`ExportShareCode()` 公开了好几个版本、零调用者）。这一节守的是**界面这一层**：
+//
+//   · 入口真的换了：点「存档」开窗口，**不再**直接发 save 命令（那是旧行为，而且它
+//     与导出/导入毫无关系）；手动存档那条命令挪进窗口里、功能没删；
+//   · 导出文本真的被画进只读文本框、能复制、能下载——**下载给的是同一份字节**；
+//   · 剪贴板写不进去时**不许假装成功**（把文本选中 + 明说失败），这是"复制"最容易撒的谎；
+//   · 导入的失败原因**原样**留在窗口里（不翻译、不只弹 2.6 秒的提示条），
+//     而三种坏输入（人话 / 别的包 / 校验和对不上）各自显示引擎写的那一句；
+//   · 关闭的三条路（Esc / × / 点遮罩）与"开着时空格不许偷偷点猫"。
+section("24. 存档的导出 / 导入窗口（入口 / 复制 / 下载 / 导入的失败与成功）");
+{
+  const ENVELOPE = [
+    "{",
+    '  "Format": "neko-save",',
+    '  "FormatVersion": 1,',
+    '  "PackId": "neko",',
+    '  "SaveVersion": 1,',
+    '  "FrameworkVersion": "1.10.0",',
+    '  "Checksum": "sha256:deadbeef",',
+    '  "Save": "{\\"Version\\":1,\\"Cookies\\":1234.5}"',
+    "}",
+  ].join("\n");
 
+  const EXPORT_MESSAGE = "已生成导出文本（内容包「neko」、218 个字符）——整份复制走，就能在别处导入；也可以下载成 .json 文件。";
+
+  // 三种坏输入各自对应的**引擎原话**（形如 SaveManager.Import 的 Message：说清哪一类、怎么办）。
+  const IMPORT_FAILURES = {
+    人话: "这不是本游戏导出的存档文本：它连合法 JSON 都不是（'这' is an invalid start of a value）。请整份复制「导出」出来的内容，不要只复制其中一段。",
+    别的包: "这份存档是内容包「cafe」的，当前会话是「neko」——两个包的建筑 / 升级 id 不一样，灌进来只会得到一份这个包答不上的存档，所以拒绝导入。磁盘上原来的存档与备份都没有被动过。",
+    被改过: "校验和对不上（信封里写的是 sha256:deadbeef…，这份内容的实际值是 sha256:1234abcd…）——文本被改动或被截断过。请整份重新复制一次。",
+  };
+  const IMPORT_OK = "已导入：内容包「neko」｜存档格式 1｜框架 1.10.0｜当前会话与 neko.json 都已换成这一份｜已核对包标识（neko）｜存档里的 id 这个包全都认识。";
+
+  /** 一个按命令回答的宿主桩：export 给文本，import 按内容给上面那几句。 */
+  const reply = (body) => {
+    if (!body) return null;
+    if (body.type === "export") return { ok: true, message: EXPORT_MESSAGE, text: ENVELOPE, seq: 1 };
+    if (body.type === "import") {
+      const failure = IMPORT_FAILURES[body.text];
+      return failure
+        ? { ok: false, message: failure, seq: 2 }
+        : { ok: true, message: IMPORT_OK, seq: 3 };
+    }
+    return { ok: true, message: "已存档。", seq: 4 };
+  };
+
+  const save = await loadApp(copyAs("app-save.mjs", appSource), { reply });
+  await save.push({ kind: "full", seq: 1, snapshot: snapshot() });
+
+  check("首帧：存档窗口是关着的（它不该在玩家点之前冒出来）", () => hidden(save, "save-sheet"));
+
+  // ---- 入口 ----
+  fire(el(save, "save"), "click");
+  await flush();
+
+  check("点「存档」开的是窗口，**不再**直接发 save 命令（那是旧行为）", () => {
+    eq(shown(save, "save-sheet"), true, "窗口应当打开");
+    eq(commandsOf(save, "save").length, 0, "打开窗口不该顺手存一次盘");
+  });
+  check("打开窗口就向宿主取一份导出文本（导出是一次读，不是一次写）", () => {
+    eq(commandsOf(save, "export").length, 1, "export 次数");
+  });
+  check("宿主的导出文本原样落进文本框", () => {
+    eq(el(save, "export-text").value, ENVELOPE, "文本框内容");
+    eq(el(save, "export-note").textContent, EXPORT_MESSAGE, "那一行状态用的是宿主自己的话");
+  });
+  check("焦点交给导出框（这张窗口里有七个控件，留在背后按钮上 Tab 会走到遮罩底下）", () => {
+    eq(el(save, "export-text").focused, 1, "导出框被 focus 的次数");
+  });
+
+  // ---- 复制 ----
+  fire(el(save, "export-copy"), "click");
+  await flush();
+  check("「复制」把**同一份文本**写进剪贴板，并明说复制了几个字符", () => {
+    eq(save.clipboardWrites.length, 1, "写剪贴板的次数");
+    eq(save.clipboardWrites[0], ENVELOPE, "写进去的内容");
+    if (!el(save, "export-note").textContent.includes("已复制")) {
+      throw new Error(`复制成功之后那一行要说"已复制"：<${el(save, "export-note").textContent}>`);
+    }
+  });
+
+  // ---- 下载 ----
+  // 先触发、再把 Blob 的内容读出来：check() 是同步的，所以异步那步不能藏在它里面
+  // （藏进去的话失败会变成一个没人接的 Promise，断言悄悄变绿）。
+  fire(el(save, "export-download"), "click");
+  await flush();
+  {
+    const blob = save.blobs[0];
+    const bytes = blob ? await blob.text() : null;
+    const anchor = save.doc.created.filter((node) => node.tagName === "A").pop();
+
+    check("「下载 .json」给的是同一份字节（校验和算在文本里，所以两条路等价）", () => {
+      eq(save.blobs.length, 1, "创建的 Blob 数");
+      eq(bytes, ENVELOPE, "下载内容");
+    });
+    check("下载链接带着 download 文件名、真的被点过、点完从文档里摘掉", () => {
+      if (!anchor) throw new Error("没有创建 <a> 元素");
+      if (!String(anchor.download ?? "").endsWith(".json")) {
+        throw new Error(`download 文件名不是 .json：<${anchor.download}>`);
+      }
+      eq(anchor.clicked, 1, "点了几次");
+      eq(anchor.parent, null, "点完要摘掉（否则文档里会留一串看不见的链接）");
+    });
+  }
+
+  // ---- 导入：三种坏输入，各显示引擎那句话 ----
+  for (const [what, message] of Object.entries(IMPORT_FAILURES)) {
+    el(save, "import-text").value = what;
+    fire(el(save, "import-go"), "click");
+    await flush();
+
+    check(`导入「${what}」：宿主那句话原样留在窗口里`, () => {
+      eq(el(save, "import-result").textContent, message, "窗口里的字");
+      eq(shown(save, "save-sheet"), true, "失败不该把窗口关掉（那段话是玩家唯一能读到的解释）");
+    });
+    check(`导入「${what}」：不走提示条（那句话 2.6 秒就会被吞掉，必须留在屏幕上）`, () => {
+      eq(el(save, "toast").textContent, "", "提示条应当一个字都没写");
+    });
+  }
+
+  check("三种坏输入都只发了 import（前端不许自己判一遍、更不许顺手做别的）", () => {
+    eq(commandsOf(save, "import").length, Object.keys(IMPORT_FAILURES).length, "import 次数");
+    eq(commandsOf(save, "save").length, 0, "整段下来没有一次 save");
+  });
+
+  // ---- 导入：成功 ----
+  const exportsBefore = commandsOf(save, "export").length;
+  el(save, "import-text").value = "好文本";
+  fire(el(save, "import-go"), "click");
+  await flush();
+  check("导入成功：同样是宿主那句话，而且窗口留着让人读完（导入了哪个包、有没有不认识的 id）", () => {
+    eq(el(save, "import-result").textContent, IMPORT_OK, "窗口里的字");
+    eq(shown(save, "save-sheet"), true, "成功之后窗口不关");
+  });
+  check("导入成功之后重新导出一份（文本框里那一份已经是导入前的旧状态，留着会被下载走）", () => {
+    eq(commandsOf(save, "export").length, exportsBefore + 1, "export 次数");
+    eq(el(save, "export-text").value, ENVELOPE, "文本框仍然是宿主给的那一份");
+  });
+
+  // ---- 手动存档那条命令没被删掉，只是换了入口 ----
+  fire(el(save, "save-now"), "click");
+  await flush();
+  check("窗口里的「立刻存一次盘」才发 save（功能没删、只是挪了地方）", () => {
+    eq(commandsOf(save, "save").length, 1, "save 次数");
+    eq(el(save, "save-note").textContent, "已存档。", "结果写在它自己那一行");
+  });
+
+  // ---- 键盘：空格不许偷偷点猫；Esc 关窗口 ----
+  {
+    const before = commandsOf(save, "click").length;
+    for (const handler of save.doc._listeners.get("keydown") ?? []) {
+      handler({ code: "Space", target: { tagName: "BODY" }, preventDefault() {} });
+    }
+    check("窗口开着时按空格**不点猫**（窗口盖在游戏上面，背后点一下谁也没要求过）", () => {
+      eq(commandsOf(save, "click").length, before, "click 次数");
+    });
+  }
+
+  {
+    for (const handler of save.doc._listeners.get("keydown") ?? []) {
+      handler({ code: "Escape", target: { tagName: "BODY" }, preventDefault() {} });
+    }
+    check("Esc 关窗口，并把焦点还给入口按钮（丢在隐藏元素里读屏会迷路）", () => {
+      eq(hidden(save, "save-sheet"), true, "窗口应当关闭");
+      eq(el(save, "save").focused, 1, "「存档」按钮被 focus 的次数");
+    });
+  }
+
+  check("再开一次、点右上角 × 也能关", () => {
+    fire(el(save, "save"), "click");
+    fire(el(save, "save-close"), "click");
+    return hidden(save, "save-sheet");
+  });
+  check("点遮罩空白处也关（点在卡片里不关——与另外两张 sheet 同一条规矩）", () => {
+    fire(el(save, "save"), "click");
+    fire(el(save, "save-sheet"), "click", { target: el(save, "export-text") });
+    if (hidden(save, "save-sheet")) throw new Error("点在卡片里不该关掉窗口");
+    fire(el(save, "save-sheet"), "click", { target: el(save, "save-sheet") });
+    return hidden(save, "save-sheet");
+  });
+
+  // ---- 剪贴板拿不到时的退路：**不许假装成功** ----
+  const noClipboard = await loadApp(copyAs("app-save-noclip.mjs", appSource), { reply, clipboard: false });
+  await noClipboard.push({ kind: "full", seq: 1, snapshot: snapshot() });
+  fire(el(noClipboard, "save"), "click");
+  await flush();
+  fire(el(noClipboard, "export-copy"), "click");
+  await flush();
+
+  check("没有剪贴板 API 时：明说复制失败、把文本选中、指路 Ctrl+C 与「下载 .json」", () => {
+    eq(noClipboard.clipboardWrites.length, 0, "一次都没有写进去");
+    const note = el(noClipboard, "export-note").textContent;
+    if (note.includes("已复制")) throw new Error(`复制没成功却写着"已复制"：<${note}>`);
+    if (!note.includes("Ctrl+C")) throw new Error(`没有给出退路（Ctrl+C）：<${note}>`);
+    if (!note.includes("下载")) throw new Error(`没有指向「下载 .json」：<${note}>`);
+    eq(el(noClipboard, "export-text").selected, true, "文本要被选中，玩家才能直接按 Ctrl+C");
+  });
+
+  // ---- 标记与样式的形状守卫 ----
+  check("存档窗口沿用同一套 sheet 形态（.sheet-layer / .sheet / .sheet-close / .sheet-ok）", () => {
+    const sheet = /<div id="save-sheet" class="sheet-layer hidden">[\s\S]*?class="sheet sheet-wide"[\s\S]*?class="sheet-close"[\s\S]*?class="sheet-ok"/.exec(html);
+    if (!sheet) throw new Error("save-sheet 的标记没有沿用 .sheet-layer / .sheet / .sheet-close / .sheet-ok");
+  });
+  check("导出文本框是**只读**的（它是要被整份复制走的东西，不是在这里编辑的东西）", () => {
+    if (!/<textarea id="export-text"[^>]*\breadonly\b/.test(html)) throw new Error("#export-text 上没有 readonly");
+  });
+  check("导出与导入都用多行文本框（一份真实存档 1.5~6 KB，单行 input 没法用）", () => {
+    for (const id of ["export-text", "import-text"]) {
+      if (!new RegExp(`<textarea id="${id}"`).test(html)) throw new Error(`#${id} 不是 <textarea>`);
+    }
+  });
+  check("提示条与存档窗口的结果行是页面上**恰好两个**实时区域（一个不多、一个不少）", () => {
+    // 先剥注释：注释里必须能提 `role="status"` 这类名字（那正是"为什么有两条"要解释的东西），
+    // 而注释在浏览器里不产生元素——这一条第一次跑就是这么红的（数出了三条，多出来那条是注释）。
+    const body = html.replace(/<!--[\s\S]*?-->/g, "");
+    const live = [...body.matchAll(/<[^>]*\brole="status"[^>]*>/g)].map((m) => m[0]);
+    const ids = live.map((tag) => /\bid="([^"]+)"/.exec(tag)?.[1] ?? "(无 id)").sort();
+    eq(ids.join(", "), "import-result, toast", "实时区域");
+  });
+}
+
+rmSync(scratch, { recursive: true, force: true });
 // ---------------------------------------------------------------- 结果
 
 console.log(`\n${checks - failures.length} / ${checks} 条通过`);

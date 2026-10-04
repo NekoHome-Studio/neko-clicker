@@ -11,8 +11,11 @@
   <div id="golden" class="golden-layer hidden"></div>
 
   <!-- 提示条：buy 失败（"钱不够"）、存档失败、连不上宿主都只走这里。
-       `role="status"` 是页面上**唯一**的实时区域（隐含 aria-live=polite + aria-atomic）：
-       没有它，这些消息对读屏用户等于不存在——它们不是用户操作的结果，而是宿主回的话。 -->
+       `role="status"`（隐含 aria-live=polite + aria-atomic）让这些消息能被读屏念出来：
+       它们不是用户操作的结果，而是宿主回的话。
+       **页面上有两处实时区域，这是第一处**（第二处是存档窗口里的 `#import-result`：
+       导入的失败原因必须**留在屏幕上**，而提示条 2.6 秒就把长句吞掉了）。
+       §20 那条守卫盯的就是"恰好这两处、一处不多一处不少"。 -->
   <div id="toast" class="toast" role="status"></div>
 
   <!-- 离线收益：读档补发的那一笔（GameSnapshot.offline）。
@@ -45,6 +48,51 @@
       <div id="choices" class="list"></div>
       <div id="stances" class="stances"></div>
       <button id="choices-later" class="sheet-ok">收起，稍后再答</button>
+    </div>
+  </div>
+
+  <!-- 存档的导出 / 导入窗口：**第三张 sheet**，形态与上面两张完全共用
+       （`.sheet-layer` / `.sheet` / `.sheet-head` / `.sheet-close` / `.sheet-ok` / `sheet-in`）
+       ——这里同样没有第二套弹窗（`index.html:31-32` 那句注释就是这条约定本身）。
+       入口是英雄区 meta 行上的「存档」按钮：它原先直接发一条 save 命令，现在改成开这张 sheet，
+       手动存档那条命令挪进 sheet 里、功能没删（见 app.js 的「存档的导出与导入」那一节）。
+       界面上的三条约定：
+       ① 导出文本是**只读文本框**——它是要被整份复制走的东西，不是在这里编辑的东西；
+          旁边的「下载 .json」给的是同一份文本（浏览器里剪贴板写不进去时它是唯一的出路）；
+       ② 导入的失败原因**原样**显示在 #import-result（引擎写好的那句话，前端不翻译第二遍），
+          而且它是页面上**第二个**实时区域——那句话必须被读屏念出来，且要在屏幕上留着；
+       ③ 「导入」是这张 sheet 的主按钮（`sheet-ok`）：它下面写着"会覆盖当前存档"，
+          而"文本不对就什么都不会动"是引擎七道闸保证的（SAVE_TRANSFER_PLAN §3）。 -->
+  <div id="save-sheet" class="sheet-layer hidden">
+    <div class="sheet sheet-wide" role="dialog" aria-modal="true" aria-labelledby="save-title">
+      <div class="sheet-head">
+        <h2 id="save-title">存档</h2>
+        <button id="save-close" class="sheet-close" type="button" aria-label="关闭存档窗口">&times;</button>
+      </div>
+
+      <h3 class="sheet-section">导出</h3>
+      <p id="export-note" class="muted">正在取当前存档…</p>
+      <textarea id="export-text" class="save-text" readonly rows="7" spellcheck="false"
+                aria-label="导出文本（只读，可整份复制）"></textarea>
+      <div class="sheet-row">
+        <button id="export-copy" class="ghost" type="button">复制</button>
+        <button id="export-download" class="ghost" type="button">下载 .json</button>
+      </div>
+
+      <h3 class="sheet-section">导入</h3>
+      <p class="muted">
+        把整份导出文本粘进下面，再按「导入」。它<b>会覆盖当前存档</b>（上一份会留成
+        <code>.bak</code>）；文本不对、或者不是这个内容包的，就什么都不会动。
+      </p>
+      <textarea id="import-text" class="save-text" rows="7" spellcheck="false"
+                aria-label="导入文本（粘贴整份导出文本）"
+                placeholder="粘贴整份导出文本（neko-save 信封，从 { 到 }）"></textarea>
+      <button id="import-go" class="sheet-ok" type="button">导入</button>
+      <p id="import-result" class="muted" role="status"></p>
+
+      <h3 class="sheet-section">存档文件</h3>
+      <button id="save-now" class="ghost" type="button">立刻存一次盘</button>
+      <p id="save-note" class="muted"></p>
     </div>
   </div>
 
@@ -105,7 +153,7 @@
                结局说了什么"时的入口——答完最后一条表态之后，那是唯一还能回到那张 sheet 的路。
                内容包没有立场也没有结局时整个按钮隐藏（见 app.js 的 renderStanceEntry）。 -->
           <button id="stances-open" class="ghost hidden" title="看立场轴与结局">立场</button>
-          <button id="save" class="ghost">存档</button>
+          <button id="save" class="ghost" title="导出 / 导入 / 手动存档">存档</button>
         </span>
       </div>
     </section>

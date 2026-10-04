@@ -22,9 +22,9 @@
 | ④ | `CHANGELOG.md`：加 `## [<版本>] - YYYY-MM-DD` | 写清兼容性影响；`VersionTests` 会验"有带日期的条目" |
 | ⑤ | **先构建一次**，再跑 `tools\public-api.ps1` | 快照由测试程序集打印，`ApiVersion.Current` 读程序集元数据——版本号改了没重编，快照会带**旧版本号**且看起来完全正常 |
 | ⑥ | 扫一遍所有"当前版本"字样 | 清单见 §2；判据是 `git grep <旧版本号>`，不是记性 |
-| ⑦ | `tools\build.ps1 -Strict` | 556 用例 + 公开 API 快照 + 版本守卫 + 前端冒烟；**0 警告**（2026-10-04 三条分支合并后实测；数会涨，以它打印的那一行为准） |
-| ⑧ | `tools\api-test.ps1` | 全部端到端检查通过（真起宿主、真读 SSE；当前 55 项，脚本收尾还会自己做检查点覆盖审计）；动了宿主/前端时必跑 |
-| ⑧b | `node tools\web-smoke.mjs` | 全部无头前端检查通过（当前 **135** 条；不执行它就没有东西会证明 `app.js` 真的跑得起来）；动了 `wwwroot/` 或快照必跑。**S1 起它也是 `build.ps1 -Strict` 里的一道闸门**，所以第 ⑦ 步已经会替它红 |
+| ⑦ | `tools\build.ps1 -Strict` | 564 用例 + 公开 API 快照 + 版本守卫 + 前端冒烟；**0 警告**（2026-10-04 实测；数会涨，以它打印的那一行为准） |
+| ⑧ | `tools\api-test.ps1` | 全部端到端检查通过（真起宿主、真读 SSE；当前 65 项，脚本收尾还会自己做检查点覆盖审计）；动了宿主/前端时必跑 |
+| ⑧b | `node tools\web-smoke.mjs` | 全部无头前端检查通过（当前 **162** 条；不执行它就没有东西会证明 `app.js` 真的跑得起来）；动了 `wwwroot/` 或快照必跑。**S1 起它也是 `build.ps1 -Strict` 里的一道闸门**，所以第 ⑦ 步已经会替它红 |
 | ⑨ | `tools\pack.ps1` + **自检产物** | 产出 `artifacts\neko-clicker-<版本>-win-x64.zip`；**解开它**，在**包根目录**起 `web\neko-clicker-web.dll`，确认 `/`、`/app.js`、`/api/ping` 与快照里的新字段。这一层没有用例守着（端到端探针只跑开发期路径）——1.3.0 的首页 404 就是这么逮到的 |
 | ⑩ | `git commit` → `git tag -a v<版本>` → 推送 | 本机 HTTPS 不通，走 SSH（见 §6） |
 | ⑪ | 看 CI 的三个作业（`build-and-test` / `web-smoke` / `end-to-end`），把结果写回 `STATUS.md` §6 | "本地全绿"不等于"runner 上全绿" |

@@ -12,10 +12,11 @@
 #   而不是再引入一套解释器差异去解释。
 #
 # 三个作业：
-#   build-and-test  引擎侧：tools/build.ps1 -Strict（0 警告 + 556 用例 + 主/Web 两条 sln + 前端冒烟）
+#   build-and-test  引擎侧：tools/build.ps1 -Strict（0 警告 + 564 用例 + 主/Web 两条 sln + 前端冒烟）
 #                   （这个数在 1.9.0 时是 531；S13 的 5 条守卫 → 536；2026-10-04 把
 #                     save-transfer-1.10.0 / tools-s1-s13 / click-power-bridge 三条分支合并后
-#                     实测 **556**。它会继续长——"当前几个"的权威来源永远是 build.ps1 打印的那一行，
+#                     实测 **556**，同一天做完存档导出/导入的两个窗口（W13/W14）之后是 **564**。
+#                     它会继续长——"当前几个"的权威来源永远是 build.ps1 打印的那一行，
 #                     见 engine/docs/OPEN_WORK.md 的 W1）
 #   web-smoke       前端侧：node tools/web-smoke.mjs（无头 DOM 桩件把 wwwroot/app.js 真跑一遍）
 #   end-to-end      Web 宿主侧：tools/api-test.ps1（起真宿主，打全部端点）

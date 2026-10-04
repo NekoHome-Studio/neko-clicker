@@ -150,8 +150,14 @@ function recomputeAffordable() {
   }
 }
 
-/** 发一条命令。乐观更新的部分刻意不做——等下一帧回来，状态永远以服务端为准。 */
-async function send(type, extra = {}) {
+/**
+ * 发一条命令。乐观更新的部分刻意不做——等下一帧回来，状态永远以服务端为准。
+ *
+ * `options.quiet`：失败时**不**弹提示条。只有存档窗口那三条命令用它，理由是那些话很长
+ * （"校验和对不上（信封里写的是 …，实际 …）——文本被改动或被截断过"），
+ * 提示条 2.6 秒就把它吞掉，而窗口里的那一行会留着（见 importSave / refreshExport）。
+ */
+async function send(type, extra = {}, options = {}) {
   try {
     const response = await fetch(commandUrl, {
       method: "POST",
@@ -159,9 +165,11 @@ async function send(type, extra = {}) {
       body: JSON.stringify({ type, ...extra }),
     });
     const result = await response.json();
-    if (!result.ok && result.message) toast(result.message, true);
+    if (!result.ok && result.message && !options.quiet) toast(result.message, true);
     return result;
   } catch (error) {
+    // 连不上宿主是**另一件事**，与"这条命令被拒绝"不同，所以它照样弹提示条：
+    // 存档窗口那三条也只是"不重复弹自己那一句"，不是"什么都不说"。
     toast(`连不上宿主：${error.message}`, true);
     return { ok: false };
   }
@@ -608,6 +616,175 @@ function renderChoicesSheet() {
     ending.append(h, p);
     axis.append(ending);
   }
+}
+
+// ---------------------------------------------------------------- 存档的导出与导入
+//
+// 这是**第三张 sheet**，形态与「离线收益」「表态」完全共用（`.sheet-layer` / `.sheet` /
+// `.sheet-close` / `sheet-ok` / `sheet-in`）——这个文件里没有第二套弹窗。
+//
+// 三条约定，都在下面这几段里执行：
+//
+// 1. **导出是一份要被人整份拿走的文本**，所以它是只读文本框 + 「复制」+「下载 .json」。
+//    「下载」不是锦上添花：剪贴板写不进去时（非安全上下文 / 权限被拒 / 浏览器没这个 API）
+//    它是唯一一条"把这段文字拿出去"的路，而那种失败**不许**被写成"已复制"。
+// 2. **导入的失败原因原样显示在窗口里**（`#import-result`）。引擎那句话里写着"是哪个字段、
+//    期望什么、该怎么办"，前端再翻译一遍只会两边慢慢说不到一起去（与 GameHost.FromResult
+//    的约定同源）。它同时是一条 `role="status"`，因为"读屏用户也必须听得见失败"。
+// 3. **校验一条都不在前端做**：尺寸、信封、版本、校验和、归属、结构、有限数字七道闸
+//    全在 `SaveManager.Import` 里，而且**全都在碰磁盘之前**。前端提前检查一遍，
+//    只会得到"两套规则"，以及"前端拦住了、引擎没拦住"这种没人能复现的形状。
+//    —— 所以「导入」按钮对空文本框也照发：让引擎说"没有粘贴任何内容。"
+//
+// 与另外两张 sheet 的**一处不同**（不是疏忽，是这张窗口的性质决定的）：打开时把焦点
+// 移进导出框、关闭时还给「存档」按钮。另外两张**没有**做焦点管理（它们只有一两个按钮，
+// 而 Tab 顺序天然够得着）；这张窗口里有七个控件，焦点留在背后的按钮上时，
+// Tab 会走到遮罩底下那些看不见的控件上。
+
+/** 这张 sheet 此刻开着吗。判据只有一个：**那一层此刻是不是真的显示着**（与其他两张同一口径）。 */
+function saveSheetVisible() {
+  const layer = $("#save-sheet");
+  return Boolean(layer) && !layer.classList.contains("hidden");
+}
+
+/** 打开窗口：立刻向宿主取一份导出文本，并把焦点交给它。 */
+function openSaveSheet() {
+  $("#save-sheet").classList.remove("hidden");
+
+  // 每次打开都清掉上一次的结果：留着上一条消息会被读成"这一次也发生了"。
+  setNote("export-note", "正在取当前存档…");
+  setNote("import-result", "");
+  setNote("save-note", "");
+
+  $("#export-text").focus();
+  refreshExport();
+}
+
+/** 关闭窗口：把焦点还给入口按钮（丢在已经隐藏的元素里，读屏会迷路）。 */
+function closeSaveSheet() {
+  $("#save-sheet").classList.add("hidden");
+  $("#save").focus();
+}
+
+/**
+ * 向宿主重新要一份导出文本。
+ *
+ * 失败时**把文本框清空**：留着上一次那份会让人以为"这一份还是有效的"，
+ * 而它可能来自导入之前的旧状态。
+ */
+async function refreshExport() {
+  const result = await send("export", {}, { quiet: true });
+  const box = $("#export-text");
+
+  if (!result?.ok) {
+    box.value = "";
+    setNote("export-note", result?.message ?? "导出失败：宿主没有回话。", true);
+    return;
+  }
+
+  box.value = result.text ?? "";
+  setNote("export-note", result.message ?? "", false);
+}
+
+/**
+ * 复制导出文本。<para>
+ * 剪贴板拿不到时**绝不假装成功**：把文本选中让人按 Ctrl+C，并且把失败原因说出来。
+ * </para>
+ */
+async function copyExport() {
+  const box = $("#export-text");
+  const text = box.value;
+  if (!text) {
+    setNote("export-note", "还没有导出文本可复制。", true);
+    return;
+  }
+
+  const clipboard = navigator.clipboard;
+  if (!clipboard || typeof clipboard.writeText !== "function") {
+    box.select();
+    setNote("export-note", "这个浏览器不允许脚本写剪贴板。文本已经选中，按 Ctrl+C 复制；或者用「下载 .json」。", true);
+    return;
+  }
+
+  try {
+    await clipboard.writeText(text);
+    setNote("export-note", `已复制 ${text.length} 个字符到剪贴板。`, false);
+  } catch (error) {
+    box.select();
+    setNote("export-note", `复制失败（${error.message}）。文本已经选中，按 Ctrl+C 复制；或者用「下载 .json」。`, true);
+  }
+}
+
+/**
+ * 下载一份 .json。<para>
+ * 它和「复制」给的是**同一份文本**——校验和算在文本里，所以谁都不是"弱一点的那条路"。
+ * 文件名带上包 id：一个人手上会有好几种包的导出物。
+ * </para>
+ */
+function downloadExport() {
+  const text = $("#export-text").value;
+  if (!text) {
+    setNote("export-note", "还没有导出文本可下载。", true);
+    return;
+  }
+
+  const name = `${packageId ?? "neko"}-save.json`;
+  const url = URL.createObjectURL(new Blob([text], { type: "application/json" }));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = name;
+
+  // 挂进文档再点：有些浏览器对"不在文档里的 <a>"不触发下载。
+  document.body.append(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+
+  setNote("export-note", `已下载 ${name}（${text.length} 个字符）。`, false);
+}
+
+/**
+ * 导入：把整份文本交给宿主，结果原样显示。<para>
+ * 成功之后**不关窗口**：那句话（导入了哪个包、格式几、有没有不认识的 id）正是玩家要读的。
+ * </para>
+ * <para>
+ * 成功之后**重新导出一份**：文本框里那一份是导入<b>之前</b>的状态，留着它就是让人
+ * 一不小心把旧存档下载走（界面上没有任何东西会提示那件事）。
+ * </para>
+ */
+async function importSave() {
+  const text = $("#import-text").value;
+  const result = await send("import", { text }, { quiet: true });
+
+  if (!result) {
+    setNote("import-result", "导入失败：宿主没有回话。", true);
+    return;
+  }
+
+  setNote("import-result", result.message ?? (result.ok ? "已导入。" : "导入失败。"), !result.ok);
+
+  // 只有成功才重导：失败时状态没变，那一份仍然有效（重导反而会刷掉玩家正在核对的文本）。
+  if (result.ok) await refreshExport();
+}
+
+/** 手动存一次盘（这条命令原先挂在「存档」按钮上，现在挪进窗口里，功能没删）。 */
+async function saveNow() {
+  const result = await send("save", {}, { quiet: true });
+  if (!result) {
+    setNote("save-note", "存档失败：宿主没有回话。", true);
+    return;
+  }
+
+  setNote("save-note", result.message ?? (result.ok ? "已存档。" : "存档失败。"), !result.ok);
+}
+
+/** 写一行结果；`bad` 决定它是"做到了"还是"没做到"的颜色（文案一律用宿主/引擎给的原文）。 */
+function setNote(id, text, bad = false) {
+  const node = $(`#${id}`);
+  if (!node) return;
+  node.textContent = text ?? "";
+  node.classList.toggle("bad", Boolean(bad));
+  node.classList.toggle("good", !bad && Boolean(text));
 }
 
 /** 图鉴：按剧情线分组，未读到的显示 ??? 但保留释放条件与进度。 */
@@ -1573,8 +1750,18 @@ function toast(message, bad = false) {
 // ---------------------------------------------------------------- 事件
 
 $("#big-cat").addEventListener("click", () => send("click"));
-$("#save").addEventListener("click", () => send("save"));
 $("#ascend").addEventListener("click", () => send("ascend"));
+
+// 存档窗口：入口按钮**不再直接发 save**（那是旧行为），它开窗口；手动存档挪进窗口里。
+$("#save").addEventListener("click", openSaveSheet);
+$("#save-close").addEventListener("click", closeSaveSheet);
+$("#save-sheet").addEventListener("click", (event) => {
+  if (event.target.id === "save-sheet") closeSaveSheet();
+});
+$("#export-copy").addEventListener("click", copyExport);
+$("#export-download").addEventListener("click", downloadExport);
+$("#import-go").addEventListener("click", importSave);
+$("#save-now").addEventListener("click", saveNow);
 
 // 离线弹窗：按钮、点遮罩空白处、Esc、空格都能收下它。
 // 遮罩上的点击要认准"点在遮罩本身"——点在卡片里的任何地方都不该关掉。
@@ -1627,6 +1814,27 @@ $("#tabs").addEventListener("click", (event) => {
 
 document.addEventListener("keydown", (event) => {
   if (event.target.tagName === "INPUT") return;
+
+  // 存档窗口排在最前面：它是**最新打开**的那一张（离线收益那张会把整页盖住、
+  // 点不到「存档」，所以两张同时开着的唯一可能是"先开着存档窗口、又来了离线收益"）。
+  // 最上面那张窗口拥有 Esc 与空格——否则玩家按 Esc 关掉的是底下的东西。
+  if (saveSheetVisible() && event.code === "Escape") {
+    event.preventDefault();
+    closeSaveSheet();
+    return;
+  }
+
+  // 焦点在文本框里时，空格是**那个文本框**的（打字），全局这一层不许吃掉它。
+  // 这一条与下面那条 TEXTAREA 判断是一件事的两半：这里管的是"窗口开着"，
+  // 下面管的是"窗口没开、但焦点恰好在某个展开框里"。
+  if (saveSheetVisible() && event.code === "Space" && event.target.tagName === "TEXTAREA") return;
+
+  if (saveSheetVisible() && event.code === "Space") {
+    // 空格在这里被吃掉，而不是退回"点猫"：这张窗口盖在游戏上面，
+    // 按空格却在背后偷偷点一下猫，是一步谁也没要求过的操作（与表态那张同一条规矩）。
+    event.preventDefault();
+    return;
+  }
 
   // 离线弹窗开着时，空格/Esc 先用来收下它：否则玩家按空格想关弹窗，
   // 结果既没关掉又多点了一下（两个都是意外）。

@@ -1,3 +1,4 @@
+using System.Text;
 using NekoClicker.Core;
 using NekoClicker.Core.Events;
 using NekoClicker.Core.Numbers;
@@ -6,6 +7,65 @@ using NekoClicker.Core.Views;
 using NekoClicker.Hosts;
 
 namespace NekoClicker.Demo.Cli;
+
+/// <summary>
+/// 一笔正在等玩家输入的"窗口"。<para>
+/// <b>终端里的"导出/导入窗口"就是这个。</b>这是一个逐帧重绘的字符界面，没有弹窗、
+/// 没有文本框；诚实的等价物是<b>一次文件路径提示</b>：一行提示 + 一个可编辑的路径。
+/// （方案：<c>engine/docs/SAVE_TRANSFER_PLAN.md</c> §4.2。）
+/// </para>
+/// </summary>
+internal enum TransferPromptKind
+{
+    /// <summary>把当前存档导出到某个文件。</summary>
+    Export,
+
+    /// <summary>从某个文件导入一份导出文本。</summary>
+    Import,
+}
+
+/// <summary>
+/// 一次路径提示的可编辑状态：<b>哪种操作</b> + <b>此刻那一行里写着什么</b>。<para>
+/// 它刻意不是一个"输入框控件"：终端这边按键是宿主读的（<see cref="InteractiveLoop.HandleKey"/>），
+/// 会话只负责"往这一行里加一个字 / 删一个字 / 清空 / 确认 / 取消"。
+/// 于是提示的**内容**可以脱离终端被测试，而按键与终端的耦合留在宿主那一侧。
+/// </para>
+/// </summary>
+internal sealed class TransferPrompt
+{
+    /// <summary>开一次提示。</summary>
+    /// <param name="kind">操作种类。</param>
+    /// <param name="path">预填的路径（玩家可以直接回车，也可以先编辑）。</param>
+    public TransferPrompt(TransferPromptKind kind, string path)
+    {
+        Kind = kind;
+        Text = path;
+    }
+
+    /// <summary>操作种类。</summary>
+    public TransferPromptKind Kind { get; }
+
+    /// <summary>这一行里现在写着的路径。</summary>
+    public string Text { get; private set; }
+
+    /// <summary>追加一个字符；控制字符（回车 / Esc / 退格那些）一律不进来。</summary>
+    /// <returns>真的加进去了为 <c>true</c>。</returns>
+    public bool Append(char c)
+    {
+        if (char.IsControl(c)) return false;
+        Text += c;
+        return true;
+    }
+
+    /// <summary>删掉最后一个字符（已是空行时什么都不做）。</summary>
+    public void Backspace()
+    {
+        if (Text.Length > 0) Text = Text[..^1];
+    }
+
+    /// <summary>清空（Ctrl+U）。换一个文件时比按二十次退格现实。</summary>
+    public void Clear() => Text = string.Empty;
+}
 
 /// <summary>当前获得键盘焦点的面板。</summary>
 internal enum PanelFocus
@@ -77,6 +137,7 @@ internal sealed class GameSession : IDisposable
         string? latencyLogPath = null)
     {
         Package = package;
+        SavePath = savePath;
 
         Engine = new GameEngine(package.Build(), new GameEngineOptions
         {
@@ -105,7 +166,9 @@ internal sealed class GameSession : IDisposable
         if (savePath is not null)
         {
             Storage = new FileStorage(Path.GetDirectoryName(Path.GetFullPath(savePath)) ?? ".");
-            Saves = new SaveManager(Engine, Storage, Path.GetFileName(savePath));
+            // PackId 由宿主告诉 SaveManager（**不许从文件名反推**，见 SaveManager.PackId 的注释）：
+            // 这是导入时"拒绝别的包的存档"唯一判据。
+            Saves = new SaveManager(Engine, Storage, Path.GetFileName(savePath)) { PackId = package.Id };
         }
 
         if (Saves is not null && Saves.HasSave() && Saves.Load())
@@ -150,6 +213,9 @@ internal sealed class GameSession : IDisposable
 
     /// <summary>当前内容包。</summary>
     public ContentPackage Package { get; }
+
+    /// <summary>本次运行的存档文件路径（<c>null</c> = 不落盘）。导出提示的默认路径由它推出来。</summary>
+    public string? SavePath { get; }
 
     /// <summary>引擎。</summary>
     public GameEngine Engine { get; }
@@ -483,6 +549,162 @@ internal sealed class GameSession : IDisposable
         // （备用屏退出时那行还会被整屏丢掉）。谁来喊见 <c>InteractiveLoop.Run</c> 的收尾。
         if (Saves is not null && !Saves.Save()) ExitSaveError = Saves.LastError;
         QuitRequested = true;
+    }
+
+    // ---------------------------------------------------------------- 导出 / 导入
+    //
+    // 终端没有弹窗，所以这两件事的"窗口"= **一次文件路径提示**（SAVE_TRANSFER_PLAN §4.2）。
+    // 两边都走**同一个** SaveManager.Export/Import —— 终端绝不自己解析一遍导出文本：
+    // "两个宿主两套语义"正是这一节要避免的事（Web 那边也是同一个入口）。
+
+    /// <summary>此刻正在等玩家输入的提示；没有则为 <c>null</c>。</summary>
+    public TransferPrompt? Prompt { get; private set; }
+
+    /// <summary>开一次导出提示（<c>E</c> 键）。</summary>
+    public void BeginExportPrompt() => BeginPrompt(TransferPromptKind.Export);
+
+    /// <summary>开一次导入提示（<c>I</c> 键）。</summary>
+    public void BeginImportPrompt() => BeginPrompt(TransferPromptKind.Import);
+
+    /// <summary>往路径那一行追加一个字符。</summary>
+    /// <param name="c">按键字符。</param>
+    public void PromptAppend(char c) => Prompt?.Append(c);
+
+    /// <summary>删掉路径最后一个字符。</summary>
+    public void PromptBackspace() => Prompt?.Backspace();
+
+    /// <summary>清空路径（Ctrl+U）。换一个文件时比按二十次退格现实。</summary>
+    public void PromptClear() => Prompt?.Clear();
+
+    /// <summary>取消这次提示（Esc）：什么都不做，什么都不写。</summary>
+    public void CancelPrompt()
+    {
+        if (Prompt is null) return;
+        Prompt = null;
+        Log("已取消。", "·");
+    }
+
+    /// <summary>
+    /// 确认这次提示（Enter）：导出写文件，或导入读文件。<para>
+    /// 提示**先收掉再干活**：写文件可能慢、可能抛，而"提示去不掉"会让玩家以为卡住了。
+    /// </para>
+    /// </summary>
+    public void AcceptPrompt()
+    {
+        if (Prompt is not { } prompt) return;
+
+        string path = prompt.Text.Trim();
+        TransferPromptKind kind = prompt.Kind;
+        Prompt = null;
+
+        if (Saves is null)
+        {
+            // 不落盘的会话没有槽位可导、也没有槽位可导进：明说，而不是静默什么都不做。
+            Log("本次运行未启用存档（--no-save），导出与导入都做不了。", "!");
+            return;
+        }
+
+        if (path.Length == 0)
+        {
+            Log("没有给路径。按 E / I 重新来一次。", "!");
+            return;
+        }
+
+        if (kind == TransferPromptKind.Export) ExportTo(path);
+        else ImportFrom(path);
+    }
+
+    /// <summary>
+    /// 把当前存档导出成一个文件。<para>
+    /// <b>为什么不走 <see cref="IStorage"/></b>：那三道闸（先写 .tmp → 反解一遍 → 原子替换 + .bak）
+    /// 是**存档槽位**的保护，而导出物是另存的一份文本、不是槽位本身。真正的保护已经由
+    /// <see cref="SaveManager.Export"/> 保证（状态读得出来才导得出），这里只需要"写不进去要响"。
+    /// </para>
+    /// </summary>
+    /// <param name="path">目标文件路径（相对路径按当前工作目录）。</param>
+    /// <returns>写入的完整路径；失败为 <c>null</c>。</returns>
+    public string? ExportTo(string path)
+    {
+        if (Saves is null)
+        {
+            Log("本次运行未启用存档（--no-save），导出做不了。", "!");
+            return null;
+        }
+
+        try
+        {
+            string text = Saves.Export();
+            string full = Path.GetFullPath(path);
+            Directory.CreateDirectory(Path.GetDirectoryName(full) ?? ".");
+
+            // **不带 BOM**：这一行是导出格式的一部分，不是口味。导出文本的下一站是"被贴进
+            // 另一个宿主的文本框"或"被别的工具读"——开头多一个 U+FEFF，JSON 解析会在
+            // 第一个字符上就失败，而报出来的那句话（"连合法 JSON 都不是"）完全指不到 BOM 上。
+            File.WriteAllText(full, text, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+
+            Log($"已导出到 {full}（{text.Length} 个字符）。整份复制走就能在别处导入。", "📤");
+            return full;
+        }
+        catch (Exception ex)
+        {
+            // 写不进去（路径不存在 / 没权限 / 磁盘满）必须响亮：玩家会以为导出成功了，
+            // 然后在另一台机器上发现文件不在——那是"报成功却什么都没发生"的经典形状。
+            Log($"导出失败：{ex.Message}", "!");
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// 从一个文件导入一份导出文本。<b>校验与落盘全在 <see cref="SaveManager.Import"/> 里</b>
+    /// （七道闸都在碰磁盘之前），这里只负责读文件与播报结果。
+    /// </summary>
+    /// <param name="path">源文件路径。</param>
+    /// <returns>导入结果；文件都读不到时为 <c>null</c>。</returns>
+    public SaveTransferResult? ImportFrom(string path)
+    {
+        if (Saves is null)
+        {
+            Log("本次运行未启用存档（--no-save），导入做不了。", "!");
+            return null;
+        }
+
+        string text;
+        try
+        {
+            // 刻意用 ReadAllText 的默认值（会自己剥掉 BOM）：别人用记事本存过的文件也读得进来。
+            // 反过来说，**导出那一侧不许写 BOM** —— 见 ExportTo。
+            text = File.ReadAllText(path);
+        }
+        catch (Exception ex)
+        {
+            Log($"读不到那个文件：{ex.Message}", "!");
+            return null;
+        }
+
+        SaveTransferResult result = Saves.Import(text);
+        // 成功与失败都**原样**播报引擎那句话：它已经写着"是哪个字段、期望什么、该怎么办"，
+        // 宿主再翻译一遍只会两边慢慢说不到一起去（与 Web 宿主同一条约定）。
+        Log(result.Message, result.Ok ? "📥" : "!");
+        return result;
+    }
+
+    /// <summary>开一次提示，路径预填成默认值。</summary>
+    private void BeginPrompt(TransferPromptKind kind) => Prompt = new TransferPrompt(kind, DefaultTransferPath());
+
+    /// <summary>
+    /// 导出/导入提示里的默认路径：**存档旁边**的 <c>&lt;包 id&gt;-export.json</c>。<para>
+    /// 跟着存档走（而不是另起一个目录）：玩家自己传了 <c>--save</c> 时，导出物落在存档边上
+    /// 才是可预期的地方。导入侧刻意用<b>同一个</b>默认值——最常见的用法就是"我刚导出，
+    /// 现在想导回来"，于是回车即可；要换文件就先编辑这一行（Ctrl+U 清空重打）。
+    /// </para>
+    /// </summary>
+    private string DefaultTransferPath()
+    {
+        string dir = SavePath is null
+            ? Directory.GetCurrentDirectory()
+            : Path.GetDirectoryName(Path.GetFullPath(SavePath)) ?? Directory.GetCurrentDirectory();
+
+        return Path.Combine(dir, $"{Package.Id}-export.json");
     }
 
     // ---------------------------------------------------------------- 视图数据

@@ -16,7 +16,15 @@ namespace NekoClicker.Web;
 /// <param name="Ok">是否成功。</param>
 /// <param name="Message">给人看的一句话（失败原因 / 结算结果）。</param>
 /// <param name="Seq">处理完这条命令之后的快照序号。</param>
-public sealed record CommandOutcome(bool Ok, string Message, long Seq);
+/// <param name="Text">
+/// 这条命令**带回来的文本**（今天只有 <c>export</c> 用它，别的命令一律 <c>null</c>）。<para>
+/// <b>为什么不塞进 <see cref="Message"/></b>：<see cref="Message"/> 是一句给人看的话，
+/// 要短、要能显示在提示条上；导出文本是一份 1.5~6 KB 的机器数据，它的去处是文本框与剪贴板。
+/// 两者混进一个字段，界面上就只能二选一——而那正是 <c>SAVE_TRANSFER_PLAN</c> §4.1
+/// 明确要避免的（导出必须是**可复制的文本**，同时状态还得说得出话）。
+/// </para>
+/// </param>
+public sealed record CommandOutcome(bool Ok, string Message, long Seq, string? Text = null);
 
 /// <summary>
 /// 调试门跳层的结果（见 <c>engine/docs/WEB_DEBUG_GATE_PLAN.md</c>）。<para>
@@ -115,7 +123,9 @@ public sealed class GameHost : IAsyncDisposable
         if (saveRoot is not null)
         {
             var storage = new FileStorage(saveRoot);
-            _saves = new SaveManager(_engine, storage, $"{package.Id}.json");
+            // PackId 必须由宿主告诉 SaveManager（**不许从槽位名反推**，见 SaveManager.PackId）：
+            // 十一个内容包写出来的存档逐字段同构，没有包标识就拦不住"把咖啡馆的存档导进末世包"。
+            _saves = new SaveManager(_engine, storage, $"{package.Id}.json") { PackId = package.Id };
             if (_saves.HasSave() && _saves.Load()) _offlineOnLoad = _saves.LastOfflineProgress;
         }
         else
@@ -328,6 +338,79 @@ public sealed class GameHost : IAsyncDisposable
             return _saves.Save()
                 ? new CommandOutcome(true, "已存档。", Seq)
                 : new CommandOutcome(false, $"存档失败：{_saves.LastError?.Message ?? "原因未记录"}", Seq);
+        }).ConfigureAwait(false);
+
+    /// <summary>
+    /// 导出一份可复制粘贴的存档文本（信封格式，见 <see cref="SaveManager.Export"/>）。<para>
+    /// <b>它不写盘</b>——导出是一次读。文本走 <see cref="CommandOutcome.Text"/> 回给浏览器，
+    /// 因为那正是一段要被人整份复制走的东西，不是一句给人看的话。
+    /// </para>
+    /// <para>
+    /// <b>调试跳层的会话不导出</b>（与 <see cref="SaveAsync"/> 同一条规矩，理由见
+    /// <see cref="DebugMode"/>）：跳层只在内存里。导出物却是**耐久且会离开这台机器**的
+    /// ——它会被人贴进别的会话、写进别的存档，等于把一个玩家没玩过的层号发了出去。
+    /// 这个会话不落盘时也没有可导的东西（没有槽位）。
+    /// </para>
+    /// </summary>
+    /// <returns>成功时 <see cref="CommandOutcome.Text"/> 里是整份导出文本。</returns>
+    public async Task<CommandOutcome> ExportAsync()
+        => await ExecuteAsync(_ =>
+        {
+            if (_saves is null) return new CommandOutcome(false, "这个会话不落盘，没有可导出的存档。", Seq);
+
+            // 与 SaveAsync 同一条：调试跳层留下的层号不该出现在任何耐久的产物里。
+            if (_debugMode) return new CommandOutcome(false, "调试模式下不导出（跳层只在内存里，退出即弃）。", Seq);
+
+            try
+            {
+                string text = _saves.Export();
+                return new CommandOutcome(
+                    true,
+                    $"已生成导出文本（内容包「{_package.Id}」、{text.Length} 个字符）——整份复制走，"
+                    + "就能在别处导入；也可以下载成 .json 文件。",
+                    Seq,
+                    text);
+            }
+            catch (Exception ex)
+            {
+                // Export() 只在"引擎里的状态压根不是一份存档"时才抛（那是代码 bug），
+                // 但界面这一侧不该看见一个 500：照样翻成一句人话（与 FromResult 的约定同源）。
+                return new CommandOutcome(false, $"导出失败：{ex.Message}", Seq);
+            }
+        }).ConfigureAwait(false);
+
+    /// <summary>
+    /// 导入一份 <see cref="ExportAsync"/> 出来的文本。<para>
+    /// <b>这里一行校验都不写</b>：尺寸、信封、版本、校验和、归属、结构、有限数字七道闸
+    /// 全在 <see cref="SaveManager.Import"/> 里，而且**全都在碰磁盘之前**——所以"坏输入"
+    /// 这条路上磁盘与内存一动都没动。宿主重复实现一遍只会得到第二套语义。
+    /// </para>
+    /// <para>
+    /// 失败时把引擎自己的 <see cref="SaveTransferResult.Message"/> <b>原样</b>回给浏览器
+    /// （与 <see cref="FromResult"/> 同一条约定）：那句话里已经写着"是哪个字段、期望什么、
+    /// 该怎么办"，宿主再翻译一遍只会两边慢慢说不到一起去。
+    /// </para>
+    /// </summary>
+    /// <param name="text">粘贴进来的导出文本。</param>
+    /// <returns>结果；<b>坏输入不抛异常</b>，而是带着精确原因返回。</returns>
+    public async Task<CommandOutcome> ImportAsync(string text)
+        => await ExecuteAsync(_ =>
+        {
+            if (_saves is null) return new CommandOutcome(false, "这个会话不落盘，没法导入。", Seq);
+
+            // 调试跳层的会话不导入：导入会**写盘**（把刚粘进来的那份变成当前存档），
+            // 而"调试不该留下痕迹"这条在 SaveAsync 上已经定过（plan §4）。
+            if (_debugMode) return new CommandOutcome(false, "调试模式下不导入（跳层只在内存里，退出即弃）。", Seq);
+
+            SaveTransferResult result = _saves.Import(text);
+            if (!result.Ok) return new CommandOutcome(false, result.Message, Seq);
+
+            // 导入换掉的是**整局状态**，所以直接推一份全量：增量协议算得出差量，
+            // 但"这一下换了一整局"是个大事件，让这份起点视图（新客户端接入时拿的就是它）
+            // 立刻正确，比省一帧值钱得多。顺带也让调用方**紧接着**取快照就一定是导入后的状态。
+            Publish(forceFull: true);
+
+            return new CommandOutcome(true, result.Message, Seq);
         }).ConfigureAwait(false);
 
     /// <summary>

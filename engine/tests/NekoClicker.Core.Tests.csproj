@@ -45,6 +45,23 @@
       WebChoiceLatencyTests 测的就是 Web 宿主编的那同一份源码。
     -->
     <Compile Include="..\..\games\hosts\Web\SnapshotProtocol.cs" Link="Web\SnapshotProtocol.cs" />
+
+    <!--
+      Web 宿主的**会话本体**（GameHost）也走共享源码，于是"宿主接线"这一层第一次有了
+      C# 级用例（SaveTransferHostTests）：PackId 真的传给了 SaveManager、export 命令真的
+      带回一份信封文本、坏输入真的一个字节都不写盘。不共享的话这一层只能由
+      tools/api-test.ps1 真起宿主来验——那条路也要，但它验的是 HTTP 面，验不到
+      "会话对象自己有没有把字段接上"。
+
+      共享得动的前提（实测，不是推测）：GameHost.cs 只用 BCL
+      （System.Text.Json / System.Threading.Channels / System.Diagnostics）与
+      NekoClicker.Core + 共享的 ChoiceLatencyLog，**一行 ASP.NET 都不碰**——
+      碰 ASP.NET 的是 Program.cs，而那个文件不在共享清单里。
+      PackageCatalog.cs 一起编进来只是为了 WebPackage 这个记录类型
+      （GameHost 的构造参数就是它），它的运行时扫描在本项目里一次都不会被调用。
+    -->
+    <Compile Include="..\..\games\hosts\Web\GameHost.cs" Link="Web\GameHost.cs" />
+    <Compile Include="..\..\games\hosts\Web\PackageCatalog.cs" Link="Web\PackageCatalog.cs" />
   </ItemGroup>
 
 </Project>

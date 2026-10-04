@@ -555,6 +555,53 @@ Web 前端一个都没读。于是"建筑专属升级"在玩家眼里根本不�
 > [`## [1.5.0]`](#150---2026-10-02) 一节（它是一个 minor，必须同时升版本号与快照，
 > 不能和其他 patch 一起攒在"未发布"里）；下面这些仍然没随任何版本号发布过。
 
+### 宿主与界面（patch：存档的导出/导入「窗口」——Web 与终端）
+
+> **版本决定：不升版本号。** 依据 [VERSIONING](engine/docs/VERSIONING.md) §2 那张表：
+> 「公开 API 一行没动 → **patch**」。这一轮 `engine/core` 一行未改
+> （`PublicApi.txt` 与 `d02ab95` **逐字节相同**；快照只扫 `NekoClicker.Core`，
+> 而改动的六个文件全在宿主与前端：`GameHost` / `Program` / `GameSession` /
+> `InteractiveLoop` / `TerminalUi` / `CliOptions` / `wwwroot/*` / `tools/*`）。
+> `CommandOutcome` 上新增的 `Text` 是**宿主私有**的 HTTP 契约，不是公开 API。
+> 按登记册 **D3**（"`[未发布]` 桶要不要结掉"）那条先例，这一条**攒在这里**，
+> 等真人拍一次版本号——与 §0.10 / §0.12 / §0.14 / §0.16 几次纯宿主/内容改动同一待遇。
+
+- **玩家终于有入口了**（patch：宿主 + 前端；这一条补的是 `SAVE_TRANSFER_PLAN` §1.2
+  「缺口 D」——引擎侧 1.10.0 就能用，而 `ExportShareCode()` 那个公开 API **零调用者**）。
+  - **Web**：英雄区 meta 行上的「存档」按钮**不再直接发 `save`**，它打开第三张 sheet
+    （`.sheet-layer` / `.sheet` / `.sheet-close` / `.sheet-ok` / `sheet-in` **整段复用**——
+    这个前端仍然没有第二套弹窗，`index.html:31-32` 那句注释就是这条约定本身）。
+    窗口里三节：**导出**（只读 `textarea` + 「复制」+「下载 .json」）、
+    **导入**（`textarea` + 「导入」+ 一行结果）、**存档文件**（「立刻存一次盘」——
+    那条命令**换了入口而没被删**）。命令侧新增 `export` / `import`，
+    导出文本走新字段 `CommandOutcome.Text`（HTTP 正文里的 `text`）——它**不塞进 `message`**：
+    那句话要短、要能显示在提示条上，而导出文本是 1.5~6 KB 的机器数据。
+  - **终端**：`E` / `I` 两个键各开**一次文件路径提示**。终端没有弹窗，
+    这就是它那边"窗口"的诚实形态（`SAVE_TRANSFER_PLAN` §4.2）：提示顶掉详情行、
+    键位行同时换成"这一件事的键位"，行的位置与数量都没变。预填 `<包 id>-export.json`
+    到存档旁边；Enter 确认 / Esc 取消 / 退格删字 / Ctrl+U 清空。导入走的是**同一个**
+    `SaveManager.Import`（两个宿主两套语义正是这一节要避免的事）。
+  - **三个选择都按方案实现**（方案 §7 记着它们，**一个都没有被悄悄改掉**）：
+    导入**不结算离线收益**、导入后**不立刻再存一次**、Web 导出**同时给下载 .json**
+    （下载与复制给的是**同一份字节**——校验和算在文本里，所以两条路等价）。
+- **坏输入绝不动盘，而且是在宿主这一层动都没动**：三种坏输入（人话 / 别的包 /
+  校验和对不上）在 C#（`SaveTransferHostTests`，8 条）与 `tools/api-test.ps1`（真宿主 + 真 HTTP，
+  `Get-FileHash` 前后对比 + "盘上那份 = 信封里那段 `Save`"）两处各断言一遍。
+  包标识由宿主接上（`GameHost.PackId = package.Id` / `GameSession.Saves.PackId = package.Id`）——
+  摘掉这一行会让两条用例变红，其中一条的原文正是"**本会话没有包标识，所以这次没有做跨包检查**"
+  却**收下了**咖啡馆的存档（"没有闸门时消息看起来完全正常"的形状）。
+- **导出文件不带 BOM**（终端侧）：开头多一个 U+FEFF 会让导入端在 JSON 的第一个字符上失败，
+  而报出来的那句话（"连合法 JSON 都不是"）完全指不到 BOM 上。
+- **从前端那一侧也不许撒谎**：剪贴板写不进去时把文本选中 + 明说失败（**不是**"已复制"）；
+  导入的失败原因原样留在窗口里（`role="status"`，页面上**恰好两个**实时区域，
+  `web-smoke` 有一条盯着数量），而不是只在提示条上闪 2.6 秒。
+- **实测**（同一棵隔离 worktree `.tmp/wt-transfer`，从 `d02ab95` 起；基线 556 / 135 / 55）：
+  `tools/build.ps1 -Strict` **564 / 564 全绿、0 警告**、`node tools/web-smoke.mjs` **162 / 162**、
+  `tools/api-test.ps1` **65 / 65**；三处故障注入各自把 1~3 条守卫变红后已还原
+  （原文与细节见 [OPEN_WORK](engine/docs/OPEN_WORK.md) §0.18 与
+  [SAVE_TRANSFER_PLAN](engine/docs/SAVE_TRANSFER_PLAN.md) §9）。
+  **没验到的**：那张窗口**没有一双眼睛看过**（本机起不了浏览器）——已并进 `OPEN_WORK` 的 H3。
+
 ### 新增
 
 - **Web 宿主的作答延迟埋点**（patch：纯宿主功能，一行公开 API 都没动）。
