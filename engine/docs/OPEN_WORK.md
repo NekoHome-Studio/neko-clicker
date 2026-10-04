@@ -70,7 +70,7 @@
 | **W9** | 用一份**真实的跨版本存档**验一次"答不上"的待答表态在真宿主里的表现 | §5.1 记着：今天只有"合成内容 + 手工构造的存档"验过；真实存档里会是什么样（界面一片正常、只有引擎通知说一句）**没试过** | S/M（造一份存档副本；**别碰仓库真实 `saves/`**） | 🔧 机械 | §5.1 第二条、§3-K.3② |
 | **W10** | 把两条"已经发布的东西没被逐条复核"的诚实边界收掉：队友 1.2/1.3/1.4 只读了提交标题；`STATUS`/`README` 的每句"状态"没逐句复核 | 它们至今是仓库里仅剩的两条这类"未验证"，而对着的都是**已经发出去**的东西 | M | 🔧 机械 | §5 第三条、`DEVELOPMENT_SUMMARY` §8.6 |
 | **W12** | `engine/tests/` 里对 `cpsEach` 的断言是 **0** 条：给引擎侧补一条值守卫（最少：横扫全部包断言"`owned > 0` ⇒ `cpsEach > 0`"，以及"`owned == 0` ⇒ 恒为 0"这条**今天没人看过**的事实） | `WEB_BUILDING_RATE_FEEDBACK` §5.2 实测：全仓库只有定义 / 赋值 / 终端渲染三处引用它，**没有一条用例断言过它的值**。§0.14 落的 §23 守的是"Web 有没有人画这个字段"，**守不住这个字段的值**——第二层（D11）真落地时那条用例要新写，而且按 `UpgradeRows_ReportTheRightWalletForEveryPack` 的教训该是**横扫全部包**的那一类；今天连一条单包的都没有 | S~M（写用例；不动公开 API） | 🔧 机械 | `WEB_BUILDING_RATE_FEEDBACK` §5.2、§0.14 |
-| **W15** | `STATUS.md` 与 `engine/docs/RELEASING.md` 里写着 `1.9.0` 的版本行 | 1.10.0 已经把 `README.md` / `engine/README.md` / `VERSIONING.md` / `Directory.Build.props` / 快照都改了，只剩这两处描述"某个历史时刻"的文件仍写 1.9.0——它们同时也是 **D8**（1.5.0~1.9.0 补发）与 **W1**（"当前用例数"散在 8 处）的题材，顺手改会与那两条撞车 | S | 🔧 机械（先看 D8 怎么定） | `STATUS.md:3`、`:19`、`:28`、`:183`；`RELEASING.md` 的版本行；`SAVE_TRANSFER_PLAN` §6 末尾 |
+| **W15** | `STATUS.md` 里写着 `1.9.0` 的版本行（**只有它**；原先这一行还写着 `engine/docs/RELEASING.md`，那半是错的，2026-10-04 用 `git grep` 核实后删掉，见 §0.19） | 1.10.0 已经把 `README.md` / `engine/README.md` / `VERSIONING.md` / `Directory.Build.props` / 快照都改了，只剩 `STATUS.md` 这份"记录时间 2026-10-02"的快照仍写 1.9.0——它同时也是 **D8**（1.5.0~1.9.0 补发）与 **W1**（"当前用例数"散在 8 处）的题材，顺手改会与那两条撞车 | S | 🔧 机械（先看 D8 怎么定） | `STATUS.md:3`、`:19`、`:28`（三处**现在时**；`:183` 是带日期的实测记录，属历史，别改）；`SAVE_TRANSFER_PLAN` §6 末尾（那里同一句话也已更正）。**核实命令（跑过，结论就写在命令后面）**：`git grep -n "1\.9\.0\|1\.10\.0" -- engine/docs/RELEASING.md` → **只有第 48 行**一条 dated 历史记录（"1.10.0 落地时漏了它"），**没有现在时版本行**——RELEASING 是流程文档，它的 §2 列的是"别的哪些文件写版本号" |
 
 **没有列进上表的**：§3 的编号 **O**——那是 [WEB_EXTENSION_PLAN](WEB_EXTENSION_PLAN.md) 的保留号，
 它今天是**"已搁置"，是决定不是欠账**（理由与坐标见 §0.12.2）；它 §11 的 D1~D9 只有在真人
@@ -114,6 +114,9 @@
 | **W11**（Web 建筑卡片补「单个 X/s」） | **`618a46c`**（2026-10-03：第一层落地——`buildings[].cpsEach` 并进卡片那一行；同一个提交还给"引擎算了、快照推了、前端没画"这一类缺陷加了 §23 那条守卫。第二层是 D11，仍未做。详见 §0.14） |
 | **W13**（Web 的导出/导入窗口） | **`2323a2a`**（2026-10-04：点「存档」开第三张 sheet——导出只读文本框 + 复制 + 下载 `.json`；导入文本框 + 引擎原话的结果行；`#save` 不再直接发 `save`，手动存档挪进窗口里）。宿主侧补 `GameHost.PackId`、`ExportAsync`/`ImportAsync`、`export`/`import` 两条命令与 `CommandOutcome.Text`。证据：`web-smoke` 第 24 节 27 条、`SaveTransferHostTests` 8 条、`api-test` 新增 10 处（真宿主）；详见 §0.18 |
 | **W14**（终端的导出/导入） | **`2323a2a`**（2026-10-04：`E` / `I` 开一次**文件路径提示**——终端没有弹窗，这就是它那边"窗口"的诚实形态；提示预填到存档旁边，Enter 确认 / Esc 取消 / 退格删字 / Ctrl+U 清空；导出文件**不带 BOM**）。`GameSession.Saves.PackId = package.Id` 也接上了。证据：`SaveTransferHostTests` 的后 5 条 + "提示帧仍然每行恰好 N 列"那条；详见 §0.18 |
+| `STRUCTURE_OPTIMIZATION` 的 **S2 / S3** | **2026-10-04**（提交号见 §0.19）：`tools/capture-fixture.ps1` 进了仓库并实跑过一次（真实 `saves/` 与 `artifacts/latency.txt` 指纹未变）；`build.ps1` 的失败分支现在点名占 `bin` 的 PID + 端口 + image（只报告、不杀）。详见 §0.19.3 / §0.19.4 |
+| **新增守卫**：`.ps1` 的 UTF-8 BOM | **2026-10-04**（提交号见 §0.19）：`engine/tests/ToolingHygieneTests.PowerShellScripts_CarryTheUtf8Bom`，在 `-Strict` 里扫全仓 `*.ps1`，**点名到文件**；判别力用"剥掉 `public-api.ps1` 的 BOM ⇒ 1/11 红"证明过（PS 5.1 解析器对同一份字节报 `TerminatorExpectedAtEndOfString`）。详见 §0.19.1 |
+| **W15 的 `RELEASING.md` 那半** | **2026-10-04**（提交号见 §0.19）：`git grep` 否掉了它——`RELEASING.md` 里没有现在时版本行，W15 已收窄到只指 `STATUS.md`；`SAVE_TRANSFER_PLAN` §6 那句同样的错话也一并更正。**W15 本身仍然开着**（改不改 `STATUS.md` 由 D8 定） |
 
 #### 合并（同一件活原先写了不止一处）
 
@@ -1147,6 +1150,149 @@ S	2026-10-03T15:36:25.707Z	company	choice_first_order	order_take	3.833	0.004	30	
 - **`ApplyFailed` 仍然不可达**（§8 那条，本轮没变）；**W9（真实跨版本存档）仍然没做**。
 - **剪贴板只在桩里验过两条分支**，没有在真浏览器里点过一次（那需要真实的权限提示）。
 - 路径提示的**真实键盘手感**（中文/全角路径、粘贴一长串）只有单测，没有真人敲过。
+
+---
+
+## 0.19 工具链四件：BOM 守卫 · W15 收窄 · 夹具抓取脚本进仓库 · `build.ps1` 认得占 `bin` 的人（2026-10-04）
+
+四项在同一棵隔离 worktree（`.tmp/wt-struct`，从 **`04c67e0`** 起）里做完，本地提交、**没有推送、没有打 tag**。
+`engine/core` 一行未改、`engine/core/PublicApi.txt` 逐字节未变，改的全是 `tools/`、`engine/tests/`
+与文档 ⇒ 按 `VERSIONING` §2 与 **D3 的先例**（近期工具/文档改动**刻意不升版本**），这一轮**不升版本**。
+
+**三条命令的实测**（同一棵树、同一提交；动手前基线 **564 / 162 / 65** 是 `04c67e0` 上的值）：
+
+| 命令 | 基线 | 本轮 | 差 |
+|---|---|---|---|
+| `tools/build.ps1 -Strict` | 564 | **565 / 565 全绿、0 警告**（新增的 BOM 守卫 1 条；前端冒烟也在这一步里跑） | +1 |
+| `node tools/web-smoke.mjs` | 162 | **162 / 162**（这一轮只动了 §14 的注释） | 0 |
+| `tools/api-test.ps1` | 65 | **65 / 65**（真宿主；检查点覆盖 65/65、跳过 0。这一轮没碰它验的那一层，跑它是为了证明没碰坏） | 0 |
+
+### 0.19.1 新增守卫：`.ps1` 必须带 UTF-8 BOM（本项价值最高的一条）
+
+**为什么**：仓库的 `.ps1` 是中文注释、由 **Windows PowerShell 5.1** 执行（`start.cmd` 用
+`-ExecutionPolicy Bypass` 调进来）。5.1 把**没有 BOM** 的文件按 **GBK** 解码 ⇒ 中文注释变乱码 ⇒
+解析在到达第一行代码之前就失败 ⇒ **整个脚本一项都不跑**。而这个失效有一半是沉默的：
+`pwsh`（PowerShell 7）默认按 UTF-8 读无 BOM 文件，所以同一份文件在开发机上"看起来是好的"。
+这件事在 2026-10-04 一天里咬了至少三次，最后一次直接落在 `main` 上
+（`tools/build.ps1` 与 `tools/api-test.ps1`，`04c67e0` 补回），而在此之前它**只靠人记得**
+——`edit` 一类的工具保存 `.ps1` 时会把 BOM 丢掉。
+
+**守卫放在哪、为什么是那里**：`engine/tests/ToolingHygieneTests.PowerShellScripts_CarryTheUtf8Bom`
+（新文件，**1 条用例**）。三条理由：
+① 它在 `tools\build.ps1 -Strict` 这条闸门里**无条件**跑——`tools/web-smoke.mjs` 虽然也在闸门里，
+但可以被 `-SkipWebSmoke` 显式跳过，放那里闸门会漏；
+② 它在**所有 `.ps1` 之外**执行，所以连 `build.ps1` 自己被剥了 BOM 都抓得到
+（写进 `build.ps1` 里的守卫恰恰抓不到 `build.ps1` 本身）；
+③ 代价是一条被 SDK 自动收进来的测试文件：不新增工程、不新增脚本、不动公开 API。
+射程是**从仓库根往下扫全部 `*.ps1`**，只跳过 `.git` / `.tmp` / `bin` / `obj` / `artifacts` /
+`node_modules`——今天命中的 **11** 个全在 `tools/`，写成"整个仓库"是为了让下一个 `.ps1`
+无论放在哪里都自动被扫到，而不是留下一处"新位置没人守"的盲区。
+失败信息**点名文件与它实际的开头字节**，并给出补回 BOM 的那一条命令。
+
+**判别力（真跑过、已还原）**：把 `tools/public-api.ps1`（`build.ps1` 不跑它，所以剥它不影响闸门）
+的 BOM 剥掉三个字节，只跑这一条，红的是：
+
+```
+  ✗ ToolingHygieneTests.PowerShellScripts_CarryTheUtf8Bom
+      AssertionException: 仓库里的 .ps1 必须带 UTF-8 BOM（开头三个字节 EF BB BF），这几个没有（1/11）：
+    tools/public-api.ps1（开头是 23 20 70）
+为什么：这些脚本由 Windows PowerShell 5.1 执行（…）⇒ 一项都不跑；…（修法一行）｜期望 <0>，实际 <1>。
+```
+
+同一份"没有 BOM"的字节交给 **Windows PowerShell 5.1 的解析器**（只解析、不执行），它报的正是
+那条被记了三次的错：`TerminatorExpectedAtEndOfString`（第 44 行）+ `MissingEndCurlyBrace`（第 23 行）；
+而 PowerShell 7 的解析器报 **0** 条——**"看起来是好的"就是这么来的**。
+还原后 sha256 与剥之前**逐字节相同**（`7C4FDBF1…`、2532 字节、开头 `EF BB BF`）。
+
+**这一轮自己也踩了一次**（所以这不是历史）：改 `tools/build.ps1` 时 `edit` 工具把 BOM 剥掉了
+（实测开头变成 `23 20 E6`），是靠"改完 `.ps1` 就重看前三个字节"这条规矩当场补回来的。
+
+### 0.19.2 W15 收窄：`engine/docs/RELEASING.md` 那半是**错的**
+
+W15 原先写"`STATUS.md` 与 `engine/docs/RELEASING.md` 里写着 `1.9.0` 的版本行"。**跑一遍就否掉了一半**：
+
+```
+git grep -n "1\.9\.0\|1\.10\.0" -- engine/docs/RELEASING.md
+engine/docs/RELEASING.md:48:| `engine/docs/OPEN_WORK.md` | §1「现在在哪」的**版本行**（补记：1.10.0 落地时漏了它，…） |
+```
+
+**只有这一条命中，而它是带日期的历史记录**（讲的是 1.10.0 落地时补了什么），
+那份文档里**没有一行现在时版本行**。它也不该有：`RELEASING` 是流程文档，它的 §2 列的恰恰是
+"**别的哪些文件**写版本号"（`Directory.Build.props` 是单一事实来源）——所以**没有在 `RELEASING.md` 里加**。
+真正的现在时版本行只在 `STATUS.md`（`:3` / `:19` / `:28`），而 `:183` 是带日期的实测记录（历史，别改）。
+同一句错话还抄在 `SAVE_TRANSFER_PLAN` §6 末尾（W15 就是从那里来的），**那里也一并更正了**，
+并写明了核实命令与结论。W15 现在只指向 `STATUS.md`；它仍是开着的（要不要改、什么时候改由 **D8** 拍）。
+
+### 0.19.3 S2 关闭：抓夹具的脚本进了 `tools/`
+
+新增 **`tools/capture-fixture.ps1`**（`param`：`-Port` / `-Package` / `-Clicks` / `-Output`）。
+它比 `.tmp` 那份（已 gitignore）多做四件事：① 根目录由 `$PSScriptRoot` 推出来，不再需要 `-Worktree`；
+② 临时目录落在**系统 temp**，仓库树里一个临时文件都不产生；③ 落盘前**否决**三种"看着像快照但是坏的"
+结果——`buildings` 空 / `notifications` 空 / **`mode` 是字符串**（最后一条正是 §14 记的那次事故形态：
+夹具写 `mode:"buy10"`、线上是 `mode:0`、两套套件全绿而页面每帧抛异常）；④ 打印字节数 / sha256 /
+**覆盖前后对比** / `mode` / `era` / 通知条数，成功才删临时目录、失败保留并报路径。
+落盘用 `-OutFile`（**响应体原始字节**），中文与转义保持线上那一个字节序列；
+另按 `api-test.ps1:273~281` 那条先例补了"缺 8.x ASP.NET Core 时设 `DOTNET_ROLL_FORWARD=Major`"。
+`web-smoke.mjs` §14 的**出处段**已改指向它（那份夹具的来源因此仍然是文档化的事实）。
+
+**实跑（2026-10-04，worktree 里那份构建，写到临时输出、**没有**覆盖仓库夹具）**：
+宿主在 5398 起来、抓完自己停掉（PID 12768），写出 **61,548 字节**、sha256 `A5B82809…`，
+自报 `mode 0（buy1）`、`era index=1 stageIndex=2 stageCount=5`、通知 1、**建筑 9 / 升级 47 / 成就 66**。
+与仓库里那份（60,859 字节）**逐形状比对**：新增 / 消失的字段 **0 个**，唯一差异是
+`upgrades` 46 → 47 条（数值与条目数漂移，§14 比的是形状）——所以**没有重抓提交在仓库里的夹具**，
+它保持逐字节不变（`503251FC…`）。
+
+**真人数据没被碰**（这一条是硬判据）：`saves\*.json`（11 个文件）与 `artifacts\latency.txt` 的
+**size + mtime + sha256 在跑前跑后逐项相同**（`latency.txt` 仍是 2695 字节 / `FB64894F…`）。
+
+### 0.19.4 S3 关闭：`build.ps1` 现在说得出"是谁占着 `bin`"
+
+`tools/build.ps1` 新增 `Show-HolderDiagnosis`，在**两处失败分支**（主 sln / Web sln）都被调用，
+纯报告、**绝不杀**：
+
+1. 按**映像路径以仓库根开头**筛出本仓库的进程（判据逐字照抄 `start.ps1:40~41`；每个进程各自
+   `try/catch` 取 `Path`——受保护进程读不到它，而这里 `$ErrorActionPreference = 'Stop'`），
+   打印 image / PID / 启动时间 / 已运行时长 / 映像路径；
+2. 用 **`netstat -ano`**（**不是** `Get-NetTCPConnection` 或 `Get-CimInstance`——那两个在这个沙箱里会抛
+   `CimException`，登记册 **W2** 记的就是它）找默认 5273 / `NEKO_PORT` 的**监听者**，把 PID 映射回
+   image 与启动时间并高亮；
+3. 给出判据：本仓库 1 个、刚起来 ⇒ 等 30 秒；几百个、`StartTime` 很旧 ⇒ 残留，要清就按严格截止时间清；
+   5273 上有监听者 ⇒ 可能是真人在玩（**H1** 等它的样本）⇒ **别杀**。
+   `MSB3021` 那条原文照旧交给 MSBuild 报，这一节只加"谁占着"。
+
+顺带修掉一个真会咬人的细节：两处失败分支原先直接 `exit $LASTEXITCODE`，而诊断里要跑 `netstat`、
+那会把 `$LASTEXITCODE` 覆盖成 netstat 自己的退出码——现在**先把退出码抄进 `$code`**，再诊断、再 `exit $code`。
+
+**实跑（两个合成占用者：仓库内一份 `ping.exe` 副本 + 一个 5273 的原生监听者）**：把 `NekoClicker.sln`
+临时改名让构建必然失败（**没有改任何文件内容**，跑完立刻改回），`build.ps1` 打出：
+
+```
+=== 谁可能占着 bin（只报告，不杀任何进程）===
+  本仓库目录下的进程：1 个
+    - ping  PID 17184  启动 2026-10-04 19:29:51（已运行 00:00:06）  映像 …\.tmp\wt-struct\.tmp\holder\ping.exe
+    PID 11716（pwsh，监听 5273，启动 2026-10-04 19:29:47）
+```
+
+退出码仍是 **1**（`$code` 那一步生效了，否则会被 `netstat` 覆盖成 0）。跑完 `build.ps1` 的
+sha256 未变（`CD8E18FB…`）、BOM 仍在。
+
+**诚实边界（不要把它读成"已经覆盖了真实场景"）**：这条诊断验的是**分支会被走到、名字会被打出来**；
+真正的 `MSB3021` 洪水是 MSBuild 的，这一轮一个字都没改它，也**没有**用"真宿主占着 `bin`"复现过。
+另外，进程筛选用的是**映像路径**（与 `start.ps1` 同一条判据），所以 `dotnet run` / `dotnet exec`
+起的宿主**不会被列进第 1 节**（它们的映像是 `dotnet.exe`，在仓库外）——那种情况靠第 2 节的端口探针兜。
+登记册 **W2**（`api-test.ps1` 按端口杀宿主在沙箱下静默失效）**没有**被这一轮修掉，两条仍相邻。
+那条"约 320 个 `dotnet` 进程 / 9.9 GB"的记录**仍然只是时间相关、没有解释**（`AGENT_ARCHIVE:19` 的边界），
+这一轮不声称因果、也不处理它。
+
+**这一轮没验到什么**：没有真人看过任何界面（本轮不碰界面）；`api-test.ps1` 的 65 项在本轮改动范围
+之外，没有重跑（改的是 `build.ps1` / 新脚本 / 一条 C# 用例 / 文档）；`S4` **没有做**（见 §0.19.5）。
+
+### 0.19.5 S4 只给了设计，没有动手
+
+**没做**，理由与设计见 `STRUCTURE_OPTIMIZATION` §S4 的补记（机器人抽成
+`engine/tests/MeasurementRobot.cs` 并由探针 `Compile Include`；保真判据用
+"同一颗种子 → 同一局 → **逐字节相同的 dump**"）。这一轮按任务书"宁肯停在一个干净的边界"处理：
+先把 S1/S2/S3 三条真的收干净，而不是把 S4 做一半。
 
 ---
 

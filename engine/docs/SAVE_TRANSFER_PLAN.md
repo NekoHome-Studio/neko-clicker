@@ -378,9 +378,14 @@
   → CHANGELOG 加带日期条目 → **重新构建之后**再跑 `tools/public-api.ps1` → `-Strict` 全绿。
 - 同步要改的"当前版本"字样：`README.md`（有守卫：`VersionTests.Readme_AdvertisesTheCurrentVersion`）、
   `engine/README.md`、`engine/docs/VERSIONING.md` 顶部（用 `git grep -n 1\.9\.0` 现数，不靠记忆）。
-  **本次没改**的是 `STATUS.md` / `engine/docs/RELEASING.md` 里描述"某个历史时刻"的版本行——
-  它们同时也是 D8（1.5.0~1.9.0 的补发）与 W1（"当前用例数"散在 8 处）的题材，
-  在这里顺手改会与那两条的处置撞车；已在 `OPEN_WORK` 里登记成一条独立的欠账。
+  **本次没改**的是 `STATUS.md` 里描述"某个历史时刻"的版本行（第 3 / 19 / 28 行三处现在时 1.9.0）——
+  它同时也是 D8（1.5.0~1.9.0 的补发）与 W1（"当前用例数"散在 8 处）的题材，
+  在这里顺手改会与那两条的处置撞车；已在 `OPEN_WORK` 的 **W15** 里登记成一条独立的欠账。
+  **更正（2026-10-04）**：这条原先还写着 `engine/docs/RELEASING.md`，那是**错的**——
+  `git grep -n "1\.9\.0\|1\.10\.0" -- engine/docs/RELEASING.md` 只命中第 48 行一条**带日期的历史记录**
+  （"1.10.0 落地时漏了它"），那份文档里**没有一行现在时版本行**：它是流程文档，
+  它的 §2 列的恰恰是"**别的哪些文件**写版本号"（`Directory.Build.props` 是单一事实来源）。
+  所以结论从"两处"改成"一处"，W15 也按这个口径收窄。
 
 ---
 

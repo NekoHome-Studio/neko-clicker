@@ -1095,10 +1095,13 @@ section("13. 建筑：卡片买、📖 看故事（两个手势互不触发）")
 // 于是 `render()` 每帧在 `renderBatch` 处抛 TypeError、它后面所有面板一次都没画出来过——
 // **而 82 条用例全绿**。判据只有一条：夹具里前端会用到的每个路径，形状必须与真快照一致。
 //
-// 真快照 = tools/fixtures/web-snapshot.json，就是从起着的宿主上抓的**原始响应**：
-//   <在隔离 worktree 里起宿主> neko-clicker-web.exe --urls http://127.0.0.1:5398 \
-//       --save-root <临时目录> --latency-log <临时文件>
-//   （起之前先 POST 几十次 click，让通知日志非空）
+// 真快照 = tools/fixtures/web-snapshot.json，就是从起着的宿主上抓的**原始响应**。
+// 抓它的脚本**在仓库里**（原先只有某次会话的 .tmp/capture-fixture.ps1，已 gitignore）：
+//   pwsh -File tools/capture-fixture.ps1 -Package company -Port 5398
+// 它自己起宿主、--save-root 与 --latency-log 都指向临时目录（**仓库真实 saves/ 一个字节不碰**）、
+// 抓之前先 POST 几十次 click 让通知日志非空、按响应体**原始字节**落盘，并打印字节数 /
+// sha256 / mode / era / 通知条数。落盘前它还会拒绝几种"看着像快照但是坏的"结果
+// （buildings 空、notifications 空、`mode` 是字符串——最后这条正是下面那条线上故障的形态）。
 // 它现在是**按公司包**抓的（`?package=company`，60,859 字节）——公司是第一个声明阶段
 // （`era.stageIndex` / `stageCount` / `stageName` / `stageNextName` / `stageProgress` /
 // `stageProgressText`）的包，所以这份夹具同时是那六个字段"真的在线上"的判据。

@@ -23,6 +23,87 @@ $forward = @($args | Where-Object { $_ -ne '-Strict' -and $_ -ne '-SkipWebSmoke'
 $buildArgs = @("$root\NekoClicker.sln", '-v', 'q', '--nologo', '-warnaserror')
 if ($strict) { $buildArgs += '--no-incremental' }
 
+# 构建失败时：**只报告**谁可能占着 bin / obj，绝不杀任何进程（STRUCTURE_OPTIMIZATION §S3）。
+#
+# 为什么要有它：宿主（或同一工作区里另一轮构建）占着 games\hosts\Web\bin / engine\tests\bin 时，
+# dotnet build 会吐 144~170 条 MSB3021 / MSB3026 / MSB3027，而**没有一行说得出是谁占着**。
+# "怎么找占用者"的判据仓库里早就有了——tools/start.ps1:39~50 的 Path 前缀筛选、
+# 以及 DEVELOPMENT_SUMMARY §3.4 那三条处置——只是它们只在"启动"那条路上执行。
+#
+# 规矩照抄、一个字都不改：**先认人、能等就别杀**。5273 上可能正有真人在玩
+# （OPEN_WORK H1 等的就是这个样本），所以这里**不做任何清理**——杀不杀是人打的决定。
+# 这条路径记录过一次约 320 个 dotnet 进程 / 9.9 GB 的事件，但那只是**时间相关、没有解释**
+# （AGENT_ARCHIVE:19 自己标了这条边界），所以这一节不声称因果、也不在这里处理它。
+function Show-HolderDiagnosis {
+    Write-Host ''
+    Write-Host '=== 谁可能占着 bin（只报告，不杀任何进程）===' -ForegroundColor Yellow
+
+    # 1) 本仓库目录下的进程：判据与 start.ps1:40~41 完全相同（映像路径以仓库根开头）。
+    #    逐个进程取 Path、各自 try/catch：受保护进程读不到 Path，而这里 $ErrorActionPreference = 'Stop'。
+    $mine = @()
+    foreach ($p in @(Get-Process -ErrorAction SilentlyContinue)) {
+        try {
+            if ($p.Path -and $p.Path.StartsWith($root, [StringComparison]::OrdinalIgnoreCase)) { $mine += $p }
+        }
+        catch { }
+    }
+
+    if ($mine.Count -eq 0) {
+        Write-Host '  本仓库目录下的进程：0 个（占着文件的可能是这个仓库之外的东西）。'
+    }
+    else {
+        Write-Host ("  本仓库目录下的进程：{0} 个" -f $mine.Count)
+        foreach ($p in $mine) {
+            try {
+                Write-Host ("    - {0}  PID {1}  启动 {2}（已运行 {3}）  映像 {4}" -f `
+                    $p.ProcessName, $p.Id, $p.StartTime.ToString('yyyy-MM-dd HH:mm:ss'), `
+                    ((Get-Date) - $p.StartTime).ToString('hh\:mm\:ss'), $p.Path)
+            }
+            catch {
+                Write-Host ("    - PID {0}（读不到启动时间 / 映像：{1}）" -f $p.Id, $_.Exception.GetType().Name)
+            }
+        }
+    }
+
+    # 2) 模型宿主的端口：默认 5273（start.ps1:64），NEKO_PORT 可覆盖。这里用 netstat 而不是
+    #    Get-NetTCPConnection / Get-CimInstance——后两者在这个沙箱里会抛 CimException（登记册 W2 记的就是它）。
+    $ports = @(5273)
+    if ($env:NEKO_PORT) { $ports += $env:NEKO_PORT }
+
+    $listeners = @()
+    try {
+        foreach ($line in @(netstat -ano -p TCP 2>$null)) {
+            $m = [regex]::Match($line, '^\s*TCP\s+\S+:(\d+)\s+\S+\s+LISTENING\s+(\d+)\s*$')
+            if ($m.Success -and ($ports -contains [int]$m.Groups[1].Value)) { $listeners += $m.Groups[2].Value }
+        }
+    }
+    catch { }
+
+    if ($listeners.Count -eq 0) {
+        Write-Host ("  监听端口 {0} 的进程：0 个。" -f ($ports -join ' / '))
+    }
+    else {
+        foreach ($holderPid in ($listeners | Select-Object -Unique)) {
+            $image = '?'
+            $started = '?'
+            try {
+                $holder = Get-Process -Id ([int]$holderPid) -ErrorAction Stop
+                $image = $holder.ProcessName
+                $started = $holder.StartTime.ToString('yyyy-MM-dd HH:mm:ss')
+            }
+            catch { }
+            Write-Host ("    PID {0}（{1}，监听 {2}，启动 {3}）" -f $holderPid, $image, ($ports -join ' / '), $started) -ForegroundColor Yellow
+        }
+    }
+
+    Write-Host ''
+    Write-Host '  怎么读（判据与 DEVELOPMENT_SUMMARY §3.4 同一条）：'
+    Write-Host '    · 本仓库 1 个进程、刚起来 → 大概率是同一工作区里另一轮构建在跑：等 30 秒再跑一次。'
+    Write-Host '    · 本仓库几百个同源进程、StartTime 很旧 → 是残留；要清就按严格的 StartTime 截止时间清。'
+    Write-Host '    · 5273 上有监听者 → 那可能是真人在玩的宿主（OPEN_WORK H1 等它的样本）：别杀它。'
+    Write-Host '  这一节只报告：杀不杀是人打的决定。'
+}
+
 Write-Host '=== 构建 ===' -ForegroundColor Cyan
 if (-not $strict) {
     Write-Host '（快速档：只编改动过的项目。提交前请跑一次 -Strict——全量重编才暴露得出被增量掩盖的警告）' -ForegroundColor DarkGray
@@ -31,8 +112,12 @@ if (-not $strict) {
 if ($LASTEXITCODE -ne 0) {
     # 注意：-warnaserror 会把警告报成 **error**，所以失败时的摘要常是
     # "0 Warning(s) / N Error(s)"——别看警告计数，看退出码与上面的 error 行。
+    # 先把退出码抄下来：下面那段诊断会跑 netstat，那会把 $LASTEXITCODE 覆盖成它自己的退出码。
+    $code = $LASTEXITCODE
     Write-Host '构建失败（若摘要显示 0 Warning(s) 却失败，那是警告被 -warnaserror 计成了 error）。' -ForegroundColor Red
-    exit $LASTEXITCODE
+    Write-Host '（上面若是成片的 MSB3021 / MSB3026 / MSB3027，那是有人占着 bin——下一段就是认人用的。）' -ForegroundColor Red
+    Show-HolderDiagnosis
+    exit $code
 }
 
 # Web 宿主有自己独立的单项目 sln（故意的：它不跟引擎一起发布），所以主 sln 编不到它。
@@ -45,8 +130,10 @@ if (Test-Path $webSln) {
     Write-Host '=== 构建 Web 宿主（独立 sln）===' -ForegroundColor Cyan
     & "$PSScriptRoot\dnet.ps1" build $webSln -v q --nologo -warnaserror
     if ($LASTEXITCODE -ne 0) {
+        $code = $LASTEXITCODE
         Write-Host 'Web 宿主构建失败。它有自己的 sln，主 sln 编不到它——这正是这一步存在的理由。' -ForegroundColor Red
-        exit $LASTEXITCODE
+        Show-HolderDiagnosis
+        exit $code
     }
 }
 
