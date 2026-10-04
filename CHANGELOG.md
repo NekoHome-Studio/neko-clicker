@@ -36,8 +36,9 @@
 > `tools/build.ps1 -Strict` **566 全绿、0 警告**（动手前基线 **565**；它含前端冒烟 **162** 条，
 > S1 起那是 `-Strict` 里的一道闸门）、`tools/api-test.ps1` **65 项全过**、
 > `node tools/web-smoke.mjs` **162 / 162**；打包产物 `artifacts/neko-clicker-1.10.1-win-x64.zip`
-> 与两个可执行文件的实跑证据见 [RELEASING](engine/docs/RELEASING.md) §6（这一版**没有推送**：
-> 提交与 tag 一起由父代理推）。
+> 与两个可执行文件的实跑证据见 [RELEASING](engine/docs/RELEASING.md) §6。
+> 本版的提交：`82f3379`（BOM 守卫）、`13c0f00`（版本 + 文档 + 快照）；tag `v1.10.1` 打在
+> 把这两个提交号钉进来的那一条文档提交上（**这一版没有推送**：提交与 tag 一起由父代理推）。
 
 ### 工具与守卫（patch：BOM 守卫不再受未追踪草稿影响）
 
