@@ -21,8 +21,9 @@
 // 覆盖边界（诚实）: 它证明的是"真的被执行过的路径不抛异常"。没被执行到的分支
 // （`if (!pill) return` 这类防御）只有 node --check 的语法保证。
 //
-// 这个脚本**从 2026-10 起进了 tools/build.ps1**（也进了 CI）：一条 199 条断言（2026-10-04 起；
-// §27「批量档位下的总价」之前是 193 条、§25「缩放适配」与 §26「两栏对齐」之前是 162 条、
+// 这个脚本**从 2026-10 起进了 tools/build.ps1**（也进了 CI）：一条 202 条断言（2026-10-04 起；
+// §26 的「等高」之前是 199 条、§27「批量档位下的总价」之前是 193 条、
+// §25「缩放适配」与 §26「两栏对齐」之前是 162 条、
 // 第 24 节「存档的导出/导入窗口」之前是
 // 135 条）、其中 210 行
 // 专为"复发过五次"的 bug 类而写的套件，不进自动闸门就等于没有守卫。
@@ -1490,11 +1491,15 @@ section("17. 触屏下限与 400px 水平预算（CSS 常量算出来的）");
 
   check("400px 下建筑行放得下：两个 44px 按钮之后，卡片还剩 ≥100px（附实际数字）", () => {
     const left = available - toggles;
-    // 卡片自己的 min-content 上界：最长的一段是价格行里的**数字 + 量级**或批量记号
-    // （`2.92十亿` / `（×100）` 都是 6 个字符；`priceText` 给 1 以下的小价格留了小数，
-    // 那种最多 7 个字符，见 §27）。按 1em/字符这个对任何字体都成立的上界算，
+    // 卡片自己的 min-content 上界：最长的一段是价格行里**折不断**的那一段。
+    // 价格行现在是 `×N 总价 {图标} {数}`（§27 第二版：限定语在前、没有括号），
+    // 按空格切开之后最长的一段是那个数本身——量级缩写最多 6 个字符（`3.40百万` / `2.92十亿`），
+    // 而 `priceText` 给 1 以下的小价格留了小数，最多 7 个字符（`0.12345`，见 §27）；
+    // `×100` 是 4 个、`总价` 是 2 个，都比它短。按 1em/字符这个对任何字体都成立的上界算，
     // 在最大的那一档卡片字号（.card .name = .92rem）下是 103.0px，
     // 加上左右内边距 2×.7rem 与 2px 边框。
+    // （第一版那一行是 `{图标} {数} 总价（×N）`，同样落在 7 上，但来源是 `总价（×10）`；
+    //  次序调过来之后括号没了，7 只剩「1 以下的价格」这一种来源——**数没变，理由变了**。）
     const bound = 7 * 0.92 * REM + 2 * 0.7 * REM + 2;
     if (left < bound) throw new Error(`卡片只剩 ${left.toFixed(1)}px，而它最少要 ${bound.toFixed(1)}px`);
     if (left < 100) throw new Error(`只剩 ${left.toFixed(1)}px（可用 ${available.toFixed(1)} − 按钮 ${toggles.toFixed(1)}），余量不足 100px`);
@@ -2421,12 +2426,15 @@ section("25. 缩放适配：视口单位、相对尺寸、断点（结构性可�
   });
 }
 
-// 26. 两栏的对齐：左栏那张大框（.hero）与右栏那张卡片（.panel）的上沿。
+// 26. 两栏的对齐：左栏那张大框（.hero）与右栏那张卡片（.panel）的**上沿与下沿**。
 //
 // 这一节守的是**结构**：页签行与面板各自是 main 的网格项、两张卡片从同一行开始、
-// 单栏时那套落位必须被重置（否则 `grid-column: 2` 会造出隐式的第 2 列）。
-// ⚠️ 它证明不了"看上去对齐了" —— 那个桩件没有布局引擎，最后一眼只能是人看的（OPEN_WORK H3）。
-section("26. 两栏对齐：左栏大框与右栏卡片的上沿");
+// 两块卡片的**高度**由它们自己 opt in 拉伸（下沿因此也落在同一条线上）、
+// 单栏时那套落位必须被重置（否则 `grid-column: 2` 会造出隐式的第 2 列），
+// 而且单栏里"拉伸"必须无从发生（一列一项 ⇒ 行高就是内容高，不会造出大空盒）。
+// ⚠️ 它证明不了"看上去对齐了 / 看上去一样高了" —— 那个桩件没有布局引擎，
+// 最后一眼只能是人看的（OPEN_WORK H3）。
+section("26. 两栏对齐：左栏大框与右栏卡片的上沿 ＋ 下沿");
 {
   const blockOf = (selector) =>
     new RegExp(selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + " \\{([\\s\\S]*?)\\}").exec(cssRules)?.[1] ?? "";
@@ -2457,8 +2465,74 @@ section("26. 两栏对齐：左栏大框与右栏卡片的上沿");
     if (!/\.panel \{ grid-column: 2; \}/.test(cssRules)) {
       throw new Error("面板只该钉列（行交给自动排布：第 1 行被页签占了，第一张可见面板才会落在第 2 行）");
     }
-    // 卡片同行的前提：第 2 行里两块都从行首开始。
-    if (!/align-items:\s*start/.test(blockOf("main"))) throw new Error("main 不是 align-items: start：两块会被拉伸成等高，那是另一件事");
+  });
+
+  // 下沿。上沿对齐（上一条）之后人报的是「左右两边还是没对齐」＝两块卡片**不等高**。
+  // 第 2 行里高的那个撑着行高、矮的那个自己缩着（`main` 的 `align-items: start`），
+  // 所以差多少完全由内容决定：两栏实测 hero ≈ 493px，而面板 = 1rem ＋ 36.3px 表头
+  // ＋ 列表上限 min(26rem, 60dvh) ＋ 1.1rem —— 1080p 上差 7px（几乎看不出），
+  // 600px 高的窗口里 60dvh = 360px，面板矮 60px 上下，一眼就是两块不等高。
+  // 修法是让这两块**自己** opt in（不是把 main 改成 stretch：那还得再给 .tabs
+  // 补一条 align-self: start 把它排除出去）。
+  check("等高：两块卡片各自声明 align-self: stretch（容器仍是 start，`.tabs` 不参与）", () => {
+    // 全表扫一遍"谁对 .hero / .panel 声明过 align-self"：既要**有** stretch，
+    // 也要**没有**任何一条把它撤回去（同特异度时后写的那条赢）。
+    const declarations = [...cssRules.matchAll(/([^{}]+)\{([^}]*)\}/g)]
+      .filter(([, selector, body]) => /(^|,)\s*\.(hero|panel)\s*(,|$)/.test(selector.trim()) && /align-self\s*:/.test(body))
+      .map(([, selector, body]) => `${selector.trim()} → ${/align-self\s*:\s*[^;]+/.exec(body)[0].trim()}`);
+    if (declarations.length === 0) {
+      throw new Error("没有任何一条给 .hero / .panel 的 align-self：两块里矮的那个不会长到行高，下沿对不上");
+    }
+    const bad = declarations.filter((d) => !/align-self\s*:\s*stretch/.test(d));
+    if (bad.length > 0) {
+      throw new Error(`有规则把等高撤销了（后写的赢）：${bad.join(" ；")}`);
+    }
+    if (!/align-items:\s*start/.test(blockOf("main"))) {
+      throw new Error("main 的默认对齐不再是 start：等于把「哪一块该长」从这两块挪到容器上，还得再给 .tabs 补一条 align-self 把它排除出去");
+    }
+    if (/align-self/.test(blockOf(".tabs"))) {
+      throw new Error(`.tabs 也开始管自己的对齐了（页签被拉伸只会让按钮变高，没人要）：<${blockOf(".tabs").trim()}>`);
+    }
+  });
+
+  // 等高只许改**外框**：多出来的高度必须落在卡片内部的**底部**，内容一个像素都不许被抻长
+  // （否则大猫会被拉长、按钮会变高、渐变会被摊开）。两条前提，缺一不可：
+  //   · `.hero` 是 flex 纵列，`justify-content` 没写过（默认 flex-start）；
+  //   · 里面**没有**任何子项声明过 `flex-grow` / `flex: <正数>`（全表唯一一条是存档窗口的
+  //     `.sheet-row .ghost`，不在 hero 里）。
+  check("拉伸多出来的空间落在底部：hero 是 flex 纵列、且没有任何子项会长（没有 flex-grow）", () => {
+    const hero = blockOf(".hero");
+    if (!/display:\s*flex/.test(hero) || !/flex-direction:\s*column/.test(hero)) {
+      throw new Error(`.hero 不再是 flex 纵列，空白落哪儿要重新判断：<${hero.trim()}>`);
+    }
+    if (/justify-content/.test(hero)) {
+      throw new Error(`.hero 新写了 justify-content：内容会被推开（我们要的是"内容留在顶部、空在底部"）:<${hero.trim()}>`);
+    }
+    const growers = [...cssRules.matchAll(/([^{}]+)\{([^}]*)\}/g)]
+      .filter(([, , body]) => /(?:^|;)\s*flex\s*:\s*[1-9]/.test(body) || /flex-grow\s*:\s*(?!0\b)[\d.]+/.test(body))
+      .map(([, selector]) => selector.trim());
+    const inHero = growers.filter((s) => /\.(hero|big-cat|buffs|era|counter|rates|meta)\b/.test(s));
+    if (inHero.length > 0) {
+      throw new Error(`hero 里有子项会把空白吃掉（它会长高，而不是让空留在底部）：${inHero.join(" ；")}`);
+    }
+    if (growers.length === 0) throw new Error("全表一条 flex-grow 都没有了——这条守卫的判据（拿它当反例清单）已经失效");
+    if (!/aspect-ratio:\s*1\s*\/\s*\.72/.test(blockOf(".big-cat"))) {
+      throw new Error("大猫不再由 aspect-ratio ＋ 宽度定高：容器变高时它会被抻长");
+    }
+  });
+
+  // 单栏（≤62rem）：上面那条 stretch **故意不重置**，因为它在单栏里不可能生效 ——
+  // 一列一项、每行只有一个网格项，行高就是那一项自己的内容高。这两条前提（单列 ＋
+  // 三项都回到 auto 落位）必须同时成立，否则窄屏上会凭空多出一个大空盒。
+  check("单栏里拉伸无从发生：`1fr` 一列 ＋ 三项都回到 auto 落位（每行只有一项）", () => {
+    const single = mediaOf("(max-width: 62rem)");
+    if (!single) throw new Error("找不到 62rem 那一节");
+    if (!/main \{ grid-template-columns: 1fr; \}/.test(single)) {
+      throw new Error("单栏那节没有把 main 变成一列——两块卡片可能被塞进同一行，拉伸就会造出一个大空盒");
+    }
+    if (!/\.tabs, \.hero, \.panel \{ grid-area: auto; \}/.test(single)) {
+      throw new Error("单栏那节没有把三项的落位重置成 auto（显式行号可能让两项同一行）");
+    }
   });
 
   check("单栏（≤62rem）时那套落位全部重置为 auto（不重置会造出隐式的第 2 列，整页缩成一半宽）", () => {
@@ -2519,10 +2593,17 @@ section("26. 两栏对齐：左栏大框与右栏卡片的上沿");
 // **单价** `buildings[].unitPrice` 一次都没画过（§23 的 NOT_DRAWN 里写着这一条）。
 // 所以真问题不是"画错了数"，而是"**没说清这个数是总价**"——线上那一行此前是
 // `🐟 7.58千 ×10`，读起来正好像"单价 7.58千，×10 个"（而真值恰好相反：单价 373、整批 7.58千）。
-// 修法：批量档位把「总价」两个字写出来，原来的 `×N` 记号收进括号。
+// 第一版修法是把「总价」两个字加在数字**后面**、`×N` 收进括号（`🐟 7.58千 总价（×10）`）。
+// 第二版（2026-10-04，人看过后拍的）把限定语整个挪到数字**前面**：`×10 总价 🐟 7.58千`。
+// 两版都写明了「总价」，差别在**读的顺序**：第一版眼睛先落在数上、再补一句括号里的注解，
+// 扫一眼的速度下与改之前的 `🐟 7.58千 ×10` 差得不够远；第二版数字前面已经站好 `×N 总价`，
+// `数字 + ×N` 那个"单价 ×N 个"的读法在句法上就不成立了（括号也一并去掉：
+// `×N` 在这里是**限定语**，不是注解）。图标仍然贴着数字，与 ×1 那一行一致。
 //
-// 这一节钉四件事：批量档位写出「总价」二字；**切档位时画出来的那个数真的跟着换**（同一座建筑、
-// 同一行 DOM）；×1 一个字不加（一个的总价就是单价，多写是噪音）；小总价不被 `number()` 抹成 0。
+// 这一节钉四件事：批量档位写出「总价」二字**且在数字前面**；**切档位时画出来的那个数真的跟着换**
+// （同一座建筑、同一行 DOM）；×1 一个字不加（一个的总价就是单价，多写是噪音）；小总价不被
+// `number()` 抹成 0。两版的**准确字符串**都由 `eq()` 钉死，所以"数字在限定语前"这种回退
+// 一定红（见 `OPEN_WORK` §0.21.5 的第四次注入）。
 section("27. 批量档位下的「总价」（×10 / ×100 / 买满）");
 {
   const batch = await loadApp(copyAs("app-batch.mjs", appSource));
@@ -2548,27 +2629,33 @@ section("27. 批量档位下的「总价」（×10 / ×100 / 买满）");
 
   await batch.push(frame(2, { ...ruins, batchAmount: 10, batchPrice: 7579 }));
 
-  check("×10：写出「总价」，而且那个数就是整批的总价（7.58千），不是单价 373", () => {
-    eq(priceOf(), "🐟 7.58千 总价（×10）", "×10 那一行");
+  check("×10：写出「总价」而且在数字**前面**，那个数就是整批的总价（7.58千），不是单价 373", () => {
+    eq(priceOf(), "×10 总价 🐟 7.58千", "×10 那一行");
+    // 下面三句不是 `eq()` 的重复：它们**不依赖期望串**。有人把这一行的期望串改成旧次序
+    // （"改测试而不是改代码"）时 `eq()` 会放行，这几句仍然会红。
+    if (priceOf().indexOf("总价") > priceOf().indexOf("7.58千")) {
+      throw new Error(`限定语落在数字后面了（那是第一版、也是"数字 + ×N"那个误读的形态）：<${priceOf()}>`);
+    }
+    if (priceOf().includes("（")) throw new Error(`括号回来了——\`×N\` 在这里是限定语、不是注解：<${priceOf()}>`);
     if (priceOf().includes("373")) throw new Error(`画的是单价而不是整批总价：<${priceOf()}>`);
   });
 
   await batch.push(frame(3, { ...ruins, batchAmount: 100, batchPrice: 117431205 }));
 
   check("×100：切档位之后，同一行画出来的数跟着换成整批的总价（117百万）", () => {
-    eq(priceOf(), "🐟 117百万 总价（×100）", "×100 那一行");
+    eq(priceOf(), "×100 总价 🐟 117百万", "×100 那一行");
   });
 
   await batch.push(frame(4, { ...ruins, batchAmount: 37, batchPrice: 3.4e6 }));
 
   check("买满：N 是服务端按钱包算出来的可变数量，所以 `×N` 记号还得留着（页面上别处没有它）", () => {
-    eq(priceOf(), "🐟 3.40百万 总价（×37）", "买满那一行");
+    eq(priceOf(), "×37 总价 🐟 3.40百万", "买满那一行");
   });
 
   await batch.push(frame(5, { ...ruins, batchAmount: 10, batchPrice: 0.4 }));
 
-  check("小总价不被抹成 0：0.4 画成「0.4」（`number()` 会把它画成「🐟 0 总价（×10）」那句假话）", () => {
-    eq(priceOf(), "🐟 0.4 总价（×10）", "小总价那一行");
+  check("小总价不被抹成 0：0.4 画成「0.4」（`number()` 会把它画成「×10 总价 🐟 0」那句假话）", () => {
+    eq(priceOf(), "×10 总价 🐟 0.4", "小总价那一行");
   });
 
   await batch.push(frame(6, {
