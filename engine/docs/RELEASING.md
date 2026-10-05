@@ -26,7 +26,7 @@
 | ⑧ | `tools\api-test.ps1` | 全部端到端检查通过（真起宿主、真读 SSE；当前 65 项，脚本收尾还会自己做检查点覆盖审计）；动了宿主/前端时必跑 |
 | ⑧b | `node tools\web-smoke.mjs` | 全部无头前端检查通过（当前 **202** 条；不执行它就没有东西会证明 `app.js` 真的跑得起来）；动了 `wwwroot/` 或快照必跑。**S1 起它也是 `build.ps1 -Strict` 里的一道闸门**，所以第 ⑦ 步已经会替它红 |
 | ⑨ | `tools\pack.ps1`（**自检已内置**） | 产出 `artifacts\neko-clicker-<版本>-win-x64.zip`，**并默认解包自检**：两个 exe 真跑起来、`/api/ping` 的 `apiVersion` 等于 `Directory.Build.props` 的版本、`/`、`/app.js`、`/app.css` 全 200 且首页含挂载点（判据见 §6.2）。跳过用 `-SkipSelfCheck`。这一层此前**没有守卫**（端到端探针只跑开发期路径）——1.3.0 的首页 404 就是这么逮到的；**2026-10-05 起它由脚本自己执行**（登记册 W6），所以这一步从"人工照着做"变成"看它有没有红" |
-| ⑩ | `git commit` → `git tag -a v<版本>` → 推送 | 本机 HTTPS 不通，走 SSH（见 §7） |
+| ⑩ | `git commit` → `git tag -a v<版本>` → 推送 | 本机 HTTPS 不通，走 SSH（见 §8） |
 | ⑪ | 看 CI 的四个作业（`build-and-test` / `engine-linux` / `web-smoke` / `end-to-end`），把结果写回 `STATUS.md` §6 | "本地全绿"不等于"runner 上全绿" |
 
 第 ⑤ 步拆成两步是 1.2.1 才写清楚的细节；在此之前它只是 VERSIONING 里的一句
@@ -87,7 +87,7 @@ git grep -n "1\.2\.0"        # 换成你刚发完的那个版本号
    重写出来的 `ssh://git@github.com/NekoHome-Studio/...` **缺前导斜杠**，GitHub 拒收
    （`... is not a valid repository name`，5 次重试全是这个错——它不是网络抖动，重试没用）。
    换成**显式 URL** 第一次就成功：`git push git@github.com:NekoHome-Studio/neko-clicker.git main`。
-   STATUS §7 第 10 条与本文 §7 都已改。
+   STATUS §7 第 10 条与本文 §8 都已改（`origin` 在 2026-10-05 已**永久**改到 SSH）。
    **教训：文档里的命令如果从没在真操作里跑过，它就不是"已验证"，只是"看起来对"。**
 
 ### 3.3 CI 首跑
@@ -232,7 +232,44 @@ git grep -n "1\.2\.0"        # 换成你刚发完的那个版本号
 
 ---
 
-## 7. 本机特有的坑（一条条都踩过）
+## 7. 执行记录：1.10.2（2026-10-05）
+
+**这一版是"结桶"**：`[未发布]` 桶里攒了六节（三轮界面改动、两条新守卫＋一条横扫守卫、
+五处机械项、两份测量与验证记录、一个 Linux CI 作业），全部随这次发布。
+
+| 步骤 | 结果 |
+|---|---|
+| ② 升位 | **patch**——公开 API 一行没动。判据是快照：**重生成之前**树上的 `engine/core/PublicApi.txt` 与 `v1.10.1` 是**同一个 blob**（`4d67559d…`）；重生成之后 `git diff v1.10.1 -- engine/core/PublicApi.txt` 的 `--numstat` = **`1 1`**（只差首行 `version=`，**2026 行**不变） |
+| ③ 版本号 | `1.10.1` → `1.10.2`（`Directory.Build.props` 的 `Version` / `AssemblyVersion` / `FileVersion` 三处一起） |
+| ④ CHANGELOG | 新增 `## [1.10.2] - 2026-10-05`；`[未发布]` 桶**结掉**（桶留在文件顶部、写明"桶现在是空的"），六节原文一字未改 |
+| ⑤ 先构建再重生成快照 | 先 `build.ps1 -SkipWebSmoke`（这一步会红：`VersionTests` 要求 CHANGELOG 有当前版本条目、README 有当前版本号——**先写 ④ 再跑 ⑤ 的顺序不能倒**，倒过来跑出来的快照会带旧版本号而看起来完全正常）。重生成后 2026 行 |
+| ⑥ 扫"当前版本"字样 | `git grep -nE "当前.{0,4}1\.10\.1\|工作树.{0,6}1\.10\.1\|<Version>1\.10\.1"` 逐处清掉：`README.md`（4 处）、`engine/README.md`、`VERSIONING.md`（首段 + XML 示例 + 输出示例 + 快照行数）、`STATUS.md`（头部/表格/工作树段/停在哪里）、`OPEN_WORK.md` §1 版本行；另外三处**样例里的版本号**也一并跟上：`SaveTransfer.cs` 的 XML 注释、`SAVE_TRANSFER_PLAN` §2 的信封样例、`tools/web-smoke.mjs` 的夹具与导入成功串（后者不同步会**真的红**——它断言的是宿主原话）。**带日期的历史一律没动** |
+| ⑦ 验收 | `tools/build.ps1 -Strict`：**571 / 571 全绿、0 警告**（主 sln 与 Web sln 各一条 `0 Warning(s)`；含前端冒烟 **202 / 202**） |
+| ⑧ 端到端 | `tools/api-test.ps1`：**65 / 65**（源码 65 处检查点 ｜ 执行到 65 处 ｜ 跳过 0） |
+| ⑨ 打包 + 自检 | `tools/pack.ps1`：`artifacts/neko-clicker-1.10.2-win-x64.zip`；**脚本自己解包自检通过**（W6 起这一步从"人工照着做"变成"看它有没有红"）——两个 exe 退出码 0、`/api/ping` 的 `apiVersion=1.10.2`、`/` `/app.js` `/app.css` 全 200 且首页含挂载点 |
+| ⑩ 提交 + tag + 推送 | 见 §7.1 |
+| ⑪ CI | 见 §7.1 |
+
+### 7.1 提交、tag 与 CI
+
+- 发布提交与 tag：**发布当天回填在下面**（不留占位符——这个仓库的规矩是"没实测过的结论迟早会变成错的"）。
+- tag：`v1.10.2`（annotated，一行消息 `NekoClicker.Core 1.10.2`，tag 身份沿用仓库配置
+  `NekoHome Studio <dev@nekohome.studio>`）。
+- 推送走 SSH 显式 URL 或 `tools/push-retry.ps1`（`origin` 自 2026-10-05 起已永久改到 SSH）。
+- CI：**四个作业**（`build-and-test` / `engine-linux` / `web-smoke` / `end-to-end`）——结果回填在这里，
+  并同步到 `STATUS.md` §6。
+
+### 7.2 这一轮留下的两条经验
+
+1. **顺序不能倒**：④ 写在 ⑤ 之前。这一轮实际就是先跑了 ⑤ 的构建（红在 `VersionTests` 上，
+   因为 CHANGELOG 与 README 还没改），补完 ④ 与 ⑥ 之后才重生成快照。
+2. **样例里的版本号也算"现在时"**：`SaveTransfer.cs` 的注释、`SAVE_TRANSFER_PLAN` 的信封样例、
+   `web-smoke.mjs` 的夹具与断言串——前三者是样例（不影响判定），**最后一个会真的让闸门红**。
+   判据仍然只有一条：`git grep` 现数，不靠记性。
+
+---
+
+## 8. 本机特有的坑（一条条都踩过）
 
 - **推送走 SSH**：`github.com:443` 结构性不通，重试不会好；SSH 正常。**用显式 URL**：
 
@@ -256,7 +293,7 @@ git grep -n "1\.2\.0"        # 换成你刚发完的那个版本号
 
 ---
 
-## 8. 这份文档保证不了什么
+## 9. 这份文档保证不了什么
 
 - **没有独立的发布脚本**：步骤还是人来点的。`tools/pack.ps1` 只做打包，`public-api.ps1`
   只做快照——它们刻意不"一键发布"，因为 ②（升哪一位）与 ④（兼容性怎么写）是判断，不是命令。

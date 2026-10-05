@@ -92,7 +92,7 @@
   "FormatVersion": 1,
   "PackId": "neko",
   "SaveVersion": 1,
-  "FrameworkVersion": "1.10.1",
+  "FrameworkVersion": "1.10.2",
   "ExportedAt": "2026-10-04T02:11:33.412+00:00",
   "Checksum": "sha256:9f2c...（64 位小写十六进制）",
   "Save": "{\"Version\":1,\"Cookies\":1234,...}"

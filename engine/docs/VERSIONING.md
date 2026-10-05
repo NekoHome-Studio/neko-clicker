@@ -5,15 +5,21 @@
 > 一句话版本：**从 1.0.0 起，公开 API 只增不改。** 删改任何公开成员都必须升主版本号，
 > 而且这条规矩不是靠自觉——有测试守着。
 >
-> 当前版本 **1.10.1**：**patch——公开 API 一行没动**（依据下面 §2 那张表）。
-> 这一版把 `[未发布]` 桶结掉了，内容全在**内容包 / 宿主 / 前端 / 工具**里：
-> 存档的导出/导入第一次有了两个宿主里的入口（Web 的「存档」窗口、终端宿主的 `E` / `I` 路径提示），
-> 十一个包各补一条「点击 × 建筑」的桥，外加两条宿主修复与一条工具链守卫。
-> 公开表面没动的证据是快照本身：`engine/core/PublicApi.txt` 与 `v1.10.0` 是**同一个 blob**
-> （`014bd15e…`），重新生成之后**除首行 `version=` 外逐字节相同**（**2026 行**不变）。
-> 细节见 [CHANGELOG](../../CHANGELOG.md) 的 1.10.1。
+> 当前版本 **1.10.2**：**patch——公开 API 一行没动**（依据下面 §2 那张表）。
+> 这一版把 `[未发布]` 桶结掉了，内容全在**前端 / 测试 / 工具链 / 文档**里：
+> 三轮界面改动、三条新守卫（用例数漂移、`cpsEach` 的值、横扫全部包的「拥有 ⇒ 已解锁」）、
+> 五处机械项（端到端探针收尾分层、打包产物自检进脚本、NuGet 元数据、文档计数与一次逐句复核）、
+> 两份测量与验证记录，外加一个新的 Linux CI 作业。
+> 公开表面没动的证据是快照本身：**重生成之前**，树上的 `engine/core/PublicApi.txt` 与 `v1.10.1`
+> 是**同一个 blob**（`4d67559d…`）；重生成之后 `git diff v1.10.1` 的 `--numstat` 是 **`1 1`**
+> ——只差首行 `version=`，**2026 行**一行不多一行不少。
+> 细节见 [CHANGELOG](../../CHANGELOG.md) 的 1.10.2。
 >
-> 上一版 **1.10.0**：minor——公开 API **只增不改**：新增 `SaveTransfer` 类型、
+> 上一版 **1.10.1**：patch——同样一行公开 API 没动，把 1.10.0 的导出/导入接到两个宿主上
+> （Web 的「存档」窗口、终端宿主的 `E` / `I` 路径提示），外加十一个包的「点击 × 建筑」桥、
+> 两条宿主修复与一条工具链守卫。
+>
+> 再上一版 **1.10.0**：minor——公开 API **只增不改**：新增 `SaveTransfer` 类型、
 > `SaveTransferKind` 枚举、`SaveTransferResult` 记录，以及 `SaveManager` 上的
 > `PackId` 属性、`Export()` / `Import(string)` 两个方法。
 > **它同时是一处与"版本"有关的事实澄清**：那次新增的 `SaveTransfer.FormatVersion`
@@ -79,9 +85,9 @@
 单一事实来源是 **`Directory.Build.props` 里的 `<Version>`**：
 
 ```xml
-<Version>1.10.1</Version>
-<AssemblyVersion>1.10.1.0</AssemblyVersion>
-<FileVersion>1.10.1.0</FileVersion>
+<Version>1.10.2</Version>
+<AssemblyVersion>1.10.2.0</AssemblyVersion>
+<FileVersion>1.10.2.0</FileVersion>
 ```
 
 这个值会同时成为程序集版本、文件版本，以及 `ApiVersion.Current` 报告的版本。
@@ -97,8 +103,8 @@
 ```csharp
 using NekoClicker.Core;
 
-Console.WriteLine(ApiVersion.Current);        // "1.10.1"
-Console.WriteLine(ApiVersion.AssemblyVersion); // 1.10.1.0
+Console.WriteLine(ApiVersion.Current);        // "1.10.2"
+Console.WriteLine(ApiVersion.AssemblyVersion); // 1.10.2.0
 Console.WriteLine(ApiVersion.Major);           // 1
 ```
 
@@ -168,7 +174,7 @@ engine/core/PublicApi.txt     ← 公开表面的逐项清单（行数随公开�
                                 EraSystem.Stage 一族 + EraView 的阶段六字段；
                                 1.10.0 加了 SaveTransfer / SaveTransferKind /
                                 SaveTransferResult + SaveManager 的三个成员，
-                                所以现在是 2026 行；1.10.1 是一行没动的 patch，
+                                所以现在是 2026 行；1.10.1 与 1.10.2 都是"一行没动"的 patch，
                                 所以仍然是 2026 行）
 ```
 

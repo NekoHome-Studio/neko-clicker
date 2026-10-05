@@ -28,6 +28,9 @@
 > **W4 / W9**（第二轮，§0.24）、**W7**（第三轮，§0.25）都结案了，`STRUCTURE_OPTIMIZATION` 的
 > **S10** 也一并关掉。**那张表现在只剩 W16**——它是 W7 落地时**顺带发现的**（其它 `tools/*.ps1` 里
 > 同类的 Windows 风格路径字面量），不是原来那批欠账里的一条。
+> 这一轮同时发布了 **1.10.2**（patch，把 `[未发布]` 桶结掉）；
+> **收工总结的单一入口是 [HANDOVER_2026-10-05](HANDOVER_2026-10-05.md)**——
+> 本文只维护"还欠什么"，那份文档讲"这一轮做了什么、证据在哪"。
 >
 > **✅ 已推（2026-10-05 复核，上一版这里写的是"待推"）**：`main` = **`c467baf`** = `origin/main`
 > （工作树干净）；tag `v1.5.0`…`v1.10.1` **都在远端**（`v1.10.1` → `d6a3bbc`）；
@@ -1963,7 +1966,7 @@ run: |
 
 | 项 | 值 | 怎么核对 |
 |---|---|---|
-| 版本 | **1.10.1** | `Directory.Build.props` 的 `<Version>`（1.10.1 是 **patch——公开 API 一行没动**：把 `CHANGELOG` 的 `[未发布]` 桶结掉（**D3** 的落地）——导出/导入的两个宿主窗口（W13 / W14）、十一个包的「点击 × 建筑」桥、两条宿主修复、一条工具链守卫；快照与 `v1.10.0` 是同一个 blob，重新生成后除首行 `version=` 外逐字节相同；见 `CHANGELOG` 的 1.10.1 与 §0.18。上一版 1.10.0 是**存档的导出 / 导入（引擎侧）**：`SaveTransfer` + `SaveTransferKind` + `SaveTransferResult` + `SaveManager.PackId/Export()/Import()`，公开 API 只增不改，见 `SAVE_TRANSFER_PLAN` 与 §0.17；1.9.0 是纪元内的阶段：`EraStage` + `EraDefinition.Stages` + `EraSystem.Stage` + `EraView` 的阶段六字段，见 `CONTENT_AUTHORING` §11.2 与 `TUNING_ANALYSIS` §4.10；1.8.0 是建筑升级系统，见 §0.11） |
+| 版本 | **1.10.2** | `Directory.Build.props` 的 `<Version>`（1.10.2 是 **patch——公开 API 一行没动**：把 `CHANGELOG` 的 `[未发布]` 桶结掉，桶里六节全是**前端 / 测试 / 工具链 / 文档**——三轮界面改动、三条新守卫、五处机械项（W1/W2/W3/W5/W6/W10）、两份测量与验证记录（W4/W9）、一个 Linux CI 作业（W7）；快照与 `v1.10.1` 在重生成前是同一个 blob，重生成后 `--numstat` = `1 1`；见 `CHANGELOG` 的 1.10.2 与 §0.23~§0.25。上一版 1.10.1 是 **patch**：导出/导入的两个宿主窗口（W13 / W14）、十一个包的「点击 × 建筑」桥、两条宿主修复、一条工具链守卫，见 `CHANGELOG` 的 1.10.1 与 §0.18；1.10.0 是**存档的导出 / 导入（引擎侧）**：`SaveTransfer` + `SaveTransferKind` + `SaveTransferResult` + `SaveManager.PackId/Export()/Import()`，公开 API 只增不改，见 `SAVE_TRANSFER_PLAN` 与 §0.17；1.9.0 是纪元内的阶段：`EraStage` + `EraDefinition.Stages` + `EraSystem.Stage` + `EraView` 的阶段六字段，见 `CONTENT_AUTHORING` §11.2 与 `TUNING_ANALYSIS` §4.10；1.8.0 是建筑升级系统，见 §0.11） |
 | 当前基线 | **三条命令**（`-Strict` / `api-test` / `web-smoke`）在 **`b625dd5`** 上的实测记在 §0.12——**本节刻意不复写那几个数**（它们每加一条守卫就会变） | 复跑那三条命令；**不要从文档里的数字推** |
 | 文本外部化 | **11 / 11 个包**有 `text.json`；**十一类面向玩家的文案全部在文件里**：`storylines` / `lore`（10 包 421 条）、`buildings`（11 包 104 座 × name/description/icon）、`eras`（9 包 49 层 × 6 字段）、`endings`（9 包 29 个 ×3）、`stances`（3 包 11 条 ×4）、`choices`（3 包 18 次 ×2 + 36 选项 ×2）、`achievements`（11 包 712 条 ×3）、`buffs`（11 包 86 条 ×3）、`upgrades`（11 包 **545** 条 ×3，§0.16 加了 11 条）、`goldenCookies`（11 包 109 条 ×3）。C# 里 `Prose.Text(` 共 **1,317** 处（`Upgrades.cs` 732 / `Buffs.cs` 318 / `GoldenCookieOutcomes.cs` 267 三个文件族；全部 `*.cs` 实测 2,948）、`Name/Description/Icon = "` 0 处 | `Get-ChildItem engine\content -Recurse -Filter text.json`；见 §0.9（第五轮，收尾）与 §0.16（点击桥 +11） |
 | 加载器 | `ContentText` 已 **public** | `engine/core/Content/ContentText.cs` |
