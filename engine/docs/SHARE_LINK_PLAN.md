@@ -445,6 +445,11 @@ games/README、STATUS ×2、`.github/workflows/ci.yml`、`tools/api-test.ps1`、
   "`input` 是 `type=password`"。
 - `tools/api-test.ps1`：真起宿主，用 `--mint-link` 铸一枚令牌 → 打真 URL → 200；
   错钥匙 → 403；过期 → 403；`?epoch=` 那条既有断言**保持不变**（回归底线）。
+  **落地形态见 §14**（20 处检查点），与这里列的清单有两处**刻意的差别**：
+  ①"错钥匙"与"过期"走的是 C# 那一层（`ShareLinkTests` 的四种拒绝各一条）——HTTP 面上验的是
+  **跨包** `ForeignPack`、**密文被改** `WrongPasswordOrTampered`、`not-a-link` `NotALink`
+  与 `epoch`+`k` 同时带的 400（判据 `failure` 字段，不解析中文）；
+  ②另加了铸造端的三条拒绝（真 exe 的退出码与 stderr）与分享链接的往返。
 
 **真实文件不动**：整轮只读 `saves/`；所有用例指向临时目录；
 结束时给出 size + mtime + sha256（`SAVE_TRANSFER_PLAN.md` §8/§9 那份表的格式）。
@@ -455,8 +460,8 @@ games/README、STATUS ×2、`.github/workflows/ci.yml`、`tools/api-test.ps1`、
 
 | 刀 | 内容 | 状态 |
 |---|---|---|
-| **一** | `ShareLinkCodec`（KDF/AEAD/压缩/base64url/大小闸）+ 跳层令牌（`?k=`、`NEKO_URL_KEY`、`--mint-link`）+ 分享链接（`shareLink` / `importShare` 两条命令 + `/api/share`… 实为 `/api/command` 的两条命令）+ 窗口里那一节 + C# 守卫 | **本刀** |
-| 二 | `api-test.ps1` 的端到端段 + `web-smoke` 的新一节 + 启动横幅/帮助文案的版本字样 | 待做（§11 已列清单） |
+| **一** | `ShareLinkCodec`（KDF/AEAD/压缩/base64url/大小闸）+ 跳层令牌（`?k=`、`NEKO_URL_KEY`、`--mint-link`）+ 分享链接（`shareLink` / `importShare` 两条命令 + `/api/share`… 实为 `/api/command` 的两条命令）+ 窗口里那一节 + C# 守卫 | **已落地**（§13） |
+| 二 | `api-test.ps1` 的端到端段（**已做**，§14）+ `web-smoke` 的新一节（第一刀已做）+ 启动横幅/帮助文案的字样（第一刀已在启动横幅印出令牌门那一行；README 里仍没有面向使用者的说明） | **端到端段与 web-smoke 已做**；README 那一条**仍待做** |
 | 三 | 若终端真的需要"密码保护的文件"：那是一件**文件格式**的事，另开 | 待做（不在本刀，理由见 §8） |
 
 **明确不做**：
@@ -537,6 +542,105 @@ games/README、STATUS ×2、`.github/workflows/ci.yml`、`tools/api-test.ps1`、
 - **`tools/api-test.ps1` 里没有留下端到端的那几条检查**：上面那张表是一次**手工探针**，
   跑完就没了。真宿主那 65 项既有检查验的是**明文**门与别的端点，所以"令牌门会跳层"
   这件事**在自动闸门里**今天只有 C# 那一层 + 共享源码的覆盖。把它做成常驻检查是**第二刀**。
+  → **2026-10-05 已补上，见 §14**（常驻 20 处检查点，真起宿主、真打 HTTP）。
 - **`--mint-link` 的层号校验**在铸造时会对这个包**真实**的层数查一次，但那一条**没有**用例
   （它在 `Program.cs` 里，而 `Program.cs` 不进测试项目的共享源码清单——要验它就得像
   `api-test.ps1` 那样真起宿主，见上一条）。
+  → **2026-10-05 已补上，见 §14**（校验搬进 `ShareLink.cs` 的 `EraLinkMinter`：3 条 C# 用例
+  + 真 exe 上三条拒绝）。
+
+---
+
+## 14. 第二刀：把那两处"没验的"补上（2026-10-05）
+
+> §13 的首刀落地记录自己写着 **2026-10-06**；本轮的日期取自机器时钟
+> （`Get-Date` = `2026-10-05 20:5x +08:00`）。两者都是"记录当时那台机器的时钟"，
+> 谁都不覆盖谁——**这一节是首刀之后的工作**。
+
+同一棵隔离 worktree（`.tmp/wt-gaps`，从 **`c791932`** 起）、分支
+**`gaps-mint-link-and-api-test`**。**这一轮只补守卫与文档，一行宿主行为都没改**：
+`ShareLinkCodec`（线格式 / KDF / AEAD / 大小闸）与两扇门的语义**一个字节都没动**，
+§4.4 那份复核清单继续成立。**版本停在 `[未发布]`**：`engine/core` 一个字节没动
+（`tools/public-api.ps1` 复核：`PublicApi.txt` sha256 前后同为 `3D7B30E0…`，`git diff -- engine/core` 为空）。
+
+### 14.1 缺口 A：`--mint-link` 的校验搬进共享源码
+
+| 项 | 结果 |
+|---|---|
+| 搬去哪 | `games/hosts/Web/ShareLink.cs`（**本来就在**测试项目的 `Compile Include` 清单里）：新增 `EraLinkMintRequest` / `EraLinkMintResult` / `EraLinkMinter.Mint(request, 包 id 表, 查层数)` |
+| 为什么是这个形状 | 请求与结果都是**纯数据**（不读环境变量、不起宿主、不读命令行）⇒ 用例直接构造它；钥匙的**环境变量名**也搬过去（`EraLinkMinter.KeyVariable`，`Program.cs` 那两处改成引用它），否则用例只能断言一句**抄来的**文案 |
+| `Program.cs` 剩什么 | 读环境变量 → 把 `--package` / `--era` / `--expires-hours` / `--base-url` 翻成请求 → URL 走 stdout、人话走 stderr、退出码原样返回（**分工与文档都没变**） |
+| 新用例 | `engine/tests/ShareLinkTests.cs` **+3 条**：拒绝面 / 对照组 / 有效期（用例数 **583 → 586**） |
+| 判别力 | 见 §14.3 的 ① 与 ② |
+
+### 14.2 缺口 B：`tools/api-test.ps1` 的常驻端到端段（20 处检查点，**65 → 85**）
+
+真起宿主、真打 HTTP。**脚本自带一把一次性的 `NEKO_URL_KEY`**（不设它令牌门根本不存在，
+那一段无从测起；明文门那把反过来**必须不设**——"缺省门是关着的"本身就是被测事实，见脚本头部 ②）。
+令牌是为**有分层转生**的包铸的（实验室 7 层；`cafe` / `neko` 没有层），所以那一段另开一个会话。
+分享链接那一段**排在令牌段之前**是刻意的：令牌段会把被测包跳成**调试会话**，而调试会话按设计
+不产链接、也不收链接（§5.3 最后一条）。
+
+| # | 断言 | 实测输出（照抄，2026-10-05 那一跑） |
+|---|---|---|
+| 1 | `--mint-link` 铸出一整行 URL（退出码 0） | `stdout <http://127.0.0.1:59927/?package=lab&k=TktMMWUAAzRQ…>；stderr <已铸一枚跳层令牌：内容包「lab」第 2 层、204 个字符、不过期。>` |
+| 2 | `GET /?k=…` 真的跳层 | `HTTP 200：gate=token from=1 to=2 范围=1..7` |
+| 3 | 跳过了哪些账、这次不落盘 | `autosave=disabled skipped=era_inheritance,era_history,prestige_settlement` |
+| 4 | 跨包 | `HTTP 403：failure=ForeignPack；正文 {…"package":"neko"…"这段链接是内容包「lab」的，当前会话是「neko」…"}` |
+| 5 | 改末尾 4 个字符 | `HTTP 403：failure=WrongPasswordOrTampered` |
+| 6 | `?k=not-a-link` | `HTTP 403：failure=NotALink` |
+| 7 | `epoch` + `k` 同时带 | `HTTP 400：这次请求同时带了 epoch 与 k：它们两扇独立的门，一次只能用一扇。` |
+| 8 | **明文门不变**（`NEKO_DEBUG_KEY` 未设） | `HTTP 403：调试门未启用：本机没有设置环境变量 NEKO_DEBUG_KEY。` |
+| 9 | 跳层之后存档根里没有这个包 | `存在 …\saves\lab.json：False｜存档根里的 .json：cafe.json` |
+| 10 | 铸造端层号越界（真 exe） | 退出码 2；stdout 为空；`stderr <第 99 层越界（内容包「lab」只有 7 层）。合法范围：1..7。>` |
+| 11 | 铸造端包不存在 | 退出码 2；`stderr <没有内容包 <no-such-pack>。可用的是：apocalypse、cafe、civ、company、cyber、dream、god、lab、library、neko、ninelives>` |
+| 12 | 铸造端没设钥匙 | 退出码 2；stdout 为空；`stderr <铸不出令牌：没有设置环境变量 NEKO_URL_KEY。…>` |
+| 13 | `shareLink` 生产 | `HTTP 200：1092 字符`；且**链接里没有那串密码** |
+| 14 | 错密码 | `ok=false`：`打不开：密码不对，或者这段链接被改过 / 被截断了。…` |
+| 15 | 错密码之后**会话**没动 | `totalClicks 40 → 40` |
+| 16 | 错密码之后**磁盘**没动 | `sha256 0FE917B9C70B → 0FE917B9C70B` |
+| 17 | 对密码收得下 | `已解开分享链接（内容包「cafe」、1692 个字符的导出文本）｜已导入：内容包「cafe」｜…` |
+| 18 | 成功那句来自**既有的**导入路径 | 同上一行的 `已导入：…`（引擎自己那句） |
+| 19 | 对密码真的落了盘（与 16 对照） | `sha256 0FE917B9C70B → 5D94BE3E8B2D` |
+
+（表里 **19 行**对应 **20 处检查点**：第 13 行把"带回一段非空链接"与"链接里没有密码"
+两条并成了一行写——它们在脚本里是两处独立的 `Check`。）
+
+**为什么 `.NET Process` 而不是 `Start-Process`**（脚本里的那条注释有更短的版本）：
+本机实测 `Start-Process -PassThru -Wait` 拿回来的 `ExitCode` 是**空值**，而"拒绝铸造"必须报得出
+退出码——脚本拿走 stdout 那一行当链接用，退出码 0 与 2 的区别就是"能用"与"不能用"。
+换 `[System.Diagnostics.Process]` 之后两个流按 UTF-8 收、退出码可靠（实测 0 / 2 / 2 / 2）。
+
+**这一段没有覆盖的两件事**（诚实边界）：**有效期过期**与**错钥匙**走的是 C# 那一层
+（`EraToken_AuthorizesExactlyTheRightDoor` 四种拒绝各一条）——HTTP 面上验的是跨包、密文被改、
+`not-a-link` 与 `epoch`+`k`；`--expires-hours` 的产出在 C# 的第三条用例里验（密文里就是
+「现在 + 24 小时」）。
+
+### 14.3 判别力（五处故障注入，**都真跑过**；跑完还原并核对 sha256）
+
+| 注入 | 红色原文（照抄） | 还原后的 sha256 |
+|---|---|---|
+| ① `ShareLink.cs`：`EraLinkMinter` 去掉层号**上界**那一半（`era > max.Value`） | `✗ ShareLinkTests.EraLinkMint_RefusesMissingKeyUnknownPackAndOutOfRangeEras`<br>`AssertionException: 超过真实层数必须拒绝。｜期望 <2>，实际 <0>。`<br>`2 通过 / 1 失败（共 3）。` | `ShareLink.cs` = `4A8DE157B5DDCCF59D1EE941AE36E1C0C6B7C9811D6B39007A72BD093D594310` |
+| ② `ShareLink.cs`：钥匙闸不再排在最前（只在参数齐全时才查钥匙） | `✗ ShareLinkTests.EraLinkMint_RefusesMissingKeyUnknownPackAndOutOfRangeEras`<br>`AssertionException: 钥匙没设与参数写错同时出现时，先说钥匙。｜期望包含 <NEKO_URL_KEY>，实际为 <用法：--mint-link --package <包 id> --era <层号> …>。`<br>`2 通过 / 1 失败（共 3）。` | 同 ①（同一个文件、同一个值） |
+| ③ `Program.cs`：令牌门把 `expectedPackId` 传成 `null`（包闸变装饰） | `[FAIL] 同一枚令牌换到别的包上：403 ForeignPack（正文里两个包名都要在）  — HTTP 400：failure=；正文 <{"ok":false,"gate":"token","package":"neko","from":1,"validRange":{"min":0,"max":0},"message":"内容包「neko」没有分层转生，没有层可跳。"}>`<br>`检查点覆盖：源码 85 处 ｜ 执行到 85 处 ｜ 通过 84 ｜ 失败 1 ｜ 跳过 0` | `Program.cs` = `FD5CB45B733AF361F0A53FA8122993F7866256ED493A92888DA248A02D631613` |
+| ④ `Program.cs`：铸造时**不再把 `--era` 传进去**（"实现对了但没接线"） | `[FAIL] --mint-link 铸出一整行 URL（退出码 0；形状 <base>/?package=<id>&k=<密文>）  — 退出码 2；stdout <>；stderr <用法：--mint-link --package <包 id> --era <层号> …>`（共 **7 红**：铸令牌 + 令牌正文三处 + 跨包 + 被改过 + 铸造端两条）<br>`检查点覆盖：源码 85 处 ｜ 执行到 85 处 ｜ 通过 78 ｜ 失败 7 ｜ 跳过 0` | 同 ③（`FD5CB45B…`） |
+| ⑤ `GameHost.cs`：`ImportShareAsync` 在**解密失败那条路上也存一次盘**（失败路径碰了盘） | C# 既有守卫也红：`✗ ShareLinkTests.WebHost_WrongSharePasswordTouchesNothing`<br>`AssertionException: 被拒绝的导入不许动磁盘上那份能用的存档。`<br>`0 通过 / 1 失败（共 1）。`<br>api-test 那一条：`[FAIL] 错密码之后磁盘上那份能用的存档逐字节不变  — sha256 8B9EE251C78F → 44D6CA10B240`<br>`检查点覆盖：源码 85 处 ｜ 执行到 85 处 ｜ 通过 84 ｜ 失败 1 ｜ 跳过 0` | `GameHost.cs` = `AE6B8A0B1C573C1964F8C1019C59D1520E5B742637705D08C7D2737111FB9635`（`git status` 里它不再出现 ⇒ 逐字节回到 HEAD） |
+
+**③④ 顺带证明的另一件事**：注入把检查打红的那两次，覆盖审计仍然报 **"执行到 85 处"**——
+"某条检查悄悄没跑"与"检查跑了但输了"是两种不同的信号，脚本这两条路都说得清楚。
+
+**没有做的注入**（诚实边界，与 §13 同一格式）：把 `ShareManager.Import` 那张九道闸里的
+**校验和**那一步注掉（该红的是"解密出来的是原文"这一整条链，它由首刀的 C# 用例与
+`api-test.ps1` 既有的导出/导入段共同守着，本轮没有单独注入）。
+
+### 14.4 真实文件不动
+
+`saves/` 与 `artifacts/latency.txt`（真人数据）本轮**一个字节都没写**：
+`artifacts/latency.txt` 的 mtime 停在 **20:19:56**（本轮所有命令都在 20:35 之后跑），
+size **2929** / sha256 `B777D4E0…` 未变；`saves/apocalypse.json` 在同一时段确实被改过
+（mtime 20:50:56、`.bak` 20:49:56，正好是 60 秒一次的自动存档节奏）——**那是人在 5273 上玩着
+的那台宿主**，不是本轮的任何一条命令：本轮的宿主一律走
+`--save-root <worktree>\.tmp\api-test\<stamp>-<pid>\saves`（脚本自己挑临时目录、自带
+`--latency-log` 指向同一处），C# 用例走 `%TEMP%\neko-share-link-tests\…`，
+而**这棵 worktree 里根本没有 `saves/` 目录**；本轮也**从不铸 apocalypse 的令牌、
+不开它的会话**（端到端用的是 `cafe` + 令牌包 `lab` + 跨包 `neko`）。

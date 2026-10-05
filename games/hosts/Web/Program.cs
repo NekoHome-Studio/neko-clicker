@@ -41,7 +41,12 @@ public static class Program
     /// 顺手把明文门也开了，而两扇门的射程并不一样（明文门泄漏的是可复用的钥匙，令牌泄漏的是一次跳转）。
     /// </para>
     /// </summary>
-    private const string UrlKeyVariable = "NEKO_URL_KEY";
+    /// <remarks>
+    /// 名字的**唯一出处**在 <see cref="EraLinkMinter.KeyVariable"/>：铸造端那句
+    /// "没有设置环境变量 NEKO_URL_KEY" 与这扇门读的那个名字必须是同一个常量，
+    /// 否则改一处就会得到一条"照着提示设了变量、门却还是没开"的死路。
+    /// </remarks>
+    private const string UrlKeyVariable = EraLinkMinter.KeyVariable;
 
     /// <summary>跳层会跳过的账（响应正文必须说出来，见 plan §3）。</summary>
     private static readonly string[] DebugSkippedBookkeeping =
@@ -633,8 +638,11 @@ public static class Program
     /// 绝不产出一段"宿主一定解不开"的链接（那正是最坏的一种成功报告）。
     /// </para>
     /// <para>
-    /// 层号在铸造时对着这个包<b>真实的层数</b>校验一次（与 <see cref="GameHost.JumpToEraAsync"/>
-    /// 同一条判据）：把错误留在铸造那一步，而不是留给十分钟后的浏览器。
+    /// 校验本身（钥匙 / 用法 / 包在不在 / 层号范围 / 有效期）**一行都不在这个文件里**：
+    /// 它们全在 <see cref="EraLinkMinter.Mint"/>（<c>ShareLink.cs</c>，在共享源码清单里），
+    /// 所以"层号越界会被拒绝"这句话有 C# 用例钉着——这个文件碰 ASP.NET，进不了测试项目，
+    /// 原先长在这里的那段校验因此一条守卫都没有（<c>SHARE_LINK_PLAN.md</c> §13 末尾记过这条缺口）。
+    /// 这里只剩三件事：读环境变量、把参数翻成纯数据、按分工把结果打到两个流上。
     /// </para>
     /// <para>
     /// 输出分工是刻意的：<b>URL 走 stdout</b>（脚本要能整行取走），
@@ -645,82 +653,28 @@ public static class Program
     /// <returns>退出码；成功为 <c>0</c>。</returns>
     private static int MintEraLink(string[] args)
     {
-        string? key = Environment.GetEnvironmentVariable(UrlKeyVariable);
-        if (string.IsNullOrEmpty(key))
-        {
-            Console.Error.WriteLine(
-                $"铸不出令牌：没有设置环境变量 {UrlKeyVariable}。"
-                + $"先临时设一把钥匙（$env:{UrlKeyVariable} = '…'），再重跑这条命令。");
-            return 2;
-        }
+        string baseUrl = ReadOption(args, "--base-url")
+                         ?? ReadOption(args, "--urls")
+                         ?? ReadOption(args, "--url")
+                         ?? DefaultUrl;
 
-        string? packageId = ReadOption(args, "--package");
-        string? eraText = ReadOption(args, "--era");
-        if (packageId is null || eraText is null
-            || !int.TryParse(eraText, NumberStyles.Integer, CultureInfo.InvariantCulture, out int era))
-        {
-            Console.Error.WriteLine(
-                "用法：--mint-link --package <包 id> --era <层号> [--expires-hours <小时>] [--base-url <地址>]");
-            return 2;
-        }
+        // 目录只提供两样东西：有哪些 id、以及某个 id 最多能跳到第几层。
+        // 后者是**按需**调用的（只给选中的那个包 Build 一次），坏包不该把整条命令拖垮。
+        string[] packIds = [.. PackageCatalog.All.Select(p => p.Id)];
 
-        WebPackage? package = PackageCatalog.Find(packageId);
-        if (package is null)
-        {
-            Console.Error.WriteLine(
-                $"没有内容包 <{packageId}>。可用的是：{string.Join("、", PackageCatalog.All.Select(p => p.Id))}");
-            return 2;
-        }
+        EraLinkMintResult result = EraLinkMinter.Mint(
+            new EraLinkMintRequest(
+                Environment.GetEnvironmentVariable(UrlKeyVariable),
+                ReadOption(args, "--package"),
+                ReadOption(args, "--era"),
+                ReadOption(args, "--expires-hours"),
+                baseUrl),
+            packIds,
+            id => PackageCatalog.Find(id) is { } package ? package.Build().MaxEraIndex : null);
 
-        int max = package.Build().MaxEraIndex;
-        if (max < 1)
-        {
-            Console.Error.WriteLine($"内容包「{package.Id}」没有分层转生，没有层可跳。");
-            return 2;
-        }
-
-        if (era < 1 || era > max)
-        {
-            Console.Error.WriteLine($"第 {era} 层越界（内容包「{package.Id}」只有 {max} 层）。合法范围：1..{max}。");
-            return 2;
-        }
-
-        DateTimeOffset? expiresAt = null;
-        if (ReadOption(args, "--expires-hours") is { } hoursText)
-        {
-            if (!double.TryParse(hoursText, NumberStyles.Float, CultureInfo.InvariantCulture, out double hours) || hours <= 0)
-            {
-                // 默认**不设过期**（与明文门一样是"本机调试用"）；给了这个参数就必须给一个正数，
-                // 而不是"看不懂就当成没过期"——那会把一个明确的意图变成一个沉默的默认值。
-                Console.Error.WriteLine($"--expires-hours 需要一个正数（收到「{hoursText}」）。");
-                return 2;
-            }
-
-            expiresAt = DateTimeOffset.UtcNow.AddHours(hours);
-        }
-
-        string baseUrl = (ReadOption(args, "--base-url")
-                          ?? ReadOption(args, "--urls")
-                          ?? ReadOption(args, "--url")
-                          ?? DefaultUrl).TrimEnd('/');
-
-        try
-        {
-            string token = ShareLinkCodec.Protect(key, ShareLinkPurpose.EraToken, package.Id, null, era, expiresAt);
-
-            Console.WriteLine($"{baseUrl}/?package={package.Id}&k={token}");
-            Console.Error.WriteLine(
-                $"已铸一枚跳层令牌：内容包「{package.Id}」第 {era} 层、{token.Length} 个字符"
-                + (expiresAt is null
-                    ? "、不过期。"
-                    : $"、{expiresAt.Value.ToUniversalTime().ToString("u", CultureInfo.InvariantCulture)} 过期。"));
-            return 0;
-        }
-        catch (Exception ex)
-        {
-            Console.Error.WriteLine($"铸不出令牌：{ex.Message}");
-            return 2;
-        }
+        if (result.Url is not null) Console.WriteLine(result.Url);
+        Console.Error.WriteLine(result.Message);
+        return result.ExitCode;
     }
 
     /// <summary>按线上协议的序列化选项写一份 JSON 响应。</summary>

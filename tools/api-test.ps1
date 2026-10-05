@@ -9,14 +9,16 @@
 #     · 增量推送的派生字段没处理干净 → 每帧 28KB，而"变化字段数 ≤ 4"的用例照样绿。
 #   所以这一层的判据只能是**真的通**：起宿主、发请求、读 SSE 流、看着它回话。
 #
-# 与单元测试的分工：`tools/build.ps1 -Strict` 守引擎（583 个用例 + 公开 API 快照），
+# 与单元测试的分工：`tools/build.ps1 -Strict` 守引擎（586 个用例 + 公开 API 快照），
 # 本脚本守"宿主 + 浏览器协议"那一段。CI 里两条都跑（.github/workflows/ci.yml）。
 #
 # 五条刻意为之的行为（都不是默认就该有的，是踩出来的）：
 #   ① **自带临时存档目录**（--save-root）。探针会点击、会买入；跑在真实存档上等于
 #      把玩家的进度当测试夹具。旧版探针就是这么干的（.tmp/api-probe），收进仓库时必须改掉。
 #   ② **强制清掉 NEKO_DEBUG_KEY 再起子进程**，于是"缺省门是关着的"这条断言在任何开发机上
-#      都成立，而不是"取决于跑的人 shell 里有没有那个变量"。
+#      都成立，而不是"取决于跑的人 shell 里有没有那个变量"。令牌门那把钥匙（`NEKO_URL_KEY`）
+#      反过来：本脚本**自己设一把一次性的测试钥匙**（见下面的"环境重定向"），不设它令牌门
+#      根本不存在（带 `k` 一律 403），令牌那一段就无从测起。
 #   ③ **收尾先树杀、再按端口反查**：`dotnet run` 会再起一个真正的宿主子进程（apphost，
 #      neko-clicker-web.exe），只杀 dotnet run 自己会留下还在监听的孤儿（本仓库踩过）。
 #      所以对被记录的那个 PID 先走 `taskkill /F /T`（杀整棵树），失败再退回 `Stop-Process`。
@@ -35,6 +37,12 @@
 #      **3 处调用点从来没执行过**（`if ($clickError)` 的一个面、`if ($laterDeltas…)` 的 `else` 里
 #      两处），同时 **1 处**写在 `foreach` 里跑了 3 次，一多一少正好相抵。计数对不上只是症状，
 #      "某条检查悄悄没跑"才是病——所以现在由机器来数，不靠这一行注释。
+#      当前是 **85 处**调用点（65 → 85 是令牌门与分享链接那一段加的 20 处，见 ⑥）。
+#   ⑥ **URL 上那两段加密载荷也在这条真链路上验**（`SHARE_LINK_PLAN` §11 的"第二刀"）：
+#      铸一枚跳层令牌 → 打真 URL → 断正文形状与四种拒绝、并复核明文门一个字节没变；
+#      生成的分享链接 → 错密码（**磁盘与会话一个字节都不许动**）→ 对密码。
+#      它补的是"单元测试只覆盖到编解码与会话对象、覆盖不到 HTTP 那一面"的那半张网。
+#      这一段还要一把钥匙：本脚本自己设 `NEKO_URL_KEY`（见下面的"环境重定向"，与 ② 正好相反）。
 #
 # 用法：
 #   powershell -File tools/api-test.ps1                 # 构建 + 起宿主 + 打全套 + 收尾
@@ -71,6 +79,13 @@ $env:NUGET_PACKAGES = Join-Path $root '.packages'
 $env:DOTNET_CLI_UI_LANGUAGE = 'en'
 $env:MSBUILDDISABLENODEREUSE = '1'
 New-Item -ItemType Directory -Force -Path $env:DOTNET_CLI_HOME, $env:NUGET_PACKAGES | Out-Null
+
+# 令牌门（?k=…）的钥匙。**必须显式设成一把一次性的测试钥匙**：不设的话这扇门根本不存在
+# （带 k 的请求一律 403 KeyNotConfigured），令牌那一段就无从测起。它只活在本进程与它起的
+# 子进程里、跑完即弃，**不是**仓库里的秘密（密钥值按仓库规矩从不入仓，见 SHARE_LINK_PLAN §4.2）。
+# 设在这里而不是从跑的人 shell 里继承：被测事实不该取决于谁在跑它（与头部 ② 同一条理由——
+# 明文门那把反过来必须**不设**，因为"缺省门是关着的"本身就是被测事实）。
+$env:NEKO_URL_KEY = 'api-test-url-key-30a1'
 
 # ---------------------------------------------------------------- 结果记账
 $script:Passed = 0
@@ -143,6 +158,48 @@ function Invoke-PostJson([string]$Path, $Payload) {
 
 function Convert-FromJsonSafe([string]$Text) {
     try { return $Text | ConvertFrom-Json } catch { return $null }
+}
+
+# 铸一枚跳层令牌：调**同一支二进制**的 `--mint-link`（SHARE_LINK_PLAN §4.2）。
+# 三样东西分开拿：退出码（拒绝铸造时非 0）、stdout（那**一行 URL**）、stderr（给人看的那句话）。
+# 刻意不把三者合成一个布尔值——"铸出来了"与"拒绝得对"是两件事，混在一起就分不出是哪一件。
+#
+# 为什么走 .NET 的 Process 而不是 Start-Process：本机实测 `Start-Process -PassThru -Wait`
+# 拿回来的 ExitCode 是**空值**（宿主那一段不需要它，所以一直没露出来），而"拒绝铸造"必须报得出
+# 退出码——脚本拿走 stdout 那一行当链接用，退出码 0 与 2 的区别就是"能用"与"不能用"。
+# 两个流按 UTF-8 收，中文才不会被运行时的默认代码页吃掉（与 Show-HostLogs 同一取舍）。
+function Invoke-MintLink([string[]]$MintArgs, [switch]$WithoutUrlKey) {
+    $savedKey = if (Test-Path Env:NEKO_URL_KEY) { $env:NEKO_URL_KEY } else { $null }
+    if ($WithoutUrlKey) { Remove-Item Env:NEKO_URL_KEY -ErrorAction SilentlyContinue }
+
+    try {
+        # 路径一律自己加引号：Start-Process / ProcessStartInfo 都是按空格拼接参数串的，
+        # 工作区路径里有空格时不加引号会散架（与 Start-TestHost 同一条规矩）。
+        $psi = New-Object System.Diagnostics.ProcessStartInfo
+        $psi.FileName = 'dotnet'
+        $psi.Arguments = 'run -m:1 --no-build --project ' + "`"$webDir`"" + ' -- ' + ($MintArgs -join ' ')
+        $psi.UseShellExecute = $false
+        $psi.RedirectStandardOutput = $true
+        $psi.RedirectStandardError = $true
+        $psi.StandardOutputEncoding = [System.Text.Encoding]::UTF8
+        $psi.StandardErrorEncoding = [System.Text.Encoding]::UTF8
+        $psi.WorkingDirectory = $root
+
+        $mintProcess = [System.Diagnostics.Process]::Start($psi)
+        # 先读 stderr（小）、再读 stdout：两个都要读干，否则缓冲区满时子进程会卡在写那一端。
+        $mintError = $mintProcess.StandardError.ReadToEnd()
+        $mintOut = $mintProcess.StandardOutput.ReadToEnd()
+        $mintProcess.WaitForExit()
+
+        return [pscustomobject]@{
+            ExitCode = [int]$mintProcess.ExitCode
+            Url      = ([string]$mintOut).Trim()
+            Error    = ([string]$mintError).Trim()
+        }
+    }
+    finally {
+        if ($null -ne $savedKey) { $env:NEKO_URL_KEY = $savedKey }
+    }
 }
 
 # ---------------------------------------------------------------- 宿主生命周期
@@ -1146,6 +1203,172 @@ try {
         ($null -ne $onDisk -and $onDisk -ceq $saveBody) `
         "盘上 $(if ($null -ne $onDisk) { $onDisk.Length } else { 0 }) 字符 / 信封 $(($saveBody).Length) 字符" `
         $guardSkip
+
+    # ------------------------------------------------------------ 分享链接（?share=）
+    # 端到端走一遍玩家真的会走的那条路：**生产 → 错密码 → 对密码**。
+    # 三条判据对应 SHARE_LINK_PLAN §5.3 那条最要紧的约定：
+    #   ① 密码不进 URL（链接里没有它）；
+    #   ② 密码错 ⇒ 解密失败发生在 SaveManager.Import **之前**，所以磁盘与会话一个字节都不许动；
+    #   ③ 对密码 ⇒ 收得下，而且走的是**既有的**导入路径（成功那句话就是引擎自己那句）。
+    # ③ 是①②的前提：没有它，上面那些"拒绝了"可能只是"这条路根本不通"。
+    #
+    # 这一段刻意排在令牌段**之前**：令牌段会把被测包跳成调试会话，而调试会话按设计
+    # 不产链接、也不收链接（SHARE_LINK_PLAN §5.3 最后一条）。
+    Write-Section '分享链接（?share=）：真宿主上的生产 / 错密码 / 对密码'
+
+    $sharePassword = 'api-test-share-pass-9c1f'
+    $shareCommand = Invoke-PostJson "/api/command?package=$Package" @{ type = 'shareLink'; password = $sharePassword }
+    $shareResult = Convert-FromJsonSafe $shareCommand.Body
+    $shareLink = if ($null -ne $shareResult -and $null -ne $shareResult.text) { [string]$shareResult.text } else { '' }
+    $shareOk = $shareCommand.Success -and ($null -ne $shareResult) -and $shareResult.ok -eq $true -and $shareLink.Length -gt 0
+    Check 'POST /api/command shareLink 带回一段非空链接（走 text 字段，不是 message）' $shareOk `
+        "HTTP $($shareCommand.Status)：$($shareLink.Length) 字符"
+
+    Check '生成的链接里没有密码（密码只走 POST 请求体，URL 里只有密文）' `
+        ($shareOk -and -not $shareLink.Contains($sharePassword)) `
+        $(if ($shareOk) { "链接 $($shareLink.Length) 字符，不含那串密码" } else { '链接没生成，无从判定' })
+
+    # 保护对象：磁盘上那一份能用的存档（第一段宿主存下来的）。没有它就**显式跳过**——
+    # 与上面导出/导入那一段同一条规矩：不能静默空过。
+    $shareGuardSkip = if (-not $savePath -or -not (Test-Path $savePath)) { '没有唯一的存档文件可保护，这一段无从判定' } else { '' }
+    $shareHashBefore = if ($shareGuardSkip.Length -eq 0) { (Get-FileHash $savePath -Algorithm SHA256).Hash } else { '' }
+    $shareClicksBefore = -1
+    $beforeWrongPass = Convert-FromJsonSafe (Invoke-Get "/api/snapshot?package=$Package").Body
+    if ($null -ne $beforeWrongPass) { $shareClicksBefore = [double]$beforeWrongPass.totalClicks }
+
+    $wrongPassCommand = Invoke-PostJson "/api/command?package=$Package" @{ type = 'importShare'; token = $shareLink; password = 'not-the-password-at-all' }
+    $wrongPassResult = Convert-FromJsonSafe $wrongPassCommand.Body
+    $wrongPassOk = $wrongPassCommand.Success -and ($null -ne $wrongPassResult) -and $wrongPassResult.ok -eq $false
+    Check '错密码必须被明确拒绝，而且理由指向密码' ($wrongPassOk -and ([string]$wrongPassResult.message).Contains('密码不对')) `
+        "HTTP $($wrongPassCommand.Status)：$(if ($null -ne $wrongPassResult) { [string]$wrongPassResult.message } else { '—' })"
+
+    $afterWrongPass = Convert-FromJsonSafe (Invoke-Get "/api/snapshot?package=$Package").Body
+    $shareClicksAfter = if ($null -ne $afterWrongPass) { [double]$afterWrongPass.totalClicks } else { -1 }
+    Check '错密码之后会话一个字段都没被碰过（点击总数逐值相同）' `
+        ($shareOk -and $shareClicksBefore -ge 0 -and $shareClicksAfter -eq $shareClicksBefore) `
+        "totalClicks $shareClicksBefore → $shareClicksAfter"
+
+    $shareHashAfterWrong = if ($shareGuardSkip.Length -eq 0 -and (Test-Path $savePath)) { (Get-FileHash $savePath -Algorithm SHA256).Hash } else { '' }
+    Check '错密码之后磁盘上那份能用的存档逐字节不变' `
+        ($shareGuardSkip.Length -gt 0 -or ($shareHashBefore.Length -gt 0 -and $shareHashBefore -ceq $shareHashAfterWrong)) `
+        "sha256 $(if ($shareHashBefore) { $shareHashBefore.Substring(0, 12) } else { '—' }) → $(if ($shareHashAfterWrong) { $shareHashAfterWrong.Substring(0, 12) } else { '—' })" `
+        $shareGuardSkip
+
+    $goodShareCommand = Invoke-PostJson "/api/command?package=$Package" @{ type = 'importShare'; token = $shareLink; password = $sharePassword }
+    $goodShareResult = Convert-FromJsonSafe $goodShareCommand.Body
+    $goodShareOk = $goodShareCommand.Success -and ($null -ne $goodShareResult) -and $goodShareResult.ok -eq $true
+    Check '同一个密码必须收得下（否则上面那条「拒绝了」什么都证明不了）' $goodShareOk `
+        "HTTP $($goodShareCommand.Status)：$(if ($null -ne $goodShareResult) { [string]$goodShareResult.message } else { '—' })"
+
+    Check '成功那句话来自既有的导入路径（说得出现在是哪个包）' `
+        ($goodShareOk -and ([string]$goodShareResult.message).Contains($Package)) `
+        $(if ($goodShareOk) { [string]$goodShareResult.message } else { '导入没成功' })
+
+    $shareHashAfterGood = if ($shareGuardSkip.Length -eq 0 -and (Test-Path $savePath)) { (Get-FileHash $savePath -Algorithm SHA256).Hash } else { '' }
+    Check '对密码的导入真的落了盘（与上面「错密码没动」互为对照）' `
+        ($shareGuardSkip.Length -gt 0 -or ($shareHashAfterGood.Length -gt 0 -and $shareHashAfterGood -cne $shareHashBefore)) `
+        "sha256 $(if ($shareHashBefore) { $shareHashBefore.Substring(0, 12) } else { '—' }) → $(if ($shareHashAfterGood) { $shareHashAfterGood.Substring(0, 12) } else { '—' })" `
+        $shareGuardSkip
+
+    # ------------------------------------------------------------ 跳层令牌（?k=）
+    # 明文门之外的**第二扇门**（SHARE_LINK_PLAN §4）。这一段验的是真 HTTP：铸一枚令牌 → 打真 URL
+    # → 断正文形状 → 四种拒绝 → 明文门的行为一个字节没变。
+    # 它存在的理由写在方案 §13 末尾的"没验的"里：那几条原先只有一次跑完即弃的手工探针，
+    # 自动闸门里只剩 C# 那一层（而 Program.cs 里铸造端的校验当时连一层都没有）。
+    Write-Section '跳层令牌（?k=）：真宿主上真的跳层，而明文的调试门一个字节没变'
+
+    # 令牌是为**有分层转生**的包铸的：被测包自己不一定有层（cafe / neko 就没有）。
+    $tokenPack = if ($Package -ceq 'lab') { 'ninelives' } else { 'lab' }
+    $minted = Invoke-MintLink @('--mint-link', '--package', $tokenPack, '--era', '2', '--base-url', $baseUrl)
+    $mintPrefix = "$baseUrl/?package=$tokenPack&k="
+    $mintOk = ($minted.ExitCode -eq 0) -and $minted.Url.StartsWith($mintPrefix, [StringComparison]::Ordinal)
+    Check '--mint-link 铸出一整行 URL（退出码 0；形状 <base>/?package=<id>&k=<密文>）' $mintOk `
+        "退出码 $($minted.ExitCode)；stdout <$($minted.Url)>；stderr <$($minted.Error)>"
+
+    $token = if ($mintOk) { $minted.Url.Substring($mintPrefix.Length) } else { '' }
+
+    # ① 放行：200，正文说清是哪扇门、从哪层跳到哪层。
+    $gate = Invoke-Get "/?package=$tokenPack&k=$token"
+    $gateBody = Convert-FromJsonSafe $gate.Body
+    $gateOk = $gate.Success -and ($null -ne $gateBody) -and $gateBody.ok -eq $true `
+        -and $gateBody.gate -ceq 'token' -and [int]$gateBody.to -eq 2 -and [int]$gateBody.from -ge 1
+    Check 'GET /?k=… 真的跳到了第 2 层（200、gate=token、正文报出 from/to）' $gateOk `
+        "HTTP $($gate.Status)：gate=$($gateBody.gate) from=$($gateBody.from) to=$($gateBody.to) 范围=$($gateBody.validRange.min)..$($gateBody.validRange.max)"
+
+    # ② 跳层要如实说出"跳过了哪些账"，以及"这次不落盘"——与明文门**同一份**回报。
+    $skippedWanted = @('era_inheritance', 'era_history', 'prestige_settlement')
+    $skippedGot = @($gateBody.skipped)
+    $skippedOk = ($null -ne $gateBody) -and ($skippedGot.Count -eq $skippedWanted.Count) `
+        -and (@($skippedWanted | Where-Object { $skippedGot -cnotcontains $_ }).Count -eq 0)
+    Check '成功正文：autosave=disabled，且跳过的账恰好三笔（与明文门同一份回报）' `
+        ($gateOk -and $gateBody.autosave -ceq 'disabled' -and $skippedOk) `
+        "autosave=$($gateBody.autosave) skipped=$($skippedGot -join ',')"
+
+    # ③ 跨包：令牌只对铸它的那个包有效，正文里两个包名都要报出来。
+    $crossPack = $otherPack
+    $cross = Invoke-Get "/?package=$crossPack&k=$token"
+    $crossBody = Convert-FromJsonSafe $cross.Body
+    $crossOk = ($cross.Status -eq 403) -and ($null -ne $crossBody) -and $crossBody.failure -ceq 'ForeignPack' `
+        -and ([string]$cross.Body).Contains($tokenPack) -and ([string]$cross.Body).Contains($crossPack)
+    Check '同一枚令牌换到别的包上：403 ForeignPack（正文里两个包名都要在）' $crossOk `
+        "HTTP $($cross.Status)：failure=$($crossBody.failure)；正文 <$([string]$cross.Body)>"
+
+    # ④ 被改过：只改末尾 4 个字符（那是 GCM tag 那一段），必须认证失败。
+    $tail = if ($token.EndsWith('AAAA', [StringComparison]::Ordinal)) { 'BBBB' } else { 'AAAA' }
+    $tamperedToken = if ($token.Length -gt 8) { $token.Substring(0, $token.Length - 4) + $tail } else { $token }
+    $tampered = Invoke-Get "/?package=$tokenPack&k=$tamperedToken"
+    $tamperedBody = Convert-FromJsonSafe $tampered.Body
+    Check '令牌被改过：403，且理由只说得出「打不开」（分不清密码错与被人改过）' `
+        (($tampered.Status -eq 403) -and ($null -ne $tamperedBody) -and $tamperedBody.failure -ceq 'WrongPasswordOrTampered') `
+        "HTTP $($tampered.Status)：failure=$($tamperedBody.failure)"
+
+    # ⑤ 压根不是一段链接：理由是 NotALink，不是「打不开」——两者下一步完全不同。
+    $garbage = Invoke-Get "/?package=$tokenPack&k=not-a-link"
+    $garbageBody = Convert-FromJsonSafe $garbage.Body
+    Check '?k=not-a-link：403，理由是 NotALink（不是「密码不对」）' `
+        (($garbage.Status -eq 403) -and ($null -ne $garbageBody) -and $garbageBody.failure -ceq 'NotALink') `
+        "HTTP $($garbage.Status)：failure=$($garbageBody.failure)"
+
+    # ⑥ 两扇门同时带参数：400，而且要说清是为什么（静默挑一扇执行才是更坏的形态）。
+    $both = Invoke-Get "/?package=$tokenPack&epoch=1&k=$token"
+    $bothBody = Convert-FromJsonSafe $both.Body
+    Check 'epoch 与 k 同时带：400，而且明说「两扇独立的门，一次只能用一扇」' `
+        (($both.Status -eq 400) -and ($null -ne $bothBody) -and ([string]$bothBody.message).Contains('两扇独立的门')) `
+        "HTTP $($both.Status)：$([string]$bothBody.message)"
+
+    # ⑦ **回归底线**（WEB_DEBUG_GATE_PLAN §7.5）：明文门一个字节都不能变。NEKO_DEBUG_KEY 由本脚本
+    # 在起子进程前摘掉（头部 ②），所以这一条在任何开发机上都成立：带 epoch 一律 403「调试门未启用」。
+    # 令牌门开着**不该**顺手把明文门也开了——两扇门各有各的钥匙。
+    $plainGate = Invoke-Get "/?package=$tokenPack&password=x&epoch=1"
+    $plainBody = Convert-FromJsonSafe $plainGate.Body
+    Check '既有明文门不变：没设 NEKO_DEBUG_KEY 时带 epoch 仍是 403「调试门未启用」' `
+        (($plainGate.Status -eq 403) -and ($null -ne $plainBody) -and ([string]$plainBody.message).Contains('调试门未启用')) `
+        "HTTP $($plainGate.Status)：$([string]$plainBody.message)"
+
+    # ⑧ 跳层只在内存里：autosave 关着，所以那个包不该在存档根里留下一份存档。
+    # 这一条守的是「autosave=disabled 不只是正文里的一句话」。
+    $tokenSave = Join-Path $saveRoot "$tokenPack.json"
+    $leftovers = @(Get-ChildItem -Path $saveRoot -Filter *.json -File -ErrorAction SilentlyContinue)
+    Check '跳层之后存档根里没有这个包的存档（跳层只在内存里）' (-not (Test-Path $tokenSave)) `
+        "存在 $tokenSave：$(Test-Path $tokenSave)｜存档根里的 .json：$(($leftovers | ForEach-Object { $_.Name }) -join '、')"
+
+    # ⑨ 铸造端的校验：**真 exe** 也要在铸造那一步就拒绝（判据与 SHARE_LINK_PLAN §4.2 一致）。
+    # 层号越界这条与 C# 那边的 ShareLinkTests 钉的是**同一份实现**，这里补的是"命令行那一侧
+    # 真的接上了"——两处都要在，缺一处就会出现"实现对了但没接线"这种最沉默的形态。
+    $outOfRange = Invoke-MintLink @('--mint-link', '--package', $tokenPack, '--era', '99', '--base-url', $baseUrl)
+    Check '铸造时层号越界（99）：拒绝铸造，且报出这个包真实的层数' `
+        (($outOfRange.ExitCode -ne 0) -and $outOfRange.Url.Length -eq 0 -and $outOfRange.Error.Contains('越界')) `
+        "退出码 $($outOfRange.ExitCode)；stdout <$($outOfRange.Url)>；stderr <$($outOfRange.Error)>"
+
+    $unknownPack = Invoke-MintLink @('--mint-link', '--package', 'no-such-pack', '--era', '1', '--base-url', $baseUrl)
+    Check '铸造时包不存在：拒绝铸造，并列出可用的包 id' `
+        (($unknownPack.ExitCode -ne 0) -and $unknownPack.Url.Length -eq 0 -and $unknownPack.Error.Contains('no-such-pack')) `
+        "退出码 $($unknownPack.ExitCode)；stderr <$($unknownPack.Error)>"
+
+    $noKeyMint = Invoke-MintLink @('--mint-link', '--package', $tokenPack, '--era', '2', '--base-url', $baseUrl) -WithoutUrlKey
+    Check '没设 NEKO_URL_KEY 时拒绝铸造（绝不产出一段宿主解不开的链接）' `
+        (($noKeyMint.ExitCode -ne 0) -and $noKeyMint.Url.Length -eq 0 -and $noKeyMint.Error.Contains('NEKO_URL_KEY')) `
+        "退出码 $($noKeyMint.ExitCode)；stdout <$($noKeyMint.Url)>；stderr <$($noKeyMint.Error)>"
 }
 finally {
     Write-Host ''

@@ -630,3 +630,154 @@ public static class ShareLinkCodec
         return root[name] is JsonValue node && node.TryGetValue(out value);
     }
 }
+
+/// <summary>
+/// 一次 <c>--mint-link</c> 请求的**纯数据**形态（<c>Program.cs</c> 把命令行参数翻成它）。<para>
+/// 为什么要这样一层：铸造端的校验（层号范围、包存不存在、钥匙设没设）原先整个长在
+/// <c>Program.cs</c> 里，而那个文件**不在共享源码清单**里（它碰 ASP.NET），
+/// 于是"层号越界会被拒绝"这句话在自动闸门里<b>一条守卫都没有</b>
+/// （<c>SHARE_LINK_PLAN.md</c> §13 末尾自己记下了这条缺口）。
+/// 参数一旦是可构造的纯数据，校验就能被 C# 用例直接钉住，而命令行那一侧只负责翻译。
+/// </para>
+/// </summary>
+/// <param name="Key">钥匙；只从环境变量 <see cref="EraLinkMinter.KeyVariable"/> 来，没设时为 <c>null</c>。</param>
+/// <param name="PackageId"><c>--package</c> 的值。</param>
+/// <param name="EraText"><c>--era</c> 的原文（<b>不在这里解析</b>：解析失败要说"用法"而不是"越界"）。</param>
+/// <param name="ExpiresHoursText"><c>--expires-hours</c> 的原文；<c>null</c> = 不设过期。</param>
+/// <param name="BaseUrl">链接前缀（<c>--base-url</c> / <c>--urls</c> / 默认地址）。</param>
+public sealed record EraLinkMintRequest(
+    string? Key,
+    string? PackageId,
+    string? EraText,
+    string? ExpiresHoursText,
+    string BaseUrl);
+
+/// <summary>
+/// 一次铸造的结果。<b>不是</b>一个布尔值：与 <see cref="ShareLinkOpenResult"/> 同一条理由——
+/// 脚本要能区分"铸出来了"（拿 stdout 那行 URL）与"拒绝了，且拒绝得对"（拿退出码与那句话）。
+/// </summary>
+/// <param name="ExitCode">进程退出码；成功为 <c>0</c>、拒绝为 <see cref="EraLinkMinter.FailureExitCode"/>。</param>
+/// <param name="Url">铸出来的链接（**走 stdout**）；拒绝时为 <c>null</c>。</param>
+/// <param name="Message">给人看的一句话（**走 stderr**）：成功时报出层号与字符数，拒绝时说清原因与下一步。</param>
+public sealed record EraLinkMintResult(int ExitCode, string? Url, string Message)
+{
+    /// <summary>是否铸出来了。</summary>
+    public bool Ok => ExitCode == 0;
+}
+
+/// <summary>
+/// 跳层令牌的铸造端（<c>--mint-link</c>，见 <c>engine/docs/SHARE_LINK_PLAN.md</c> §4.2）。<para>
+/// <b>它不启动宿主、不监听端口、不读命令行</b>：输入是 <see cref="EraLinkMintRequest"/> 与
+/// 内容包目录的两件事（有哪些 id、某个 id 最多能跳到第几层），输出是
+/// <see cref="EraLinkMintResult"/>。于是这一整段校验在 <c>engine/tests</c> 里有守卫，
+/// 而 <c>Program.cs</c> 只剩"读环境变量、把参数翻过来、按分工打印"。
+/// </para>
+/// <para>
+/// 判据与 <c>GameHost.JumpToEraAsync</c> 同源：<b>把错误留在铸造那一步</b>，
+/// 而不是留给十分钟后的浏览器。所以这里对层号查的是这个包<b>真实的</b>上界。
+/// </para>
+/// </summary>
+public static class EraLinkMinter
+{
+    /// <summary>
+    /// 令牌门钥匙所在的<b>环境变量名</b>（与明文门的 <c>NEKO_DEBUG_KEY</c> 分开的一把）。<para>
+    /// 这里只有名字、没有值：仓库与发布产物里不存在任何密钥，所以"没设"时这扇门根本不存在。
+    /// 名字放在这里（而不是留在 <c>Program.cs</c>）是为了让"没设钥匙就拒绝铸造"那句话
+    /// 与它提到的那个变量名在<b>同一份被测试的代码</b>里——否则用例只能去断言一句抄来的文案。
+    /// </para>
+    /// </summary>
+    public const string KeyVariable = "NEKO_URL_KEY";
+
+    /// <summary>拒绝铸造时的退出码（用法错、包不存在、层号越界、没设钥匙都用它）。</summary>
+    public const int FailureExitCode = 2;
+
+    /// <summary>
+    /// 铸一枚跳层令牌。<b>不抛异常</b>：每一种拒绝都带着自己的那句话回来
+    /// （与 <see cref="ShareLinkCodec.Open"/> 同一约定）。
+    /// </summary>
+    /// <param name="request">请求（纯数据）。</param>
+    /// <param name="knownPackIds">内容包目录里的全部 id（用来在"没有这个包"时报出可用的那些）。</param>
+    /// <param name="maxEraIndex">按 id 查"最多能跳到第几层"；包不存在时返回 <c>null</c>。</param>
+    /// <returns>结果；拒绝时 <see cref="EraLinkMintResult.Url"/> 为 <c>null</c>。</returns>
+    public static EraLinkMintResult Mint(
+        EraLinkMintRequest request,
+        IReadOnlyList<string> knownPackIds,
+        Func<string, int?> maxEraIndex)
+    {
+        // ① 钥匙装置本身在不在。**排在最前面**：没设钥匙时"命令怎么写"是无关紧要的，
+        //    而先报"用法错"会让人去改一条本来就写对的命令（`Program.cs` 原来的顺序就是这样）。
+        if (string.IsNullOrEmpty(request.Key))
+        {
+            return Refuse(
+                $"铸不出令牌：没有设置环境变量 {KeyVariable}。"
+                + $"先临时设一把钥匙（$env:{KeyVariable} = '…'），再重跑这条命令。");
+        }
+
+        // ② 参数齐不齐、层号是不是个数。这里只说"用法"，不说"越界"——两件事的下一步完全不同。
+        if (request.PackageId is null || request.EraText is null
+            || !int.TryParse(request.EraText, NumberStyles.Integer, CultureInfo.InvariantCulture, out int era))
+        {
+            return Refuse(
+                "用法：--mint-link --package <包 id> --era <层号> [--expires-hours <小时>] [--base-url <地址>]");
+        }
+
+        // ③ 这个包在不在。id 的比对口径与 PackageCatalog.Find 一致（忽略大小写），
+        //    而链接里带出去的必须是**目录里的那个 id**，不是使用者随手敲的大小写。
+        string? packId = knownPackIds.FirstOrDefault(
+            id => string.Equals(id, request.PackageId, StringComparison.OrdinalIgnoreCase));
+
+        int? max = packId is null ? null : maxEraIndex(packId);
+        if (packId is null || max is null)
+        {
+            return Refuse(
+                $"没有内容包 <{request.PackageId}>。可用的是：{string.Join("、", knownPackIds)}");
+        }
+
+        if (max.Value < 1)
+        {
+            return Refuse($"内容包「{packId}」没有分层转生，没有层可跳。");
+        }
+
+        // ④ 层号范围：对着这个包**真实的**层数查一次。
+        if (era < 1 || era > max.Value)
+        {
+            return Refuse($"第 {era} 层越界（内容包「{packId}」只有 {max.Value} 层）。合法范围：1..{max.Value}。");
+        }
+
+        DateTimeOffset? expiresAt = null;
+        if (request.ExpiresHoursText is { } hoursText)
+        {
+            // 默认**不设过期**（与明文门一样是"本机调试用"）；给了这个参数就必须给一个正数，
+            // 而不是"看不懂就当成没过期"——那会把一个明确的意图变成一个沉默的默认值。
+            if (!double.TryParse(hoursText, NumberStyles.Float, CultureInfo.InvariantCulture, out double hours)
+                || hours <= 0)
+            {
+                return Refuse($"--expires-hours 需要一个正数（收到「{hoursText}」）。");
+            }
+
+            expiresAt = DateTimeOffset.UtcNow.AddHours(hours);
+        }
+
+        try
+        {
+            string token = ShareLinkCodec.Protect(
+                request.Key, ShareLinkPurpose.EraToken, packId, null, era, expiresAt);
+            string baseUrl = request.BaseUrl.TrimEnd('/');
+
+            return new EraLinkMintResult(
+                0,
+                $"{baseUrl}/?package={packId}&k={token}",
+                $"已铸一枚跳层令牌：内容包「{packId}」第 {era} 层、{token.Length} 个字符"
+                + (expiresAt is null
+                    ? "、不过期。"
+                    : $"、{expiresAt.Value.ToUniversalTime().ToString("u", CultureInfo.InvariantCulture)} 过期。"));
+        }
+        catch (Exception ex)
+        {
+            return Refuse($"铸不出令牌：{ex.Message}");
+        }
+    }
+
+    /// <summary>造一条"拒绝铸造"的结果（URL 一定是 <c>null</c>——绝不产出宿主解不开的链接）。</summary>
+    private static EraLinkMintResult Refuse(string message) => new(FailureExitCode, null, message);
+}

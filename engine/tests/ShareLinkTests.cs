@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using System.Globalization;
 using System.IO.Compression;
 using System.Security.Cryptography;
 using System.Text;
@@ -348,6 +349,172 @@ public static class ShareLinkTests
 
         Check.True(threw, "装不下的存档必须当场拒绝——截断的链接看起来像「密码不对」，会把人带去查不存在的问题。");
     }
+
+    // ------------------------------------------------------------------ 铸造端（--mint-link 的校验）
+
+    /// <summary>
+    /// <c>--mint-link</c> 的拒绝面：没设钥匙 / 包不存在 / 没有层 / 层号越界（下界与上界各一条）/
+    /// 用法错。<para>
+    /// <b>这一段原先一条守卫都没有</b>：校验整个长在 <c>games/hosts/Web/Program.cs</c> 里，
+    /// 而那个文件碰 ASP.NET、不在共享源码清单里（<c>SHARE_LINK_PLAN.md</c> §13 末尾自己记下了这条缺口，
+    /// "要验它就得真起宿主"）。校验搬进 <see cref="EraLinkMinter.Mint"/> 之后，这里才钉得住它——
+    /// 而命令行那一侧（真的 <c>--mint-link</c> 进程）由 <c>tools/api-test.ps1</c> 那一段常驻地验。
+    /// </para>
+    /// <para>
+    /// 上界用的是<b>这个包真实的上界</b>（7），而不是一个随便挑的大数：
+    /// "越界"必须是"对着真实层数查出来的"，否则这条守卫只证明"有个数被拒了"。
+    /// </para>
+    /// </summary>
+    [Test]
+    public static void EraLinkMint_RefusesMissingKeyUnknownPackAndOutOfRangeEras()
+    {
+        // ① 钥匙装置本身不在：拒绝铸造，而且要说清是哪个环境变量。
+        EraLinkMintResult noKey = EraLinkMinter.Mint(MintRequest(key: null), MintPackIds, MintMaxEra);
+        Check.Equal(EraLinkMinter.FailureExitCode, noKey.ExitCode, "没设钥匙必须拒绝铸造。");
+        Check.True(noKey.Url is null, "拒绝时不许有 URL——「宿主一定解不开的链接」正是最坏的一种成功报告。");
+        Check.Contains(noKey.Message, EraLinkMinter.KeyVariable, "那句话里要说清是哪个环境变量没设。");
+
+        // 钥匙也缺、参数也错：先说钥匙。反过来的话，人会去改一条本来就写对的命令。
+        EraLinkMintResult bothWrong =
+            EraLinkMinter.Mint(MintRequest(key: string.Empty, package: null, era: "七"), MintPackIds, MintMaxEra);
+        Check.Contains(bothWrong.Message, EraLinkMinter.KeyVariable, "钥匙没设与参数写错同时出现时，先说钥匙。");
+
+        // ② 不存在的包：报出它、并且报出可用的那些。
+        EraLinkMintResult unknownPack = EraLinkMinter.Mint(MintRequest(package: "no-such-pack"), MintPackIds, MintMaxEra);
+        Check.Equal(EraLinkMinter.FailureExitCode, unknownPack.ExitCode, "不存在的包必须拒绝。");
+        Check.Contains(unknownPack.Message, "no-such-pack", "拒绝的话里要点出是哪个包不存在。");
+        Check.Contains(unknownPack.Message, "lab", "还要报出可用的包 id（否则使用者只能猜）。");
+
+        // ③ 这个包存在、但没有分层转生：命令没写错，是它没有层可跳。理由必须与「越界」分开。
+        EraLinkMintResult noEras = EraLinkMinter.Mint(MintRequest(package: "cafe"), MintPackIds, MintMaxEra);
+        Check.Contains(noEras.Message, "没有分层转生", "没有层的包要说「没有层可跳」，而不是「层号越界」。");
+
+        // ④ 下界：第 0 层（以及一切 < 1 的东西）越界，消息里带真实范围。
+        EraLinkMintResult below = EraLinkMinter.Mint(MintRequest(era: "0"), MintPackIds, MintMaxEra);
+        Check.Contains(below.Message, "越界", "第 0 层必须被范围闸拒绝。");
+        Check.Contains(below.Message, "1..7", "拒绝的话里要带这个包真实的合法范围。");
+
+        // ⑤ 上界：8 > 这个包真实的 7。
+        EraLinkMintResult above = EraLinkMinter.Mint(MintRequest(era: "8"), MintPackIds, MintMaxEra);
+        Check.Equal(EraLinkMinter.FailureExitCode, above.ExitCode, "超过真实层数必须拒绝。");
+        Check.Contains(above.Message, "只有 7 层", "拒绝的话里要点出这个包真实有几层。");
+        Check.True(above.Url is null, "越界时同样不许产出 URL（否则浏览器十分钟后才知道）。");
+
+        // ⑥ 用法错不是「越界」：层号不是个数 / 少了 --era / 少了 --package，三处都必须是用法那一句。
+        Check.Contains(
+            EraLinkMinter.Mint(MintRequest(era: "七"), MintPackIds, MintMaxEra).Message,
+            "用法",
+            "层号不是个数属于用法错，消息必须是用法那一句。");
+        Check.Contains(
+            EraLinkMinter.Mint(MintRequest(era: null), MintPackIds, MintMaxEra).Message,
+            "用法",
+            "少了 --era 也是用法错。");
+        Check.Contains(
+            EraLinkMinter.Mint(MintRequest(package: null), MintPackIds, MintMaxEra).Message,
+            "用法",
+            "少了 --package 也是用法错。");
+    }
+
+    /// <summary>
+    /// 对照组：<b>合法层号必须铸得出来</b>，而且铸出来的那段密文要能被
+    /// <see cref="ShareLinkCodec.Open"/> 按<b>宿主那一条路</b>打开（同一把钥匙、同一个包、同一个用途）。<para>
+    /// 没有这一条，上面那一堆"拒绝了"可能是"这条路根本不通"——那正是假绿最经典的形状。
+    /// </para>
+    /// </summary>
+    [Test]
+    public static void EraLinkMint_MintsATokenTheHostGateOpens()
+    {
+        const string Prefix = "http://127.0.0.1:5273/?package=lab&k=";
+
+        EraLinkMintResult minted = EraLinkMinter.Mint(MintRequest(era: "2"), MintPackIds, MintMaxEra);
+        Check.True(minted.Ok, $"合法层号必须铸得出来：{minted.Message}");
+        Check.True(
+            minted.Url is not null && minted.Url.StartsWith(Prefix, StringComparison.Ordinal),
+            $"URL 的形状必须是 <base>/?package=<id>&k=<密文>，实际 <{minted.Url ?? "null"}>。");
+        Check.Contains(minted.Message, "第 2 层", "给人看的那句话要报出铸的是哪一层。");
+
+        string token = minted.Url![Prefix.Length..];
+        ShareLinkOpenResult opened = ShareLinkCodec.Open("host-url-key", token, ShareLinkPurpose.EraToken, "lab");
+        Check.True(opened.Ok, $"铸出来的令牌必须能被宿主那条路打开：{opened.Message}");
+        Check.Equal(2, opened.Ok ? opened.Payload!.Era : -1, "层号要原样进密文。");
+        Check.Equal("lab", opened.Ok ? opened.Payload!.PackId! : "—", "包标识要原样进密文。");
+        Check.True(opened.Ok && opened.Payload!.ExpiresAt is null, "不传 --expires-hours 就是不过期。");
+        Check.False(token.Contains("host-url-key", StringComparison.Ordinal), "链接里不许出现钥匙。");
+
+        // 闭区间：1（下界）与 7（这个包真实的上界）都要铸得出来。
+        Check.True(EraLinkMinter.Mint(MintRequest(era: "1"), MintPackIds, MintMaxEra).Ok, "第 1 层在下界之内。");
+        Check.True(EraLinkMinter.Mint(MintRequest(era: "7"), MintPackIds, MintMaxEra).Ok, "第 7 层正好是这个包的上界。");
+
+        // 包 id 的比对忽略大小写（与 PackageCatalog.Find 同一口径），但链接里带出去的
+        // 必须是**目录里的那个 id**：否则同一枚令牌会因为大小写而 ForeignPack。
+        EraLinkMintResult upper = EraLinkMinter.Mint(MintRequest(package: "LAB"), MintPackIds, MintMaxEra);
+        Check.True(
+            upper.Url is not null && upper.Url.Contains("package=lab&", StringComparison.Ordinal),
+            $"大小写不该改变链接里的包 id：<{upper.Url ?? "null"}>");
+
+        // 换一个带尾斜杠的基地址：尾斜杠一律去掉，否则会铸出 `//?package=`。
+        EraLinkMintResult slashed = EraLinkMinter.Mint(
+            MintRequest(era: "2", baseUrl: "http://127.0.0.1:5300/"), MintPackIds, MintMaxEra);
+        Check.True(
+            slashed.Url is not null && slashed.Url.StartsWith("http://127.0.0.1:5300/?package=lab&k=", StringComparison.Ordinal),
+            $"基地址的尾斜杠要去掉：<{slashed.Url ?? "null"}>");
+    }
+
+    /// <summary>
+    /// 有效期是可选的，但给了就必须是个正数。<para>
+    /// 「看不懂就当成没过期」会把一个明确的意图变成一个沉默的默认值——这正是这个仓库一路在消灭的形态
+    /// （与明文门的 <c>--expires-hours</c> 同一条取舍）。
+    /// </para>
+    /// </summary>
+    [Test]
+    public static void EraLinkMint_ExpiryIsOptionalButMustBePositive()
+    {
+        const string Prefix = "http://127.0.0.1:5273/?package=lab&k=";
+
+        DateTimeOffset before = DateTimeOffset.UtcNow;
+        EraLinkMintResult tomorrow = EraLinkMinter.Mint(
+            MintRequest(era: "2", expiresHours: "24"), MintPackIds, MintMaxEra);
+        DateTimeOffset after = DateTimeOffset.UtcNow;
+        Check.True(tomorrow.Ok, $"给了正数的小时数必须铸得出来：{tomorrow.Message}");
+
+        string token = tomorrow.Url![Prefix.Length..];
+        ShareLinkOpenResult opened = ShareLinkCodec.Open("host-url-key", token, ShareLinkPurpose.EraToken, "lab");
+        DateTimeOffset? expires = opened.Ok ? opened.Payload!.ExpiresAt : null;
+        Check.True(expires is not null, "有效期要在密文里（它不是一句注释：改不动才算数）。");
+        Check.True(
+            expires is { } at && at >= before.AddHours(24) && at <= after.AddHours(24),
+            $"过期时刻应当是「现在 + 24 小时」，实际 <{expires?.ToString("u", CultureInfo.InvariantCulture) ?? "null"}>。");
+        Check.Contains(tomorrow.Message, "过期", $"给人看的那句话要报出过期时刻：{tomorrow.Message}");
+
+        foreach (string bad in new[] { "0", "-3", "abc", "" })
+        {
+            EraLinkMintResult refused = EraLinkMinter.Mint(
+                MintRequest(era: "2", expiresHours: bad), MintPackIds, MintMaxEra);
+            Check.Equal(EraLinkMinter.FailureExitCode, refused.ExitCode, $"--expires-hours「{bad}」必须被拒绝。");
+            Check.Contains(refused.Message, "正数", $"拒绝的话里要说清它要的是正数（收到「{bad}」）。");
+        }
+    }
+
+    /// <summary>造一份铸造请求（默认就是"合法的那一份"，逐条改坏由调用方做）。</summary>
+    private static EraLinkMintRequest MintRequest(
+        string? key = "host-url-key",
+        string? package = "lab",
+        string? era = "2",
+        string? expiresHours = null,
+        string baseUrl = "http://127.0.0.1:5273")
+        => new(key, package, era, expiresHours, baseUrl);
+
+    /// <summary>用例里的内容包目录：<c>lab</c> 有 7 层、<c>cafe</c> 一层都没有、<c>neko</c> 只有 1 层。</summary>
+    private static readonly string[] MintPackIds = ["lab", "cafe", "neko"];
+
+    /// <summary>假的「最多能跳到第几层」（真值在内容包里，测试不该把它抄第二份）。</summary>
+    private static int? MintMaxEra(string id) => id switch
+    {
+        "lab" => 7,
+        "cafe" => 0,
+        "neko" => 1,
+        _ => null,
+    };
 
     // ------------------------------------------------------------------ 宿主那一层
 
