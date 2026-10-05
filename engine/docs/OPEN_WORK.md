@@ -24,11 +24,10 @@
 > **每行都在 2026-10-03 对着工作树核对过"是否还开着"**——核对依据就写在那一行里
 > （数字 / 命令 / 提交）。核对出**已经做完**的不列进来，名单在本节末尾，连关掉它的提交一起。
 >
-> **2026-10-05 清仓**：机械表里的 **W1 / W2 / W3 / W5 / W6 / W8 / W10 / W12** 与
-> `STRUCTURE_OPTIMIZATION` 的 **S10** 都结案了（依据见本节的"已经做完"表与 §0.23）；
-> 同一天的第二轮又把 **W4 / W9** 做掉（见 §0.24）。
-> **这张表现在只剩 W7**（给 CI 加 Linux 作业）——它此前卡在"本机验不了、要推才知道"，
-> 而这一轮 origin 已永久改到 SSH、推送实测可用，所以**它现在是可做的**（代价是 CI 会先红一次）。
+> **2026-10-05 清仓完毕**：机械表里的 **W1 / W2 / W3 / W5 / W6 / W8 / W10 / W12**（第一轮，§0.23）、
+> **W4 / W9**（第二轮，§0.24）、**W7**（第三轮，§0.25）都结案了，`STRUCTURE_OPTIMIZATION` 的
+> **S10** 也一并关掉。**那张表现在只剩 W16**——它是 W7 落地时**顺带发现的**（其它 `tools/*.ps1` 里
+> 同类的 Windows 风格路径字面量），不是原来那批欠账里的一条。
 >
 > **✅ 已推（2026-10-05 复核，上一版这里写的是"待推"）**：`main` = **`c467baf`** = `origin/main`
 > （工作树干净）；tag `v1.5.0`…`v1.10.1` **都在远端**（`v1.10.1` → `d6a3bbc`）；
@@ -66,7 +65,7 @@
 
 | # | 做什么 | 不做会怎样 | 代价 | 卡在谁那 | 详情坐标 |
 |---|---|---|---|---|---|
-| **W7** | 给 CI 加一个 Linux 作业 | 它给"`engine/core` 平台中立"这条主张一个守卫（今天**没有**）；前提是先确认两个宿主与测试项目在 Linux 上编得过 | M | 🔧 机械（要 CI / 联网） | `STATUS` §8.6 第 2 条 |
+| **W16** | 其它 `tools/*.ps1` 里还有 **Windows 风格的路径字面量**（`pack` / `public-api` / `play` / `start` 加起来 8 处，形如 `"$root\games\hosts\Web"`） | PowerShell 的**提供程序**在 Linux 上会把 `\` 归一化，所以它们今天不发作；但**传给原生进程的参数不会**——`build.ps1` 那一处正是这么红的（W7 的第一次真实回报，见 §0.25）。只要有人把这些脚本也放进 Linux 作业、或在 Linux 上跑 `start.cmd` / `pack.ps1`，同一类失败会再来一次，而它的形态是"**编得过、跑不起来**"（`0 Error(s)` 之后紧跟一句 `does not exist`） | S（逐处换成 `Join-Path` / 正斜杠；`tools/*.ps1` 改完照例补 BOM 与 CRLF） | 🔧 机械 | §0.25、`tools/build.ps1` 顶部那条注释 |
 
 **没有列进上表的**：§3 的编号 **O**——那是 [WEB_EXTENSION_PLAN](WEB_EXTENSION_PLAN.md) 的保留号，
 它今天是**"已搁置"，是决定不是欠账**（理由与坐标见 §0.12.2）；它 §11 的 D1~D9 只有在真人
@@ -125,6 +124,7 @@
 | **W10**（两条"已发布的东西没被逐条复核"的诚实边界） | **2026-10-05**：一位只读审计员核了两批——**约 35 条** 1.2 / 1.3 / 1.4 版本条目里的可证伪声明（**没有一条反例**，连最易做假的那几条都对得上：快照 1927→1930 行、用例 439→441、端到端 22 / 26 / 39 / 44 项、421 条逐包计数）与 **约 30 条** `STATUS` / `README` 的"现在时"断言（**10 条反例**，本轮全部订正：CI 是三个作业、猫咖物语有五个分区、推送状态自相矛盾、`PackageId` 已补、`README` 的指针指向已作废的 §8，外加"同一文件内并存带日期的历史快照数字"——最后这一类按规矩**冻结**，不是缺陷）。**明写出来的尾巴**：`CHANGELOG` 1.2.1 的 176,708 字节、1.2.0 的 SSE 56.9 KB / 1.99 KB / 省 97% 与 `STATUS` §3 的四个字节数属于"要跑一次才能证"的历史测量，**这一轮没有核**（不是"核过了"）。见 §0.23.9 |
 | **W4**（先测"每步成本"，再谈套件墙钟） | **2026-10-05**：实测了，而且**结论与文档的假设相反**——那条主瓶颈用例（`PrestigeTests.EraPacks_PermanentUpgradesAreAffordableWithinOneRun`）**71.7s / 561 万步**里，**推时间只占 18.3s（25.6%）**，外围（点击 / `BuyGreedily` 的整份快照 / 金猫 / 作答 / `Ascend`）占 **74.4%**。纯步成本 **3.27 µs**（另一条探针在中期状态上量到 0.32~3.59 µs、一次 `Snapshot(BuyMax)` 0.19~0.41 ms）。于是**杠杆 ② 的上限是 26%**，而真正的大头是"0.25 秒细步下每轮付一次整份快照"。数与原话在 `TUNING_ANALYSIS` **§2.1**；探针是临时的（跑完即删，S4 那条"测量没有家"的欠账照旧） |
 | **W9**（用一份**真实的跨版本存档**验"答不上"的待答表态） | **2026-10-05**：做了，而且**发现的比文档写的更细**。做法：让真引擎里那条机器人玩到公司包的第一条表态挂着（26 游戏分钟），用**真 `SaveManager`** 落一份存档到 `.tmp`（不是手写 JSON）→ 把内容里那条表态的 `Id` 改掉（模拟"内容改版删掉了这个 id"）→ 用**真 Web 宿主**带这份存档起来。结果：读档、开局、界面**完全正常**（`pendingChoices` 直接是空——它既画不出来也不报错），宿主日志里**一个字都没提**；那条"有 N 项待答表态已经答不上了"的警告**只在"主线刚走完"那一刻发一次**（`EndingSystem` 的 `justBecameReady`），而结局**不再等它**。所以 `§5.1` 原来那句"界面上一片正常、只有通知里说一句"要收窄成：**在主线走完之前，连那句通知都没有**。内容改动已还原（`Choices.cs` sha256 与改前一致），仓库真实 `saves/` 未被碰过。见 §0.24.2 |
+| **W7**（给 CI 加一个 Linux 作业） | **2026-10-05**：`engine-linux` 作业上线（`ubuntu-latest` + **pwsh**，跑**同一条** `build.ps1 -Strict -SkipWebSmoke`）。**它第一次跑就红了，而且逮到一个真 bug**：`build.ps1` 把带反斜杠的测试 dll 路径**当原生参数**交给 `dotnet exec`——PowerShell 提供程序会归一化 `\`、原生进程不会，于是 Linux 上"两条 sln 都是 `0 Error(s)` 却跑不起来"。修掉之后 [run #41](https://github.com/NekoHome-Studio/neko-clicker/actions/runs/37219888078) **四个作业全部 success**。这条作业现在是"`engine/core` 平台中立"那条主张的**守卫**（在此之前它只由"全仓库只有两处平台相关代码"这句话撑着）。顺带登记了 **W16**（其它 `tools/*.ps1` 里同类路径字面量）。见 §0.25 |
 
 #### 合并（同一件活原先写了不止一处）
 
@@ -1889,6 +1889,73 @@ git remote set-url origin git@github.com:NekoHome-Studio/neko-clicker.git
   （"测量机器人没有家"）那条欠账，它仍然开着，而且这一轮又欠了两次。
 - W4 的数是**这台机器 + 这个运行时**的；换机器要重测。
 - W9 的那次验证用掉了一个临时宿主会话；`artifacts/latency.txt` 与仓库 `saves/` 的指纹未变。
+
+---
+
+## 0.25 W7：Linux 作业上线——第一次跑就逮到一个"编得过、跑不起来"的 bug（2026-10-05）
+
+### 0.25.1 加了什么
+
+`.github/workflows/ci.yml` 多了一个 **`engine-linux`** 作业（`ubuntu-latest`），跑的命令与
+`build-and-test` **同一条**：`tools/build.ps1 -Strict -SkipWebSmoke`。三个刻意的选择：
+
+- **用 `pwsh` 而不是 `powershell`**：PS 5.1 那套写法（BOM / `-Encoding UTF8` / conhost）是 Windows 侧
+  的历史包袱，Linux 上只有 pwsh。两边跑的**是同一份 `build.ps1`**，差别只在解释器与操作系统——
+  这比"再写一份 Linux 专用脚本"更接近要守的那条主张。
+- **`-SkipWebSmoke`**：前端那一层有自己的作业，且它与操作系统无关。
+- **它红了先问一句**：是平台相关代码，还是这条命令在 Linux 上本来就跑不起来？
+
+### 0.25.2 第一次跑就红了（run #39）：三条绿，Linux 一条红
+
+红的地方只有**一行**，而它红得很有信息量：
+
+```
+    0 Warning(s)        0 Error(s)      ← 主 sln
+    0 Warning(s)        0 Error(s)      ← Web sln
+The application to execute does not exist:
+'/home/runner/work/neko-clicker/neko-clicker\engine\tests\bin\Debug\net8.0\NekoClicker.Core.Tests.dll'
+```
+
+**根因**（值得单独记住，因为它只在**一半**的调用路径上发作）：
+
+- PowerShell 的**提供程序**在 Linux 上会把 `\` 当分隔符**归一化**——所以 `& "$PSScriptRoot\dnet.ps1"`
+  这类调用照样跑得通，两条 sln 在 Linux 上真的编过了；
+- 但**传给原生进程的参数不会被归一化**：`dotnet exec '<带反斜杠的路径>'` 在 Linux 上直接找不到文件。
+- 于是这条命令呈现出最坏的形态：**编得过、跑不起来**，而且 Windows 上永远是绿的。
+
+这正是"加一条只在另一个 OS 上跑的作业"要抓的东西——它不可能靠读代码发现。
+
+**改法**：`build.ps1` 里三处路径（主 sln / Web sln / 测试 dll）一律 `Join-Path` + 正斜杠，
+并把这条判据写进文件顶部注释。本地复跑：**571/571 全绿、0 警告、前端冒烟 202/202、`EXIT=0`**。
+
+### 0.25.3 一条工具链上的副产品：CI 失败要能自己说出来
+
+这个仓库的 job 日志**未登录读不到**（`api.github.com` 对 `/actions/jobs/<id>/logs` 返回 **403**），
+而**注解是公开可读的**。所以 Linux 那一步改成了：
+
+```yaml
+run: |
+  ./tools/build.ps1 -Strict -SkipWebSmoke 2>&1 | Tee-Object -FilePath build.log
+  $code = $LASTEXITCODE
+  if ($code -ne 0) {
+    $tail = (Get-Content build.log -Tail 30) -join '%0A'
+    Write-Host "::error title=Linux 作业失败了（尾部 30 行）::$tail"
+  }
+  exit $code
+```
+
+于是上面那段根因**是从注解里读到的**，没有 token 也读得到。这条自诊断留着——下一次红的时候，
+第一个打开这个 run 的人就能看见原因。
+
+### 0.25.4 结果与顺带的发现
+
+- 修掉之后 [run #41](https://github.com/NekoHome-Studio/neko-clicker/actions/runs/37219888078)：
+  **四个作业全部 success**（`build-and-test` / `engine-linux` / `web-smoke` / `end-to-end`）。
+  "`engine/core` 平台中立"这条主张**从此有远端作业守着**，不再只靠一句话。
+- 顺带发现并登记 **W16**：`pack` / `public-api` / `play` / `start` 里还有 8 处同类路径字面量。
+  它们今天不发作（都在 PowerShell 提供程序那一侧），但只要有人把它们放进 Linux 路径就会重演。
+- **这一条作业没覆盖的**：前端那一层（`-SkipWebSmoke`）、`api-test.ps1` 的端到端、
+  以及"Linux 上跑 `start.cmd` / `pack.ps1`"——最后这条正是 W16。
 
 ---
 

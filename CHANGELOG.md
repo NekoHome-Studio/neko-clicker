@@ -174,6 +174,30 @@
   服务器侧核对 `origin/main` 与本地一致、13 个 tag 全在位。
 - **版本**：**patch，停在 `[未发布]` 桶**——只动文档（`TUNING_ANALYSIS` / `OPEN_WORK` / `CHANGELOG`）。
 
+### CI：加一个 Linux 作业（W7）＋ 修掉它逮到的跨平台路径缺陷（patch）
+
+- **新增 `engine-linux` 作业**（`ubuntu-latest` + **pwsh**），跑的命令与 `build-and-test` **同一条**：
+  `tools/build.ps1 -Strict -SkipWebSmoke`。它给"`engine/core` 平台中立"这条主张当守卫——
+  在此之前，那条主张只由"全仓库只有两处平台相关代码"这句话撑着，**没有任何远端作业守着它**。
+  `-SkipWebSmoke` 是刻意的：前端那一层有自己的作业，且与操作系统无关。
+- **它第一次跑就红了，红在一个真缺陷上**（这一节的价值就在这里）：Linux 上**两条 sln 都是
+  `0 Warning(s) / 0 Error(s)`**，失败的只有一行——
+  `The application to execute does not exist: '...neko-clicker\engine\tests\bin\Debug\net8.0\...dll'`。
+  根因：PowerShell 的**提供程序**在 Linux 上会把 `\` 归一化（所以 `& "$PSScriptRoot\dnet.ps1"`
+  那类调用照样跑得通），但**传给原生进程的参数不会被归一化**——`dotnet exec` 拿到带反斜杠的路径
+  直接找不到文件。**形态是最坏的那种：编得过、跑不起来，而 Windows 上永远是绿的。**
+  修法：`build.ps1` 里三处路径（主 sln / Web sln / 测试 dll）一律 `Join-Path` + 正斜杠，
+  并把这条判据写进文件顶部注释。
+  证据：CI `#39` / `#40` 红 → 修完 **`#41` 四个作业全部 success**；本地复跑
+  `-Strict` **571/571、0 警告、前端冒烟 202/202**。
+- **工具链副产品**：这个仓库的 **job 日志未登录读不到**（`/actions/jobs/<id>/logs` 返回 403），
+  而**注解是公开可读的**。所以 Linux 那一步现在失败时会用 `::error::` 把日志尾部 30 行打成一条注解
+  ——上面那段根因就是这么读到的，没有 token 也读得到。
+- **顺带登记的欠账**：`pack` / `public-api` / `play` / `start` 里还有 8 处同类路径字面量
+  （登记册 **W16**）——它们今天不发作，但只要被放进 Linux 路径就会重演。
+- **版本**：**patch，停在 `[未发布]` 桶**——公开 API 一行没动；`tools/build.ps1` 改的是路径拼法，
+  判据与命令一字未变。
+
 **实测**（2026-10-05）：`tools/build.ps1 -Strict` **571 / 571 全绿、0 警告**、前端冒烟 **202 / 202**
 （两条探针跑完即删，所以用例数仍是 571）；仓库 `saves/` 五个文件与 `artifacts/latency.txt` 指纹未变。
 
