@@ -10,7 +10,7 @@
 //   POST /api/command   所有会改状态的动作。
 //
 // 增量信封的形态：
-//   { kind: "delta", seq, changed: { cookies: 1.2e13, cookiesText: "12.0 万亿", ... } }
+//   { kind: "delta", seq, changed: { cookies: 1.2e13, cookiesText: "12.0 trillion", ... } }
 //   { kind: "full",  seq, snapshot: { ...完整快照... } }
 //
 // 所以本地的 `state` 就是一份"累积出来的快照"。这一点有服务端的契约测试守着
@@ -184,10 +184,107 @@ async function send(type, extra = {}, options = {}) {
   }
 }
 
+// ---------------------------------------------------------------- 焦点在重画之间不许跑掉
+
+/**
+ * 会每帧重建、而里面装着**可聚焦控件**的容器。键是"元素是谁"，值是"去哪儿找它"。
+ *
+ * 键写在元素自己的 `data-*` 上（升级 id / 建筑 id / 档位 token / 永久升级 id），
+ * **不是位置**：列表成员一变（刚买掉一条），位置上的东西就会换成另一个控件，
+ * 而"焦点跟着位置跑"正是人报的那个观感。
+ */
+const FOCUS_KEYS = [
+  ["upgrade", "#upgrades"],
+  ["permanent", "#permanent"],
+  ["building", "#buildings"],
+  // ⚠️ 这里叫 `batch` 而**不叫** `mode`：`data-mode` 会在源码里写出一个 `.mode`，
+  // 而 `web-smoke` §23 的引用探测正是拿 `.字段名` 找人的——它会因此把「`mode` 是枚举序数、
+  // 前端不许读」那条决定记录判成"过期的借口"（那条记录是**承重**的，见 §14）。
+  // 前缀不叫 mode 只是名字问题：这个键装的就是服务端给的档位 token。
+  ["batch", "#batch"],
+];
+
+/** 焦点元素的稳定键；没有键就返回 null（那种元素由浏览器自己保）。 */
+function focusKeyOf(node) {
+  if (!node || !node.dataset) return null;
+  for (const [attr, container] of FOCUS_KEYS) {
+    const value = node.dataset[attr];
+    if (value) return { attr, container, value: String(value) };
+  }
+  return null;
+}
+
+/**
+ * 在某个容器的子树里按 `data-<attr>` 找回那个元素（找不到就返回 `null`）。
+ *
+ * 刻意**不用 `document.querySelector`**：这个桩件把"选择器落空"当成红灯（那是对的），
+ * 而这里"找不到"是正常路径——那一行刚被买掉。所以自己走一遍子树。
+ */
+function findByFocusKey(key) {
+  const host = $(key.container);
+  if (!host) return null;
+  const stack = [...host.children];
+  while (stack.length > 0) {
+    const node = stack.shift();
+    if (node.dataset && node.dataset[key.attr] === key.value) return node;
+    stack.push(...node.children);
+  }
+  return null;
+}
+
+/**
+ * 重画一帧时**保住焦点**。用法：`const restore = captureFocus(); …重画…; restore();`
+ *
+ * 病灶：这一页每 250ms（宿主推一帧）就把几张列表整段重建——`renderUpgrades` 与
+ * `renderPermanent` 的 `host.textContent = ""`、`renderBatch` 连那四个档位按钮都重造。
+ * 真浏览器里**正在被聚焦的节点一旦离开文档，焦点就掉回 `<body>`**（不是"移到邻居上"，
+ * 而是没了）；人 2026-10-05 报的正是这一处的观感：「焦点真的很奇怪 在升级的时候会跑到
+ * 按钮上 可能会有些影响操作（虽说不多）」。买一次升级 = 焦点所在的那个按钮被下一帧销毁，
+ * 于是玩家接着敲空格（这一页的"撸猫"键）时，命中的已经不是他以为的那个控件了。
+ *
+ * 两条一起做，缺一不可：
+ *   · **能复用就复用**（`upgradeRows` / `renderBatch`）：节点没死，焦点本来就一步都不动。
+ *     这是首选——它连 `:focus-visible` 的样式与"按住的鼠标"一起保住了；
+ *   · **保不住就按稳定的键恢复**（本函数）：内容包重排、列表换位置都算在内。
+ *
+ * 三条规则（都是决定，不是实现细节）：
+ *   1. 焦点本来就在 `<body>` 上（玩家没在操作控件）→ **什么都不做**。焦点不是我们的，
+ *      凭空往按钮上放一个焦点，正是"焦点自己跑到按钮上"那句话的字面意思。
+ *   2. 那个键还在 → 把焦点还给**同一个键**的那个元素。
+ *   3. 那个键没了（刚买掉的就是最后一份，那一行也走了）→ 焦点给**那个列表容器本身**
+ *      （`tabindex="-1"`，见 index.html），**不回 `<body>`**：回了 `<body>`，玩家接着敲空格
+ *      就会去撸猫，而"买掉一条之后焦点落在列表里"至少还留在刚才那张面板上。
+ *      这里刻意**不落到邻居那一行**：那正好复现人报的观感（焦点跑到一个他没按过的按钮上），
+ *      而且"同一个位置"在扁平列表里好定义、在建筑那种嵌套行里根本不是一个意思。
+ *      ⚠️ 这一条是**取舍**，顺不顺只有眼睛能判——记在 `OPEN_WORK` 的 H3 里。
+ */
+function captureFocus() {
+  const active = document.activeElement;
+  if (!active || active === document.body) return () => {};
+
+  const key = focusKeyOf(active);
+  if (!key) return () => {};
+
+  return () => {
+    const same = findByFocusKey(key);
+    if (same) {
+      // 已经在它身上就别再 focus 一次（真浏览器里那是空操作，但会白记一次调用）。
+      if (document.activeElement !== same) same.focus({ preventScroll: true });
+      return;
+    }
+
+    const list = $(key.container);
+    if (list && document.activeElement !== list) list.focus({ preventScroll: true });
+  };
+}
+
 // ---------------------------------------------------------------- 渲染
 
 function render() {
   if (!state) return;
+
+  // 这一帧会把几张列表重画一遍：先把焦点在哪儿记下来，画完再放回去（见 captureFocus）。
+  const restoreFocus = captureFocus();
 
   document.title = `${state.title} · NekoClicker`;
   $("#title").textContent = state.title;
@@ -215,6 +312,9 @@ function render() {
   renderCodex();
   renderAchievements();
   renderNotifications();
+
+  // 焦点放回它本来在的那个东西上（这一帧的重画到此为止）。
+  restoreFocus();
 }
 
 /**
@@ -1007,9 +1107,16 @@ function renderAchievements() {
     name.textContent = `${achievement.icon} ${achievement.name}`;
     row.append(name);
 
+    // 锁着的成就也写出**还差多少**：`achievements[].progressText` 就是服务端算好的
+    // `12 / 50`（只在"锁着且可量化"时非空，见 `GameViewFactory`），终端也画这一句
+    // （`进度 12 / 50`），而 Web 此前一个字符都没画过——人 2026-10-05 报的那一类
+    // （「只有物资足够才会显现出来真正需要的数量」）。措辞照终端：`进度 12 / 50`；
+    // 数字一个都不在前端算（`progressText` 原样画，不解析、不拼接）。
     const desc = document.createElement("span");
     desc.className = "share";
-    desc.textContent = achievement.description;
+    desc.textContent = !achievement.unlocked && achievement.progressText
+      ? `${achievement.description} · 进度 ${achievement.progressText}`
+      : achievement.description;
     row.append(desc);
 
     host.append(row);
@@ -1143,14 +1250,31 @@ function animate(now) {
 }
 
 /**
- * 大数格式化。与服务端 <c>NumFormat</c> 的口径一致（short scale + 中文单位），
+ * 量级缩写的刻度名，**与服务端 `NumFormat.ShortScaleNames` 逐字相同**，前面补一个 `K`
+ * （服务端那张表从 1e6 起，没有千位那一档；Web 要在 1000 就开始缩写，所以自己加 `K`）。
+ *
+ * 为什么前端要抄服务端那张表而不是自己编一套：这**曾经**是一套只活在前端的名字
+ * （`千 / 百万 / 十亿 / 万亿 / 千万亿 / 百京 / 千京`），而服务端的短刻度从来是
+ * `M / B / T / Qa…`——同一个数在两个宿主上是两套字（人 2026-10-05 报「把千换成 K」，
+ * 选的是"全面换成 K/M/B/T"）。抄表之后 §29 有一条守卫**直接从 `NumFormat.cs` 里读那张表**
+ * 来对，两处一起改才可能全绿；`K` 只在这一行、也只加这一次。
+ */
+const SCALE_UNITS = [
+  "K", "M", "B", "T", "Qa", "Qi", "Sx", "Sp", "Oc", "No",
+  "Dc", "Ud", "Dd", "Td", "Qad", "Qid", "Sxd", "Spd", "Od", "Nd", "Vg",
+];
+
+/**
+ * 大数格式化。与服务端 `NumFormat` 同一套刻度名（`SCALE_UNITS`：K / M / B / T / Qa…），
  * 但**不用服务端文本当模板**——那正是上一版跳动的根因：模板只在"数量级没变"时可用，
  * 而数字每跨一个数量级（999 → 1000）就会卡住一拍再跳一下。
  *
- * 精度按量级递减：观感上"12.34 千"和"12.3 千"没有区别，但少一位就少一次无意义的重绘。
+ * 精度按量级递减：观感上"12.34K"和"12.3K"没有区别，但少一位就少一次无意义的重绘。
+ * （数字与单位之间**不留空格**：那个空格是给汉字留的，拉丁缩写按惯例连着写，服务端的
+ * `FormatShort` 也不带空格。）
  */
 function formatCookies(value) {
-  const units = ["", "千", "百万", "十亿", "万亿", "千万亿", "百京", "千京"];
+  const units = ["", ...SCALE_UNITS];
   let index = 0;
   let scaled = Math.abs(value);
 
@@ -1162,7 +1286,7 @@ function formatCookies(value) {
   if (index === 0) return Math.floor(value).toLocaleString("zh-CN");
 
   const digits = scaled < 10 ? 3 : scaled < 100 ? 2 : 1;
-  return `${value < 0 ? "-" : ""}${scaled.toFixed(digits)} ${units[index]}`;
+  return `${value < 0 ? "-" : ""}${scaled.toFixed(digits)}${units[index]}`;
 }
 
 function renderGoldenCookie() {
@@ -1352,6 +1476,9 @@ function createBuildingRow(building) {
   // 卡片本体：**还是买**，与改动前逐字相同的行为。
   const card = document.createElement("button");
   card.className = "card";
+  // 稳定键也写在**卡片**上（行根上那个 `data-building` 是给选择器看的）：每帧重建的列表里
+  // 焦点要认的是"还是那座建筑的买按钮"，见 captureFocus。
+  card.dataset.building = building.id;
   card.addEventListener("click", () => {
     if (card.disabled) return; // 锁着的行不发货（真 DOM 里 disabled 的按钮本来就点不动）
     send("buy", { id: building.id });
@@ -1363,7 +1490,11 @@ function createBuildingRow(building) {
   price.className = "price";
   const share = document.createElement("span");
   share.className = "share hidden";
-  card.append(name, price, share);
+  // 「再买 N 个解锁「X」」的那一行（见 updateBuildingRow）。自己的元素、自己一行：
+  // 与 `share` 同格会重叠，而并进 `.price` 又会把"价格"与"解锁条件"混成一句。
+  const milestone = document.createElement("span");
+  milestone.className = "milestone hidden";
+  card.append(name, price, share, milestone);
 
   // 故事框：内联展开在卡片下面，**不是第二套弹窗**——形态沿用卡片那一套
   // （同底色 / 同圆角 / 同左边框语言，见 app.css 的「建筑行」一节）。
@@ -1394,7 +1525,7 @@ function createBuildingRow(building) {
 
   root.append(...[toggle, trackToggle, card, story, track].filter(Boolean));
   return {
-    root, card, toggle, story, name, price, share,
+    root, card, toggle, story, name, price, share, milestone,
     trackToggle, track, badge,
     // 升级轨当前装着哪几条 id（成员或顺序变了才重建行；见 syncTrack）
     trackIds: [],
@@ -1443,8 +1574,20 @@ function updateBuildingRow(node, building) {
     // 图标仍**贴着数字**（`{图标} {数}`），与 ×1 那一行及页面上其余所有数字一致；
     // 换的是"数字与限定语谁在前"，不是"图标与数字谁在前"。这一改的好处是**只有措辞**：
     // 那个数还是 `priceText(building.batchPrice)`，一个乘号都没做。
-    if (building.batchAmount > 1) {
-      setText(node.price, `×${building.batchAmount} 总价 ${state.currencyIcon} ${priceText(building.batchPrice)}`);
+    //
+    // 2026-10-05 又补了一条：**「买满」那一档永远画 `×N 总价`，N 可以是 0**。
+    // 那一档的 N 是服务端按钱包算出来的可变数量（`Pricing.MaxAffordable`），买不起一个时
+    // 它**就是 0**、`batchPrice` 也是 0——而原来的判据 `batchAmount > 1` 会让这一行退回
+    // 单价形态、只画出一个 `🥫 0`：数量与"这是总价"同时消失，正是人报的那件事
+    // （「只有物资足够才会显现出来真正需要的数量」）。0 也是答案（"这一档现在一个都买不起"），
+    // 藏起来才是那个 bug。N = 1 时也照画：**买满档位里 N 本身就是那句话的答案**
+    // （"现在能买几个"），省掉它反而要玩家去别处推。
+    // 固定档位（×1 / ×10 / ×100）的规矩一个字没变：N 由玩家选、服务端照给，
+    // `×1` 仍然不写「总价」（一个的总价就是单价）。
+    const buyMax = String(state.modeName ?? "").toLowerCase() === "buymax";
+    const batch = Number(building.batchAmount ?? 0);
+    if (batch > 1 || buyMax) {
+      setText(node.price, `×${batch} 总价 ${state.currencyIcon} ${priceText(building.batchPrice)}`);
     } else {
       setText(node.price, `${state.currencyIcon} ${priceText(building.batchPrice)}`);
     }
@@ -1474,6 +1617,28 @@ function updateBuildingRow(node, building) {
   //     （反馈件 §3：`EffectiveUnitCps` 在未持有时直接返回 0），画出来就是一句假话——
   //     宁可不说。"买之前也能看到这个数"是第二层（`OPEN_WORK` 的 **D11**），
   //     它要动 `engine/core` 新增公开字段，这一轮不做。
+  // 「再买 N 个解锁「X」」——**还差多少**这句话的另一半。
+  //
+  // 快照里一直有（`buildings[].nextMilestoneAt` / `nextMilestoneName`，`GameViewFactory`
+  // 的 `FindNextMilestone` 按"下一个由建筑数量触发的升级"算好），终端详情面板也一直在画
+  // （`TerminalUi.cs` 的 `再买 N 个解锁「X」`），而 Web **一个字符都没画过**——
+  // `web-smoke` §23 的 NOT_DRAWN 表里就写着这一条，§21 还专门守着"页面不许画它"。
+  // 人 2026-10-05 报的正是这一类：「只有物资足够才会显现出来真正需要的数量」——
+  // 下一档建筑升级还差几个，与前两行那两处（缺「总价」、缺解锁条件）是同一种病。
+  //
+  // 措辞**照抄终端那一句**（同一个数在两个宿主上要读成同一句话），但它是**自己的元素**
+  // （`.card .milestone`，自己一行）：§21 守的那条界线是"里程碑与纪元阶段那一行是两件事"，
+  // 不是"里程碑不许出现"。`milestoneAt > owned` 才画：引擎的 `FindNextMilestone` 只给
+  // 大于当前持有数的门槛，这里再确认一次是为了**不画出一句负数**（宁可不说）。
+  const milestoneAt = building.nextMilestoneAt;
+  const showMilestone = Number.isInteger(milestoneAt) && Boolean(building.nextMilestoneName)
+    && milestoneAt > building.owned;
+  node.milestone.classList.toggle("hidden", !showMilestone);
+  // 藏起来也要清空，与下一行 `share` 同一条规矩（留着上一帧的数字是一句假话）。
+  setText(node.milestone, showMilestone
+    ? `再买 ${milestoneAt - building.owned} 个解锁「${building.nextMilestoneName}」`
+    : "");
+
   const showShare = unlocked && building.owned > 0;
   node.share.classList.toggle("hidden", !showShare);
   if (showShare) {
@@ -1717,10 +1882,18 @@ function updateUpgradeCard(node, upgrade) {
   if (upgrade.owned > 0) label += upgrade.maxPurchases > 1 ? ` ${upgrade.owned} / ${upgrade.maxPurchases}` : " ✔";
   setText(node.name, label);
 
-  // 图标也由服务端给（`currencyIcon`），不再按枚举序数在前端两选一
+  // 图标也由服务端给（`currencyIcon`），不再按枚举序数在前端两选一。
+  //
+  // 锁着的那一档 2026-10-05 改了：此前只画一个百分比（`30%`），**解锁条件本身一个字都不画**
+  // ——"还差多少"这句话里最有用的那半（差的是什么）看不见，正是人报的那件事
+  // （「只有物资足够才会显现出来真正需要的数量」）。现在与**建筑卡片**和**永久线**同一句话：
+  // `解锁条件（进度%）`（那两处一直这么画）。条件文案由服务端给（`unlockHint`），
+  // 前端一个数都不算。买得起的那一档一个字没变。
   setText(
     node.price,
-    upgrade.isUnlocked ? `${upgrade.currencyIcon} ${number(upgrade.price)}` : percent(upgrade.unlockProgress));
+    upgrade.isUnlocked
+      ? `${upgrade.currencyIcon} ${number(upgrade.price)}`
+      : `${upgrade.unlockHint}（${percent(upgrade.unlockProgress)}）`);
 
   setText(node.effect, upgrade.effectSummary ?? "");
 }
@@ -1737,13 +1910,22 @@ function updateUpgradeCard(node, upgrade) {
  * 那是这一层最不该有的失败形态（数据都在，界面上什么都不说），所以直接去掉——
  * 四十来张卡片对浏览器不是负担。
  */
+/**
+ * 扁平升级列表的行，按升级 id 复用（与 `buildingRows` 是同一套做法与同一条理由）。
+ *
+ * 这张列表此前**每帧整段重建**（`host.textContent = ""` + 逐行新建）。真浏览器里，
+ * 正在被聚焦的按钮一旦离开文档，焦点就掉回 `<body>`——于是"点一下买升级、接着敲空格"
+ * 会落到别的地方去（人 2026-10-05 报的那一处观感）。复用节点是首选修法：
+ * 焦点所在的按钮根本没死，`:focus-visible` 的样式与"按住的鼠标"也一起保住了。
+ */
+const upgradeRows = new Map();
+
 function renderUpgrades() {
   const host = $("#upgrades");
   const owned = buildingOwnedUpgradeIds();
   const rows = (state.upgrades ?? [])
     .filter((u) => u.isVisible && !u.isPermanent && !owned.has(u.id));
   const available = rows.filter((u) => u.isAvailable);
-  host.textContent = "";
 
   $("#upgrade-count").textContent = available.length > 0 ? `${available.length} 项可买` : "暂无可买";
 
@@ -1758,7 +1940,31 @@ function renderUpgrades() {
         : "");
   }
 
-  for (const upgrade of rows) host.append(createUpgradeCard(upgrade).root);
+  // 成员或顺序真的变了才动结构；否则只改文字（与 `renderBuildings` 逐字同一条规矩）。
+  const live = rows.map((upgrade) => {
+    let node = upgradeRows.get(upgrade.id);
+    if (!node) {
+      node = createUpgradeCard(upgrade);
+      // 稳定键：焦点靠它认"还是那一条升级"，不看它在列表里的位置（见 captureFocus）。
+      node.root.dataset.upgrade = upgrade.id;
+      upgradeRows.set(upgrade.id, node);
+    }
+    updateUpgradeCard(node, upgrade);
+    return node.root;
+  });
+
+  const sameOrder = host.children.length === live.length
+    && live.every((node, index) => host.children[index] === node);
+  if (!sameOrder) {
+    host.textContent = "";
+    host.append(...live);
+  }
+
+  // 掉出列表的升级（刚买满、或者内容包换了）连同节点一起丢掉，别让 Map 越攒越多。
+  const visible = new Set(rows.map((upgrade) => upgrade.id));
+  for (const id of [...upgradeRows.keys()]) {
+    if (!visible.has(id)) upgradeRows.delete(id);
+  }
 }
 
 /**
@@ -1804,11 +2010,15 @@ function renderPermanent() {
       + `${state.era?.progressText ? `——本层进度 ${state.era.progressText}` : "（完成本层主线即可）"}。`;
 
   const host = $("#permanent");
+  // 这一张仍然是每帧重建（行的形状与前一张不同，见上）。它是**可以**保住的：
+  // 每个卡片带一个稳定键 `data-permanent`，重画之后 `captureFocus` 把焦点还给它
+  // （键还在就还是同一条永久升级，不看位置）。复用节点那一版留到有人真的嫌它闪再说。
   host.textContent = "";
 
   for (const row of rows) {
     const card = document.createElement("button");
     card.className = "card compact";
+    card.dataset.permanent = row.id;
     if (row.isMaxed) card.classList.add("maxed");
     else if (!row.isUnlocked) card.classList.add("locked");
     else if (row.canAfford) card.classList.add("affordable");
@@ -1850,6 +2060,11 @@ function renderPermanent() {
  * 图鉴、成就、日志全都没画出来过，页面还"看着能玩"（见 OPEN_WORK 的 N 条）。
  * `modeName` 就是命令侧接受的那个 token（`buy10` 这种写法），所以它能原样发回去。
  * web-smoke 里有一条源码守卫盯着这个"不许写回去"。
+ *
+ * 那四个按钮**只建一次**（此前每帧重造）：它们是一个固定集合，而每帧重造会把"玩家刚点过、
+ * 还带着焦点"的那个按钮销毁——真浏览器于是把焦点丢回 `<body>`（与升级列表同一处病灶，
+ * 人 2026-10-05 报的观感）。键是 `data-batch`（档位 token，服务端给的那个；为什么不叫
+ * `data-mode` 见 `FOCUS_KEYS` 上那条注释）。
  */
 function renderBatch() {
   const modes = ["buy1", "buy10", "buy100", "buymax"];
@@ -1857,28 +2072,36 @@ function renderBatch() {
   const current = String(state.modeName ?? "").toLowerCase();
 
   const host = $("#batch");
-  host.textContent = "";
-  for (const mode of modes) {
-    const button = document.createElement("button");
-    button.textContent = labels[mode];
-    // mode 是个枚举名（Buy1 / Buy10 …），服务端推来的是 camelCase
-    const active = current === mode;
-    if (active) button.className = "active";
-    // 「哪一档生效」不能只写进类名：`.active` 只改颜色与字重，读屏读不到。
-    // 四个按钮是互斥的选项，用 aria-pressed 说"这一个按下了"（组名在 index.html 的 #batch 上）。
-    button.setAttribute("aria-pressed", active ? "true" : "false");
-    button.addEventListener("click", () => send("mode", { mode }));
-    host.append(button);
+  if (host.children.length !== modes.length) {
+    host.textContent = "";
+    for (const mode of modes) {
+      const button = document.createElement("button");
+      button.textContent = labels[mode];
+      button.dataset.batch = mode;
+      // 「哪一档生效」不能只写进类名：`.active` 只改颜色与字重，读屏读不到。
+      // 四个按钮是互斥的选项，用 aria-pressed 说"这一个按下了"（组名在 index.html 的 #batch 上）。
+      button.setAttribute("aria-pressed", "false");
+      button.addEventListener("click", () => send("mode", { mode }));
+      host.append(button);
+    }
   }
+
+  modes.forEach((mode, index) => {
+    const button = host.children[index];
+    const active = current === mode;
+    // 复用了节点，两个状态就都得每帧写一遍（此前是新建的按钮，不写就是"没有类"）。
+    button.className = active ? "active" : "";
+    button.setAttribute("aria-pressed", active ? "true" : "false");
+  });
 }
 
 // ---------------------------------------------------------------- 小工具
 
-/** 数值格式化：前端只做"大数缩写"，与服务端 NumFormat 的口径一致即可。 */
+/** 数值格式化：前端只做"大数缩写"，刻度名照抄服务端 `NumFormat`（`SCALE_UNITS`，见 §29 的守卫）。 */
 function number(value) {
   if (value === undefined || value === null) return "—";
   if (value < 1000) return value.toFixed(0);
-  const units = ["", "千", "百万", "十亿", "万亿", "千万亿", "百京"];
+  const units = ["", ...SCALE_UNITS];
   let index = 0;
   let scaled = value;
   while (scaled >= 1000 && index < units.length - 1) {
@@ -1902,7 +2125,7 @@ function percent(ratio) {
  *
  * 口径对着服务端的 `NumFormat.FormatBelowMillion`：1 以下保留到 5 位小数
  * （服务端也是 `0.#####`；再小就到 `1e-5` 以下，那已经是另一个量级，交给 `number()`），
- * 1 ~ 1000 最多 3 位小数并去掉尾零，1000 以上交给 `number()` 做中文量级缩写
+ * 1 ~ 1000 最多 3 位小数并去掉尾零，1000 以上交给 `number()` 做量级缩写
  * （线上那一档本来就是整数）。`null` / `undefined` 给 `—`，与 `number()` / `percent()` 同一条规矩。
  *
  * 名字刻意不叫 `rate`：`animate()` 里已经有一个同名的局部量（当前每秒产量），
@@ -1918,7 +2141,7 @@ function unitRate(value) {
 /**
  * 价格的格式化：`number()` 的口径，只补一条 —— **一个正的价格不许被抹成 `0`**。
  *
- * 平时就是 `number()`（≥1000 走中文量级缩写，那正是价格行要的）。但 `number()` 在 1000
+ * 平时就是 `number()`（≥1000 走 `SCALE_UNITS` 的量级缩写，那正是价格行要的）。但 `number()` 在 1000
  * 以下取整，而价格可以小于 1（价格倍率降过价的建筑；批量的总价在早期也可能是 0.4 这种数）
  * ——那时 `number(0.4)` 是 `"0"`，而卡片上写「🐟 0 总价（×10）」是一句明确的假话，
  * 与 `unitRate()` 存在的理由逐字相同（0.225/s 画成 0/s）。所以这一档退回小数口径。

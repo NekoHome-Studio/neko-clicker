@@ -226,15 +226,18 @@
           <h2>建筑</h2>
           <!-- 批量档位（×1 / ×10 / ×100 / 买满）：四个按钮自己说不清是干什么的
                （"×10" 读出来只是一个符号），所以这里给它们一个组名；哪一个生效由
-               app.js 的 renderBatch 用 aria-pressed 说出去（`.active` 只是画出来的样子）。 -->
-          <div id="batch" class="batch" role="group" aria-label="购买数量"></div>
+               app.js 的 renderBatch 用 aria-pressed 说出去（`.active` 只是画出来的样子）。
+               `tabindex="-1"`：这四块列表（#batch / #buildings / #upgrades / #permanent）
+               是 `captureFocus` 在"焦点所在的那一行刚被买掉"时的落点——程序化可聚焦，
+               但不占 Tab 顺序（理由写在 app.js 的 captureFocus 那段注释里）。 -->
+          <div id="batch" class="batch" role="group" aria-label="购买数量" tabindex="-1"></div>
         </div>
         <!-- 建筑行由 app.js 逐条生成：一行 = [📖 故事][⬆ 升级轨][买卡片]，两个框展开在下面。
              卡片本体仍然是"点一下买"，展开是**另外两个控件**——取舍与展开状态的存放
              都写在 app.js 的 renderBuildings 里（这里没有静态标记，因为每一行都要跟
              快照走：价格、可负担性、解锁进度每帧都在变）。
              ⬆ 只在这座建筑**真的有升级**时才出现（`buildings[].upgradeIds` 非空）。 -->
-        <div id="buildings" class="list"></div>
+        <div id="buildings" class="list" tabindex="-1"></div>
       </div>
 
       <div class="panel hidden" data-panel="upgrades">
@@ -246,7 +249,7 @@
              与「永久」那条线不进这里同一条规矩）。这里必须**说出去**有多少条被移走了，
              否则就是静默少内容。文案由 app.js 的 renderUpgrades 填。 -->
         <p id="upgrade-hint" class="muted"></p>
-        <div id="upgrades" class="list"></div>
+        <div id="upgrades" class="list" tabindex="-1"></div>
       </div>
 
       <!-- 永久升级线：转生后保留的那条线（`upgrades[].isPermanent`），也是转生货币唯一的去处。
@@ -260,7 +263,7 @@
         </div>
         <p id="permanent-wallet" class="wallet"></p>
         <p id="permanent-hint" class="muted"></p>
-        <div id="permanent" class="list"></div>
+        <div id="permanent" class="list" tabindex="-1"></div>
       </div>
 
       <div class="panel hidden" data-panel="codex">

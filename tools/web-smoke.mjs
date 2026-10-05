@@ -21,8 +21,11 @@
 // 覆盖边界（诚实）: 它证明的是"真的被执行过的路径不抛异常"。没被执行到的分支
 // （`if (!pill) return` 这类防御）只有 node --check 的语法保证。
 //
-// 这个脚本**从 2026-10 起进了 tools/build.ps1**（也进了 CI）：一条 224 条断言（§28「分享链接」起；
-// 此前是 208 条、§26 的「右栏填满」之前是 203 条、§26 的「富余高度钉在最后一行」之前是 202 条、
+// 这个脚本**从 2026-10 起进了 tools/build.ps1**（也进了 CI）：一条 252 条断言
+// （§32「焦点在重画之间不许跑掉」起；那一轮之前是 244——§29「刻度名 K/M/B/T」＋
+// §30「大猫那两处标签的字号」＋ §31「还差多少」；再此前是 224 条、§28「分享链接」之前是 208 条、
+// §26 的「右栏填满」之前是 203 条、
+// §26 的「富余高度钉在最后一行」之前是 202 条、
 // §26 的「等高」之前是 199 条、
 // §27「批量档位下的总价」之前是 193 条、
 // §25「缩放适配」与 §26「两栏对齐」之前是 162 条、
@@ -77,6 +80,22 @@ const section = (title) => console.log(`\n${title}`);
 
 // ---------------------------------------------------------------- 最小 DOM 桩
 
+/**
+ * 一个节点（连同子树）**离开文档**时，真浏览器会把焦点交给 `<body>`——
+ * "正在被聚焦的那个节点没了，焦点就没了"，**不是**"移到邻居上"。桩件照这条行为做：
+ * `app.js` 的 `captureFocus` 那一族守卫的判别力全靠它（§32）。
+ * 不走 `document.querySelector`：这里只顺着 `parent` 链问"你是不是我的后代"。
+ */
+function detachFocus(node) {
+  const doc = node.ownerDoc;
+  if (!doc || !doc.activeElement) return;
+  const active = doc.activeElement;
+  if (active === node) { doc.activeElement = doc.body; return; }
+  for (let at = active.parent; at; at = at.parent) {
+    if (at === node) { doc.activeElement = doc.body; return; }
+  }
+}
+
 class ClassList {
   constructor(element) { this.el = element; }
   add(...names) { for (const name of names) if (name) this.el._classes.add(name); }
@@ -110,9 +129,13 @@ class El {
   get className() { return [...this._classes].join(" "); }
   set className(value) { this._classes = new Set(String(value).split(/\s+/).filter(Boolean)); }
   get textContent() { return this._text; }
-  set textContent(value) { this._text = value === undefined || value === null ? "" : String(value); this.children = []; }
+  set textContent(value) {
+    detachFocus(this);
+    this._text = value === undefined || value === null ? "" : String(value);
+    this.children = [];
+  }
   get innerHTML() { return ""; }
-  set innerHTML(_) { this._text = ""; this.children = []; }
+  set innerHTML(_) { detachFocus(this); this._text = ""; this.children = []; }
 
   /**
    * 表单控件的当前值。<b>存档窗口那两张文本框靠它</b>：app.js 读 `.value`（不是 textContent），
@@ -125,6 +148,7 @@ class El {
 
   /** 从父节点摘掉（下载用的 <a> 会挂进 body 再摘掉）。 */
   remove() {
+    detachFocus(this);
     if (this.parent) {
       const at = this.parent.children.indexOf(this);
       if (at >= 0) this.parent.children.splice(at, 1);
@@ -135,8 +159,18 @@ class El {
   /**
    * 焦点。<b>计数而不是布尔</b>：`focus()` 只记"被调过几次"，这样"打开时给导出框、
    * 关闭时还给入口按钮"可以两条都断言到。
+   *
+   * 2026-10-05 起**同时**维护 `document.activeElement`（见下面那条 `ownerDoc`）：这一条
+   * 是 `captureFocus` 的守卫要用的——它证明的是"焦点还在不在同一个键上"。
+   * 桩件能模拟的：谁被 focus 过、那个节点**离开文档**之后焦点掉回 `<body>`（真浏览器
+   * 就是这个行为，也正是那条缺陷的机制）。**模拟不了的**：真实浏览器的 `:focus-visible`
+   * 有没有画出来、焦点在 Tab 顺序里的位置、以及"点一下鼠标会不会给按钮焦点"（真浏览器会）。
    */
-  focus() { this.focused = (this.focused ?? 0) + 1; }
+  focus() {
+    this.focused = (this.focused ?? 0) + 1;
+    const doc = this.ownerDoc;
+    if (doc) doc.activeElement = this;
+  }
 
   /** 选中（剪贴板写不进去时的退路：把文本选中让人按 Ctrl+C）。 */
   select() { this.selected = true; }
@@ -222,6 +256,12 @@ function makeDom() {
     missedSelectors: [],
     /** `document.body`：下载用的 `<a>` 要先挂进文档再点（有些浏览器否则不触发下载）。 */
     body: new El("body"),
+    /**
+     * `document.activeElement`：**初始是 `<body>`**（真浏览器里没有任何东西被聚焦时也是它）。
+     * `El.focus()` 会把它指过去；被聚焦的那个节点一旦离开文档，`detachFocus` 把它交回 `<body>`。
+     * 于是"每帧重建把焦点所在的按钮销毁"这件事在桩里**看得见**（§32 守着它）。
+     */
+    activeElement: null,
     /** 脚本创建过的节点（存档窗口的下载链接要在这里面找）。 */
     created: [],
     _listeners: new Map(),
@@ -237,6 +277,7 @@ function makeDom() {
     },
     createElement(tag) {
       const node = new El(tag);
+      node.ownerDoc = this;
       this.created.push(node);
       return node;
     },
@@ -245,6 +286,11 @@ function makeDom() {
       this._listeners.get(type).push(handler);
     },
   };
+
+  // 每个静态节点都知道自己属于哪个文档（`focus()` / `detachFocus` 要靠它找 `activeElement`）。
+  for (const node of all) node.ownerDoc = doc;
+  doc.body.ownerDoc = doc;
+  doc.activeElement = doc.body;
 
   return doc;
 }
@@ -854,9 +900,11 @@ check("面板说明段 / 列表空态段有显式 margin（不留 UA 默认的 1
 // 折不断的长 token（长英文名 / 连写的 id）不许把卡片顶出面板。两条缺一不可：
 // `overflow-wrap: anywhere` 把 min-content 压到一个字符，`min-width: 0` 去掉网格项
 // 默认的 `min-width: auto`（= min-content，会把这个卡片所在的 1fr 轨道撑开）。
+// `.card .milestone`（§31 那一行「再买 N 个解锁「X」」）在这张名单里是**承重**的：
+// 它装的是作者写的升级名，长度不受我们控制——所以这条名单本身也要跟着元素走。
 check("卡片正文折得断：overflow-wrap: anywhere + min-width: 0", () => {
-  const block = /\.card \.name, \.card \.price, \.card \.share, \.card \.effect \{([\s\S]*?)\}/.exec(css)?.[1];
-  if (block === undefined) throw new Error("没有那一条合并的卡片正文规则");
+  const block = /\.card \.name, \.card \.price, \.card \.share, \.card \.effect, \.card \.milestone \{([\s\S]*?)\}/.exec(css)?.[1];
+  if (block === undefined) throw new Error("没有那一条合并的卡片正文规则（含 .card .milestone 的那一条）");
   if (!block.includes("overflow-wrap: anywhere")) throw new Error("没有 overflow-wrap: anywhere");
   if (!block.includes("min-width: 0")) throw new Error("没有 min-width: 0");
 });
@@ -1228,9 +1276,10 @@ section("14. 夹具形状 vs 真宿主快照");
 //
 // 这一节守的是一个**静默失效**：引擎从 1.4.0 起就把「这条升级属于哪座建筑」写在
 // `UpgradeDefinition.Category` 上（`"building:<id>"`），十一个包 312 条都在用，
-// 而快照里 `category` / `tier` / `nextMilestoneAt` **一处都没被前端读过**——
+// 而快照里 `category` / `tier` **一处都没被前端读过**——
 // 于是"建筑专属升级"在玩家眼里根本不存在，且没有任何东西会因此变红。
 // 现在的形状是服务端把 id 列表算好（`upgradeIds`），前端只做集合运算，不解析约定。
+// （同一个坑里的第三个字段 `nextMilestoneAt` 一直到 2026-10-05 才上页面，见 §21 / §31。）
 section("15. 建筑自己的升级：⬆ 展开、点一下买那一条（不是买建筑）");
 {
   const track = await loadApp(copyAs("app-track.mjs", appSource));
@@ -1505,9 +1554,17 @@ section("17. 触屏下限与 400px 水平预算（CSS 常量算出来的）");
     const left = available - toggles;
     // 卡片自己的 min-content 上界：最长的一段是价格行里**折不断**的那一段。
     // 价格行现在是 `×N 总价 {图标} {数}`（§27 第二版：限定语在前、没有括号），
-    // 按空格切开之后最长的一段是那个数本身——量级缩写最多 6 个字符（`3.40百万` / `2.92十亿`），
-    // 而 `priceText` 给 1 以下的小价格留了小数，最多 7 个字符（`0.12345`，见 §27）；
-    // `×100` 是 4 个、`总价` 是 2 个，都比它短。按 1em/字符这个对任何字体都成立的上界算，
+    // 按空格切开之后最长的一段是**那个数本身**：`priceText` 给 1 以下的小价格留了小数，
+    // 最多 7 个字符（`0.12345`，见 §27）。
+    // 刻度名在 2026-10-05 从 `千 / 百万 / 十亿` 换成了 `K / M / B`（§29）——量级缩写那一段
+    // 因此**变短**：6 个字符（`3.40百万`）→ 5 个（`3.40M`），6 个（`2.92十亿` / `117百万`）
+    // → 4~5 个（`292M` / `117M`）。所以这一档的**上界没有动**：仍然由那 7 个字符的小价格
+    // （`×100` 是 4 个、`总价` 是 2 个，都比它短）决定，`bound` 一个数都没改。
+    // 反过来说：哪天刻度名再变长，这条会先红——它正是为那一天留的。
+    // 新增的 `.card .milestone`（§31「再买 N 个解锁「X」」）**不在这笔账里**：它在
+    // `overflow-wrap: anywhere` 那张名单里，可以逐字折行；而它的长度由作者写的升级名决定，
+    // 用固定字符数给它算上界只会算出一个假的数（§11 那条守卫盯的是"折得断"这件事本身）。
+    // 按 1em/字符这个对任何字体都成立的上界算，
     // 在最大的那一档卡片字号（.card .name = .92rem）下是 103.0px，
     // 加上左右内边距 2×.7rem 与 2px 边框。
     // （第一版那一行是 `{图标} {数} 总价（×N）`，同样落在 7 上，但来源是 `总价（×10）`；
@@ -1676,12 +1733,17 @@ section("20. 状态要能被读屏读到（提示条 / 批量档位 / 页签）"
 
 // 21. 阶段那一行 vs「再买 N 个解锁「X」」——两个概念不许读成同一件事。
 //
-// 里程碑那几个字段（`buildings[].nextMilestoneAt` / `NextMilestoneName`）**在快照里**，
-// 但今天只有终端宿主读它，措辞是「再买 N 个解锁「X」」（`Demo.Cli/TerminalUi.cs:457-460`）；
-// 页面上一个字符都没画过（`CONTENT_AUTHORING` §794 与 `BUILDING_UPGRADES_PLAN` §86 都写着
-// "语义一字未动"，但**没有一处守卫**）。这一节把"今天屏幕上只有阶段那一行"钉成事实，
-// 并禁止阶段那一行借用里程碑的措辞。将来真要在界面上画里程碑，这条会红——那时要做的
-// 是把它画成**另一个元素**，而不是把两句话并进同一行。
+// 里程碑那几个字段（`buildings[].nextMilestoneAt` / `NextMilestoneName`）一直在快照里，
+// 而终端宿主一直在画，措辞是「再买 N 个解锁「X」」（`Demo.Cli/TerminalUi.cs`）。Web 此前
+// 一个字符都没画过，这一节当初就把"屏幕上只有阶段那一行"钉成了事实，并留下一条：
+// **将来真要在界面上画里程碑，这条会红——那时要做的是把它画成「另一个元素」，
+// 而不是把两句话并进同一行**。
+//
+// **2026-10-05 就是那个"将来"**：人报「只有物资足够才会显现出来真正需要的数量」，
+// 里程碑正是这一类（"还差几个解锁下一档建筑升级"），于是它上了卡片——走的就是上面那条路：
+// `.card .milestone`，**自己的元素**、自己一行（CSS 里 `grid-column: 1 / -1`；不给它
+// `grid-area: share` 是因为那会与「已有 N …」同格重叠）。所以这一节跟着事实改：
+// 里程碑必须画在**它自己的元素**里，而纪元阶段那一行仍然一个字都不许借。
 section("21. 阶段那一行 vs 里程碑那一句（不许读成同一件事）");
 {
   const words = await loadApp(copyAs("app-words.mjs", appSource));
@@ -1695,9 +1757,10 @@ section("21. 阶段那一行 vs 里程碑那一句（不许读成同一件事）
   await words.push({ kind: "full", seq: 1, snapshot: snapshot({ buildings: [bed] }) });
 
   // 桩里的 textContent 是"自己的文字"（不聚合子节点），所以遍历一遍就是全页的可见文字。
+  // 这一轮起连着节点一起收：要断言的不再只是"这句话在不在页面上"，而是"它在**哪个元素**里"。
   const allText = [];
   const collect = (node) => {
-    if (node.textContent) allText.push(node.textContent);
+    if (node.textContent) allText.push({ text: node.textContent, node });
     for (const child of node.children) collect(child);
   };
   for (const node of words.doc.all) collect(node);
@@ -1708,9 +1771,24 @@ section("21. 阶段那一行 vs 里程碑那一句（不许读成同一件事）
     if (stage.includes("解锁")) throw new Error(`阶段那一行借了里程碑的措辞：<${stage}>`);
   });
 
-  check("页面上没有任何一处画出「再买 N 个解锁「X」」那一句（它今天只活在终端宿主里）", () => {
-    const hit = allText.find((text) => text.includes("解锁「"));
-    if (hit) throw new Error(`有人在页面上画了里程碑那一句：<${hit}>`);
+  check("里程碑那一句现在**画出来了**，而且画在它自己的元素上（措辞照终端，数 = 门槛 − 持有）", () => {
+    const card = el(words, "buildings").children[0].children
+      .find((child) => child.classList.contains("card"));
+    const line = card.children.find((child) => child.classList.contains("milestone"));
+    if (!line) throw new Error("卡片上没有 `.milestone` 这个元素");
+    eq(line.textContent, "再买 7 个解锁「正式配齐的猫窝」", "里程碑那一行");
+    eq(line.classList.contains("hidden"), false, "有里程碑就该显示");
+  });
+
+  check("全页只有那一个元素写出「再买 N 个解锁…」，也就是说它没有被并进别的那一行", () => {
+    const hits = allText.filter((entry) => entry.text.includes("解锁「"));
+    if (hits.length !== 1) {
+      throw new Error(`写出「解锁「」的元素应当恰好 1 个，实际 ${hits.length} 个：`
+        + `<${hits.map((entry) => `${entry.node.className}｜${entry.text}`).join("> / <")}>`);
+    }
+    if (!hits[0].node.classList.contains("milestone")) {
+      throw new Error(`那一句没画在自己的元素上（class = <${hits[0].node.className}>）`);
+    }
   });
 
   check("里程碑的名字即使在快照里，也不会跑到阶段那一行上去", () => {
@@ -1776,10 +1854,12 @@ section("22. 建筑卡片上的「单个产速」");
 // 23. 快照里的每个字段都要有人决定过：画了，或者写明为什么不画。
 //
 // 这是**同一类缺陷的第五次**——引擎算好、快照推过来，而 Web 前端一次都没画过：
-//   · `category` / `tier` / `nextMilestoneAt`（§15 与 §21 记着它们只活在终端宿主里）
+//   · `category` / `tier`（§15 与 §21 记着它们只活在终端宿主里）
+//   · `buildings[].nextMilestoneAt` / `nextMilestoneName`（**第六次**，2026-10-05 修：
+//     终端详情面板一直画「再买 N 个解锁「X」」，Web 一个字符都没有；见 §21 / §31）
 //   · `buildings[].owned`（§19，2026-10-03 修：数字一直在算、一直在写、然后被 CSS 藏掉）
 //   · `buildings[].cpsEach`（§22，2026-10-03 修）
-// 五次都是**人注意到**或**代理审计**发现的——仓库里没有任何东西会在"多了一个没人画的字段"
+// 六次都是**人注意到**或**代理审计**发现的——仓库里没有任何东西会在"多了一个没人画的字段"
 // 时变红。这一节就是那个东西：以后**没决定过的新字段会让这一节红，并点名到完整路径**。
 //
 // 判据分两层，缺一不可：
@@ -1804,10 +1884,16 @@ section("23. 快照里的每个字段都要有人决定过（画了，或写明�
 {
   const wire = JSON.parse(readFileSync(join(root, "tools", "fixtures", "web-snapshot.json"), "utf8"));
 
+  // ⚠️ **`m` 这个标志是承重的**：这份 app.js 是 CRLF 换行的，而没有 `m` 时 `$` 只认
+  // "输入末尾"、`.` 又不吃 `\r`，于是 `/\/\/.*$/` 对每一行都**匹配不上**——
+  // `//` 注释一个字都没被剥掉（`/* */` 那条本来就没事）。也就是说"注释不算引用"这条
+  // 声明一直只对一半注释成立。2026-10-05 撞上它：新写的 `//` 注释里出现了一个 `.mode`，
+  // 于是「`mode` 是枚举序数、前端不许读」那条决定记录被判成"过期的借口"。
+  // 加上 `m` 之后，两边（注释里的名字 vs 代码里的名字）才真的分得开。
   const frontCode = appSource
     .replace(/\/\*[\s\S]*?\*\//g, "")
     .split("\n")
-    .map((line) => line.replace(/\/\/.*$/, ""))
+    .map((line) => line.replace(/\/\/.*$/m, ""))
     .join("\n");
 
   /**
@@ -1837,14 +1923,28 @@ section("23. 快照里的每个字段都要有人决定过（画了，或写明�
     "buildings[].category": "服务端把分组算成了 upgradeIds；前端不解析 category 的 building: 前缀（既有规矩）",
     "buildings[].hiddenUntilUnlocked": "隐藏规则由服务端算成 isVisible / isUnlocked（Views.cs 的一行属性），前端只读结果",
     "buildings[].unitPrice": "前端画的是真正会扣的 batchPrice，批量档位下还写明「总价」（§27）；单价那一份没画（未决定）",
-    "buildings[].nextMilestoneAt": "里程碑那一句今天只活在终端宿主里，§21 明确守着「页面不许画它」",
-    "buildings[].nextMilestoneName": "同上：§21 守着它不许跑到阶段那一行上（未决定要不要单独画）",
+    // nextMilestoneAt / nextMilestoneName 的两条借口在 2026-10-05 到期了：
+    // 人报「只有物资足够才会显现出来真正需要的数量」，里程碑就是这一类，
+    // 于是它画上了卡片自己的那一行（`.card .milestone`，见 §21 / §31）——
+    // **开始画了就要从这张表里移走**（这条守卫的第二层会点名过期的借口）。
     "buildings[].sellRefundRate": "页面上没有「卖出」这个动作（终端有卖模式，Web 没有）",
     // ---- upgrades[]
+    // 这一条是 2026-10-05 **把上面那个 `m` 补上之后**才浮出来的：`upgrades[].currency`
+    // 此前只是"看起来被引用过"——某条 `//` 注释里写着 `currency`，而那段注释其实一直
+    // 没被剥掉（见 `frontCode` 上面那段）。它就是 `mode` 那条规矩的同一件事：
+    // 枚举序数不许前端解释，服务端把名字 / 图标 / 用哪个钱包算好给它。
+    "upgrades[].currency": "计价货币是枚举序数（UpgradeCurrency）；前端只认 usesPrestigeCurrency / currencyIcon / currencyName",
     "upgrades[].hiddenUntilUnlocked": "同 buildings[]：服务端算成 isVisible / isUnlocked",
     "upgrades[].category": "前端用服务端算好的 upgradeIds 挂建筑升级，不解析 category",
     "upgrades[].tier": "终端用它排序分区；Web 的升级面板不分区（未决定）",
     // ---- 其他记录
+    // ⚠️ 两个**这条守卫看不见**的字段（名字撞车，见上面那条边界说明）：
+    //   · `achievements[].progressText`：**2026-10-05 起真的画了**（锁着的成就写成
+    //     「… · 进度 12 / 50」，见 §31），可它一直"看起来像被读过"——`era.progressText`
+    //     命中了同一条 `.字段名` 正则；
+    //   · `achievements[].progress`（比率那一份）：**没画**，同样被 `era.progress` 挡住。
+    // 这两个都写不进下面这张表：`referenced()` 认为它们已经被引用，第二条守卫会判"过期的借口"。
+    // 想真守住这一族，得先把"按记录类型认引用"这件事做出来——那是一件独立的结构改动。
     "achievements[].category": "成就列表面板不分组（未决定）",
     "prestige.currentLevel": "前端只有 canAscend / chipsOnAscend 与 era.progressText 有落点（未决定）",
     "prestige.nextLevel": "同上（未决定）",
@@ -2861,6 +2961,8 @@ section("26. 两栏对齐：左栏大框与右栏卡片的上沿 ＋ 下沿 ＋ 
 // 27. 批量档位下的「总价」（×10 / ×100 / 买满）。
 //
 // 人 2026-10-04 报的：「x10 和 x100 在切换之后要显示总价」。
+// **2026-10-05 同一处又报了一次，另一半**：「只有物资足够才会显现出来真正需要的数量」——
+// 买不满一个的时候，「买满」那一档退回单价形态、只画出一个 `🥫 0`，`×N` 与「总价」同时消失。
 //
 // 动手前先查清了这一件事，它决定了这一节怎么写：**卡片上那个数一直是整批的总价，不是单价。**
 // `buildings[].batchPrice` 由服务端按价格曲线算好（`GameViewFactory` 里的 `Pricing.BulkPrice`
@@ -2874,11 +2976,14 @@ section("26. 两栏对齐：左栏大框与右栏卡片的上沿 ＋ 下沿 ＋ 
 // 扫一眼的速度下与改之前的 `🐟 7.58千 ×10` 差得不够远；第二版数字前面已经站好 `×N 总价`，
 // `数字 + ×N` 那个"单价 ×N 个"的读法在句法上就不成立了（括号也一并去掉：
 // `×N` 在这里是**限定语**，不是注解）。图标仍然贴着数字，与 ×1 那一行一致。
+// （刻度名 2026-10-05 从 `千 / 百万 / 十亿` 换成了 `K / M / B`，见 §29——所以这一节里
+//  那几条期望串跟着变短，而"总价在数字前面"那几条形态断言一个字都没动。）
 //
-// 这一节钉四件事：批量档位写出「总价」二字**且在数字前面**；**切档位时画出来的那个数真的跟着换**
+// 这一节钉七件事：批量档位写出「总价」二字**且在数字前面**；**切档位时画出来的那个数真的跟着换**
 // （同一座建筑、同一行 DOM）；×1 一个字不加（一个的总价就是单价，多写是噪音）；小总价不被
-// `number()` 抹成 0。两版的**准确字符串**都由 `eq()` 钉死，所以"数字在限定语前"这种回退
-// 一定红（见 `OPEN_WORK` §0.21.5 的第四次注入）。
+// `number()` 抹成 0；**买不起也要把 `×N 总价` 画出来**（买满档位的 N 可以是 0——0 也是答案）；
+// 固定档位（×10）在买不起时照旧画出整批总价。几版的**准确字符串**都由 `eq()` 钉死，
+// 所以"数字在限定语前"这种回退一定红（见 `OPEN_WORK` §0.21.5 的第四次注入）。
 section("27. 批量档位下的「总价」（×10 / ×100 / 买满）");
 {
   const batch = await loadApp(copyAs("app-batch.mjs", appSource));
@@ -2904,11 +3009,11 @@ section("27. 批量档位下的「总价」（×10 / ×100 / 买满）");
 
   await batch.push(frame(2, { ...ruins, batchAmount: 10, batchPrice: 7579 }));
 
-  check("×10：写出「总价」而且在数字**前面**，那个数就是整批的总价（7.58千），不是单价 373", () => {
-    eq(priceOf(), "×10 总价 🐟 7.58千", "×10 那一行");
+  check("×10：写出「总价」而且在数字**前面**，那个数就是整批的总价（7.58K），不是单价 373", () => {
+    eq(priceOf(), "×10 总价 🐟 7.58K", "×10 那一行");
     // 下面三句不是 `eq()` 的重复：它们**不依赖期望串**。有人把这一行的期望串改成旧次序
     // （"改测试而不是改代码"）时 `eq()` 会放行，这几句仍然会红。
-    if (priceOf().indexOf("总价") > priceOf().indexOf("7.58千")) {
+    if (priceOf().indexOf("总价") > priceOf().indexOf("7.58K")) {
       throw new Error(`限定语落在数字后面了（那是第一版、也是"数字 + ×N"那个误读的形态）：<${priceOf()}>`);
     }
     if (priceOf().includes("（")) throw new Error(`括号回来了——\`×N\` 在这里是限定语、不是注解：<${priceOf()}>`);
@@ -2917,14 +3022,14 @@ section("27. 批量档位下的「总价」（×10 / ×100 / 买满）");
 
   await batch.push(frame(3, { ...ruins, batchAmount: 100, batchPrice: 117431205 }));
 
-  check("×100：切档位之后，同一行画出来的数跟着换成整批的总价（117百万）", () => {
-    eq(priceOf(), "×100 总价 🐟 117百万", "×100 那一行");
+  check("×100：切档位之后，同一行画出来的数跟着换成整批的总价（117M）", () => {
+    eq(priceOf(), "×100 总价 🐟 117M", "×100 那一行");
   });
 
   await batch.push(frame(4, { ...ruins, batchAmount: 37, batchPrice: 3.4e6 }));
 
   check("买满：N 是服务端按钱包算出来的可变数量，所以 `×N` 记号还得留着（页面上别处没有它）", () => {
-    eq(priceOf(), "×37 总价 🐟 3.40百万", "买满那一行");
+    eq(priceOf(), "×37 总价 🐟 3.40M", "买满那一行");
   });
 
   await batch.push(frame(5, { ...ruins, batchAmount: 10, batchPrice: 0.4 }));
@@ -2940,6 +3045,36 @@ section("27. 批量档位下的「总价」（×10 / ×100 / 买满）");
 
   check("未解锁那一行照旧画解锁条件（不许在锁着的行上摆一个总价）", () => {
     eq(priceOf(), "累计赚到 300（40%）", "未解锁那一行");
+  });
+
+  // ---- 2026-10-05：**买不起的时候，那两个数也必须画出来** ----
+  //
+  // 「买满」那一档的数量是服务端按钱包算的（`Pricing.MaxAffordable`），买不起一个时它就是 0、
+  // `batchPrice` 也是 0。原来的判据 `batchAmount > 1` 于是让这一行退回单价形态、只画一个
+  // `🥫 0`——**数量与"这是总价"同时消失**，正是人报的那件事。0 也是答案，藏起来才是 bug。
+  const buyMax = (seq, building) =>
+    ({ kind: "full", seq, snapshot: snapshot({ modeName: "buymax", buildings: [building] }) });
+
+  await batch.push(buyMax(7, { ...ruins, canAfford: false, batchAmount: 0, batchPrice: 0 }));
+
+  check("买满 · 一个都买不起（batchAmount = 0）：照样写「×0 总价 🐟 0」——那个 0 就是答案", () => {
+    eq(priceOf(), "×0 总价 🐟 0", "买满 ×0 那一行");
+    // 与期望串无关的两句：数量记号与「总价」二字都不许消失（那正是这次报的那个形态）。
+    if (!priceOf().includes("×0")) throw new Error(`「买满」把可变数量藏起来了（退回单价形态了）：<${priceOf()}>`);
+    if (!priceOf().includes("总价")) throw new Error(`没说出这是总价：<${priceOf()}>`);
+  });
+
+  await batch.push(buyMax(8, { ...ruins, canAfford: true, batchAmount: 1, batchPrice: 373.37 }));
+
+  check("买满 · 只买得起一个（N = 1）：也照画「×1 总价」——那一档的 N 本身就是答案", () => {
+    eq(priceOf(), "×1 总价 🐟 373", "买满 ×1 那一行");
+  });
+
+  await batch.push(frame(9, { ...ruins, canAfford: false, batchAmount: 10, batchPrice: 7.58e9 }));
+
+  check("固定档位 ×10 · 买不起也要把整批总价画出来（7.58e9 → 量级名是 B）", () => {
+    eq(priceOf(), "×10 总价 🐟 7.58B", "买不起的 ×10 那一行");
+    if (priceOf().includes("373")) throw new Error(`画的是单价而不是整批总价：<${priceOf()}>`);
   });
 }
 
@@ -3159,6 +3294,376 @@ section("28. 分享链接：生成 / 复制 / 打开（密码不进链接、不�
     for (const id of ["share-note", "share-open-note"]) {
       const tag = new RegExp(`<p id="${id}"[^>]*>`).exec(html)?.[0] ?? "";
       if (!/\brole="status"/.test(tag)) throw new Error(`#${id} 上没有 role=status：<${tag}>`);
+    }
+  });
+}
+
+// 29. 大数缩写的刻度名：前端那张表**就是**服务端 `NumFormat` 那张表。
+//
+// 人 2026-10-05 报的：「把千换成 K」，追问之后选的是**全面换成 K/M/B/T**。
+// 动手前先查清了这一件事，它决定了这一节怎么写：**中文单位只活在前端**。
+// `engine/core/Numbers/NumFormat.cs` 的短刻度表从来是 `M / B / T / Qa…`（索引 0 对应 1e6，
+// 没有千位那一档），而 `app.js` 自己有**两套**中文刻度的副本（`formatCookies` 的
+// `千/百万/十亿/万亿/千万亿/百京/千京` 与 `number()` 的 `千/百万/十亿/万亿/千万亿/百京`）。
+// 也就是说：这次改动**不需要动引擎**，而且方向是**把前端拉回服务端那一套**，不是拉开。
+// 于是这一节要守的第一件事不是"字符串长什么样"，而是"**两把尺子是同一把**"——
+// 直接从 `NumFormat.cs` 里把那张表读出来逐字对（谁单方面加一个刻度的名字，这里就红）。
+//
+// 剩下的两条：中文字面量不许回来；真的渲染出来的那两处（大计数器 / 卡片价格）确实换过了。
+section("29. 大数缩写的刻度名：前端那张表就是服务端 NumFormat 那张表");
+{
+  const numFormatCs = readFileSync(join(root, "engine", "core", "Numbers", "NumFormat.cs"), "utf8");
+  const engineBlock = /ShortScaleNames\s*=\s*\[([\s\S]*?)\];/.exec(numFormatCs)?.[1] ?? "";
+  const engineNames = [...engineBlock.matchAll(/"([^"]+)"/g)].map((match) => match[1]);
+  const jsBlock = /const SCALE_UNITS = \[([\s\S]*?)\];/.exec(appSource)?.[1] ?? "";
+  const jsNames = [...jsBlock.matchAll(/"([^"]+)"/g)].map((match) => match[1]);
+
+  check("前端 `SCALE_UNITS` === [\"K\", ...服务端 `ShortScaleNames`]（逐字、逐序，一个都不能走样）", () => {
+    // 假绿防线：两个正则各自读到空数组时，"两张空表相等"会假装通过。
+    if (engineNames.length < 10) {
+      throw new Error(`从 NumFormat.cs 只读到 ${engineNames.length} 个刻度名——上面那条正则该跟着源文件改`);
+    }
+    if (jsNames.length === 0) throw new Error("app.js 里没有读到 `const SCALE_UNITS = [...]`");
+    eq(jsNames.join(" / "), ["K", ...engineNames].join(" / "), "前端与服务端的刻度表");
+  });
+
+  check("那张表里**没有一个汉字**（2026-10-05 之前是 千 / 百万 / 十亿 / 万亿…，不许回来）", () => {
+    const cjk = jsNames.filter((name) => /[\u4e00-\u9fff]/.test(name));
+    if (cjk.length > 0) throw new Error(`刻度名里还有汉字：${cjk.join(" / ")}`);
+    const old = ["千", "百万", "十亿", "万亿", "千万亿", "百京", "千京"]
+      .filter((name) => appSource.includes(`"${name}"`));
+    if (old.length > 0) throw new Error(`app.js 里还留着旧刻度的字面量：${old.join(" / ")}`);
+  });
+
+  // 大计数器那一处（`formatCookies`，人看到 `7.58千` 的地方也是它）。
+  // 读数的方式照 §12：推一帧 full 快照 + `step(0)`（步长 0 只画首帧，不推进合成时钟）。
+  const scale = await loadApp(copyAs("app-scale.mjs", appSource));
+  const counters = new Map();
+  let seq = 0;
+  for (const value of [7579, 1.2e6, 2.92e9, 4e12, 1000, 2.5e6, 3e9, 999, 0.5]) {
+    seq++;
+    await scale.push({ kind: "full", seq, snapshot: snapshot({ cookies: value, cookiesPerSecond: 0 }) });
+    scale.step(0);
+    counters.set(value, el(scale, "cookies").textContent);
+  }
+  const counter = (value) => counters.get(value);
+
+  check("大计数器：`7.58千` → `7.579K`——数字与单位之间那个空格也去掉了（拉丁缩写连着写）", () => {
+    // 精度**一个字没动**：计数器给"10 以下"留 3 位（`7.579K`），卡片上的 `number()` 留 2 位
+    // （`7.58K`）——这两个格式器在改动之前也是 `7.579千` 与 `7.58千`，差别不在这一轮，
+    // 这一轮只换了刻度名与那个空格。§27 那几条期望串用的是卡片那一份。
+    eq(counter(7579), "7.579K", "7,579");
+    eq(counter(1.2e6), "1.200M", "1,200,000");
+    eq(counter(2.92e9), "2.920B", "2,920,000,000");
+    eq(counter(4e12), "4.000T", "4,000,000,000,000");
+  });
+
+  check("四档刻度名一次走全（K / M / B / T），精度仍按量级递减（<10 三位、<100 两位、其余一位）", () => {
+    eq(counter(1000), "1.000K", "1,000");
+    eq(counter(2.5e6), "2.500M", "2,500,000");
+    eq(counter(3e9), "3.000B", "3,000,000,000");
+  });
+
+  check("小数字那一端**没被碰**：1000 以下仍是整数（`999` / `1`），不是 `0.999K`", () => {
+    eq(counter(999), "999", "999");
+    eq(counter(0.5), "0", "0.5（计数器本来就取整，与改动前逐字相同）");
+    // 真正会踩"被抹成 0"的是价格与产速那一档（`priceText` / `unitRate`）——§22 与 §27 盯着它们。
+    // 这里再确认那份退路还在：`number()` 的 <1000 分支仍是 toFixed(0)，而 `priceText` 仍会为
+    // 正的小价格退回小数口径。刻度名换了，这两条一个字都不该跟着变。
+    if (!/if \(value < 1000\) return value\.toFixed\(0\)/.test(appSource)) {
+      throw new Error("`number()` 的 1000 以下分支被改了——小价格会被抹成 0（那是它当初存在的理由）");
+    }
+    if (!/text === "0" && value > 0 \? unitRate\(value\) : text/.test(appSource)) {
+      throw new Error("`priceText()` 的小数退路不见了——正的小价格会被画成 0");
+    }
+  });
+}
+
+// 30. 大猫上那两处标签的字号（人 2026-10-05 报：「翻找」与「空格」差很多）。
+//
+// 那两处标签是**同一句话的两半**，并排在同一行里：
+//   index.html: `<span class="hint"><span id="click-action">点击</span><kbd>空格</kbd></span>`
+//   app.js:     `$("#click-action").textContent = state.clickActionName;`
+// 而 `state.clickActionName` 就是内容包自己那两个字（末世包是「翻找」，
+// `ApocalypseContent.cs` 的 `WithCurrency("物资", "🥫", "翻找")`；咖啡馆包是「撸猫」）。
+// 字号之所以差一档，是两条规则各管各的：
+//   · `.big-cat .hint { font-size: .85rem }`（那一行）；
+//   · 全局 `kbd { font-size: .75rem; font-family: ui-monospace, Consolas, monospace }`（键帽）。
+// 于是「翻找」是 .85rem 的正文体、「空格」是 .75rem 的等宽体——**同一行、两个规格**。
+//
+// ⚠️ 这一节与 §25 / §26 一样，只证明"规则里写的是什么"：这个桩件没有布局引擎，
+// **判不了渲染出来的像素**。所以修完之后仍然需要人看一眼（那条记在 OPEN_WORK 本节里）。
+section("30. 大猫上那两处标签的字号（「翻找」/「空格」）");
+{
+  const hintBlock = /\.big-cat \.hint \{([\s\S]*?)\}/.exec(cssRules)?.[1] ?? "";
+  const scopedBlock = /\.big-cat \.hint kbd \{([\s\S]*?)\}/.exec(cssRules)?.[1] ?? "";
+  const globalKbd = /(?:^|\n)kbd \{([\s\S]*?)\}/.exec(cssRules)?.[1] ?? "";
+
+  check("那一行里确实并排着两个标签：`#click-action`（点击动作名）与 `<kbd>空格</kbd>`", () => {
+    const hint = /<span class="hint">([\s\S]*?)<\/span>\s*<\/button>/.exec(html)?.[1] ?? "";
+    if (!hint.includes('id="click-action"')) throw new Error("大猫的 hint 里没有 #click-action");
+    if (!hint.includes("<kbd>")) throw new Error("大猫的 hint 里没有 <kbd>");
+  });
+
+  check("`kbd` 在大猫那一行里跟着 `.hint` 走：字号与字体族都 inherit（两个标签同一规格）", () => {
+    const hintSize = /font-size:\s*([\d.]+)rem/.exec(hintBlock)?.[1];
+    if (hintSize === undefined) throw new Error("`.big-cat .hint` 没有 rem 字号——这一行的规格没了");
+    if (scopedBlock === "") {
+      throw new Error("没有 `.big-cat .hint kbd` 这条作用域规则：全局 `kbd` 的 .75rem 又压在这一行上了");
+    }
+    if (!/font-size:\s*inherit/.test(scopedBlock)) {
+      throw new Error(`kbd 的字号不是继承来的：<${scopedBlock.trim()}>`);
+    }
+    if (!/font-family:\s*inherit/.test(scopedBlock)) {
+      throw new Error(`kbd 的字体族不是继承来的（等宽体里没有汉字，只会多一个变量）：<${scopedBlock.trim()}>`);
+    }
+  });
+
+  check("键帽的观感一个字没动（底色 / 边框 / 圆角 / 内边距还在全局 `kbd` 那条规则里）", () => {
+    if (globalKbd === "") throw new Error("全局 `kbd` 规则没了");
+    for (const prop of ["background:", "border:", "border-radius:", "padding:", "font-size:"]) {
+      if (!globalKbd.includes(prop)) throw new Error(`全局 \`kbd\` 少了 ${prop}——键帽的样子变了`);
+    }
+    if (/font-size:\s*[\d.]+rem/.test(scopedBlock)) {
+      throw new Error("作用域那条又把 rem 字号写回来了——两个标签会再次不一样大");
+    }
+  });
+}
+
+// 31. 「还差多少」：里程碑 / 锁着的升级 / 锁着的成就。
+//
+// 人 2026-10-05 报的：「现在所有的东西只有物资足够才会显现出来真正需要的数量」。
+// 三个落点，**全都在快照里**（所以这一轮没动引擎、也没升版本）：
+//   · `buildings[].nextMilestoneAt` / `nextMilestoneName` —— 终端一直在画「再买 N 个解锁「X」」，
+//     Web 从没画过（§21 现在守着"它画在自己的元素上"）；
+//   · `upgrades[].unlockHint` / `unlockProgress` —— 锁着的那一档此前**只画一个百分比**，
+//     解锁条件本身一个字都没有（建筑卡片与永久线那两处一直画的是"条件 + 进度"）；
+//   · `achievements[].progressText` —— 锁着的成就此前只有名字与说明（终端画「进度 12 / 50」）。
+// 这一节钉的是"那三个数真的画出来了、而且画的是服务端给的那一份"。
+section("31. 「还差多少」：里程碑 / 锁着的升级 / 锁着的成就");
+{
+  const gap = await loadApp(copyAs("app-gap.mjs", appSource));
+
+  const ruins = {
+    id: "b1", isVisible: true, isUnlocked: true, canAfford: true, icon: "🧱", name: "废墟",
+    owned: 23, unitPrice: 373.37, batchAmount: 1, batchPrice: 373.37,
+    cpsEach: 0.225, cpsContribution: 5.2, cpsShare: 0.01,
+    unlockHint: "", unlockProgress: 1, description: "捡来的。", upgradeIds: [],
+    nextMilestoneAt: 25, nextMilestoneName: "翻找的手套",
+  };
+  const milestoneOf = () => el(gap, "buildings").children[0].children
+    .find((child) => child.classList.contains("card")).children
+    .find((child) => child.classList.contains("milestone"));
+
+  await gap.push({ kind: "full", seq: 1, snapshot: snapshot({ buildings: [ruins] }) });
+
+  check("里程碑：还差几个是**算出来的**（门槛 25 − 持有 23 = 2），措辞照终端那句", () => {
+    eq(milestoneOf().textContent, "再买 2 个解锁「翻找的手套」", "里程碑那一行");
+    eq(milestoneOf().classList.contains("hidden"), false, "有下一个里程碑就该显示");
+  });
+
+  await gap.push({
+    kind: "full", seq: 2,
+    snapshot: snapshot({ buildings: [{ ...ruins, nextMilestoneAt: null, nextMilestoneName: null }] }),
+  });
+
+  check("没有下一个里程碑（两个字段都是 null）：那一行藏起来，且 DOM 里**不留**上一帧那句话", () => {
+    if (!milestoneOf().classList.contains("hidden")) throw new Error("没有里程碑却还显示着那一行");
+    eq(milestoneOf().textContent, "", "藏起来那一行的文字（留着就是一句与状态对不上的话）");
+  });
+
+  await gap.push({ kind: "full", seq: 3, snapshot: snapshot({ buildings: [{ ...ruins, owned: 25 }] }) });
+
+  check("门槛已经达到（差 0 个）：不画「再买 0 个…」这句废话（宁可不说）", () => {
+    if (!milestoneOf().classList.contains("hidden")) {
+      throw new Error(`画了一句差 0 个的废话：<${milestoneOf().textContent}>`);
+    }
+  });
+
+  // ---- 锁着的升级：条件 + 进度（此前只有一个百分比） ----
+  const lockedUpgrade = {
+    id: "u2", isVisible: true, isPermanent: false, isAvailable: false, isUnlocked: false,
+    isMaxed: false, canAfford: false, icon: "🔧", name: "全店翻新", owned: 0,
+    currencyIcon: "🐟", price: 900, effectSummary: "所有建筑 ×1.5",
+    unlockHint: "有 10 个猫窝", unlockProgress: 0.3, maxPurchases: 1,
+  };
+  const boughtUpgrade = { ...lockedUpgrade, id: "u3", isUnlocked: true, isAvailable: true, canAfford: true, name: "小招牌", price: 250 };
+  const upgradePrice = (index) => el(gap, "upgrades").children[index]
+    .children.find((child) => child.classList.contains("price")).textContent;
+
+  await gap.push({ kind: "full", seq: 4, snapshot: snapshot({ buildings: [], upgrades: [lockedUpgrade, boughtUpgrade] }) });
+
+  check("锁着的升级也写出**解锁条件 + 进度**（`30%` 那半句此前是唯一的线索）", () => {
+    eq(upgradePrice(0), "有 10 个猫窝（30%）", "锁着那一行的价格格");
+  });
+
+  check("买得起的那一行一个字没变（`🐟 250`）", () => {
+    eq(upgradePrice(1), "🐟 250", "买得起那一行");
+  });
+
+  // ---- 锁着的成就：服务端算好的 `progressText` ----
+  const achievements = [
+    { unlocked: false, icon: "🔒", name: "翻找百次", description: "亲手翻找 100 次。", progressText: "12 / 50" },
+    { unlocked: false, icon: "🔒", name: "隐藏的", description: "隐藏成就：达成后揭晓。", progressText: "" },
+    { unlocked: true, icon: "🏆", name: "第一只", description: "买下第一间", progressText: "" },
+  ];
+  const achievementDesc = (index) => el(gap, "achievement-list").children[index]
+    .children.find((child) => child.classList.contains("share")).textContent;
+
+  await gap.push({ kind: "full", seq: 5, snapshot: snapshot({ buildings: [], achievements }) });
+
+  check("锁着的成就写出「进度 12 / 50」（服务端 `progressText` 原样画，前端一个数都不算）", () => {
+    eq(achievementDesc(0), "亲手翻找 100 次。 · 进度 12 / 50", "那一条成就的说明行");
+  });
+
+  check("不可量化的（`progressText` 是空串）不补一个空的「进度」——没得说就不说", () => {
+    eq(achievementDesc(1), "隐藏成就：达成后揭晓。", "隐藏成就那一行");
+  });
+
+  check("已解锁的成就不补那句（「还差多少」对已达成的东西是另一句话）", () => {
+    eq(achievementDesc(2), "买下第一间", "已解锁那一行");
+  });
+}
+
+// 32. 焦点在重画之间不许自己跑掉（人 2026-10-05 报：「焦点真的很奇怪 在升级的时候
+//     会跑到按钮上 可能会有些影响操作（虽说不多）」）。
+//
+// 病灶（先查清的事实，不是猜的）：这一页每 250ms 收一帧快照就把几张列表整段重建。
+// `renderUpgrades` 与 `renderPermanent` 都是 `host.textContent = ""` + 逐行新建，
+// `renderBatch` 连那四个档位按钮都每帧重造。真浏览器里**正在被聚焦的节点一旦离开文档，
+// 焦点就掉回 `<body>`**——于是"点一下买升级、接着敲空格（这一页的撸猫键）"落在哪儿
+// 就说不准了。修法两条：能复用就复用（升级列表按 id、档位按钮只建一次、建筑行早就复用），
+// 复用了还不行就按稳定键恢复（`app.js` 的 `captureFocus`）。
+//
+// 这一节钉四件事：一帧之后焦点还在**同一个节点**上（复用生效）；键没了也不回 `<body>`
+// （落在那个列表容器上）；玩家本来就没在操作控件时**不许**把焦点放到按钮上；
+// 那四个容器在真的标记里是可程序化聚焦的（`tabindex="-1"`）。
+//
+// ⚠️ 桩件模拟不了的三件事（不假装它更强）：`:focus-visible` 有没有画出来、焦点在 Tab
+// 顺序里的位置、以及"鼠标点一下按钮会不会给它焦点"（真浏览器会，桩里是测试自己调 `focus()`）。
+// 所以"焦点手感对不对"仍然需要人在真页面上看一眼（记在 OPEN_WORK 的 H3）。
+section("32. 焦点在重画之间不许跑掉（买升级 / 切档位的时候）");
+{
+  const focusApp = await loadApp(copyAs("app-focus.mjs", appSource));
+  const activeOf = () => focusApp.doc.activeElement;
+
+  /**
+   * 焦点"在哪儿"的可读描述。**不能拿 `eq()` 比 DOM 节点**：`eq` 会把两边
+   * `JSON.stringify` 一遍，而节点是循环结构（`parent` ↔ `children`），报出来只有
+   * "Converting circular structure to JSON"——那条红等于什么都没说。
+   */
+  const where = (node) => {
+    if (!node) return "<null>";
+    if (node === focusApp.doc.body) return "<body>";
+    const id = node.id ? `#${node.id}` : "";
+    const cls = node.className ? `.${String(node.className).split(/\s+/).join(".")}` : "";
+    const key = node.dataset ? Object.entries(node.dataset).map(([k, v]) => `[data-${k}=${v}]`).join("") : "";
+    return `${node.tagName}${id}${cls}${key}`;
+  };
+  const checkFocus = (expected, what) => {
+    if (activeOf() !== expected) {
+      throw new Error(`${what}: 期望 ${where(expected)}，实际 ${where(activeOf())}`);
+    }
+  };
+
+  /** 扁平的（非永久、无建筑归属）升级：买一次不会让它离开列表（`maxPurchases: 3`）。 */
+  const shopUpgrade = {
+    id: "u2", isVisible: true, isPermanent: false, isAvailable: true, isUnlocked: true,
+    isMaxed: false, canAfford: true, icon: "🔧", name: "全店翻新", owned: 0,
+    currencyIcon: "🐟", price: 900, effectSummary: "所有建筑 ×1.5",
+    unlockHint: "", unlockProgress: 1, maxPurchases: 3,
+  };
+  const permanentRow = {
+    id: "p1", isVisible: true, isPermanent: true, isAvailable: true, isUnlocked: true,
+    isMaxed: false, canAfford: true, icon: "🍃", name: "永久的那条", owned: 0,
+    currencyIcon: "🍃", price: 4, description: "转生后仍在", unlockHint: "", unlockProgress: 1,
+    maxPurchases: 3,
+  };
+  const upgradeCard = (index) => el(focusApp, "upgrades").children[index];
+  const frame = (seq, overrides) => ({ kind: "full", seq, snapshot: snapshot(overrides) });
+
+  await focusApp.push(frame(1, { buildings: [], upgrades: [shopUpgrade, permanentRow] }));
+
+  check("首帧：焦点在 `<body>` 上（`document.activeElement` 的初值）——没人在操作控件", () => {
+    checkFocus(focusApp.doc.body, "首帧的活动元素");
+  });
+
+  // 玩家点了一下那一条升级：真浏览器会把它聚焦（这一步桩里只能由测试自己调 `focus()`）。
+  const card = upgradeCard(0);
+  card.focus();
+
+  await focusApp.push(frame(2, { buildings: [], upgrades: [{ ...shopUpgrade, owned: 1 }, permanentRow] }));
+
+  check("来了一帧（4 Hz 重画）之后：焦点还在**同一个节点**上，没有被重建掉", () => {
+    eq(card.dataset.upgrade, "u2", "卡片的稳定键");
+    checkFocus(card, "那一帧之后的活动元素");
+    eq(activeOf().dataset.upgrade, "u2", "还带着同一个键");
+    if (!upgradeCard(0).children.find((c) => c.classList.contains("price")).textContent.includes("900")) {
+      throw new Error("那一行没跟着新快照更新——复用写错了（只改结构不更新文字）");
+    }
+  });
+
+  // 买一下：按下 → 下一帧（服务端说 owned 1 → 2，那一行还在）。
+  const pressed = upgradeCard(0);
+  fire(pressed, "click");   // 真浏览器里这一下同时把焦点给了按钮
+  pressed.focus();
+  await focusApp.push(frame(3, { buildings: [], upgrades: [{ ...shopUpgrade, owned: 2 }, permanentRow] }));
+
+  check("买一下（按下 → 下一帧）：焦点**没有跑到另一个按钮上**，还在按过的那个上", () => {
+    checkFocus(pressed, "买完之后的活动元素");
+    eq(focusApp.commands.at(-1).type, "upgrade", "买那一下真的发出去了命令");
+  });
+
+  // 那一行整个走了（`isVisible: false`）：焦点**不许**掉回 `<body>`。
+  await focusApp.push(frame(4, { buildings: [], upgrades: [permanentRow] }));
+
+  check("那一行被买掉 / 不再可见：焦点落在那个列表容器上（`tabindex=\"-1\"`），不是 `<body>`", () => {
+    checkFocus(el(focusApp, "upgrades"), "键没了之后的活动元素");
+    if (activeOf() === focusApp.doc.body) throw new Error("焦点掉回 <body> 了——敲空格就会去撸猫");
+  });
+
+  // 永久线是每帧重建的（键还在 → 焦点跟着键走，允许换节点；见 renderPermanent 的注释）。
+  const permanentCard = () => el(focusApp, "permanent").children[0];
+  permanentCard().focus();
+  await focusApp.push(frame(5, { buildings: [], upgrades: [permanentRow] }));
+
+  check("每帧重建的那张列表（永久线）：焦点按**键**回到同一条上，不回 `<body>`", () => {
+    eq(activeOf().dataset.permanent, "p1", "活动元素那个键");
+  });
+
+  // 档位按钮只建一次：切档位之后还是同一个节点。
+  await focusApp.push(frame(6, { buildings: [], upgrades: [], modeName: "buy10" }));
+  const modeButton = el(focusApp, "batch").children[1];
+  eq(modeButton.dataset.batch, "buy10", "档位按钮的稳定键");
+  modeButton.focus();
+  await focusApp.push(frame(7, { buildings: [], upgrades: [], modeName: "buy100" }));
+
+  check("切档位：那四个按钮是**同一批节点**（只建一次），焦点留在同一个按钮上", () => {
+    if (el(focusApp, "batch").children[1] !== modeButton) {
+      throw new Error(`buy10 那个按钮被换掉了（节点不复用）：现在是 ${where(el(focusApp, "batch").children[1])}`);
+    }
+    checkFocus(modeButton, "切档之后的焦点");
+    eq(el(focusApp, "batch").children[2].className, "active", "高亮的换成了 buy100");
+  });
+
+  // 玩家没在操作控件时：一帧不许把焦点放到任何按钮上。
+  const blank = await loadApp(copyAs("app-focus-blank.mjs", appSource));
+  await blank.push({ kind: "full", seq: 1, snapshot: snapshot({ buildings: [], upgrades: [shopUpgrade], modeName: "buy10" }) });
+  await blank.push({ kind: "full", seq: 2, snapshot: snapshot({ buildings: [], upgrades: [shopUpgrade], modeName: "buy100" }) });
+
+  check("玩家本来就没在操作控件（焦点在 `<body>`）：一帧之后焦点**还在** `<body>` 上", () => {
+    if (blank.doc.activeElement !== blank.doc.body) {
+      throw new Error(`焦点被凭空放到另一个节点上了：${blank.doc.activeElement && blank.doc.activeElement.tagName}`);
+    }
+  });
+
+  check("那四个容器在真的标记里是**可程序化聚焦**的（`tabindex=\"-1\"`，桩件判不了这个）", () => {
+    for (const id of ["upgrades", "permanent", "batch", "buildings"]) {
+      const tag = new RegExp(`<div id="${id}"[^>]*>`).exec(html)?.[0] ?? "";
+      if (!tag) throw new Error(`index.html 里没有 #${id}`);
+      if (!/\btabindex="-1"/.test(tag)) {
+        throw new Error(`#${id} 上没有 tabindex="-1"——捕不到焦点的容器在真浏览器里 focus() 是空操作：<${tag}>`);
+      }
     }
   });
 }

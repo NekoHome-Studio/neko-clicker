@@ -292,6 +292,14 @@ kbd {
   font-family: ui-monospace, Consolas, monospace;
 }
 
+/* 大猫上那两处标签是**同一句话的两半**（点击动作名 + 「空格」），字号必须同源：
+   `kbd` 的 .75rem 是"键帽比周围小一号"的通用规格，可它在这里紧挨着 `.big-cat .hint`
+   的 .85rem，于是并排的两个标签差了一档（人 2026-10-05 报：「翻找」与「空格」字号差很多）。
+   键帽的观感（底色 / 边框 / 内边距）一个字没动，只有字号与字体族跟着那一行走。
+   字体族也一起继承：`ui-monospace, Consolas, monospace` 里**没有一个含汉字的字体**，
+   「空格」这两个字一定落到系统兜底字体上——那条家族声明对它只等于"多一个变量"。（§30 守着这条。） */
+.big-cat .hint kbd { font-size: inherit; font-family: inherit; }
+
 .buffs { display: flex; flex-wrap: wrap; gap: .4rem; justify-content: center; }
 
 .chip {
@@ -488,12 +496,19 @@ kbd {
 .card .share { grid-area: share; font-size: .75rem; color: var(--dim); font-variant-numeric: tabular-nums; }
 .card .effect { grid-area: share; font-size: .75rem; color: #a9a3c4; }
 
+/* 「再买 N 个解锁「X」」：自己的元素、自己的行（`grid-column: 1 / -1` 自动落到第 3 行）。
+   不给它 `grid-area: share`——那会与上面那一行**同格重叠**，两句话叠在一起。
+   §21 的界线也在这一条上：里程碑是高亮的那一句，不许并进纪元阶段那一行。 */
+.card .milestone { grid-column: 1 / -1; font-size: .75rem; color: var(--dim); }
+
 /* 一个折不断的 token（长英文名、连写的 id、没有空格的数字串）不许把卡片顶出面板：
    `overflow-wrap: anywhere` 让它就地折行（它同时把 min-content 压到一个字符），
    `min-width: 0` 再去掉网格项默认的 `min-width: auto`（那等于 min-content，会把这个
    卡片所在的 1fr 轨道撑开）。内容今天最长的名字是 12 个汉字（Company 的
-   `roadshow_hall_tier1`），所以这两条是形状守卫而不是活路径。 */
-.card .name, .card .price, .card .share, .card .effect {
+   `roadshow_hall_tier1`），所以这两条是形状守卫而不是活路径。
+   `.milestone` 在这张名单里是**承重的**（不只是形状）：它装的是作者写的升级名，
+   长度不受我们控制（`个解锁「…」` 可以很长），折不断就会把卡片顶宽。 */
+.card .name, .card .price, .card .share, .card .effect, .card .milestone {
   min-width: 0;
   overflow-wrap: anywhere;
 }
