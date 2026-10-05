@@ -123,7 +123,7 @@
 engine/            自包含：搬走它 + 仓库根的 Directory.Build.props = 独立引擎仓库
   core/            引擎本体（平台中立，可在 Linux/macOS 直接构建）
   content/<包名>/  十一个内容包，一个包一个 csproj
-  engine/tests/    586 个用例 + 自研迷你运行器
+  engine/tests/    590 个用例 + 自研迷你运行器
   docs/            架构 / 内容作者指南 / 版本承诺 / 发布流程（RELEASING）
 games/             旗舰示例作品。依赖 engine/，反向不依赖
   hosts/Demo.Cli/  终端前端，同时是框架回归基线（FrameRenderTests 引用它）
@@ -153,7 +153,7 @@ start.cmd list               # 列出全部内容包
 走脚本的话：
 
 ```powershell
-.\tools\build.ps1 -Strict    # 一条命令：引擎 + 内容 + 586 用例 + Web 宿主 + 前端冒烟（0 警告）
+.\tools\build.ps1 -Strict    # 一条命令：引擎 + 内容 + 590 用例 + Web 宿主 + 前端冒烟（0 警告）
 .\tools\play.ps1             # 终端 Demo；--package <id> 换包
 .\tools\play.ps1 --package lab --simulate 21600 --auto   # 无头跑图 + 数值报告
 .\tools\web.ps1 run          # Web 前端（开发期必须 dotnet run 起，见 §7）

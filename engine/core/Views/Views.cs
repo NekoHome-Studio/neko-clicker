@@ -380,6 +380,16 @@ public sealed record LoreView
     /// <summary>投放通道。</summary>
     public LoreChannel Channel { get; init; }
 
+    /// <summary>
+    /// 投放通道的<b>线上 token</b>（<c>log</c> / <c>popup</c> / <c>codex</c> / <c>eraText</c> /
+    /// <c>note</c>）。<para>
+    /// 与 <see cref="GameSnapshot.ModeName"/> 同一条理由：<b>前端不该解释枚举序数</b>，
+    /// 所以服务端把名字给它。界面据此决定这一条用哪张皮——纸条（<c>note</c>）用"捡到的纸"
+    /// 的样子，其余用普通窗口 / 图鉴那一栏。
+    /// </para>
+    /// </summary>
+    public string ChannelName { get; init; } = string.Empty;
+
     /// <summary>释放条件描述。</summary>
     public string RevealHint { get; init; } = string.Empty;
 

@@ -1117,6 +1117,47 @@ footer code { background: #00000055; padding: .05rem .3rem; border-radius: 4px; 
   .sheet { animation: none; }
 }
 
+/* ---------------------------------------------------------------- 纸条（sheet-note）
+   第四张 sheet 的**换皮**：机械整段复用上面那一套（layer / 卡片 / 标题行 / 关闭 / 主按钮 /
+   入场动画 / Esc / 点遮罩），这一节只改观感——因为纸条是"别人留下的东西"，
+   而剧情弹窗是"游戏在跟你说话"。**没有第二套弹窗：这里一行开合逻辑都没有。**
+
+   为什么是这组颜色：页面底色是深紫（--bg #12111a），而纸条是一张**纸**——
+   它在深色画面上"亮起来"本身就是"这是一件被捡到的东西"这条信息。取的是页面上已有的暖色
+   （--gold #ffd479 那一族往回压到米色），没有引入新色相。
+   对比度（压在纸色底上）：墨 #2b2419 / 纸 #e6d9bb ≈ 11.9:1、标题 #6b4f22 / 纸 #f3e9d2 ≈ 6.9:1、
+   次要文字 #6b5c42 ≈ 5.8:1——三个都高于 4.5:1。 */
+.sheet-layer.sheet-note .sheet {
+  /* 比卡片窄：纸条不是对话框，它是一张纸，两行字就写满了。 */
+  width: min(22rem, 100%);
+  background: linear-gradient(180deg, #f3e9d2, #e6d9bb);
+  border-color: #b9a480;
+  color: #2b2419;
+}
+
+/* 纸上的字：衬线 + 宽松行距。这一段**刻意不像界面**（界面是无衬线 + 紧凑行距）。 */
+.sheet-note .note-body {
+  margin: 0 0 .5rem;
+  font-family: Georgia, "Songti SC", SimSun, serif;
+  font-size: .95rem;
+  line-height: 1.75;
+  color: #2b2419;
+  /* 纸条的正文里有换行（清单、落款），必须原样留住：pre-wrap 保留空白**并且**照常折行
+     （pre 会顶出横向滚动条，而这张纸上写的是中文长句）。 */
+  white-space: pre-wrap;
+}
+
+/* 标题行是吸顶的，而 .sheet-head 的底色取的是深色卡片渐变的第一个色标——
+   换皮时必须一起换，否则纸色卡片顶上会横着一条深紫。 */
+.sheet-note .sheet-head { background: #f3e9d2; }
+.sheet-note .sheet h2 { color: #6b4f22; }
+.sheet-note .sheet-close { color: #6b4f22; border-color: #c9b48f; }
+.sheet-note .sheet-close:hover { color: #2b2419; border-color: #8a6f3d; }
+.sheet-note .sheet-ok { background: #d9bd83; border-color: #8a6f3d; color: #2b2419; }
+.sheet-note .sheet-ok:hover { background: #e6cf9d; }
+/* .sheet p.muted 那个灰是给深色底配的，压在纸上太浅。 */
+.sheet-note .sheet p.muted { color: #6b5c42; }
+
 /* ---------------------------------------------------------------- 存档的导出 / 导入窗口
    它是第三张 sheet，形态整段复用 `.sheet` 那一套（见 index.html 的注释）——
    这里只加它自己那三个零件：宽一点的容器、多行文本框、两个按钮并排。

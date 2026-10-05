@@ -46,6 +46,10 @@ public static class ApocalypseContent
             .WithPrestigeCurrency("火种", "🔥")
             .WithBalance(BuildBalance())
             .Add(new ShardsModule())
+            // 纸条线（note_cat）引用的是**引擎**的金猫出现计数器，所以它的显示名要在这里登记：
+            // 没登记的话解锁提示会写成「「goldenCookieSerial」达到 1」，
+            // 而 ContentTests.CounterNames_AreRegisteredForEveryReferencedCounter 会直接红。
+            .AddCounterName(GoldenCookieSystem.SerialCounterKey, "金猫来过")
             .AddBuildings(Buildings.All)
             .AddUpgrades(Upgrades.All)
             .AddAchievements(Achievements.All)

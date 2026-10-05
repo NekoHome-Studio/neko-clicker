@@ -13,6 +13,16 @@ namespace NekoClicker.Core;
 /// </summary>
 public static class GoldenCookieSystem
 {
+    /// <summary>
+    /// 金猫累计出现次数的计数器键（每刷出一只 +1，已进存档）。<para>
+    /// 它是"这个机制到底发生过没有"的<b>唯一</b>可判定信号：`GoldenCookieIntroduced` 只是一个
+    /// 布尔（第一次刷出后就恒为真），而"错过"这件事引擎根本不记。所以内容想写
+    /// "第一次真的有金猫出现"这类门槛时，用的是这个计数器
+    /// （见 <c>engine/docs/FOUND_NOTES_PLAN.md</c> §5.4）。
+    /// </para>
+    /// </summary>
+    public const string SerialCounterKey = "goldenCookieSerial";
+
     /// <summary>把倒计时重置为一个新的随机间隔。</summary>
     public static void ResetSchedule(GameEngine engine)
     {
@@ -67,8 +77,8 @@ public static class GoldenCookieSystem
     {
         GameState state = engine.State;
 
-        long serial = (long)state.GetCounter("goldenCookieSerial") + 1;
-        state.Counters["goldenCookieSerial"] = serial;
+        long serial = (long)state.GetCounter(SerialCounterKey) + 1;
+        state.Counters[SerialCounterKey] = serial;
 
         double lifetime = balanceLifetime(engine);
 

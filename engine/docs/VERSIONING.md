@@ -5,7 +5,18 @@
 > 一句话版本：**从 1.0.0 起，公开 API 只增不改。** 删改任何公开成员都必须升主版本号，
 > 而且这条规矩不是靠自觉——有测试守着。
 >
-> 当前版本 **1.10.2**：**patch——公开 API 一行没动**（依据下面 §2 那张表）。
+> 当前版本 **1.11.0**：**minor——公开 API 只增不改**（依据下面 §2 那张表）。
+> 新增 `LoreChannel.Note`（"玩家捡到的一张纸条"这种投放通道）、`LoreView.ChannelName`
+> （通道的线上 token，与 `GameSnapshot.ModeName` 同一个理由：**前端不该解释枚举序数**）、
+> `LoreChannelNames.WireName()`，以及把金猫出现计数的键从字面量提升成公开常量
+> `GoldenCookieSystem.SerialCounterKey`。
+> **存档格式一个字都没改**：纸条与剧情弹窗共用同一条待读队列（`PendingLorePopups`）与同一份
+> "已看过"记录（`LoreUnlocked`），两者在 v1 存档格式里早就有——`SaveSerializer.CurrentVersion`
+> 仍是 `1`、没有新增任何 `ISaveMigration`，所以 §6 第 3 条在那次改动里没有被动过
+> （D5 / W9 两条欠账原样留着）。
+> 细节见 [CHANGELOG](../../CHANGELOG.md) 的 1.11.0、[FOUND_NOTES_PLAN](FOUND_NOTES_PLAN.md)。
+>
+> 上一版 **1.10.2**：**patch——公开 API 一行没动**（依据下面 §2 那张表）。
 > 这一版把 `[未发布]` 桶结掉了，内容全在**前端 / 测试 / 工具链 / 文档**里：
 > 三轮界面改动、三条新守卫（用例数漂移、`cpsEach` 的值、横扫全部包的「拥有 ⇒ 已解锁」）、
 > 五处机械项（端到端探针收尾分层、打包产物自检进脚本、NuGet 元数据、文档计数与一次逐句复核）、
@@ -252,7 +263,7 @@ git tag -a v1.0.0 -m "NekoClicker.Core 1.0.0"
 > [RELEASING](RELEASING.md)。下面是判据清单。
 
 - [ ] `pwsh -File tools/build.ps1 -Strict` 退出码 0，0 警告
-- [ ] 全部用例通过（当前 **586** 个；2026-10-05 实测——这个数现在由 `TestCountDriftTests` 守着：加了用例却没改这一行，闸门会点名报红，见 OPEN_WORK 的 W1）
+- [ ] 全部用例通过（当前 **590** 个；2026-10-05 实测——这个数现在由 `TestCountDriftTests` 守着：加了用例却没改这一行，闸门会点名报红，见 OPEN_WORK 的 W1）
 - [ ] 若这次动了 Web 宿主：`pwsh -File tools/api-test.ps1` 全部端到端检查通过（当前 85 项；脚本收尾自己核对"源码几处检查点 / 这次执行到几处"）
 - [ ] 若这次动了 Web 前端：`node tools/web-smoke.mjs` 全绿（当前 **208** 条；S1 起它也在 `-Strict` 里跑）
 - [ ] `Directory.Build.props` 的 `Version` / `AssemblyVersion` / `FileVersion` 三处一致
