@@ -84,7 +84,7 @@
 > 代价是画面右侧与底部各有一格空白——这是换「拖横向不崩」付出的代价。
 
 ```powershell
-# 构建 + 跑测试（564 个用例，零依赖迷你运行器）
+# 构建 + 跑测试（571 个用例，零依赖迷你运行器）
 .\tools\build.ps1
 
 # 逐条计时：打印最慢的一批与分档占比（想知道"什么变慢了"就用它）
@@ -192,7 +192,7 @@ engine/content/Cyber/   内容包 #5《赛博猫娘》（五层数字层，迁�
 engine/content/Dream/   内容包 #8《猫娘梦境》（五层梦，越睡越浓的梦境能量）
 games/hosts/Demo.Cli/        终端 UI 适配层（ANSI 全屏 + 键盘 + 无头模式 + --package）
 games/hosts/Web/         Web 前端宿主（本地 HTTP + wwwroot，浏览器里可玩）
-engine/tests/    564 个测试 + 自研迷你测试运行器（含架构不变量与全程可达测试）
+engine/tests/    571 个测试 + 自研迷你测试运行器（含架构不变量与全程可达测试）
 engine/docs/ARCHITECTURE.md             架构与设计决策
 engine/docs/CONTENT_AUTHORING.md        如何写内容（数值节奏、校验规则、常见坑）
 engine/docs/VERSIONING.md               版本与兼容性承诺：什么改动升哪一位、公开 API 快照怎么用
@@ -423,13 +423,15 @@ Console.WriteLine(ApiVersion.AssemblyVersion);  // 1.10.1.0
 一条命令就是全仓库的验收：
 
 ```powershell
-.\tools\build.ps1 -Strict   # 引擎 + 内容 + 564 条用例 + Web 宿主 + 前端冒烟（0 警告）
+.\tools\build.ps1 -Strict   # 引擎 + 内容 + 571 条用例 + Web 宿主 + 前端冒烟（0 警告）
 .\tools\web.ps1   build -Strict   # 只编 Web 宿主时用它
 .\tools\api-test.ps1        # 再把宿主真起起来，打一遍端点（含 SSE 流）
 ```
 
-`tools/build.ps1` 与 `tools/api-test.ps1` 也是 CI 在远端跑的两条命令
-（`.github/workflows/ci.yml`）——前者守引擎与公开 API，后者守"宿主 + 浏览器协议"那一段。
+`tools/build.ps1` 与 `tools/api-test.ps1` 也是 CI 在远端跑的命令
+（`.github/workflows/ci.yml` 现在是**三个作业**：`build-and-test`（这条命令）、
+`web-smoke`（`node tools/web-smoke.mjs`）与 `end-to-end`（`tools/api-test.ps1`））
+——前者守引擎与公开 API，后者守"宿主 + 浏览器协议"那一段。
 
 ---
 
@@ -537,7 +539,9 @@ Console.WriteLine(ApiVersion.AssemblyVersion);  // 1.10.1.0
   ROADMAP 规划范围内的**十个内容包至此全部交付**，
   四个引擎能力里只有 S-A / S-B / S-C 动过核心（S-D 一行核心代码都没写）。
 
-**接下来做什么**：见 [STATUS.md 的 §8「下一步与交接」](STATUS.md)——工作树是 **1.10.1**
+**接下来做什么**：见 [OPEN_WORK 顶部的《下一步：唯一权威清单》](engine/docs/OPEN_WORK.md)
+（H / D / W 三张表——只有真人能做的、先要人拍一句话的、以及不需要人的机械项）。
+`STATUS.md` 的 §8 是**历史记录**，不再产生待办。工作树是 **1.10.1**
 （patch：导出/导入第一次有了两个宿主里的窗口（W13 / W14）+ 十一个包的「点击 × 建筑」桥
 + 两处宿主修复；**公开 API 一行没动**，快照除首行版本号外逐字节不变。
 上一版 1.10.0 是引擎侧那一半：信封 + 校验和 + 尺寸闸 + "坏输入绝不弄坏能用的存档"的
@@ -549,8 +553,8 @@ Console.WriteLine(ApiVersion.AssemblyVersion);  // 1.10.1.0
 `UpgradeCategories` + `GameContent.UpgradesForBuilding` + `BuildingView.UpgradeIds`；
 1.7.0 是那条线之外的纯新增 `GameSnapshot.ModeName`。
 结局的落定条件那三次改动（定时 → 被展示过 → **被答完**）各配了一次 minor 升版与快照再生成），
-**这一版的发布走到打 tag 为止**：
-打包产物与两个 exe 实跑都验过（原文见 [RELEASING](engine/docs/RELEASING.md) §6），
-**推送与看 CI 还没做**（提交与 tag 一起推）；再往后是二周目界面（要先定语义）
-与 `PackageId` 打包元数据。1.2.1 / 1.3.0 / 1.4.0 是怎么发的（含发布流程与实际执行记录）
+**这一版已经发完**：打包产物与两个 exe 实跑都验过（原文见 [RELEASING](engine/docs/RELEASING.md) §6），
+提交与 tag 都已推送，CI 两个作业 success（2026-10-05 复核，详见 `STATUS.md` §1 末尾）；
+再往后是二周目界面（要先定语义）——`PackageId` 那件打包元数据 **2026-10-05 已经补上了**（登记册 W5）。
+1.2.1 / 1.3.0 / 1.4.0 是怎么发的（含发布流程与实际执行记录）
 见 [engine/docs/RELEASING.md](engine/docs/RELEASING.md)。

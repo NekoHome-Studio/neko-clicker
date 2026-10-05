@@ -284,6 +284,90 @@ public static class ViewTests
         Console.WriteLine($"      带永久升级线的包：{packsWithPermanentLine} / {TestGame.AllContentPacks().Length}");
     }
 
+    /// <summary>
+    /// 横扫十一个包：建筑的「单个产速」（<see cref="BuildingView.CpsEach"/>）必须有值，
+    /// 且**两种持有状态各守一条**。<para>
+    /// 这条字段此前**一条断言都没有**（登记册 **W12**）：全仓库对它的引用只有定义、赋值与终端渲染三处，
+    /// 于是「未持有 ⇒ 恒为 0」这件事**没有任何东西会发现**——它不是有人决定的，是没人看过。
+    /// 按本仓库的既有教训（<see cref="UpgradeRows_ReportTheRightWalletForEveryPack"/>），
+    /// 这类字段的守卫要**横扫全部包**：单包逐项会漏掉别的包。
+    /// </para>
+    /// <para>
+    /// <b>要改这条用例之前先读这里</b>：登记册 **D11** 想动的正是"未持有时的语义"（今天是 0，
+    /// 目的是让玩家"买之前也看得见"）。那一天到来时，下面第 ① 条断言会红——那是**故意**的：
+    /// 语义变了就该有人来改这条线，而不是让它悄悄变。
+    /// </para>
+    /// </summary>
+    [Test]
+    public static void BuildingRows_ReportTheUnitRateForEveryPack()
+    {
+        int ownedRows = 0;
+        int unownedRows = 0;
+        int packsWithOwnedRows = 0;
+
+        foreach ((string name, GameContent content) in TestGame.AllContentPacks())
+        {
+            // ① 未持有：全新的局里，每一行的单个产速都必须是 0（今天的事实，见上面的 D11 说明）。
+            GameSnapshot fresh = TestGame.Create(content).Snapshot();
+            foreach (BuildingView row in fresh.Buildings)
+            {
+                Check.Equal(0, row.Owned, $"{name}：全新的局里「{row.Name}」居然是已持有的。");
+                Check.Equal(0.0, row.CpsEach, $"{name}：未持有的「{row.Name}」单个产速不是 0。");
+                unownedRows++;
+            }
+
+            // ② 已持有：**故意留下最后一座不买**，"已持有"这一支才真的被走到。
+            //    持有数直接用 GameState.BuildingCounts 置数（存档结构是公开的纯数据，
+            //    同 ClickBridgeTests.FundedEngine 的做法）——这条守卫守的是视图契约，不是购买流程，
+            //    没必要为了它真的模拟几小时（整套用例的墙钟时间是被人在意的，见 STRUCTURE_OPTIMIZATION §W4）。
+            GameEngine engine = TestGame.Create(content);
+            engine.State.Cookies = 1e18;
+            engine.State.CookiesEarnedThisRun = 1e18;
+            engine.State.CookiesEarnedAllTime = 1e18;
+            for (int i = 0; i < content.Buildings.Count - 1; i++)
+            {
+                engine.State.BuildingCounts[content.Buildings[i].Id] = i + 1;
+            }
+            engine.MarkDirty();
+
+            int ownedInPack = 0;
+            GameSnapshot snapshot = engine.Snapshot();
+            foreach (BuildingView row in snapshot.Buildings)
+            {
+                if (row.Owned <= 0) continue;
+
+                ownedInPack++;
+                Check.Greater(
+                    row.CpsEach,
+                    0,
+                    $"{name}：拥有 {row.Owned} 座「{row.Name}」，单个产速却是 {row.CpsEach}"
+                    + "——界面上会写出一句「单个 0/s」的假话。");
+                Check.CloseRelative(
+                    row.CpsEach * row.Owned,
+                    row.CpsContribution,
+                    1e-9,
+                    $"{name}：「{row.Name}」的单个产速 × 持有数 ≠ 它的总产量"
+                    + $"（{row.CpsEach} × {row.Owned} vs {row.CpsContribution}）。");
+            }
+
+            if (ownedInPack > 0) { packsWithOwnedRows++; ownedRows += ownedInPack; }
+
+            Check.Equal(
+                snapshot.Buildings.Count - 1,
+                ownedInPack,
+                $"{name}：给 {snapshot.Buildings.Count - 1} 座建筑置了持有数，"
+                + $"快照里却只有 {ownedInPack} 座是已持有的。");
+        }
+
+        // ③ 覆盖面：两边都要真的扫到过，否则这是一条空转的横扫（同 UpgradeRows_ReportTheRightWalletForEveryPack 结尾那句）。
+        Check.AtLeast(packsWithOwnedRows, 1, "一个「有建筑」的包都没有——这条横扫是空的。");
+        Check.AtLeast(ownedRows, 1, "一行「已持有」都没扫到。");
+        Check.AtLeast(unownedRows, 1, "一行「未持有」都没扫到。");
+        Console.WriteLine(
+            $"      cpsEach：已持有 {ownedRows} 行 / 未持有 {unownedRows} 行，"
+            + $"{packsWithOwnedRows} / {TestGame.AllContentPacks().Length} 个包有已持有行。");
+    }
+
     [Test]
     public static void PurchaseModeHelpers_BehaveConsistently()
     {

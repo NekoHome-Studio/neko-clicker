@@ -1,7 +1,7 @@
 # 现状
 
-> 记录时间：**2026-10-02**（版本行 / 整合补记 **2026-10-03**；**1.10.1 发布补记 2026-10-04**）｜ 分支 `main` ｜ 工作树版本 **1.10.1**
-> （tag `v1.10.1` 已在本地打好，**未推送**；已发布的最后一个 tag 仍是 `v1.4.0`）
+> 记录时间：**2026-10-02**（版本行 / 整合补记 **2026-10-03**；**1.10.1 发布 2026-10-04**，推送与 CI 复核 **2026-10-05**）｜ 分支 `main` ｜ 工作树版本 **1.10.1**
+> （tag `v1.10.1` **已推送**——它现在就是已发布的最新版；`v1.5.0`…`v1.10.0` 也在远端，见本节末尾）
 >
 > 这份文档只回答一个问题：**现在是什么状况**。它不重复别处已有的内容——
 > 架构看 [ARCHITECTURE](engine/docs/ARCHITECTURE.md)，规划与决策看 [ROADMAP](games/docs/ROADMAP.md)，
@@ -16,8 +16,9 @@
 
 | 分支 / tag | 内容 | 状态 |
 |---|---|---|
-| `main` | **唯一的开发线** | 工作树 = **1.10.1**（tag `v1.10.1` 已在本地打好，**未推送**） |
-| `v1.4.0` | 1.3.0 + 升级行的货币语义（`UpgradeView` 三字段）+ Web 的「永久」面板 | 已发布（tag 已推送）——**已发布的最新版** |
+| `main` | **唯一的开发线** | 工作树 = **1.10.1**（tag `v1.10.1` **已推送**，见本节末尾） |
+| `v1.10.1` | 1.10.0 + 结掉 `[未发布]` 桶（导出/导入的两个宿主窗口、十一个包的「点击 × 建筑」桥、两条宿主修复、一条工具链守卫） | 已发布（tag 已推送）——**已发布的最新版** |
+| `v1.4.0` | 1.3.0 + 升级行的货币语义（`UpgradeView` 三字段）+ Web 的「永久」面板 | 已发布（tag 已推送） |
 | `v1.3.0` | 1.2.1 + 离线收益进快照（`GameSnapshot.Offline`）+ Web 弹窗 + 打包产物内容根修复 | 已发布 |
 | `v1.2.1` | 1.2.0 + 421 条散文铺满十个包 + `ContentText` 并发修复 | 已发布 |
 | `v1.2.0` | 1.1.0 + Web 前端 + 两层重构 + 剧情外部化试点 | 已发布（已知含一个并发缺陷） |
@@ -39,8 +40,9 @@
 都实跑验过（原文见 [RELEASING](engine/docs/RELEASING.md) §6、[CHANGELOG](CHANGELOG.md) 的 1.10.1）。
 **D8 也由真人拍定**：`v1.5.0`…`v1.10.0` 已在本地补打 tag（**未推送**），tag 身份沿用仓库配置
 `NekoHome Studio <dev@nekohome.studio>`。
-**未推送**——推提交与 tag、看 CI 两个作业是下一轮的第一件事；要精确到当前提交，用 `git log -1`
-（本文不写 HEAD，见上）。
+**已推送（2026-10-05 复核）**——`main` = `c467baf` = `origin/main`，tag `v1.5.0`…`v1.10.1` **都在远端**，
+最近一次 CI（[run #37](https://github.com/NekoHome-Studio/neko-clicker/actions/runs/37208489336)，`c467baf`）
+两个作业 success；要精确到当前提交，用 `git log -1`（本文不写 HEAD，见上）。
 
 **`1.9.0`（已并入 `main`；下面这段只作历史）**：**minor**——公开 API **只增不改**：
 新增 `EraStage` / `EraStageGate` 两个类型、`EraDefinition.Stages`、
@@ -119,7 +121,7 @@
 engine/            自包含：搬走它 + 仓库根的 Directory.Build.props = 独立引擎仓库
   core/            引擎本体（平台中立，可在 Linux/macOS 直接构建）
   content/<包名>/  十一个内容包，一个包一个 csproj
-  engine/tests/    564 个用例 + 自研迷你运行器
+  engine/tests/    571 个用例 + 自研迷你运行器
   docs/            架构 / 内容作者指南 / 版本承诺 / 发布流程（RELEASING）
 games/             旗舰示例作品。依赖 engine/，反向不依赖
   hosts/Demo.Cli/  终端前端，同时是框架回归基线（FrameRenderTests 引用它）
@@ -128,7 +130,7 @@ games/             旗舰示例作品。依赖 engine/，反向不依赖
 README.md          刻意留在仓库根
 CHANGELOG.md       刻意留在仓库根（VersionTests 的两个守卫直接读这两个文件）
 tools/             全部 ps1 工具（含 api-test.ps1：端到端起真宿主打端点）
-.github/workflows/ci.yml  CI：两条命令 = 引擎验收 + 端到端
+.github/workflows/ci.yml  CI：三个作业 = 引擎验收 + 前端冒烟 + 端到端
 ```
 
 **内容包为什么在 `engine/` 而不在 `games/`**：它们是引擎的集成测试探针——
@@ -149,7 +151,7 @@ start.cmd list               # 列出全部内容包
 走脚本的话：
 
 ```powershell
-.\tools\build.ps1 -Strict    # 一条命令：引擎 + 内容 + 564 用例 + Web 宿主 + 前端冒烟（0 警告）
+.\tools\build.ps1 -Strict    # 一条命令：引擎 + 内容 + 571 用例 + Web 宿主 + 前端冒烟（0 警告）
 .\tools\play.ps1             # 终端 Demo；--package <id> 换包
 .\tools\play.ps1 --package lab --simulate 21600 --auto   # 无头跑图 + 数值报告
 .\tools\web.ps1 run          # Web 前端（开发期必须 dotnet run 起，见 §7）
@@ -177,7 +179,9 @@ start.cmd list               # 列出全部内容包
 代码里只剩条件、序号、频道与条数——改一个错字不用重编，丢一条 / 多一条 / id 对不上
 都会在启动时当场抛。**同一份 `text.json` 现在还住着建筑的 `name` / `description` / `icon`
 （十一个包、104 座）与纪元的六个字段（九个包、49 层，根节 `eras`）**；
-示例包「猫咖物语」没有图鉴与纪元，它的 `text.json` 只有 `buildings` 一个分区。
+示例包「猫咖物语」没有图鉴与纪元，它的 `text.json` 有**五个分区**
+（`buildings` / `achievements` / `buffs` / `upgrades` / `goldenCookies`——后三类是 1.2.1 之后的
+文案外置轮次加进来的；这句此前写的是"只有 `buildings` 一个分区"，2026-10-05 复核时改正）。
 搬迁的保真判据都是"迁移前后各把运行期文字 dump 一次、逐字节比对"：
 图鉴 **176,708 字节**、建筑 **13,567 字节**、纪元 **45,621 字节**、建筑图标 **7,895 字节**。
 完整过程见 [TEXT_AS_DATA_PLAN](engine/docs/TEXT_AS_DATA_PLAN.md) §8 / §9 / §10；
@@ -275,7 +279,7 @@ Web 宿主不在 `NekoClicker.sln` 里（它是独立的单项目 sln），但 `
 | **离线收益弹窗** | **已交付**（2026-10-02：`GameSnapshot.Offline` + Web 播报卡 + `dismissOffline` 命令，端到端加了 13 项检查） | 先做能玩的最小闭环 |
 | **通知日志** | **已渲染**（2026-10-01：第六个面板「日志」，端到端加了 4 条检查）。**未读游标仍未做**——那要新增状态 + 公开字段，见 §8.4 | 先做能玩的最小闭环 |
 | **`npm` 工具链** | 不用 | 保持"clone 下来只要有 dotnet 就能跑" |
-| **`PackageId` / `IsPackable`** | 没有 | 引擎目前没有 NuGet 分发形态；补它是纯元数据改动，随时可做 |
+| **`PackageId` / `IsPackable`** | **已补**（2026-10-05，登记册 **W5**）：`PackageId` / `IsPackable` / `Authors` 三样进了 `NekoClicker.Core.csproj`，并实测过"无网也能 `dotnet pack`"（离线产出 `NekoClicker.Core.1.10.1.nupkg`）。**留白**：包里还没有 readme，`dotnet pack` 会为此打一条建议级警告 | 引擎的 NuGet 分发形态由此成立——它此前只是"随时可做" |
 | **多玩家 / 分槽位存档** | 一个包一个槽位 | 现在只监听回环地址、单机单人 |
 | **美术与音效** | emoji + CSS | ROADMAP 的 non-goal |
 
@@ -299,8 +303,9 @@ Web 宿主不在 `NekoClicker.sln` 里（它是独立的单项目 sln），但 `
   **fixture 要拿真宿主抓的快照去改**（只改"玩法状态"这类假数据），手写的 fixture 会漏掉
   服务端算好的派生字段（`isUnlocked` / `isMaxed` / `isAvailable`），角标与配色会跟着假。
   **但它仍然只是"我看过"，不是守卫。**
-- **CI 只跑在 Windows 上**：`.github/workflows/ci.yml` 是两个 `windows-latest` 作业。没有加
-  Linux 作业——`engine/core/` 平台中立这条主张仍然只由"全仓库只有两处平台相关代码"这个
+- **CI 只跑在 Windows 上**：`.github/workflows/ci.yml` 是**三个** `windows-latest` 作业
+  （`build-and-test` / `web-smoke` / `end-to-end`；这句此前写"两个"，2026-10-05 复核时改正）。
+  没有加 Linux 作业——`engine/core/` 平台中立这条主张仍然只由"全仓库只有两处平台相关代码"这个
   事实支撑，没有一个远端作业在守着它（想守就得先确认 Demo 与测试项目在 Linux 上也能编）。
 - **CI 的远端表现（2026-10-01 补记）**：截至 `3574762` 的**六次运行全绿**——
   `c84c478`（workflow 首跑）、`4bb2690`、`67a1f22`（1.2.1 发布）、`5cf5f9c`（文档回填）、
@@ -396,12 +401,12 @@ Web 宿主不在 `NekoClicker.sln` 里（它是独立的单项目 sln），但 `
 
 ## 8. 下一步与交接（给下一个接手的人）
 
-> **停在哪里**：**1.4.0 已发布**——tag `v1.4.0`（打在 `b418fbd`）与 `main` 都在远端，
-> CI [#11](https://github.com/NekoHome-Studio/neko-clicker/actions/runs/36983736167) 两个作业 success，
-> 工作树干净。本机验收：`build.ps1 -Strict` **441 全绿 0 警告**、`api-test.ps1` **44 项全过**、
-> 打包产物自检通过。
-> **"已经就位、只差执行"的事没有了**：往下的每一项都要先定一件事（见 §8.4）——
-> 二周目的玩法语义、未读游标要不要做，都得先有一句答复才该开工。
+> **停在哪里（2026-10-05 复核）**：工作树 = **1.10.1**，`main` = `origin/main`（已推），
+> tag 到 `v1.10.1`，最近一次 CI 两个作业 success，工作树干净。
+> **待办只有一个出处**：[OPEN_WORK](engine/docs/OPEN_WORK.md) 顶部的《下一步：唯一权威清单》
+> （H / D / W 三张表）——本节以及 §8.1~§8.7 是**历史记录**，不再产生待办。
+> 这一段此前写的是"1.4.0 已发布 / 已经就位、只差执行的事没有了"，那是 2026-10-02 的事实，
+> 早就过期了；改它是因为这正是本文档 §7 第 1 条与 W15 说过的那类"现在时版本行"。
 > 想知道"现在到底什么状况"，跑 §4 那三条命令——这份文档刻意不写 HEAD，别再让它跟着提交跑。
 
 ### 8.1 ✅ 已交付：1.4.0 发布（2026-10-02）
@@ -451,12 +456,19 @@ Web 宿主不在 `NekoClicker.sln` 里（它是独立的单项目 sln），但 `
 
 ### 8.5 补 `PackageId` / `IsPackable`
 
+> **2026-10-05 已做**（登记册 **W5**）：两个属性加上 `Authors` 都进了 `csproj`，
+> 并实测过"无网也能 `dotnet pack`"。下面这一段是当时的待办原文，保留作历史。
+
 纯元数据、不动公开 API——`engine/core/NekoClicker.Core.csproj` 现在只有 `Description`。
 两条注意：① 版本号来自 `Directory.Build.props`，打包会自动跟上，**不要再写一份**；
 ② 本机零第三方依赖，`dotnet pack` 应该能离线跑，但"没有网络也能 pack"这条**最好实测一次**
 再写进文档——这个仓库的既有教训是：没实测过的环境结论迟早会变成错的。
 
 ### 8.6 可选（都不是必须，但都是"已知没人守"的地方）
+
+> **2026-10-05 进展**：第一条（打包自检收进 `tools/pack.ps1`）**已做**（登记册 **W6**，
+> 默认执行、`-SkipSelfCheck` 可跳过）；第二条（CI 的 Linux 作业）与第三条（观感）仍然开着，
+> 见 `OPEN_WORK` 的 W7 与 H3。下面三段保留作历史。
 
 - **把打包自检收进 `tools/pack.ps1`**（1.3.0 的首页 404 就是这么逮到的，但那次是手工的）：
   解包 → 在包根目录起发布产物 → 断言 `/`、`/app.js`、`/api/ping` 与快照里的新字段。

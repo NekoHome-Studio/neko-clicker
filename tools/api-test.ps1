@@ -9,7 +9,7 @@
 #     · 增量推送的派生字段没处理干净 → 每帧 28KB，而"变化字段数 ≤ 4"的用例照样绿。
 #   所以这一层的判据只能是**真的通**：起宿主、发请求、读 SSE 流、看着它回话。
 #
-# 与单元测试的分工：`tools/build.ps1 -Strict` 守引擎（564 个用例 + 公开 API 快照），
+# 与单元测试的分工：`tools/build.ps1 -Strict` 守引擎（571 个用例 + 公开 API 快照），
 # 本脚本守"宿主 + 浏览器协议"那一段。CI 里两条都跑（.github/workflows/ci.yml）。
 #
 # 五条刻意为之的行为（都不是默认就该有的，是踩出来的）：
@@ -17,8 +17,13 @@
 #      把玩家的进度当测试夹具。旧版探针就是这么干的（.tmp/api-probe），收进仓库时必须改掉。
 #   ② **强制清掉 NEKO_DEBUG_KEY 再起子进程**，于是"缺省门是关着的"这条断言在任何开发机上
 #      都成立，而不是"取决于跑的人 shell 里有没有那个变量"。
-#   ③ **收尾按端口反查进程**：`dotnet run` 会再起一个真正的宿主子进程，只杀 dotnet run 自己
-#      会留下还在监听的孤儿（本仓库踩过）。杀完还要确认端口真的松手。
+#   ③ **收尾先树杀、再按端口反查**：`dotnet run` 会再起一个真正的宿主子进程（apphost，
+#      neko-clicker-web.exe），只杀 dotnet run 自己会留下还在监听的孤儿（本仓库踩过）。
+#      所以对被记录的那个 PID 先走 `taskkill /F /T`（杀整棵树），失败再退回 `Stop-Process`。
+#      反查那一层分三层降级：`Get-NetTCPConnection` → `netstat -ano` → `Get-CimInstance`，
+#      **每层都能独立工作，且失败要说话**——受限沙箱里 `Get-CimInstance` 会直接抛
+#      （无法从客户端中访问 CIM 资源），旧写法被 `-ErrorAction SilentlyContinue` 吞掉之后，
+#      收尾整个退化成"什么都不做"，而脚本一声不吭。杀完还要确认端口真的松手。
 #   ④ **最后一段会再起一次宿主**（同一个存档目录）：离线补发只在读档那一刻发生，而"读档"
 #      没法在一次会话里伪造。所以那一段真的走一遍玩家的路——存档 → 把存档里的"上次保存时刻"
 #      改老 5 小时 → 重新起宿主——验"补发出现 → 没播报之前刷新不消失 → 收下之后消失"。
@@ -141,13 +146,123 @@ function Convert-FromJsonSafe([string]$Text) {
 }
 
 # ---------------------------------------------------------------- 宿主生命周期
+# 反查与收尾的**分层账本**：每一层试了什么、命中了没有、抛了什么，收尾时一次性说出来（见头部 ③）。
+# 为什么不再沿用 -ErrorAction SilentlyContinue：异常被吞掉之后，连"哪一层挂了"这条唯一有用的
+# 线索也一起没了——受限沙箱里 Get-CimInstance 会直接抛，收尾于是退化成**什么都不做**
+# （孤儿宿主继续占着端口，脚本一声不吭）。本仓库踩过。
+$script:LookupTrace = @()
+
+function Add-LookupTrace([string]$Layer, [bool]$Produced, [bool]$Threw, [string]$Detail) {
+    $script:LookupTrace += [pscustomobject]@{ Layer = $Layer; Produced = $Produced; Threw = $Threw; Detail = $Detail }
+}
+
+function Show-LookupTrace([object[]]$Trace, [switch]$FailuresOnly) {
+    foreach ($entry in @($Trace)) {
+        if ($FailuresOnly -and $entry.Produced) { continue }
+        $mark = if ($entry.Produced) { '命中' } elseif ($entry.Threw) { '抛出' } else { '空手' }
+        Write-Host "        反查[$mark] $($entry.Layer)：$($entry.Detail)" -ForegroundColor DarkYellow
+    }
+}
+
 function Get-TestProcess([int]$Port) {
     # 按**端口**反查，而不是只认启动时拿到的那个 PID：dotnet run 会再起一个子进程，
     # 真正的宿主是那个子进程（名字是 apphost 的 neko-clicker-web.exe）。
-    # 同时按进程名收窄，避免误伤命令行里恰好含同一串数字的无关进程。
+    #
+    # 三层依次降级，**每层都能单独工作、失败要说话**（见头部 ③）：
+    #   ① Get-NetTCPConnection：纯托管 cmdlet，不碰 CIM，受限环境里最可能活下来的一层；
+    #   ② netstat -ano：原生工具兜底。输出格式随系统语言变（表头会被翻译），所以判据只用两样
+    #      不随语言变的东西——行里有 LISTENING、以及 PID 恒在**最后一列**；
+    #   ③ Get-CimInstance：原来的写法，留着当兜底（不受限的机器上它最准：拿得到命令行，
+    #      还能按进程名收窄，避免误伤命令行里恰好含同一串数字的无关进程）。
+    $script:LookupTrace = @()
+    $pids = New-Object System.Collections.Generic.List[int]
     $pattern = ":$Port"
-    return @(Get-CimInstance Win32_Process -Filter "Name = 'dotnet.exe' OR Name = 'neko-clicker-web.exe'" -ErrorAction SilentlyContinue |
-        Where-Object { $_.CommandLine -and $_.CommandLine.Contains($pattern) })
+
+    try {
+        $owned = @(Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction Stop |
+            Select-Object -ExpandProperty OwningProcess -Unique)
+        foreach ($candidate in $owned) {
+            if ([int]$candidate -gt 0 -and -not $pids.Contains([int]$candidate)) { $pids.Add([int]$candidate) }
+        }
+        if ($pids.Count -gt 0) {
+            Add-LookupTrace 'Get-NetTCPConnection' $true $false "监听 $Port 的 PID $($pids -join '、')"
+        }
+        else {
+            Add-LookupTrace 'Get-NetTCPConnection' $false $false "没有连接在监听 $Port"
+        }
+    }
+    catch {
+        Add-LookupTrace 'Get-NetTCPConnection' $false $true $_.Exception.Message
+    }
+
+    if ($pids.Count -eq 0) {
+        try {
+            # 三条判据一起才对得上"这条连接真的是我们要找的那个端口"：只认 LISTENING 行、
+            # 本地地址那一列的端口等于目标端口、PID 取**最后一列**——缺了端口那一条，
+            # 这里会把本机所有监听者都当成嫌疑人。
+            $listening = @(& netstat -ano 2>$null | Where-Object { $_ -match 'LISTENING' })
+            foreach ($line in $listening) {
+                $cols = @([string]$line -split '\s+' | Where-Object { $_ -ne '' })
+                if ($cols.Count -lt 4) { continue }
+
+                # 本地地址形如 127.0.0.1:5400 / [::]:5400 / 0.0.0.0:5400——端口在**最后一个**冒号之后。
+                $local = [string]$cols[1]
+                $colon = $local.LastIndexOf(':')
+                if ($colon -lt 0) { continue }
+                $localPort = 0
+                if (-not [int]::TryParse($local.Substring($colon + 1), [ref]$localPort)) { continue }
+                if ($localPort -ne $Port) { continue }
+
+                $owner = 0
+                if ([int]::TryParse([string]$cols[$cols.Count - 1], [ref]$owner) -and $owner -gt 0 -and -not $pids.Contains($owner)) {
+                    $pids.Add($owner)
+                }
+            }
+            if ($pids.Count -gt 0) {
+                Add-LookupTrace 'netstat -ano' $true $false "监听 $Port 的 PID $($pids -join '、')（读到 $($listening.Count) 行 LISTENING）"
+            }
+            else {
+                Add-LookupTrace 'netstat -ano' $false $false "没有监听 $Port 的行（读到 $($listening.Count) 行 LISTENING）"
+            }
+        }
+        catch {
+            Add-LookupTrace 'netstat -ano' $false $true $_.Exception.Message
+        }
+    }
+
+    if ($pids.Count -eq 0) {
+        try {
+            $cim = @(Get-CimInstance Win32_Process -Filter "Name = 'dotnet.exe' OR Name = 'neko-clicker-web.exe'" -ErrorAction Stop |
+                Where-Object { $_.CommandLine -and $_.CommandLine.Contains($pattern) })
+            foreach ($item in $cim) {
+                if ([int]$item.ProcessId -gt 0 -and -not $pids.Contains([int]$item.ProcessId)) { $pids.Add([int]$item.ProcessId) }
+            }
+            if ($pids.Count -gt 0) {
+                Add-LookupTrace 'Get-CimInstance' $true $false "命令行含 $pattern 的 PID $($pids -join '、')"
+            }
+            else {
+                Add-LookupTrace 'Get-CimInstance' $false $false "没有命令行含 $pattern 的进程"
+            }
+        }
+        catch {
+            Add-LookupTrace 'Get-CimInstance' $false $true $_.Exception.Message
+        }
+    }
+
+    # 统一变成带 Name / Id 的对象。Get-Process 给的属性名是 **Id**，而调用方（Stop-TestHost）
+    # 读的是 **ProcessId**——在这里适配一次，别去改调用方（返回契约见头部 ③）。
+    # 反查到的 PID 有可能在读它之前就退出了（正常收尾也会走到这里），Get-Process 取不到就跳过。
+    return @(foreach ($processId in $pids) {
+            $proc = Get-Process -Id $processId -ErrorAction SilentlyContinue
+            if ($null -ne $proc) {
+                [pscustomobject]@{
+                    Name        = $proc.Name
+                    Id          = $proc.Id
+                    ProcessId   = $proc.Id
+                    CommandLine = ''
+                }
+            }
+        })
 }
 
 function Test-PortBusy([int]$Port) {
@@ -164,23 +279,65 @@ function Test-PortBusy([int]$Port) {
     }
 }
 
+# 结束一棵进程树：优先 `taskkill /F /T`，失败再退回 `Stop-Process`。
+# 为什么非要整棵树：dotnet run 起的宿主是它的**子进程**（apphost，neko-clicker-web.exe），
+# 只杀父进程正好留下一个还在监听的孤儿——那是"收尾看起来做了、其实没做"的最坏形态。
+# taskkill 不存在、被沙箱拦、或进程已经不在了都不抛：这一层的价值是"更彻底"，不是"唯一的路"，
+# 让它抛出去等于把收尾本身变成一次新的失败（见头部 ③）。
+function Stop-ProcessTree([int]$ProcessId) {
+    if ($ProcessId -le 0) { return $false }
+    # 已经不在了就直接收手：对死 PID 再喊一次 taskkill 只会往输出里灌噪音。
+    if ($null -eq (Get-Process -Id $ProcessId -ErrorAction SilentlyContinue)) { return $false }
+
+    $treeKilled = $false
+    try {
+        & taskkill /F /T /PID $ProcessId 2>&1 | Out-Null
+        # 判据是退出码而不是它打印了什么：原生进程被沙箱拦时连退出码都可能拿不到，
+        # 那时 $LASTEXITCODE -eq 0 为假，正好落进下面的 Stop-Process 兜底。
+        $treeKilled = ($LASTEXITCODE -eq 0)
+    }
+    catch {
+        $treeKilled = $false
+    }
+
+    if (-not $treeKilled) {
+        Stop-Process -Id $ProcessId -Force -ErrorAction SilentlyContinue
+    }
+    return $true
+}
+
 function Stop-TestHost([int]$Port, $Process) {
-    foreach ($p in Get-TestProcess -Port $Port) {
+    $looked = @(Get-TestProcess -Port $Port)
+    $trace = @($script:LookupTrace)
+    $lookupThrew = @($trace | Where-Object { $_.Threw }).Count -gt 0
+
+    foreach ($p in $looked) {
         Write-Host "  收尾：结束 $($p.Name) (PID $($p.ProcessId))" -ForegroundColor DarkGray
-        Stop-Process -Id $p.ProcessId -Force -ErrorAction SilentlyContinue
+        Stop-ProcessTree -ProcessId $p.ProcessId | Out-Null
     }
 
     if ($Process -and -not $Process.HasExited) {
         Write-Host "  收尾：结束 dotnet run (PID $($Process.Id))" -ForegroundColor DarkGray
-        Stop-Process -Id $Process.Id -Force -ErrorAction SilentlyContinue
+        Stop-ProcessTree -ProcessId $Process.Id | Out-Null
     }
 
     for ($i = 0; $i -lt 20; $i++) {
         Start-Sleep -Milliseconds 250
-        if (-not (Test-PortBusy -Port $Port)) { return $true }
+        if (-not (Test-PortBusy -Port $Port)) {
+            # 端口松手了，但"某一层反查抛过"这件事不能跟着消失：这一次收尾靠的是**记录下来的
+            # PID**（反查一层都没帮上忙），那是运气而不是设计——藏起来的话，下一版把它改坏
+            # 就没人看得见了（见头部 ③）。只报抛了的那几层，够定位就行。
+            if ($lookupThrew) {
+                Write-Host "  收尾：这次是按记录的 PID 收的——反查有层挂了，逐层如下。" -ForegroundColor DarkYellow
+                Show-LookupTrace $trace -FailuresOnly
+            }
+            return $true
+        }
     }
 
     Write-Host "  收尾：端口 $Port 仍然被占用——下一次跑可能撞端口。" -ForegroundColor Yellow
+    # 三层反查的账在这里一次性摊开：是"没查到"还是"杀不动"，看这几行就知道（见头部 ③）。
+    Show-LookupTrace $trace
     return $false
 }
 

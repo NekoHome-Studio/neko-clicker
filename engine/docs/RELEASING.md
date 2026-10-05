@@ -25,7 +25,7 @@
 | ⑦ | `tools\build.ps1 -Strict` | 566 用例 + 公开 API 快照 + 版本守卫 + 前端冒烟；**0 警告**（2026-10-04 实测；数会涨，以它打印的那一行为准） |
 | ⑧ | `tools\api-test.ps1` | 全部端到端检查通过（真起宿主、真读 SSE；当前 65 项，脚本收尾还会自己做检查点覆盖审计）；动了宿主/前端时必跑 |
 | ⑧b | `node tools\web-smoke.mjs` | 全部无头前端检查通过（当前 **202** 条；不执行它就没有东西会证明 `app.js` 真的跑得起来）；动了 `wwwroot/` 或快照必跑。**S1 起它也是 `build.ps1 -Strict` 里的一道闸门**，所以第 ⑦ 步已经会替它红 |
-| ⑨ | `tools\pack.ps1` + **自检产物** | 产出 `artifacts\neko-clicker-<版本>-win-x64.zip`；**解开它**，在**包根目录**起 `web\neko-clicker-web.exe`（或 `dotnet web\neko-clicker-web.dll`），确认 `/`、`/app.js`、`/api/ping` 与快照里的新字段。这一层没有用例守着（端到端探针只跑开发期路径）——1.3.0 的首页 404 就是这么逮到的 |
+| ⑨ | `tools\pack.ps1`（**自检已内置**） | 产出 `artifacts\neko-clicker-<版本>-win-x64.zip`，**并默认解包自检**：两个 exe 真跑起来、`/api/ping` 的 `apiVersion` 等于 `Directory.Build.props` 的版本、`/`、`/app.js`、`/app.css` 全 200 且首页含挂载点（判据见 §6.2）。跳过用 `-SkipSelfCheck`。这一层此前**没有守卫**（端到端探针只跑开发期路径）——1.3.0 的首页 404 就是这么逮到的；**2026-10-05 起它由脚本自己执行**（登记册 W6），所以这一步从"人工照着做"变成"看它有没有红" |
 | ⑩ | `git commit` → `git tag -a v<版本>` → 推送 | 本机 HTTPS 不通，走 SSH（见 §7） |
 | ⑪ | 看 CI 的三个作业（`build-and-test` / `web-smoke` / `end-to-end`），把结果写回 `STATUS.md` §6 | "本地全绿"不等于"runner 上全绿" |
 

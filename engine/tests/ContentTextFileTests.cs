@@ -18,8 +18,9 @@ namespace NekoClicker.Core.Tests;
 /// <para>
 /// <b>建筑文案也在这张表里</b>：<c>BuildingDefinition.Name</c>/<c>Description</c>/<c>Icon</c>
 /// 与剧情散文同住一份 <c>text.json</c>（<c>buildings</c> 分区），所以守卫是同一组。
-/// 示例包「猫咖物语」没有图鉴，只有 <c>buildings</c> 一个分区——这也正是"守卫不能假设
-/// 每个包都有 lore"的原因。
+/// 示例包「猫咖物语」没有图鉴——这也正是"守卫不能假设每个包都有 lore"的原因。
+/// （这句原先接着写"它只有 <c>buildings</c> 一个分区"：那是第三轮时的实情，此后第四、五轮的分区
+/// 陆续铺到它身上，于是同一份注释与下面两段自相矛盾；2026-10-05 复核时删掉了那半句。）
 /// </para>
 /// <para>
 /// <b>纪元文案同样在这张表里</b>：<c>EraDefinition</c> 的六个面向玩家的字符串

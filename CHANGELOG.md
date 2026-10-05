@@ -108,6 +108,54 @@
   原来那条"量一下 55.2px 错位"的用例（上沿）原样保留、仍然有效。
 - **版本**：**patch，停在 `[未发布]` 桶**——这一改只动 `wwwroot/app.css` 与守卫（外加文档）。
 
+### 引擎与工具链：两条新守卫 ＋ 五处机械项（patch）
+
+登记册《下一步：唯一权威清单》里"不需要人"那一整张表的一次清仓（`OPEN_WORK` §0.23 有完整执行记录）。
+
+- **用例数第一次有了机器判据**（W1）：新增 `engine/tests/TestCountDriftTests.cs`——用与迷你运行器
+  **同一条**发现规则（反射扫带 `[Test]` 的方法）算出真实用例数，再逐个核对 **11 处"现在时"槽位**
+  （`README.md` ×3、`engine/README.md`、`games/README.md`、`STATUS.md` ×2、`ci.yml`、
+  `tools/api-test.ps1`、`VERSIONING.md` §5、`ROADMAP.md` 的 G6）。判据上三个刻意的决定：
+  **锚点模式不含数字本身**（含了就变成钉住某个值，文档一改守卫先红）、**命中 0 次与命中多次都报红**
+  （前者是守卫空转、后者是锚点太松）、**射程只覆盖引擎用例数**（冒烟条数与端到端检查点各有出处）。
+  带日期的实测快照与 `CHANGELOG` 历史条目**不在射程内**——按 `RELEASING` §2"只改现在时、不改历史"，
+  它们永久冻结。判别力：动手时 **11 / 11 全红**（真值 **571**，槽位写着 564 / 567 / 531），改完即绿。
+- **`cpsEach` 的第一条值守卫**（W12）：新增 `ViewTests.BuildingRows_ReportTheUnitRateForEveryPack`，
+  横扫 **11 个包**、**两种持有状态各守一条**——未持有 ⇒ 恒为 0（这条事实此前没人看过），
+  已持有 ⇒ > 0 且 `cpsEach × owned == cpsContribution`（"平均每个"的定义本身）；覆盖面 **197 行**
+  （93 已持有 / 104 未持有）。判别力用两次注入证明：`CpsEach` 恒 `0` ⇒ 红在"已持有却是 0"；
+  未持有那一支给 `1` ⇒ 红在"未持有不是 0"（**这正是 D11 要动的形态**）。
+  还原后 `GameViewFactory.cs` 的 sha256 与注入前一致（`6BAB6461…`）。
+- **「拥有 ⇒ 已解锁」的横扫版**（S10）：新增 `engine/tests/UnlockInvariantTests.cs`——11 个包各自然游玩
+  30 轮，外加 **9 个纪元包各真的 `Ascend()` 重开一次**（`AllEraPacks()` 从 `AllContentPacks()` 派生，
+  不硬编码清单），重开前后各查一遍；补本层完成门槛时**遇到不认识的指标会当场失败**，
+  不静默跳过包（静默跳过正是这条欠账要修的毛病）。逐包核对后**没有反例**。
+- **`api-test.ps1` 的收尾不再沉默**（W2）：按端口反查改成**三层降级**
+  （`Get-NetTCPConnection` → `netstat -ano` → 原 `Get-CimInstance`），被记录的 PID 与反查到的 PID
+  都走新的 `Stop-ProcessTree`（`taskkill /F /T` 树杀优先、`Stop-Process` 兜底）；异常不再被
+  `-ErrorAction SilentlyContinue` 吞掉——收尾会打印"用了哪一层、哪一层抛了什么"。
+  真跑一次：**65 / 65 通过**，两个宿主进程都真的收掉，`Check` 调用点仍是 65。
+- **打包产物自检进 `tools/pack.ps1`**（W6）：打完 zip **默认**解包自检（`-SkipSelfCheck` 跳过），
+  判据照 `RELEASING` §6.2——两个 exe 真跑起来、`GET /api/ping` 的 `apiVersion` 等于
+  `Directory.Build.props` 的版本、`/`、`/app.js`、`/app.css` 全 200 且首页含挂载点。
+  **解包到临时目录再跑**（1.3.0 的首页 404 只在"从包根目录起"时才露出来），端口随机取并先真绑一次。
+- **引擎第一次有了 NuGet 分发形态**（W5）：`NekoClicker.Core.csproj` 补 `PackageId` / `IsPackable` /
+  `Authors`；版本号仍只有 `Directory.Build.props` 一处来源。**"无网也能 pack" 实测过了**（此前只是推断）：
+  离线产出 `NekoClicker.Core.1.10.1.nupkg`（227 KB），`nuspec` 逐项核对。留白：包里没有 readme，
+  `dotnet pack` 会为此打一条**建议级**警告（不是错误）。
+- **文档**：`FRONTEND_CHECKS.md` 里那个查不到出处的"256 条前端逻辑"删掉（W3）；
+  ⑨⑩⑪ 三步的归属写清（W8）；`STATUS` / `README` 的现在时断言逐句复核，**10 条反例订正**（W10）——
+  CI 是**三个**作业、"猫咖物语"的 `text.json` 有**五个**分区、推送状态自相矛盾、
+  `PackageId` 已不是缺口、`README` 的"接下来做什么"指向了已作废的 `STATUS` §8。
+- **版本**：**patch，停在 `[未发布]` 桶**——`engine/core` **一个字节没改**（公开 API 一行没动，
+  `PublicApi.txt` 不变），改动全在 `engine/tests`（用例，不是契约）、`tools/`、
+  `csproj` 的打包元数据与文档里；**没有升版本号**（升位由真人拍）。
+
+**实测**（2026-10-05，工作树）：`tools/build.ps1 -Strict` **571 / 571 全绿、0 警告**
+（主 sln 与 Web sln 各一条 `0 Warning(s)`；含前端冒烟 **202 / 202**；动手前基线 **567**）、
+`tools/api-test.ps1` **65 / 65**（源码 65 处 ｜ 执行到 65 处 ｜ 跳过 0）、`tools/pack.ps1` 产物自检通过。
+`saves/` 五个文件与 `artifacts/latency.txt` 的指纹未变。
+
 ---
 
 ## [1.10.1] - 2026-10-04
