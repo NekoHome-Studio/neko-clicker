@@ -130,7 +130,7 @@ games/             旗舰示例作品。依赖 engine/，反向不依赖
 README.md          刻意留在仓库根
 CHANGELOG.md       刻意留在仓库根（VersionTests 的两个守卫直接读这两个文件）
 tools/             全部 ps1 工具（含 api-test.ps1：端到端起真宿主打端点）
-.github/workflows/ci.yml  CI：三个作业 = 引擎验收 + 前端冒烟 + 端到端
+.github/workflows/ci.yml  CI：四个作业 = 引擎验收（Windows ＋ Linux）+ 前端冒烟 + 端到端
 ```
 
 **内容包为什么在 `engine/` 而不在 `games/`**：它们是引擎的集成测试探针——
@@ -303,10 +303,15 @@ Web 宿主不在 `NekoClicker.sln` 里（它是独立的单项目 sln），但 `
   **fixture 要拿真宿主抓的快照去改**（只改"玩法状态"这类假数据），手写的 fixture 会漏掉
   服务端算好的派生字段（`isUnlocked` / `isMaxed` / `isAvailable`），角标与配色会跟着假。
   **但它仍然只是"我看过"，不是守卫。**
-- **CI 只跑在 Windows 上**：`.github/workflows/ci.yml` 是**三个** `windows-latest` 作业
-  （`build-and-test` / `web-smoke` / `end-to-end`；这句此前写"两个"，2026-10-05 复核时改正）。
-  没有加 Linux 作业——`engine/core/` 平台中立这条主张仍然只由"全仓库只有两处平台相关代码"这个
-  事实支撑，没有一个远端作业在守着它（想守就得先确认 Demo 与测试项目在 Linux 上也能编）。
+- **CI 现在跑两个操作系统**：`.github/workflows/ci.yml` 是**四个**作业——
+  三个 `windows-latest`（`build-and-test` / `web-smoke` / `end-to-end`）加一个
+  2026-10-05 新增的 **`ubuntu-latest`**（`engine-linux`：同一条 `build.ps1 -Strict -SkipWebSmoke`，
+  换一套操作系统跑）。**这一条此前写的是"CI 只跑在 Windows 上、没有 Linux 作业"**，
+  它当时是事实：`engine/core/` 平台中立这条主张那时只由"全仓库只有两处平台相关代码"这个
+  事实支撑，没有远端作业守着它——现在有了（登记册 **W7**）。
+  **为什么 Linux 作业用 `pwsh` 而不是 `powershell`**：PS 5.1 那套写法是 Windows 侧的历史包袱，
+  Linux 上只有 pwsh；两边跑的是**同一份 `build.ps1`**，差别只在解释器与操作系统。
+  前端冒烟在 Linux 那边刻意跳过（它有自己的作业，且与操作系统无关）。
 - **CI 的远端表现（2026-10-01 补记）**：截至 `3574762` 的**六次运行全绿**——
   `c84c478`（workflow 首跑）、`4bb2690`、`67a1f22`（1.2.1 发布）、`5cf5f9c`（文档回填）、
   `602b5c8`（日志面板）、`3574762`（预览手法回填），每次都是两个作业各自 success
@@ -481,15 +486,17 @@ Web 宿主不在 `NekoClicker.sln` 里（它是独立的单项目 sln），但 `
 ### 8.6 可选（都不是必须，但都是"已知没人守"的地方）
 
 > **2026-10-05 进展**：第一条（打包自检收进 `tools/pack.ps1`）**已做**（登记册 **W6**，
-> 默认执行、`-SkipSelfCheck` 可跳过）；第二条（CI 的 Linux 作业）与第三条（观感）仍然开着，
-> 见 `OPEN_WORK` 的 W7 与 H3。下面三段保留作历史。
+> 默认执行、`-SkipSelfCheck` 可跳过）；第二条（CI 的 Linux 作业）**也已做**（**W7**：
+> `engine-linux` 作业，见 §6 那条）；只剩第三条（观感）——它归 **H3**，只有真人能判。
+> 下面三段保留作历史。
 
 - **把打包自检收进 `tools/pack.ps1`**（1.3.0 的首页 404 就是这么逮到的，但那次是手工的）：
   解包 → 在包根目录起发布产物 → 断言 `/`、`/app.js`、`/api/ping` 与快照里的新字段。
   它守的是**端到端探针看不见的那一半**（探针跑的是 `dotnet run` 的开发期路径）。
   要注意本机缺 ASP.NET 8 运行时，脚本里得自己设 `DOTNET_ROLL_FORWARD=Major`（照抄 `api-test.ps1`）。
-- **给 CI 加一个 Linux 作业**：能替"`engine/core` 平台中立"这条主张当守卫，
-  前提是先确认 `games/hosts/Demo.Cli` 与测试项目在 Linux 上编得过（本机验不了）。
+- **给 CI 加一个 Linux 作业**：**2026-10-05 已加**（登记册 **W7**）——`engine-linux` 作业跑
+  `build.ps1 -Strict -SkipWebSmoke`，用的是 ubuntu + pwsh。它替"`engine/core` 平台中立"
+  这条主张当了守卫；本机验不了的那件事（两个宿主与测试项目在 Linux 上能不能编）由它来回答。
 - **观感**：Web 的"好不好看"仍然只能靠人看（§6 记了那条可复制的截图手法）。
 
 ### 8.7 动手前的环境清单（这台机器）

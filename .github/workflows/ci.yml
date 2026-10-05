@@ -11,18 +11,28 @@
 #   powershell 跑，保证"CI 跑的就是开发者本机跑的那条路径"，
 #   而不是再引入一套解释器差异去解释。
 #
-# 三个作业：
+# 那为什么还有一个 ubuntu 作业（2026-10-05 加，登记册 W7）：
+#   `engine/core` 平台中立（全仓库只有两处平台相关代码）这条主张，此前**只由那句话本身**
+#   支撑，没有任何远端作业在守着它。Linux 作业就是那个守卫——它跑同一份引擎验收，
+#   但**换一套操作系统**。它跑在 pwsh（PowerShell 7）上：PS 5.1 那套写法是 Windows 侧
+#   的历史包袱，Linux 上只有 pwsh 可用；两边跑的**是同一份 build.ps1**，差别只在解释器与 OS。
+#   `-SkipWebSmoke` 是刻意的：前端那一层已经有自己的作业，而它的判据与操作系统无关。
+#
+# 四个作业：
 #   build-and-test  引擎侧：tools/build.ps1 -Strict（0 警告 + 571 用例 + 主/Web 两条 sln + 前端冒烟）
 #                   （这个数在 1.9.0 时是 531；S13 的 5 条守卫 → 536；2026-10-04 把
 #                     save-transfer-1.10.0 / tools-s1-s13 / click-power-bridge 三条分支合并后
 #                     实测 **556**，同一天做完存档导出/导入的两个窗口（W13/W14）之后是 **564**。
 #                     它会继续长——"当前几个"的权威来源永远是 build.ps1 打印的那一行，
-#                     见 engine/docs/OPEN_WORK.md 的 W1）
+#                     见 engine/docs/OPEN_WORK.md 的 W1，以及守着这 11 处槽位的
+#                     engine/tests/TestCountDriftTests.cs）
+#   engine-linux    同一份引擎验收，跑在 ubuntu 上（守"平台中立"这条主张）
 #   web-smoke       前端侧：node tools/web-smoke.mjs（无头 DOM 桩件把 wwwroot/app.js 真跑一遍）
 #   end-to-end      Web 宿主侧：tools/api-test.ps1（起真宿主，打全部端点）
 # 分开跑的理由是失败时的信号不同：第一条红了说明引擎或公开 API 有问题，
 # 第二条红了说明**页面**那一层有问题（它不需要 .NET，也不需要宿主），
 # 第三条红了说明"宿主 + 浏览器协议"那一段有问题——这三类故障的排查方向完全不一样。
+# （engine-linux 与 build-and-test 是**同一条命令、两个 OS**：它红了先看是不是平台相关代码。）
 #
 # 前端冒烟为什么单独一个作业、而且这里**必须显式装 node**：
 #   build-and-test 里的 build.ps1 也会跑它（gate 在场内），但那条路径在 CI 上依赖
@@ -53,6 +63,23 @@ jobs:
       - name: tools/build.ps1 -Strict
         shell: powershell
         run: .\tools\build.ps1 -Strict
+
+  engine-linux:
+    name: 引擎（Linux · 平台中立那条主张的守卫）
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      # 与 build-and-test **同一条命令、同一个判据**，只差操作系统与解释器（pwsh）。
+      # -SkipWebSmoke：前端那一层有自己的作业，且它与操作系统无关。
+      # 它红了先问一个问题：是平台相关代码，还是这条命令在 Linux 上本来就跑不起来？
+      - name: tools/build.ps1 -Strict -SkipWebSmoke
+        shell: pwsh
+        run: ./tools/build.ps1 -Strict -SkipWebSmoke
 
   web-smoke:
     name: 前端冒烟（wwwroot / app.js）

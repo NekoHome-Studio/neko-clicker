@@ -429,7 +429,8 @@ Console.WriteLine(ApiVersion.AssemblyVersion);  // 1.10.1.0
 ```
 
 `tools/build.ps1` 与 `tools/api-test.ps1` 也是 CI 在远端跑的命令
-（`.github/workflows/ci.yml` 现在是**三个作业**：`build-and-test`（这条命令）、
+（`.github/workflows/ci.yml` 现在是**四个作业**：`build-and-test`（这条命令）、
+`engine-linux`（同一条命令、跑在 ubuntu 上——它是"`engine/core` 平台中立"那条主张的守卫）、
 `web-smoke`（`node tools/web-smoke.mjs`）与 `end-to-end`（`tools/api-test.ps1`））
 ——前者守引擎与公开 API，后者守"宿主 + 浏览器协议"那一段。
 
