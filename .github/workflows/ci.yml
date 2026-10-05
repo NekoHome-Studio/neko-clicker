@@ -77,9 +77,20 @@ jobs:
       # 与 build-and-test **同一条命令、同一个判据**，只差操作系统与解释器（pwsh）。
       # -SkipWebSmoke：前端那一层有自己的作业，且它与操作系统无关。
       # 它红了先问一个问题：是平台相关代码，还是这条命令在 Linux 上本来就跑不起来？
+      #
+      # 失败时把日志尾部打成**一条注解**（`::error::` + `%0A` 换行）：这个仓库的 job 日志
+      # 在未登录时读不到（API 403），而注解是公开可读的——所以让失败自己说出来，
+      # 而不是等人拿 token 去翻日志。注解本身就是这条作业的诊断输出。
       - name: tools/build.ps1 -Strict -SkipWebSmoke
         shell: pwsh
-        run: ./tools/build.ps1 -Strict -SkipWebSmoke
+        run: |
+          ./tools/build.ps1 -Strict -SkipWebSmoke 2>&1 | Tee-Object -FilePath build.log
+          $code = $LASTEXITCODE
+          if ($code -ne 0) {
+            $tail = (Get-Content build.log -Tail 30) -join '%0A'
+            Write-Host "::error title=Linux 作业失败了（尾部 30 行）::$tail"
+          }
+          exit $code
 
   web-smoke:
     name: 前端冒烟（wwwroot / app.js）
