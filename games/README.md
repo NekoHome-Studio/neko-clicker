@@ -82,7 +82,7 @@
 一条命令即可验收全仓库：
 
 ```powershell
-.\tools\build.ps1 -Strict      # 引擎 + 内容 + 586 条用例 + Web 宿主 + 前端冒烟
+.\tools\build.ps1 -Strict      # 引擎 + 内容 + 589 条用例 + Web 宿主 + 前端冒烟
 .\tools\web.ps1   build -Strict  # 只编 Web 宿主时用它
 ```
 
