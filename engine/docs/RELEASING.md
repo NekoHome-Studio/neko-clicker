@@ -252,12 +252,14 @@ git grep -n "1\.2\.0"        # 换成你刚发完的那个版本号
 
 ### 7.1 提交、tag 与 CI
 
-- 发布提交与 tag：**发布当天回填在下面**（不留占位符——这个仓库的规矩是"没实测过的结论迟早会变成错的"）。
-- tag：`v1.10.2`（annotated，一行消息 `NekoClicker.Core 1.10.2`，tag 身份沿用仓库配置
-  `NekoHome Studio <dev@nekohome.studio>`）。
-- 推送走 SSH 显式 URL 或 `tools/push-retry.ps1`（`origin` 自 2026-10-05 起已永久改到 SSH）。
-- CI：**四个作业**（`build-and-test` / `engine-linux` / `web-smoke` / `end-to-end`）——结果回填在这里，
-  并同步到 `STATUS.md` §6。
+- **发布提交：`258778c`**（13 个文件、+351/−78；含新文档 `HANDOVER_2026-10-05.md`）。
+- **tag：`v1.10.2`**（annotated，一行消息 `NekoClicker.Core 1.10.2`，tag 身份沿用仓库配置
+  `NekoHome Studio <dev@nekohome.studio>`；远端 `refs/tags/v1.10.2` → `02ec40e…`，解引用到 `258778c`）。
+- **推送**：`tools/push-retry.ps1` **第一次尝试就过**（提交与 tag 一起），
+  服务器侧核对：`origin/main = 258778c`（与本地一致）、**14 个 tag** 全部在位。
+- **CI：四个作业全部 success**——[run #43](https://github.com/NekoHome-Studio/neko-clicker/actions/runs/37221314893)
+  （`258778c`，**204 秒**）：`build-and-test` / `engine-linux` / `web-smoke` / `end-to-end`。
+  已同步到 `STATUS.md` §6。
 
 ### 7.2 这一轮留下的两条经验
 
