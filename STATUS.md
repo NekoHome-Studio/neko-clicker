@@ -390,6 +390,8 @@ Web 宿主不在 `NekoClicker.sln` 里（它是独立的单项目 sln），但 `
     > 连试 5 次都一样）。那行命令从没在真推送上验过——发 1.2.1 时才踩到，换成了上面的写法。
 
     想永久改：`git remote set-url origin git@github.com:NekoHome-Studio/neko-clicker.git`。
+    **2026-10-05 已经这么改了**（`origin` 现在 fetch / push 两路都是 SSH），改完之后
+    `tools/push-retry.ps1` **第一次尝试就过**——此前它对着 HTTPS 的 origin 只会一直重试。
     顺带一条判据：另外几个 GitHub IP（`140.82.112/113/114/116.3`、`20.205.243.166`）的 443
     是通的——所以历史上"重试几次就成功"很可能是解析到了别的 IP，而不是同一 IP 时好时坏。
 11. **看 CI 走 `api.github.com`，不用碰 `github.com`**（2026-10-01 实测）：`github.com:443`
