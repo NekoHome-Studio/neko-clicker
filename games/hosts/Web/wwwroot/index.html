@@ -13,9 +13,11 @@
   <!-- 提示条：buy 失败（"钱不够"）、存档失败、连不上宿主都只走这里。
        `role="status"`（隐含 aria-live=polite + aria-atomic）让这些消息能被读屏念出来：
        它们不是用户操作的结果，而是宿主回的话。
-       **页面上有两处实时区域，这是第一处**（第二处是存档窗口里的 `#import-result`：
-       导入的失败原因必须**留在屏幕上**，而提示条 2.6 秒就把长句吞掉了）。
-       §20 那条守卫盯的就是"恰好这两处、一处不多一处不少"。 -->
+       **页面上有四处实时区域，这是第一处**，另外三处都在存档窗口里（`#import-result`、
+       `#share-note`、`#share-open-note`）：那些话是长句，而提示条 2.6 秒就把它吞掉了，
+       所以它们必须留在屏幕上、也必须被念出来。
+       **这条清单是刻意钉住的**（§24 那条守卫数"恰好这些、一处不多一处不少"）：
+       多一处往往是"顺手又加了一个提示"，而不是"这处失败需要被念出来"。 -->
   <div id="toast" class="toast" role="status"></div>
 
   <!-- 离线收益：读档补发的那一笔（GameSnapshot.offline）。
@@ -60,7 +62,9 @@
        ① 导出文本是**只读文本框**——它是要被整份复制走的东西，不是在这里编辑的东西；
           旁边的「下载 .json」给的是同一份文本（浏览器里剪贴板写不进去时它是唯一的出路）；
        ② 导入的失败原因**原样**显示在 #import-result（引擎写好的那句话，前端不翻译第二遍），
-          而且它是页面上**第二个**实时区域——那句话必须被读屏念出来，且要在屏幕上留着；
+          而且它是一条 `role="status"`——那句话必须被读屏念出来，且要在屏幕上留着；
+          同一扇窗口里另外两处结果行（分享链接的生成与打开）同理，见下面的标记。
+          **页面上恰好四处实时区域**，§24 那条守卫数得住。
        ③ 「导入」是这张 sheet 的主按钮（`sheet-ok`）：它下面写着"会覆盖当前存档"，
           而"文本不对就什么都不会动"是引擎七道闸保证的（SAVE_TRANSFER_PLAN §3）。 -->
   <div id="save-sheet" class="sheet-layer hidden">
@@ -69,6 +73,24 @@
         <h2 id="save-title">存档</h2>
         <button id="save-close" class="sheet-close" type="button" aria-label="关闭存档窗口">&times;</button>
       </div>
+
+      <!-- 打开一段分享链接（URL 上带 ?share=…）时，这一行是**第一个**要看的：
+           它盖在"导出"上面，因为收件人要做的第一件事就是输密码。
+           三条约定（见 app.js 的 importIncomingShare）：
+           ① 它**只在带了 share 参数时**出现（`.hidden` 是初值）；
+           ② **不自动尝试任何密码**：密码只有人知道，而"猜一次"在这里没有意义
+              ——那不是口令校验，那是解密；
+           ③ 失败了什么都不会动（磁盘 / .bak / 当前会话），失败原因留在
+              #share-open-note 与 #import-result 上，不靠 2.6 秒就消失的提示条。 -->
+      <div id="share-open" class="hidden">
+        <h3 class="sheet-section">打开分享链接</h3>
+        <div class="sheet-row">
+          <input id="share-open-password" class="text-input" type="password" autocomplete="off"
+                 placeholder="输入对方给的密码" aria-label="打开这段分享链接的密码">
+          <button id="share-open-go" class="sheet-ok" type="button">用这个密码导入</button>
+        </div>
+      </div>
+      <p id="share-open-note" class="muted" role="status"></p>
 
       <h3 class="sheet-section">导出</h3>
       <p id="export-note" class="muted">正在取当前存档…</p>
@@ -89,6 +111,32 @@
                 placeholder="粘贴整份导出文本（neko-save 信封，从 { 到 }）"></textarea>
       <button id="import-go" class="sheet-ok" type="button">导入</button>
       <p id="import-result" class="muted" role="status"></p>
+
+      <!-- 分享链接：把**加密后的**整份导出文本变成一段可以贴进 URL 的文本
+           （方案 engine/docs/SHARE_LINK_PLAN.md §5）。三条约定：
+           ① **密码不进链接**：它只用来派生密钥，链接里是密文——没有密码谁也读不出内容，
+              所以这个框里出现的任何东西都可以安全地走聊天工具；
+           ② 链接是**只读**的（与导出文本同理：它是要被整份复制走的东西），
+              而它前面的那一段由页面按当前地址拼出来（宿主只回令牌）；
+           ③ 装不下就**当场拒绝**并指路复制粘贴：截断的链接解不开，
+              而"解不开"看起来像"密码不对"，会把人带去查一个不存在的问题。 -->
+      <h3 class="sheet-section">分享链接</h3>
+      <p class="muted">
+        给这份存档设一个密码，生成一段链接发出去；对方打开链接、输入同一个密码才能导入。
+        <b>密码不会出现在链接里</b>——链接装的是密文。
+        <b>这不是保险箱</b>：密码短了就挡不住离线枚举，所以密码本身要有点分量。
+      </p>
+      <div class="sheet-row">
+        <input id="share-password" class="text-input" type="password" autocomplete="new-password"
+               placeholder="给链接设一个密码" aria-label="分享链接的密码（对方要用同一个）">
+        <button id="share-make" class="ghost" type="button">生成分享链接</button>
+      </div>
+      <textarea id="share-link" class="save-text" readonly rows="3" spellcheck="false"
+                aria-label="分享链接（只读，可整份复制）"></textarea>
+      <div class="sheet-row">
+        <button id="share-copy" class="ghost" type="button">复制链接</button>
+      </div>
+      <p id="share-note" class="muted" role="status"></p>
 
       <h3 class="sheet-section">存档文件</h3>
       <button id="save-now" class="ghost" type="button">立刻存一次盘</button>

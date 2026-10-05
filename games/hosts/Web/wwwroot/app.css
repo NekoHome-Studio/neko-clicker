@@ -1154,6 +1154,24 @@ footer code { background: #00000055; padding: .05rem .3rem; border-radius: 4px; 
 
 .sheet .save-text:focus-visible { outline: 2px solid var(--accent-deep); outline-offset: 1px; }
 
+/* 密码输入框：这是页面上**第一个 `<input>`**（此前只有多行文本框）。
+   它必须看起来属于同一个窗口，但**刻意不复用** `.save-text` 的两个特征：
+   等宽字体与 6rem 的最小高度——密码是一小段人打的字，不是要整份复制的机器数据，
+   把它画成一块代码框只会让人以为那里该粘东西。
+   `min-height: 44px` 与 `.sheet-row .ghost` 对齐：触屏上那是最小可点高度。 */
+.sheet .text-input {
+  flex: 1 1 12rem;
+  min-height: 44px;
+  padding: .5rem .6rem;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: #171522;
+  color: var(--fg);
+  font-size: .9rem;
+}
+
+.sheet .text-input:focus-visible { outline: 2px solid var(--accent-deep); outline-offset: 1px; }
+
 /* 两个次要按钮并排（复制 / 下载）。窄屏折行，不挤成一团。 */
 .sheet-row { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .5rem; }
 .sheet-row .ghost { flex: 1 1 8rem; min-height: 44px; }

@@ -414,6 +414,90 @@ public sealed class GameHost : IAsyncDisposable
         }).ConfigureAwait(false);
 
     /// <summary>
+    /// 生成一段**分享链接**：把当前存档用密码保护起来，编成一段可以贴进 URL 的文本
+    /// （见 <c>engine/docs/SHARE_LINK_PLAN.md</c> §5）。<para>
+    /// <b>它不写盘</b>（就是一次 <see cref="ExportAsync"/> 的读），也不新造导入路径——
+    /// 解出来的那一侧是<b>整份导出文本</b>，交给<b>同一个</b> <see cref="SaveManager.Import"/>。
+    /// 链接文本走 <see cref="CommandOutcome.Text"/>（与导出同一条约定：这是一段要被整份复制走的
+    /// 机器数据，不是一句给人看的话）。
+    /// </para>
+    /// <para>
+    /// <b>密码不进链接</b>：它只用来派生密钥。宿主不回显它、不日志它，
+    /// 失败消息里也不会带上它（<see cref="ShareLinkCodec"/> 抛出的每一句话都不含口令本身）。
+    /// </para>
+    /// <para>
+    /// 调试跳层的会话不生成链接（与 <see cref="ExportAsync"/> 同一条规矩）：跳层只在内存里，
+    /// 而链接是**耐久且会离开这台机器**的东西。
+    /// </para>
+    /// </summary>
+    /// <param name="password">使用者自己定的口令（对方要用同一个）。</param>
+    /// <returns>成功时 <see cref="CommandOutcome.Text"/> 里是链接文本（base64url）。</returns>
+    public async Task<CommandOutcome> CreateShareLinkAsync(string password)
+        => await ExecuteAsync(_ =>
+        {
+            if (_saves is null) return new CommandOutcome(false, "这个会话不落盘，没有可分享的存档。", Seq);
+
+            if (_debugMode) return new CommandOutcome(false, "调试模式下不生成分享链接（跳层只在内存里，退出即弃）。", Seq);
+
+            try
+            {
+                string text = _saves.Export();
+                string token = ShareLinkCodec.Protect(
+                    password, ShareLinkPurpose.SaveShare, _package.Id, text);
+
+                return new CommandOutcome(
+                    true,
+                    $"已生成分享链接（{token.Length} 个字符，内容包「{_package.Id}」）——"
+                    + "把它发给对方，对方用这个密码打开。密码不在链接里。",
+                    Seq,
+                    token);
+            }
+            catch (Exception ex)
+            {
+                // 口令太短、存档太大、链接超长都在这里变成一句人话（与 ExportAsync 同一条：
+                // 界面这一侧不该看见一个 500）。**消息里不含口令**——ShareLinkCodec 保证这一点，
+                // 这里也不许把 password 拼进去。
+                return new CommandOutcome(false, $"生成分享链接失败：{ex.Message}", Seq);
+            }
+        }).ConfigureAwait(false);
+
+    /// <summary>
+    /// 消费一段分享链接：解密 → <b>原样交给既有的九道闸</b>（见 <c>SHARE_LINK_PLAN.md</c> §5.3）。<para>
+    /// <b>解密失败时磁盘与内存一个字节都没动</b>，因为解密发生在 <see cref="SaveManager.Import"/>
+    /// 之前——这正是 1.10.0 那套设计已经给出的形状（<c>SAVE_TRANSFER_PLAN.md</c> §3.1），
+    /// 本文只是把"坏输入"的范围从"粘贴的文本"扩到"解不开的密文"。
+    /// </para>
+    /// <para>
+    /// 一句话都不自己编：打不开时说 <see cref="ShareLinkOpenResult.Message"/>，
+    /// 打开了但存档不合格时说 <see cref="SaveTransferResult.Message"/>——两句都是引擎/编解码写好的原文。
+    /// </para>
+    /// </summary>
+    /// <param name="token">链接文本（<c>?share=</c> 后面那一段）。</param>
+    /// <param name="password">收件人输入的口令。</param>
+    /// <returns>结果；失败时带精确原因，且什么都没动。</returns>
+    public async Task<CommandOutcome> ImportShareAsync(string token, string password)
+        => await ExecuteAsync(_ =>
+        {
+            if (_saves is null) return new CommandOutcome(false, "这个会话不落盘，没法导入。", Seq);
+
+            // 与 ImportAsync 同一条：导入会写盘，而调试跳层不该留下痕迹。
+            if (_debugMode) return new CommandOutcome(false, "调试模式下不导入（跳层只在内存里，退出即弃）。", Seq);
+
+            ShareLinkOpenResult opened = ShareLinkCodec.Open(
+                password, token, ShareLinkPurpose.SaveShare, _package.Id, _engine.Clock.UtcNow);
+
+            if (!opened.Ok) return new CommandOutcome(false, opened.Message, Seq);
+
+            SaveTransferResult result = _saves.Import(opened.Payload!.SaveText!);
+            if (!result.Ok) return new CommandOutcome(false, result.Message, Seq);
+
+            // 与 ImportAsync 一样：换掉的是**整局状态**，直接推一份全量。
+            Publish(forceFull: true);
+
+            return new CommandOutcome(true, $"{opened.Message}｜{result.Message}", Seq);
+        }).ConfigureAwait(false);
+
+    /// <summary>
     /// 调试门用：把这一局<b>直接置到</b>第 <paramref name="requestedEra"/> 层。<para>
     /// <b>这是直接改数据，不是正常推进。</b>引擎没有"强行推进到第 N 层"的公开接口
     /// （<see cref="GameEngine.Ascend"/> 要过 <see cref="GameEngine.EraGate"/>，即必须完成本层主线），

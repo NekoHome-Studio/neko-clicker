@@ -62,6 +62,16 @@
     -->
     <Compile Include="..\..\games\hosts\Web\GameHost.cs" Link="Web\GameHost.cs" />
     <Compile Include="..\..\games\hosts\Web\PackageCatalog.cs" Link="Web\PackageCatalog.cs" />
+
+    <!--
+      URL 上那段加密载荷的编解码（ShareLink）同样走共享源码：它是**宿主侧**的代码
+      （PBKDF2 / AES-GCM / gzip，全是 BCL），所以公开 API 快照一个字节都不动
+      ——但它必须有 C# 级用例，否则"密码错时磁盘一个字节没动"这类断言只能靠真起宿主来验。
+      不共享的话测试项目根本看不见这个类型：Web 宿主不是 ProjectReference，
+      而 games/hosts/Shared/ 那几个文件是经 Demo.Cli 的引用传进来的
+      （这个文件刻意不放进 Shared/：只有 Web 宿主用得到它，见 SHARE_LINK_PLAN §8/§10）。
+    -->
+    <Compile Include="..\..\games\hosts\Web\ShareLink.cs" Link="Web\ShareLink.cs" />
   </ItemGroup>
 
 </Project>

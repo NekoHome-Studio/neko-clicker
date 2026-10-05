@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Threading.Channels;
@@ -29,6 +30,19 @@ public static class Program
     /// </summary>
     private const string DebugKeyVariable = "NEKO_DEBUG_KEY";
 
+    /// <summary>
+    /// 令牌门密钥所在的<b>环境变量名</b>（与明文调试门<b>分开</b>的一把钥匙）。<para>
+    /// 它用来解密 <c>?k=…</c> 里的那段密文（见 <c>engine/docs/SHARE_LINK_PLAN.md</c> §4）。
+    /// 与 <see cref="DebugKeyVariable"/> 一样：这里只有名字、没有值，仓库与发布产物里不存在任何密钥，
+    /// 所以"没设"时这扇门根本不存在。
+    /// </para>
+    /// <para>
+    /// <b>为什么和调试门不是同一把</b>：一扇门该有自己的钥匙。共用一把会让"我只想让跳层令牌生效"
+    /// 顺手把明文门也开了，而两扇门的射程并不一样（明文门泄漏的是可复用的钥匙，令牌泄漏的是一次跳转）。
+    /// </para>
+    /// </summary>
+    private const string UrlKeyVariable = "NEKO_URL_KEY";
+
     /// <summary>跳层会跳过的账（响应正文必须说出来，见 plan §3）。</summary>
     private static readonly string[] DebugSkippedBookkeeping =
         ["era_inheritance", "era_history", "prestige_settlement"];
@@ -36,11 +50,17 @@ public static class Program
     /// <summary>启动宿主。</summary>
     /// <param name="args">
     /// <c>--urls &lt;地址&gt;</c> 换监听地址；<c>--save-root &lt;目录&gt;</c> 换存档根目录；
-    /// <c>--latency-log &lt;文件&gt;</c> 换作答延迟埋点文件（默认 <c>artifacts/latency.txt</c>）。
+    /// <c>--latency-log &lt;文件&gt;</c> 换作答延迟埋点文件（默认 <c>artifacts/latency.txt</c>）；
+    /// <c>--mint-link --package &lt;id&gt; --era &lt;层号&gt; [--expires-hours &lt;小时&gt;] [--base-url &lt;地址&gt;]</c>
+    /// 铸一枚跳层令牌并打印 URL 后退出（<b>不启动宿主</b>）。
     /// </param>
     /// <returns>进程退出码。</returns>
     public static int Main(string[] args)
     {
+        // ---- 铸令牌模式：打印一段 URL 就退出，**不启动宿主、不监听端口**。
+        // 放在最前面：铸造是"写一条链接"，顺手把宿主起起来只会让人以为它要一直开着。
+        if (args.Contains("--mint-link", StringComparer.Ordinal)) return MintEraLink(args);
+
         string url = ReadOption(args, "--urls") ?? ReadOption(args, "--url") ?? DefaultUrl;
         string saveRoot = Path.GetFullPath(ReadOption(args, "--save-root") ?? DefaultSaveRoot());
 
@@ -97,6 +117,12 @@ public static class Program
         Console.WriteLine(string.IsNullOrEmpty(Environment.GetEnvironmentVariable(DebugKeyVariable))
             ? $"调试门：未启用（没有设置 {DebugKeyVariable}，带 epoch 的请求一律 403）。"
             : $"调试门：已启用（{DebugKeyVariable} 已设置）；用法 {url}/?package=<id>&password=<密钥>&epoch=<层号>。");
+
+        // 令牌门（?k=）与明文门是**两扇独立的门**（各自的钥匙）。这里同样只说"设没设"，
+        // 永远不会打印钥匙本身——打印出来的东西会进日志、进截图。
+        Console.WriteLine(string.IsNullOrEmpty(Environment.GetEnvironmentVariable(UrlKeyVariable))
+            ? $"令牌门：未启用（没有设置 {UrlKeyVariable}，带 k 的请求一律 403）。"
+            : $"令牌门：已启用（{UrlKeyVariable} 已设置）；铸一枚：--mint-link --package <id> --era <层号>。");
 
         Console.WriteLine($"打开 {url}/ 开始玩；换包用 {url}/?package=<id>。Ctrl+C 退出。");
 
@@ -312,6 +338,25 @@ public static class Program
                 return await host.ImportAsync(text).ConfigureAwait(false);
             }
 
+            // 分享链接（见 engine/docs/SHARE_LINK_PLAN.md §5）。与 export/import 同一条分工：
+            // 宿主只搬运与回报，加解密与九道闸都在别处，一行校验都不在这里重写。
+            // **密码走请求体、不走 URL**，而且宿主不日志它、不回显它——它只用来派生密钥。
+            case "shareLink":
+            {
+                string? password = ReadString(body, "password");
+                if (password is null) return Missing("password");
+                return await host.CreateShareLinkAsync(password).ConfigureAwait(false);
+            }
+
+            case "importShare":
+            {
+                string? token = ReadString(body, "token");
+                string? password = ReadString(body, "password");
+                if (token is null) return Missing("token");
+                if (password is null) return Missing("password");
+                return await host.ImportShareAsync(token, password).ConfigureAwait(false);
+            }
+
             // 离线收益弹窗的"看过了"。这是一条**状态**而不是前端的记忆：
             // 放在前端（localStorage / sessionStorage）就一定会错——两次离线补发完全可能
             // 数值一模一样（同样离线到上限、产量也没变），按数值当指纹去重会把第二次吃掉；
@@ -376,10 +421,29 @@ public static class Program
 
         IQueryCollection query = context.Request.Query;
 
-        // 没有 epoch 就是普通请求：一字不改地走原来的路径（这是回归的底线，plan §7.5）
-        if (!query.ContainsKey("epoch")) return false;
+        // 两扇门都不带参数就是普通请求：一字不改地走原来的路径（这是回归的底线，plan §7.5）
+        bool hasEpoch = query.ContainsKey("epoch");
+        bool hasToken = query.ContainsKey("k");
+
+        if (!hasEpoch && !hasToken) return false;
 
         context.Response.Headers.CacheControl = "no-store";
+
+        // 两扇门同时带参数：**明确拒绝，不挑一个执行**。静默挑一个正是这个项目一路在消灭的
+        // 失败形态——请求方会以为自己要的那扇门生效了，然后去查一个不存在的问题。
+        if (hasEpoch && hasToken)
+        {
+            await WriteJsonAsync(context, StatusCodes.Status400BadRequest, new
+            {
+                ok = false,
+                message = "这次请求同时带了 epoch 与 k：它们两扇独立的门，一次只能用一扇。",
+            }).ConfigureAwait(false);
+            return true;
+        }
+
+        // 令牌门（?k=…，见 SHARE_LINK_PLAN §4）：先分流。
+        // 下面明文调试门那一段**一个字节都没有改**。
+        if (hasToken) return await TryHandleTokenGateAsync(context, query).ConfigureAwait(false);
 
         // ① 密钥装置本身在不在
         string? key = Environment.GetEnvironmentVariable(DebugKeyVariable);
@@ -453,6 +517,210 @@ public static class Program
             message = jump.Message,
         }).ConfigureAwait(false);
         return true;
+    }
+
+    /// <summary>
+    /// 令牌门：<c>/?package=lab&amp;k=&lt;密文&gt;</c> 用 <see cref="UrlKeyVariable"/> 解密，
+    /// 解出来的层号走<b>同一条</b> <see cref="GameHost.JumpToEraAsync"/>（见
+    /// <c>engine/docs/SHARE_LINK_PLAN.md</c> §4）。<para>
+    /// 于是"合法范围"与"跳过了哪些账"这两件事**不需要在这里重写一遍**：
+    /// 400 里的范围一定是这个包真实的那个，跳层的局限也一定跟着既有的回报走。
+    /// </para>
+    /// <para>
+    /// 拒绝一律明确报错，并且把 <see cref="ShareLinkFailure"/> 的名字放进正文
+    /// （<c>failure</c> 字段）：脚本与用例于是能精确判别，而不必去解析一句中文。
+    /// </para>
+    /// <para>
+    /// <b>这里不是权限系统</b>：钥匙在宿主的环境里，能读到它的人本来就能改这台机器上的存档
+    /// （SHARE_LINK_PLAN §4.3 把这条威胁模型写全了）。它比明文门强的地方只有两处、但都是真的：
+    /// URL 里不再是可复用的钥匙，而且范围与有效期被密文锁住。
+    /// </para>
+    /// </summary>
+    /// <param name="context">当前请求。</param>
+    /// <param name="query">已解析的查询串。</param>
+    /// <returns>已经写过响应时返回 <c>true</c>。</returns>
+    private static async Task<bool> TryHandleTokenGateAsync(HttpContext context, IQueryCollection query)
+    {
+        // ① 钥匙装置本身在不在
+        string? key = Environment.GetEnvironmentVariable(UrlKeyVariable);
+        if (string.IsNullOrEmpty(key))
+        {
+            await WriteJsonAsync(context, StatusCodes.Status403Forbidden, new
+            {
+                ok = false,
+                gate = "token",
+                failure = "KeyNotConfigured",
+                message = $"令牌门未启用：本机没有设置环境变量 {UrlKeyVariable}。",
+            }).ConfigureAwait(false);
+            return true;
+        }
+
+        // ② 解令牌（在碰会话之前就要有答案：被拒的请求不该顺手把内容包加载进内存）
+        string packageId = query["package"].ToString();
+        HostOptions options = context.RequestServices.GetRequiredService<HostOptions>();
+        GameHost? host = Sessions.TryGet(packageId.Length == 0 ? null : packageId, options);
+        if (host is null)
+        {
+            await WriteJsonAsync(context, StatusCodes.Status404NotFound, new
+            {
+                ok = false,
+                gate = "token",
+                package = packageId,
+                message = $"没有内容包 <{packageId}>。",
+            }).ConfigureAwait(false);
+            return true;
+        }
+
+        ShareLinkOpenResult opened = ShareLinkCodec.Open(
+            key,
+            query["k"].ToString(),
+            ShareLinkPurpose.EraToken,
+            host.Package.Id,
+            DateTimeOffset.UtcNow);
+
+        if (!opened.Ok)
+        {
+            await WriteJsonAsync(context, StatusCodes.Status403Forbidden, new
+            {
+                ok = false,
+                gate = "token",
+                package = host.Package.Id,
+                failure = opened.Failure.ToString(),
+                message = opened.Message,
+            }).ConfigureAwait(false);
+            return true;
+        }
+
+        // ③ 与明文门**同一个**入口：范围校验在游戏线程上做，400 里带的是这个包真实的合法范围。
+        DebugEraJump jump = await host
+            .JumpToEraAsync(opened.Payload!.Era.ToString(CultureInfo.InvariantCulture))
+            .ConfigureAwait(false);
+
+        if (!jump.Applied)
+        {
+            await WriteJsonAsync(context, StatusCodes.Status400BadRequest, new
+            {
+                ok = false,
+                gate = "token",
+                package = host.Package.Id,
+                from = jump.From,
+                validRange = new { min = jump.Min, max = jump.Max },
+                message = jump.Message,
+            }).ConfigureAwait(false);
+            return true;
+        }
+
+        await WriteJsonAsync(context, StatusCodes.Status200OK, new
+        {
+            ok = true,
+            gate = "token",
+            package = host.Package.Id,
+            from = jump.From,
+            to = jump.To,
+            validRange = new { min = jump.Min, max = jump.Max },
+            skipped = DebugSkippedBookkeeping,
+            autosave = "disabled",
+            expiresAt = opened.Payload.ExpiresAt?.ToUniversalTime().ToString("u", CultureInfo.InvariantCulture),
+            message = jump.Message,
+        }).ConfigureAwait(false);
+        return true;
+    }
+
+    /// <summary>
+    /// 铸一枚跳层令牌并打印 URL（<c>--mint-link</c>，见 <c>SHARE_LINK_PLAN.md</c> §4.2）。<para>
+    /// 它<b>不启动宿主</b>：铸造是"写一条链接"，而链接的下一站是浏览器。
+    /// 钥匙只从 <see cref="UrlKeyVariable"/> 来；没设就<b>拒绝铸造</b>——
+    /// 绝不产出一段"宿主一定解不开"的链接（那正是最坏的一种成功报告）。
+    /// </para>
+    /// <para>
+    /// 层号在铸造时对着这个包<b>真实的层数</b>校验一次（与 <see cref="GameHost.JumpToEraAsync"/>
+    /// 同一条判据）：把错误留在铸造那一步，而不是留给十分钟后的浏览器。
+    /// </para>
+    /// <para>
+    /// 输出分工是刻意的：<b>URL 走 stdout</b>（脚本要能整行取走），
+    /// 给人看的那两句走 stderr。
+    /// </para>
+    /// </summary>
+    /// <param name="args">命令行参数。</param>
+    /// <returns>退出码；成功为 <c>0</c>。</returns>
+    private static int MintEraLink(string[] args)
+    {
+        string? key = Environment.GetEnvironmentVariable(UrlKeyVariable);
+        if (string.IsNullOrEmpty(key))
+        {
+            Console.Error.WriteLine(
+                $"铸不出令牌：没有设置环境变量 {UrlKeyVariable}。"
+                + $"先临时设一把钥匙（$env:{UrlKeyVariable} = '…'），再重跑这条命令。");
+            return 2;
+        }
+
+        string? packageId = ReadOption(args, "--package");
+        string? eraText = ReadOption(args, "--era");
+        if (packageId is null || eraText is null
+            || !int.TryParse(eraText, NumberStyles.Integer, CultureInfo.InvariantCulture, out int era))
+        {
+            Console.Error.WriteLine(
+                "用法：--mint-link --package <包 id> --era <层号> [--expires-hours <小时>] [--base-url <地址>]");
+            return 2;
+        }
+
+        WebPackage? package = PackageCatalog.Find(packageId);
+        if (package is null)
+        {
+            Console.Error.WriteLine(
+                $"没有内容包 <{packageId}>。可用的是：{string.Join("、", PackageCatalog.All.Select(p => p.Id))}");
+            return 2;
+        }
+
+        int max = package.Build().MaxEraIndex;
+        if (max < 1)
+        {
+            Console.Error.WriteLine($"内容包「{package.Id}」没有分层转生，没有层可跳。");
+            return 2;
+        }
+
+        if (era < 1 || era > max)
+        {
+            Console.Error.WriteLine($"第 {era} 层越界（内容包「{package.Id}」只有 {max} 层）。合法范围：1..{max}。");
+            return 2;
+        }
+
+        DateTimeOffset? expiresAt = null;
+        if (ReadOption(args, "--expires-hours") is { } hoursText)
+        {
+            if (!double.TryParse(hoursText, NumberStyles.Float, CultureInfo.InvariantCulture, out double hours) || hours <= 0)
+            {
+                // 默认**不设过期**（与明文门一样是"本机调试用"）；给了这个参数就必须给一个正数，
+                // 而不是"看不懂就当成没过期"——那会把一个明确的意图变成一个沉默的默认值。
+                Console.Error.WriteLine($"--expires-hours 需要一个正数（收到「{hoursText}」）。");
+                return 2;
+            }
+
+            expiresAt = DateTimeOffset.UtcNow.AddHours(hours);
+        }
+
+        string baseUrl = (ReadOption(args, "--base-url")
+                          ?? ReadOption(args, "--urls")
+                          ?? ReadOption(args, "--url")
+                          ?? DefaultUrl).TrimEnd('/');
+
+        try
+        {
+            string token = ShareLinkCodec.Protect(key, ShareLinkPurpose.EraToken, package.Id, null, era, expiresAt);
+
+            Console.WriteLine($"{baseUrl}/?package={package.Id}&k={token}");
+            Console.Error.WriteLine(
+                $"已铸一枚跳层令牌：内容包「{package.Id}」第 {era} 层、{token.Length} 个字符"
+                + (expiresAt is null
+                    ? "、不过期。"
+                    : $"、{expiresAt.Value.ToUniversalTime().ToString("u", CultureInfo.InvariantCulture)} 过期。"));
+            return 0;
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"铸不出令牌：{ex.Message}");
+            return 2;
+        }
     }
 
     /// <summary>按线上协议的序列化选项写一份 JSON 响应。</summary>

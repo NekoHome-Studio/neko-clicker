@@ -21,8 +21,8 @@
 // 覆盖边界（诚实）: 它证明的是"真的被执行过的路径不抛异常"。没被执行到的分支
 // （`if (!pill) return` 这类防御）只有 node --check 的语法保证。
 //
-// 这个脚本**从 2026-10 起进了 tools/build.ps1**（也进了 CI）：一条 208 条断言（2026-10-04 起；
-// §26 的「右栏填满」之前是 203 条、§26 的「富余高度钉在最后一行」之前是 202 条、
+// 这个脚本**从 2026-10 起进了 tools/build.ps1**（也进了 CI）：一条 224 条断言（§28「分享链接」起；
+// 此前是 208 条、§26 的「右栏填满」之前是 203 条、§26 的「富余高度钉在最后一行」之前是 202 条、
 // §26 的「等高」之前是 199 条、
 // §27「批量档位下的总价」之前是 193 条、
 // §25「缩放适配」与 §26「两栏对齐」之前是 162 条、
@@ -278,9 +278,9 @@ const copyAs = (name, source) => {
  * `clipboard`：要不要给一个可用的 `navigator.clipboard`。**两种都要测**：
  * 一种走"复制成功"，另一种走"写不进去"的退路（那时不许假装成功）。
  */
-async function loadApp(moduleUrl, { hash = "", reply = null, clipboard = true } = {}) {
+async function loadApp(moduleUrl, { hash = "", search = "", reply = null, clipboard = true } = {}) {
   const doc = makeDom();
-  const location = { search: "", hash };
+  const location = { origin: "http://127.0.0.1:5273", pathname: "/", search, hash };
   const commands = [];
   const sources = [];
   const frames = [];
@@ -296,7 +296,17 @@ async function loadApp(moduleUrl, { hash = "", reply = null, clipboard = true } 
   globalThis.location = location;
   globalThis.history = {
     replaceState(_state, _title, url) {
-      if (typeof url === "string" && url.startsWith("#")) location.hash = url;
+      if (typeof url !== "string") return;
+
+      // 只写 hash 的那条老路（页签切换）与 `#tab=…` 完全同形，行为原样保留。
+      if (url.startsWith("#")) { location.hash = url; return; }
+
+      // 整条 URL：`?share=…` 导入成功之后要把它从地址栏抹掉（见 app.js 的 stripShareFromUrl）。
+      // 桩必须真的解析它——否则"那一段真的消失了吗"就只能靠人眼看浏览器。
+      const parsed = new URL(url, "http://127.0.0.1:5273/");
+      location.pathname = parsed.pathname;
+      location.search = parsed.search;
+      location.hash = parsed.hash;
     },
   };
   globalThis.EventSource = StubEventSource;
@@ -2130,13 +2140,18 @@ section("24. 存档的导出 / 导入窗口（入口 / 复制 / 下载 / 导入�
       if (!new RegExp(`<textarea id="${id}"`).test(html)) throw new Error(`#${id} 不是 <textarea>`);
     }
   });
-  check("提示条与存档窗口的结果行是页面上**恰好两个**实时区域（一个不多、一个不少）", () => {
-    // 先剥注释：注释里必须能提 `role="status"` 这类名字（那正是"为什么有两条"要解释的东西），
+  check("提示条与存档窗口的结果行是页面上**恰好四条**实时区域（一个不多、一个不少）", () => {
+    // 先剥注释：注释里必须能提 `role="status"` 这类名字（那正是"为什么有这几条"要解释的东西），
     // 而注释在浏览器里不产生元素——这一条第一次跑就是这么红的（数出了三条，多出来那条是注释）。
+    //
+    // 从"恰好两个"改成"恰好四个"是**加分享链接那一节时的一次有意改动**（§28）：
+    // 生成链接的失败原因、打开链接的失败原因都必须留在屏幕上并被读屏念出来，
+    // 而那两句话与导入那句话不在同一个元素里（三件事、三处结果行）。
+    // 这条守卫的用处不变：它拦的是"顺手又加了一个提示"，而不是"这处失败需要被念出来"。
     const body = html.replace(/<!--[\s\S]*?-->/g, "");
     const live = [...body.matchAll(/<[^>]*\brole="status"[^>]*>/g)].map((m) => m[0]);
     const ids = live.map((tag) => /\bid="([^"]+)"/.exec(tag)?.[1] ?? "(无 id)").sort();
-    eq(ids.join(", "), "import-result, toast", "实时区域");
+    eq(ids.join(", "), "import-result, share-note, share-open-note, toast", "实时区域");
   });
 }
 
@@ -2925,6 +2940,226 @@ section("27. 批量档位下的「总价」（×10 / ×100 / 买满）");
 
   check("未解锁那一行照旧画解锁条件（不许在锁着的行上摆一个总价）", () => {
     eq(priceOf(), "累计赚到 300（40%）", "未解锁那一行");
+  });
+}
+
+// 28. 分享链接（生成 / 复制 / 打开 URL 上带来的那一段）。
+//
+// 这一节守的是**界面这一层**，方案见 engine/docs/SHARE_LINK_PLAN.md §5/§7。
+// 密码学那一侧有 12 条 C# 用例（ShareLinkTests）盯着，它们证明的是"密文、长度闸、密码错时什么都不动"；
+// 它们**证明不了**页面这一侧最容易撒谎的三件事，而那正是这一节存在的理由：
+//
+//   · **密码不进链接**：宿主回的令牌、页面拼出来的那条 URL、写进剪贴板的那一份，
+//     三处都不许出现密码（这是使用者唯一无法自己核对的事——他看不出来）；
+//   · **不自动尝试密码**：打开一个 ?share= 链接时，页面只把输入框摆出来等人打字，
+//     **一封信都不许先发出去**（那不是口令校验，那是解密，猜一次没有任何意义）；
+//   · **用完就抹地址**：导入成功之后 `?share=…` 必须从地址栏消失，失败时**不许**抹
+//     （抹掉就等于把"再试一次"的唯一凭据毁了）。
+section("28. 分享链接：生成 / 复制 / 打开（密码不进链接、不自动尝试、用完抹地址）");
+{
+  const EXPORT_MESSAGE = "已生成导出文本（内容包「neko」、218 个字符）——整份复制走，就能在别处导入；也可以下载成 .json 文件。";
+  const ENVELOPE = "{\"Format\":\"neko-save\",\"Save\":\"{}\"}";
+
+  /** 宿主回的令牌：形状与真货一样（base64url、无填充），内容不重要——前端只搬运。 */
+  const TOKEN = "TktMMXPz0eHq8vYwRk2mQ4bN7cA1dF5gJ9kL3pX6tZ8uV0yB2nM4rS6wE-_.qDfGh";
+  const PASSWORD = "correct-horse-battery";
+  const MADE_MESSAGE = `已生成分享链接（${TOKEN.length} 个字符，内容包「neko」）——把它发给对方，对方用这个密码打开。密码不在链接里。`;
+  const OPEN_MESSAGE = "已解开分享链接（内容包「neko」、218 个字符的导出文本）｜已导入：内容包「neko」｜存档格式 1｜框架 1.10.2｜当前会话与 neko.json 都已换成这一份｜已核对包标识（neko）｜存档里的 id 这个包全都认识。";
+  const OPEN_FAILURE = "打不开：密码不对，或者这段链接被改过 / 被截断了。（这两件事在密码学上分不开。）请核对密码，或让对方重新发一次链接。";
+
+  /** 宿主桩：把收到的密码记下来（这正是"密码走请求体、不走 URL"要被验的地方）。 */
+  const makeReply = (record, importOk = true) => (body) => {
+    if (!body) return null;
+    if (body.type === "export") return { ok: true, message: EXPORT_MESSAGE, text: ENVELOPE, seq: 1 };
+    if (body.type === "shareLink") {
+      record.password = body.password;
+      return { ok: true, message: MADE_MESSAGE, text: TOKEN, seq: 2 };
+    }
+    if (body.type === "importShare") {
+      record.token = body.token;
+      record.importPassword = body.password;
+      return importOk
+        ? { ok: true, message: OPEN_MESSAGE, seq: 3 }
+        : { ok: false, message: OPEN_FAILURE, seq: 4 };
+    }
+    return { ok: true, message: "已存档。", seq: 5 };
+  };
+
+  // ---- A. 没有 share 参数时：那一行不该出现 ----
+  const record = {};
+  const plain = await loadApp(copyAs("app-share-plain.mjs", appSource), { reply: makeReply(record) });
+  await plain.push({ kind: "full", seq: 1, snapshot: snapshot() });
+
+  check("没带 ?share= 时：打开分享链接那一行是隐藏的，而且**一条命令都没发**", () => {
+    eq(hidden(plain, "share-open"), true, "#share-open 应当隐藏");
+    eq(plain.commands.length, 0, "首帧不该自动发任何命令");
+  });
+
+  // ---- B. 生成 ----
+  fire(el(plain, "save"), "click");
+  await flush();
+  eq(shown(plain, "save-sheet"), true, "前置条件：存档窗口开着");
+
+  check("密码为空时不发命令，并且说清为什么（没有密码，链接里的存档等于明文）", () => {
+    el(plain, "share-password").value = "";
+    fire(el(plain, "share-make"), "click");
+    eq(commandsOf(plain, "shareLink").length, 0, "不该发 shareLink");
+    if (!el(plain, "share-note").textContent.includes("先给链接")) {
+      throw new Error(`没有说明为什么不能生成：<${el(plain, "share-note").textContent}>`);
+    }
+  });
+
+  el(plain, "share-password").value = PASSWORD;
+  fire(el(plain, "share-make"), "click");
+  await flush();
+
+  check("按「生成分享链接」把密码交给宿主（走请求体），并把令牌画进只读框", () => {
+    const sent = commandsOf(plain, "shareLink");
+    eq(sent.length, 1, "发出去的 shareLink 条数");
+    eq(sent[0].password, PASSWORD, "宿主收到的密码");
+    const link = el(plain, "share-link").value;
+    if (!link.includes(`share=${TOKEN}`)) throw new Error(`链接里没有令牌：<${link}>`);
+    if (!link.includes("package=neko")) throw new Error(`链接里没有包名（打开之后会落到别的包上）：<${link}>`);
+  });
+
+  check("**链接里不许出现密码**（这是使用者自己核对不出来的那一件事）", () => {
+    const link = el(plain, "share-link").value;
+    if (link.includes(PASSWORD)) throw new Error(`链接里出现了密码：<${link}>`);
+    // 宿主回来的令牌也要干净：页面拼 URL 时把令牌原样接上去，所以令牌里若有密码一样会漏。
+    if (TOKEN.includes(PASSWORD)) throw new Error("夹具自己写错了：令牌里含密码");
+  });
+
+  check("拿到链接之后立刻清空密码框，并且在那句话里报出长度", () => {
+    eq(el(plain, "share-password").value, "", "密码框应当被清空");
+    const note = el(plain, "share-note").textContent;
+    if (!note.includes("密码不在链接里")) throw new Error(`宿主那句话没有被原样带出来：<${note}>`);
+    if (!note.includes(`${el(plain, "share-link").value.length} 个字符`)) {
+      throw new Error(`没有报出链接长度：<${note}>`);
+    }
+  });
+
+  check("「复制链接」写进剪贴板的是**那条链接本身**（不是令牌、也不是导出文本）", async () => {
+    fire(el(plain, "share-copy"), "click");
+    await flush();
+    eq(plain.clipboardWrites.length, 1, "写剪贴板的次数");
+    eq(plain.clipboardWrites[0], el(plain, "share-link").value, "写进去的内容");
+    if (plain.clipboardWrites[0].includes(PASSWORD)) throw new Error("写进剪贴板的那一份里出现了密码");
+  });
+
+  // 剪贴板拿不到时不许假装成功（与 §24 的「复制」同一条规矩）。
+  const noClipboard = await loadApp(copyAs("app-share-noclip.mjs", appSource), {
+    reply: makeReply({}), clipboard: false,
+  });
+  await noClipboard.push({ kind: "full", seq: 1, snapshot: snapshot() });
+  fire(el(noClipboard, "save"), "click");
+  await flush();
+  el(noClipboard, "share-password").value = PASSWORD;
+  fire(el(noClipboard, "share-make"), "click");
+  await flush();
+  fire(el(noClipboard, "share-copy"), "click");
+  await flush();
+
+  check("剪贴板写不进去时：明说失败 + 把链接选中给人按 Ctrl+C（**绝不假装已复制**）", () => {
+    eq(noClipboard.clipboardWrites.length, 0, "一次都没有写进去");
+    const note = el(noClipboard, "share-note").textContent;
+    if (!note.includes("不允许")) throw new Error(`没有说明是浏览器不允许：<${note}>`);
+    if (!note.includes("Ctrl+C")) throw new Error(`没有给出退路（Ctrl+C）：<${note}>`);
+    eq(el(noClipboard, "share-link").selected, true, "链接要被选中");
+  });
+
+  // ---- C. 打开 URL 上带来的那一段 ----
+  const opened = {};
+  const incoming = await loadApp(copyAs("app-share-incoming.mjs", appSource), {
+    search: `?package=neko&share=${TOKEN}`,
+    reply: makeReply(opened),
+  });
+  await incoming.push({ kind: "full", seq: 1, snapshot: snapshot() });
+
+  check("URL 带 ?share= 时：窗口自己打开、密码那一行出现、焦点在密码框上", () => {
+    eq(shown(incoming, "save-sheet"), true, "存档窗口应当自己打开");
+    eq(shown(incoming, "share-open"), true, "#share-open 应当出现");
+    eq(el(incoming, "share-open-password").focused, 1, "焦点应当在密码框上");
+    if (!el(incoming, "share-open-note").textContent.includes("什么都不会动")) {
+      throw new Error(`没有说清失败时什么都不会动：<${el(incoming, "share-open-note").textContent}>`);
+    }
+  });
+
+  check("**不自动尝试任何密码**：一条 importShare 都不许先发出去", () => {
+    eq(commandsOf(incoming, "importShare").length, 0, "不该自动试密码");
+  });
+
+  check("密码为空时按「导入」不发命令（先要一个密码，而不是先发一封信）", () => {
+    fire(el(incoming, "share-open-go"), "click");
+    eq(commandsOf(incoming, "importShare").length, 0, "空密码不该发命令");
+  });
+
+  el(incoming, "share-open-password").value = PASSWORD;
+  fire(el(incoming, "share-open-go"), "click");
+  await flush();
+
+  check("导入：令牌与密码一起走请求体，结果原样显示，而且**地址栏里的 share 被抹掉**", () => {
+    const sent = commandsOf(incoming, "importShare");
+    eq(sent.length, 1, "发出去的 importShare 条数");
+    eq(sent[0].token, TOKEN, "带上去的令牌");
+    eq(sent[0].password, PASSWORD, "带上去的密码");
+    eq(el(incoming, "share-open-note").textContent, OPEN_MESSAGE, "显示的是宿主那句话");
+    eq(el(incoming, "share-open-password").value, "", "密码框应当被清空");
+    if (incoming.location.search.includes("share")) {
+      throw new Error(`地址栏里的 share 没有被抹掉：<${incoming.location.search}>`);
+    }
+    if (!incoming.location.search.includes("package=neko")) {
+      throw new Error(`抹的时候把别的参数也弄丢了：<${incoming.location.search}>`);
+    }
+    eq(commandsOf(incoming, "export").length, 2, "导入成功后要重新取一份导出文本（开窗口时一次、导入后一次）");
+  });
+
+  // 密码错：失败原因留在屏幕上，而且**地址栏不许被抹**（抹掉就等于毁掉再试一次的凭据）。
+  const failed = {};
+  const wrong = await loadApp(copyAs("app-share-wrong.mjs", appSource), {
+    search: `?package=neko&share=${TOKEN}`,
+    reply: makeReply(failed, false),
+  });
+  await wrong.push({ kind: "full", seq: 1, snapshot: snapshot() });
+  el(wrong, "share-open-password").value = "not-the-password";
+  fire(el(wrong, "share-open-go"), "click");
+  await flush();
+
+  check("密码错：显示宿主那句话，地址栏**保持不动**，而且没有重新取导出文本", () => {
+    eq(el(wrong, "share-open-note").textContent, OPEN_FAILURE, "显示的是编解码那句话");
+    if (!wrong.location.search.includes("share")) {
+      throw new Error(`失败时不该抹地址栏（那是再试一次的凭据）：<${wrong.location.search}>`);
+    }
+    eq(commandsOf(wrong, "export").length, 1, "失败时不该重新取导出文本");
+  });
+
+  check("密码框里按回车与按「导入」等价（那是所有人的第一反应）", async () => {
+    el(wrong, "share-open-password").value = PASSWORD;
+    fire(el(wrong, "share-open-password"), "keydown", { key: "Enter" });
+    await flush();
+    eq(commandsOf(wrong, "importShare").length, 2, "回车应当再发一次 importShare");
+  });
+
+  // ---- D. 标记的形状（密码不上屏 / 只读 / 有标签） ----
+  check("两个密码框都是 type=password（密码不许被画在屏幕上）且都带 aria-label", () => {
+    for (const id of ["share-password", "share-open-password"]) {
+      const tag = new RegExp(`<input id="${id}"[^>]*>`).exec(html)?.[0] ?? "";
+      if (!tag) throw new Error(`index.html 里没有 #${id}`);
+      if (!/\btype="password"/.test(tag)) throw new Error(`#${id} 不是 type=password：<${tag}>`);
+      if (!/\baria-label="[^"]+"/.test(tag)) throw new Error(`#${id} 没有 aria-label：<${tag}>`);
+    }
+  });
+
+  check("分享链接那一份是**只读**的多行文本框（与导出文本同理：它是要被整份复制走的东西）", () => {
+    const tag = /<textarea id="share-link"[^>]*>/.exec(html)?.[0] ?? "";
+    if (!tag) throw new Error("index.html 里没有 #share-link");
+    if (!/\breadonly\b/.test(tag)) throw new Error(`#share-link 上没有 readonly：<${tag}>`);
+  });
+
+  check("生成 / 打开两处结果行都是 role=status（失败原因必须能被读屏念出来）", () => {
+    for (const id of ["share-note", "share-open-note"]) {
+      const tag = new RegExp(`<p id="${id}"[^>]*>`).exec(html)?.[0] ?? "";
+      if (!/\brole="status"/.test(tag)) throw new Error(`#${id} 上没有 role=status：<${tag}>`);
+    }
   });
 }
 

@@ -22,6 +22,15 @@ const $ = (selector) => document.querySelector(selector);
 const params = new URLSearchParams(location.search);
 const packageId = params.get("package");
 
+/**
+ * URL 上带来的分享链接令牌（`?share=…`），没有时为 `null`。<para>
+ * 它是一段**密文**：没有密码谁也读不出里面的存档（密码不在 URL 里，也不在这份代码里）。
+ * 页面只做一件事——把那一行密码输入显出来等人输入；**不自动尝试任何密码**，
+ * 因为那不是口令校验，那是解密（见 openIncomingShare）。
+ * </para>
+ */
+const incomingShare = params.get("share");
+
 /** 本地状态：从全量帧开始，之后靠增量帧累积。 */
 let state = null;
 let seq = 0;
@@ -622,6 +631,9 @@ function renderChoicesSheet() {
 //
 // 这是**第三张 sheet**，形态与「离线收益」「表态」完全共用（`.sheet-layer` / `.sheet` /
 // `.sheet-close` / `sheet-ok` / `sheet-in`）——这个文件里没有第二套弹窗。
+// 它同时装第四件事——**分享链接**（生成 / 复制 / 用密码打开 URL 上带来的那一段，
+// 见下面单独那一节与 engine/docs/SHARE_LINK_PLAN.md §5/§7）：它属于同一扇窗口，
+// 所以没有为它新开一张。
 //
 // 三条约定，都在下面这几段里执行：
 //
@@ -655,6 +667,14 @@ function openSaveSheet() {
   setNote("export-note", "正在取当前存档…");
   setNote("import-result", "");
   setNote("save-note", "");
+  setNote("share-note", "");
+  setNote("share-open-note", "");
+
+  // 上一条分享链接也要清掉，理由与导出文本框**不同**：那一份还指向导出文本（没过期），
+  // 而链接一旦生成就固定住了当时那份存档——留着它，玩家会以为它跟着现在这局走。
+  // 密码输入框同样清掉：它留着没有任何用处（`type=password` 只是遮住它，不是擦掉它）。
+  $("#share-link").value = "";
+  $("#share-password").value = "";
 
   $("#export-text").focus();
   refreshExport();
@@ -776,6 +796,136 @@ async function saveNow() {
   }
 
   setNote("save-note", result.message ?? (result.ok ? "已存档。" : "存档失败。"), !result.ok);
+}
+
+// ---------------------------------------------------------------- 分享链接
+
+/**
+ * 生成一段分享链接：把密码交给宿主（它**不进 URL、也不留在这份代码里**），拿回链接文本。<para>
+ * 与「导出」同一条分工：加解密、长度闸、以及"密码错就什么都不动"全在宿主/编解码那一侧，
+ * 前端一行校验都不做——它只负责搬运与把宿主那句话原样显示（见 SHARE_LINK_PLAN §5/§7）。
+ * </para>
+ * <para>
+ * 拿到结果之后**立刻清空密码框**：它留在 DOM 里没有任何用处，而 `type="password"` 只是
+ * 把它画成圆点，不是把它擦掉。
+ * </para>
+ */
+async function makeShareLink() {
+  const input = $("#share-password");
+  const password = input.value;
+  if (!password) {
+    setNote("share-note", "先给链接设一个密码——没有它，链接里的存档等于明文。", true);
+    return;
+  }
+
+  const result = await send("shareLink", { password }, { quiet: true });
+  input.value = "";
+
+  if (!result?.ok) {
+    $("#share-link").value = "";
+    setNote("share-note", result?.message ?? "生成失败：宿主没有回话。", true);
+    return;
+  }
+
+  const link = buildShareUrl(result.text ?? "");
+  $("#share-link").value = link;
+  setNote("share-note", `${result.message ?? ""}（整段 ${link.length} 个字符。宿主只监听本机，`
+    + `所以把地址换成对方自己那台的宿主地址，或者让对方把 ?share=… 那一段贴上去。）`);
+}
+
+/**
+ * 把宿主回的令牌拼成一条能直接打开的链接。<para>
+ * <b>前面那一段（协议 + 主机 + 端口）由页面按当前地址拼</b>，宿主只回令牌——
+ * 因为只有页面知道玩家此刻是从哪个地址进来的（本机回环、反向代理、换端口都可能）。
+ * </para>
+ */
+function buildShareUrl(token) {
+  const origin = location.origin ?? "http://127.0.0.1:5273";
+  return `${origin}/?package=${encodeURIComponent(packageId ?? "neko")}&share=${token}`;
+}
+
+/** 复制链接。与 `copyExport` 同一条规矩：剪贴板拿不到时**绝不假装成功**。 */
+async function copyShareLink() {
+  const box = $("#share-link");
+  const text = box.value;
+  if (!text) {
+    setNote("share-note", "还没有链接可复制。", true);
+    return;
+  }
+
+  const clipboard = navigator.clipboard;
+  if (!clipboard || typeof clipboard.writeText !== "function") {
+    box.select();
+    setNote("share-note", "这个浏览器不允许脚本写剪贴板。链接已经选中，按 Ctrl+C 复制。", true);
+    return;
+  }
+
+  try {
+    await clipboard.writeText(text);
+    setNote("share-note", `已复制 ${text.length} 个字符到剪贴板。`);
+  } catch (error) {
+    box.select();
+    setNote("share-note", `复制失败（${error.message}）。链接已经选中，按 Ctrl+C 复制。`, true);
+  }
+}
+
+/**
+ * URL 上带了 `?share=…`：把密码那一行显出来，等人输入。<para>
+ * <b>刻意不自动尝试任何密码</b>：那不是"口令校验"（错了可以再试一次），那是**解密**——
+ * 猜一次除了浪费一次 PBKDF2 什么也换不来，而"我们要不要替你试一个常见密码"这种功能
+ * 本身就是个坏主意。密码只有人知道。
+ * </para>
+ */
+function openIncomingShare() {
+  $("#share-open").classList.remove("hidden");
+  openSaveSheet();
+
+  setNote("share-open-note", "这段链接要一个密码才能打开（对方设的那个）。"
+    + "密码不对、或者链接被改过，就什么都不会动——磁盘上现在的存档与备份都不受影响。");
+  $("#share-open-password").focus();
+}
+
+/**
+ * 用输入的密码导入 URL 上那段链接。<para>
+ * 结果原样显示（引擎/编解码写好的那句话），而且**成功后要两件事**：
+ * ① 把 `share` 从地址栏抹掉（那一行会被复制、会被截图，用完了就该消失）；
+ * ② 重新取一份导出文本（与 `importSave` 同一条：换掉的是整局状态）。
+ * </para>
+ */
+async function importIncomingShare() {
+  if (!incomingShare) {
+    setNote("share-open-note", "这个页面的地址里没有 share 参数。", true);
+    return;
+  }
+
+  const input = $("#share-open-password");
+  const password = input.value;
+  if (!password) {
+    setNote("share-open-note", "先输入对方给你的密码。", true);
+    return;
+  }
+
+  const result = await send("importShare", { token: incomingShare, password }, { quiet: true });
+  input.value = "";
+
+  setNote("share-open-note", result?.message ?? "导入失败：宿主没有回话。", !result?.ok);
+
+  if (result?.ok) {
+    stripShareFromUrl();
+    await refreshExport();
+  }
+}
+
+/** 地址栏里的 `share` 用完就抹掉（其它参数原样留着）。 */
+function stripShareFromUrl() {
+  if (!location.pathname || !location.search) return;
+
+  const query = new URLSearchParams(location.search);
+  if (!query.has("share")) return;
+
+  query.delete("share");
+  const rest = query.toString();
+  history.replaceState(null, "", `${location.pathname}${rest ? `?${rest}` : ""}${location.hash || ""}`);
 }
 
 /** 写一行结果；`bad` 决定它是"做到了"还是"没做到"的颜色（文案一律用宿主/引擎给的原文）。 */
@@ -1818,6 +1968,15 @@ $("#export-download").addEventListener("click", downloadExport);
 $("#import-go").addEventListener("click", importSave);
 $("#save-now").addEventListener("click", saveNow);
 
+// 分享链接：生成 / 复制 / 用密码导入。回车与按钮等价——密码框里按回车是所有人的第一反应，
+// 而全局那一条 keydown 遇到 INPUT 就直接返回了（见下面的事件段），所以这里必须自己接。
+$("#share-make").addEventListener("click", makeShareLink);
+$("#share-copy").addEventListener("click", copyShareLink);
+$("#share-open-go").addEventListener("click", importIncomingShare);
+$("#share-open-password").addEventListener("keydown", (event) => {
+  if (event.key === "Enter") importIncomingShare();
+});
+
 // 离线弹窗：按钮、点遮罩空白处、Esc、空格都能收下它。
 // 遮罩上的点击要认准"点在遮罩本身"——点在卡片里的任何地方都不该关掉。
 $("#offline-ok").addEventListener("click", dismissOffline);
@@ -1934,6 +2093,10 @@ document.addEventListener("keydown", (event) => {
 
 const initialTab = new URLSearchParams(location.hash.replace(/^#/, "")).get("tab");
 if (initialTab) selectTab(initialTab);
+
+// URL 上带了分享链接就把"输入密码"那一行摆出来（见 openIncomingShare）：
+// 收件人打开链接之后该做的第一件事就是这个，不必先自己找到「存档」按钮。
+if (incomingShare) openIncomingShare();
 
 connect();
 requestAnimationFrame(animate);
