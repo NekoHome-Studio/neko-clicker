@@ -396,6 +396,18 @@ Web 宿主不在 `NekoClicker.sln` 里（它是独立的单项目 sln），但 `
     不通不妨碍 `https://api.github.com/repos/NekoHome-Studio/neko-clicker/actions/runs`
     1.3 秒返回 200（公开仓库只读，不要 token）；本机还装了 `gh`
     （`C:\Program Files\GitHub CLI\gh`）。结果见 §6。
+12. **在 agent harness 的 shell 里跑 `tools/*.ps1`，要用 `-File` 那种调法**（2026-10-05 实测）：
+    `.\tools\build.ps1 -Strict` 会被 PowerShell 直接拒掉——报 `AuthorizationManager check failed`
+    （本机 `LocalMachine` 策略是 `Unrestricted`，所以这不是策略问题，是那种调用方式在这层 shell 里过不去）。
+    可用的形式是：
+
+    ```powershell
+    powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\build.ps1 -Strict
+    ```
+
+    顺带一条同源的：**要看退出码就把输出重定向到文件**（`... *> .tmp\strict.log; "EXIT=$LASTEXITCODE"`），
+    别用管道（`... 2>&1 | Select-Object -Last N`）——本轮用管道跑时出现过一次
+    "输出 571 全绿而进程退出码 1"，重定向重跑是 `EXIT=0`，根因没定位（记在 `OPEN_WORK` §0.23.10）。
 
 ---
 
