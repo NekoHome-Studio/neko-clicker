@@ -20,7 +20,12 @@ $root = Split-Path -Parent $PSScriptRoot
 $strict = $args -contains '-Strict'
 $forward = @($args | Where-Object { $_ -ne '-Strict' -and $_ -ne '-SkipWebSmoke' })
 
-$buildArgs = @("$root\NekoClicker.sln", '-v', 'q', '--nologo', '-warnaserror')
+# 路径一律用 Join-Path / 正斜杠拼：PowerShell 的**提供程序**在 Linux 上会把 `\` 当分隔符
+# 归一化掉（所以 `& "$PSScriptRoot\dnet.ps1"` 那种调用在 Linux 上照样能跑），
+# 但**传给原生进程的参数不会被归一化**——`dotnet exec <带反斜杠的 dll 路径>` 在 Linux 上
+# 报的是 "The application to execute does not exist"。这是 2026-10-05 加 Linux 作业（W7）时
+# 逮到的：Linux 上编译全过（0 警告 0 错误 ×2），红的只有下面这一行传出去的路径。
+$buildArgs = @((Join-Path $root 'NekoClicker.sln'), '-v', 'q', '--nologo', '-warnaserror')
 if ($strict) { $buildArgs += '--no-incremental' }
 
 # 构建失败时：**只报告**谁可能占着 bin / obj，绝不杀任何进程（STRUCTURE_OPTIMIZATION §S3）。
@@ -124,7 +129,7 @@ if ($LASTEXITCODE -ne 0) {
 # 而"编不到"的后果是**静默**的：实测它曾经长时间停在 net10.0，而本机只有 SDK 8.0.303，
 # 也就是**根本编不过**——却没有任何一条命令会红，直到有人真的去编它。
 # 所以这一条必须由 build.ps1 兜住：一条命令验证全部，才有资格叫"一键"。
-$webSln = Join-Path $root 'games\hosts\Web\NekoClicker.Web.sln'
+$webSln = Join-Path $root 'games/hosts/Web/NekoClicker.Web.sln'
 if (Test-Path $webSln) {
     Write-Host ''
     Write-Host '=== 构建 Web 宿主（独立 sln）===' -ForegroundColor Cyan
@@ -177,5 +182,6 @@ else {
 
 Write-Host ''
 Write-Host '=== 测试 ===' -ForegroundColor Cyan
-& "$PSScriptRoot\dnet.ps1" exec "$root\engine\tests\bin\Debug\net8.0\NekoClicker.Core.Tests.dll" @forward
+$testDll = Join-Path $root 'engine/tests/bin/Debug/net8.0/NekoClicker.Core.Tests.dll'
+& "$PSScriptRoot\dnet.ps1" exec $testDll @forward
 exit $LASTEXITCODE
