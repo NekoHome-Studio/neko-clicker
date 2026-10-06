@@ -5,9 +5,19 @@
 + #3《猫娘实验室》+ #10《猫娘公司》+ #6《猫娘末世》+ #9《猫娘图书馆》
 + #7《猫娘神明》+ #4《猫娘文明》+ #5《赛博猫娘》+ #8《猫娘梦境》）和一个可玩的终端 Demo。
 
-**当前版本 `1.11.0`**（`NekoClicker.Core` 的公开 API 版本）。从 `1.0.0` 起
+**当前版本 `1.12.0`**（`NekoClicker.Core` 的公开 API 版本）。从 `1.0.0` 起
 **公开 API 只增不改**，而且有测试守着——见 [版本与兼容性承诺](#版本与兼容性承诺)。
-1.11.0 是 **minor：公开 API 只增不改**——新增 `LoreChannel.Note` 与
+1.12.0 是 **minor：公开表面只增 ＋ 一处已记录的行为变更**——**把文本都换成 K/M/B/T**：
+`NumFormat` 的短刻度表补上了千位那一档（`K`，索引 0 从 1e6 挪到 1e3），
+于是 `FormatShort` 把 `1234` 写成 `1.234K` 而不是 `1,234`；两个宿主（终端与 Web）的
+全部显示点都走这一套，**同一个数在两边现在是同一个字符串**（此前 Web 的 `#cookies`
+是前端算的 `7.579K`、`#cps` 却是服务端推来的 `12.0 trillion`）；1000 以下一个字母没加，
+长名风格（`1.234 million`）留在公开 API 里但不再有宿主用它。11 个内容包里
+**294 处**被数字钉住的短标签（成就说明、纪元完成提示、升级说明的数值）同步改成 K/M/B/T，
+**叙事散文刻意一个字没动**。**存档格式一个字都没改**。
+"改变已有成员语义本该 major"这条按先例记成第四处例外，判据与影响面见
+[engine/docs/VERSIONING.md](engine/docs/VERSIONING.md) §2.1，明细见 [CHANGELOG](CHANGELOG.md) 的 1.12.0。
+上一版 1.11.0 是 **minor：公开 API 只增不改**——新增 `LoreChannel.Note` 与
 `LoreView.ChannelName`（通道的线上 token），把"**捡到一张纸条**"这种在虚构里教机制的
 叙事条目落到界面上：纸条与剧情弹窗共用同一条待读队列、同一份"已看过"记录
 （**存档格式一个字都没改**，`SaveSerializer.CurrentVersion` 仍是 `1`，不需要迁移），
@@ -93,7 +103,7 @@
 > 代价是画面右侧与底部各有一格空白——这是换「拖横向不崩」付出的代价。
 
 ```powershell
-# 构建 + 跑测试（593 个用例，零依赖迷你运行器）
+# 构建 + 跑测试（595 个用例，零依赖迷你运行器）
 .\tools\build.ps1
 
 # 逐条计时：打印最慢的一批与分档占比（想知道"什么变慢了"就用它）
@@ -201,7 +211,7 @@ engine/content/Cyber/   内容包 #5《赛博猫娘》（五层数字层，迁�
 engine/content/Dream/   内容包 #8《猫娘梦境》（五层梦，越睡越浓的梦境能量）
 games/hosts/Demo.Cli/        终端 UI 适配层（ANSI 全屏 + 键盘 + 无头模式 + --package）
 games/hosts/Web/         Web 前端宿主（本地 HTTP + wwwroot，浏览器里可玩）
-engine/tests/    593 个测试 + 自研迷你测试运行器（含架构不变量与全程可达测试）
+engine/tests/    595 个测试 + 自研迷你测试运行器（含架构不变量与全程可达测试）
 engine/docs/ARCHITECTURE.md             架构与设计决策
 engine/docs/CONTENT_AUTHORING.md        如何写内容（数值节奏、校验规则、常见坑）
 engine/docs/VERSIONING.md               版本与兼容性承诺：什么改动升哪一位、公开 API 快照怎么用
@@ -409,7 +419,7 @@ Console.WriteLine(engine.Save());           // JSON 存档
 
 ## 版本与兼容性承诺
 
-**当前版本 `1.11.0`。从 `1.0.0` 起，`NekoClicker.Core` 的公开 API 只增不改。**
+**当前版本 `1.12.0`。从 `1.0.0` 起，`NekoClicker.Core` 的公开 API 只增不改。**
 
 | 改动 | 升哪一位 |
 |---|---|
@@ -421,14 +431,16 @@ Console.WriteLine(engine.Save());           // JSON 存档
 > 三次都是有意为之，理由与影响面写在 [CHANGELOG](CHANGELOG.md) 与
 > [VERSIONING §2](engine/docs/VERSIONING.md) 里——例外要被记录，否则下次就分不清
 > "决定"和"疏忽"，这张表也就退化成橡皮图章了。**连着三次也说明：下次再动这里该考虑 major。**
+> **`1.12.0` 是第四处、也是换了一处的第一处**：改的是 `NumFormat.FormatShort` 的**显示写法**
+> （`1,234` → `1.234K`），不是判定时机；判据见 [VERSIONING §2.1](engine/docs/VERSIONING.md)。
 
 版本号的单一事实来源是 `Directory.Build.props` 的 `<Version>`，宿主可以在运行时读到它：
 
 ```csharp
 using NekoClicker.Core;
 
-Console.WriteLine(ApiVersion.Current);         // "1.11.0"
-Console.WriteLine(ApiVersion.AssemblyVersion);  // 1.11.0.0
+Console.WriteLine(ApiVersion.Current);         // "1.12.0"
+Console.WriteLine(ApiVersion.AssemblyVersion);  // 1.12.0.0
 ```
 
 ### 这条承诺是怎么被守住的
@@ -486,7 +498,7 @@ Console.WriteLine(ApiVersion.AssemblyVersion);  // 1.11.0.0
 一条命令就是全仓库的验收：
 
 ```powershell
-.\tools\build.ps1 -Strict   # 引擎 + 内容 + 593 条用例 + Web 宿主 + 前端冒烟（0 警告）
+.\tools\build.ps1 -Strict   # 引擎 + 内容 + 595 条用例 + Web 宿主 + 前端冒烟（0 警告）
 .\tools\web.ps1   build -Strict   # 只编 Web 宿主时用它
 .\tools\api-test.ps1        # 再把宿主真起起来，打一遍端点（含 SSE 流）
 ```
@@ -606,11 +618,10 @@ Console.WriteLine(ApiVersion.AssemblyVersion);  // 1.11.0.0
 **接下来做什么**：见 [OPEN_WORK 顶部的《下一步：唯一权威清单》](engine/docs/OPEN_WORK.md)
 （H / D / W 三张表——只有真人能做的、先要人拍一句话的、以及不需要人的机械项）。
 `STATUS.md` 的 §8 是**历史记录**，不再产生待办；**这一轮的收工总结**在
-[HANDOVER_2026-10-05](engine/docs/HANDOVER_2026-10-05.md)。工作树是 **1.11.0**
-（minor：公开 API **+5 / −0**——`LoreChannel.Note`、`LoreChannelNames.WireName`、
-`GoldenCookieSystem.SerialCounterKey`、`LoreView.ChannelName`——把"**捡到一张纸条**"
-这种在虚构里教机制的叙事条目落到界面上，共用既有的待读队列与"已看过"记录，
-**存档格式一个字没改**，见 [FOUND_NOTES_PLAN](engine/docs/FOUND_NOTES_PLAN.md)。
+[HANDOVER_2026-10-05](engine/docs/HANDOVER_2026-10-05.md)。工作树是 **1.12.0**
+（minor：**把文本都换成 K/M/B/T**——短刻度表补上千位档、两个宿主全部显示点改成短刻度、
+11 个包 294 处被数字钉住的短标签同步；公开表面只增一项，判据见
+[VERSIONING §2.1](engine/docs/VERSIONING.md)，明细见 [CHANGELOG](CHANGELOG.md) 的 1.12.0）。
 上一版 1.10.2 是 patch：三轮界面改动 + 三条新守卫 + 五处机械项 + 两份测量记录 + 一个 Linux CI 作业；
 **公开 API 一行没动**，快照除首行版本号外逐字节不变。
 再上一版 1.10.1 是导出/导入第一次有了两个宿主里的窗口（W13 / W14）+ 十一个包的「点击 × 建筑」桥

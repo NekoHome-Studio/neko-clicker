@@ -136,7 +136,7 @@ public static class GameViewFactory
                 Category = definition.Category,
                 Progress = quantifiable ? Math.Clamp(current / target, 0, 1) : (unlocked ? 1 : 0),
                 ProgressText = quantifiable && !unlocked
-                    ? $"{NumFormat.FormatPlain(Math.Min(current, target))} / {NumFormat.FormatPlain(target)}"
+                    ? $"{NumFormat.FormatShort(Math.Min(current, target))} / {NumFormat.FormatShort(target)}"
                     : string.Empty,
             });
         }
@@ -184,9 +184,9 @@ public static class GameViewFactory
             Cookies = state.Cookies,
             CookiesPerSecond = production.CookiesPerSecond,
             ClickPower = production.ClickPower,
-            CookiesText = NumFormat.FormatLong(state.Cookies),
-            CpsText = NumFormat.FormatLong(production.CookiesPerSecond),
-            ClickPowerText = NumFormat.FormatLong(production.ClickPower),
+            CookiesText = NumFormat.FormatShort(state.Cookies),
+            CpsText = NumFormat.FormatShort(production.CookiesPerSecond),
+            ClickPowerText = NumFormat.FormatShort(production.ClickPower),
             CookiesEarnedThisRun = state.CookiesEarnedThisRun,
             CookiesEarnedAllTime = state.CookiesEarnedAllTime,
             HandMadeCookies = state.HandMadeCookies,
@@ -236,7 +236,7 @@ public static class GameViewFactory
             WasCapped = offline.WasCapped,
             // 文本一律走 NumFormat：终端 demo 与 Web 前端显示的是同一句话里的同两个词。
             DurationText = NumFormat.Duration(offline.CreditedSeconds),
-            CookiesText = NumFormat.FormatLong(offline.CookiesGained),
+            CookiesText = NumFormat.FormatShort(offline.CookiesGained),
         };
     }
 
@@ -410,7 +410,7 @@ public static class GameViewFactory
             RevealHint = entry.Reveal.Describe(content),
             Progress = quantifiable ? Math.Clamp(current / target, 0, 1) : (unlocked ? 1 : 0),
             ProgressText = quantifiable && !unlocked
-                ? $"{NumFormat.FormatPlain(Math.Min(current, target))} / {NumFormat.FormatPlain(target)}"
+                ? $"{NumFormat.FormatShort(Math.Min(current, target))} / {NumFormat.FormatShort(target)}"
                 : string.Empty,
         };
     }
@@ -469,10 +469,15 @@ public static class GameViewFactory
     }
 
     /// <summary>
-    /// 下一个阶段门槛的显示文本，例如 <c>4.5 万 / 600 万（1%）</c>。<para>
-    /// 与 <c>EraSystem.DescribeProgress</c> 同一套格式（都走 <see cref="NumFormat"/>）：
-    /// 终端与浏览器上这必须是同一句话里的同一个词。已在最后一个阶段时为空串——
-    /// 这时候该说的是"这一层的阶段走完了"，而不是编一个 100% 出来。
+    /// 下一个阶段门槛的显示文本，例如 <c>45K / 6M（1%）</c>。<para>
+    /// 与 <c>EraSystem.DescribeProgress</c> 同一套格式（都走 <see cref="NumFormat"/> 的
+    /// <see cref="NumberStyle.Short"/>，也就是 K/M/B/T）：终端与浏览器上这必须是同一句话里的
+    /// 同一个词。已在最后一个阶段时为空串——这时候该说的是"这一层的阶段走完了"，
+    /// 而不是编一个 100% 出来。
+    /// </para>
+    /// <para>
+    /// （这里此前写的是 <c>4.5 万 / 600 万（1%）</c>：那是中文单位时代的例子，
+    /// 2026-10-05 换成 K/M/B/T、2026-10-06 连引擎这一侧也换成短刻度——例子跟着代码改。）
     /// </para>
     /// </summary>
     private static string DescribeStageProgress(EraStageGate stage, GameEngine engine)
@@ -481,7 +486,7 @@ public static class GameViewFactory
 
         if (next.At.TryGetProgress(engine.Metrics, out double current, out double target) && target > 0)
         {
-            return $"{NumFormat.FormatLong(Math.Min(current, target))} / {NumFormat.FormatLong(target)}" +
+            return $"{NumFormat.FormatShort(Math.Min(current, target))} / {NumFormat.FormatShort(target)}" +
                    $"（{NumFormat.Percent(Math.Clamp(current / target, 0, 1), 0)}）";
         }
 

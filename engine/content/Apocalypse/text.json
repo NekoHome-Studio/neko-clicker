@@ -230,7 +230,7 @@
       "icon": "🕯️",
       "entryText": "你醒了。没有电，没有信号，也没有别人。她把手在裤子上擦干净，说：「那就从今天算起。」",
       "exitText": "地下室的墙被雨水泡透了。她收拾好东西往地面走——这一次她什么都没有带走。",
-      "completionHint": "本轮累计挖到 100,000 物资。"
+      "completionHint": "本轮累计挖到 100K 物资。"
     },
     "electric": {
       "name": "第 2 次重启 · 电",
@@ -238,7 +238,7 @@
       "icon": "💡",
       "entryText": "这一次她先去东边那栋楼，二楼靠窗的位置。发电机还在原地，只是锈住了。",
       "exitText": "灯亮了整晚。她第一次看清地下室到底有多大，然后开始数还有多少面墙没刷。",
-      "completionHint": "本轮累计 20 million，并解锁 4 个成就。"
+      "completionHint": "本轮累计 20M，并解锁 4 个成就。"
     },
     "settlement": {
       "name": "第 3 次重启 · 聚集地",
@@ -246,7 +246,7 @@
       "icon": "🏕️",
       "entryText": "天线上第一次收到人声。三公里外，有人在问：「那边是不是有电？」",
       "exitText": "聚集地有了名字。名字是她们自己起的，她没参与投票。",
-      "completionHint": "本轮累计 400 million，并解锁 10 个成就。"
+      "completionHint": "本轮累计 400M，并解锁 10 个成就。"
     },
     "memory_net": {
       "name": "第 4 次重启 · 记忆网",
@@ -254,7 +254,7 @@
       "icon": "🕸️",
       "entryText": "她在墙上写字，写完又擦掉，改成三个字：「挖出来」。",
       "exitText": "第一座档案馆封顶。她说：「下一轮就不用重新学一遍了。」",
-      "completionHint": "本轮累计 8 billion，且峰值产量达到 50 million/s。"
+      "completionHint": "本轮累计 8B，且峰值产量达到 50M/s。"
     },
     "last_ruin": {
       "name": "第 5 次重启 · 最后的遗迹",
@@ -262,7 +262,7 @@
       "icon": "🏚️",
       "entryText": "探地雷达上是一片一片的回波——城墙外埋着整座城市，完整地压在地下三米。",
       "exitText": "她站在城墙上，看着下面那些还没被挖出来的东西。风很大，她没说话。",
-      "completionHint": "本轮累计 150 billion，并解锁 18 个成就。"
+      "completionHint": "本轮累计 150B，并解锁 18 个成就。"
     }
   },
   "endings": {
@@ -421,77 +421,77 @@
     "supplies_1e4": {
       "name": "够吃一阵子",
       "icon": "🥫",
-      "description": "历史累计挖到 10,000 物资。"
+      "description": "历史累计挖到 10K 物资。"
     },
     "supplies_1e6": {
       "name": "够过一整个冬天",
       "icon": "🥫",
-      "description": "历史累计挖到 1 million 物资。"
+      "description": "历史累计挖到 1M 物资。"
     },
     "supplies_1e8": {
       "name": "够把地下室填满",
       "icon": "🥫",
-      "description": "历史累计挖到 100 million 物资。"
+      "description": "历史累计挖到 100M 物资。"
     },
     "supplies_1e10": {
       "name": "够养活一群人",
       "icon": "🥫",
-      "description": "历史累计挖到 10 billion 物资。"
+      "description": "历史累计挖到 10B 物资。"
     },
     "supplies_1e12": {
       "name": "够重修一条街",
       "icon": "🥫",
-      "description": "历史累计挖到 1 trillion 物资。"
+      "description": "历史累计挖到 1T 物资。"
     },
     "supplies_1e14": {
       "name": "够让整座城亮起来",
       "icon": "🥫",
-      "description": "历史累计挖到 100 trillion 物资。"
+      "description": "历史累计挖到 100T 物资。"
     },
     "supplies_1e16": {
       "name": "够重启一次文明",
       "icon": "🥫",
-      "description": "历史累计挖到 10 quadrillion 物资。"
+      "description": "历史累计挖到 10Qa 物资。"
     },
     "supplies_1e18": {
       "name": "够重启很多次",
       "icon": "🥫",
-      "description": "历史累计挖到 1 quintillion 物资。"
+      "description": "历史累计挖到 1Qi 物资。"
     },
     "supplies_1e20": {
       "name": "够把时间买回来一点",
       "icon": "🥫",
-      "description": "历史累计挖到 100 quintillion 物资。"
+      "description": "历史累计挖到 100Qi 物资。"
     },
     "cps_1e3": {
       "name": "够她自己用",
       "icon": "⚙️",
-      "description": "每秒物资达到 1,000。"
+      "description": "每秒物资达到 1K。"
     },
     "cps_1e6": {
       "name": "够十个人用",
       "icon": "⚙️",
-      "description": "每秒物资达到 1 million。"
+      "description": "每秒物资达到 1M。"
     },
     "cps_1e9": {
       "name": "够一层楼用",
       "icon": "⚙️",
-      "description": "每秒物资达到 1 billion。"
+      "description": "每秒物资达到 1B。"
     },
     "cps_1e12": {
       "name": "够一条街用",
       "icon": "⚙️",
-      "description": "每秒物资达到 1 trillion。"
+      "description": "每秒物资达到 1T。"
     },
     "cps_1e15": {
       "name": "够一座城用",
       "icon": "⚙️",
-      "description": "每秒物资达到 1 quadrillion。"
+      "description": "每秒物资达到 1Qa。"
     },
     "cps_1e18": {
       "name": "数字开始不像东西",
       "icon": "⚙️",
-      "description": "每秒物资达到 1 quintillion。"
+      "description": "每秒物资达到 1Qi。"
     },
     "scavenge_100": {
       "name": "翻了一百次",
@@ -501,22 +501,22 @@
     "scavenge_1000": {
       "name": "手套破了",
       "icon": "⛏️",
-      "description": "亲手翻找 1,000 次。"
+      "description": "亲手翻找 1K 次。"
     },
     "scavenge_10000": {
       "name": "闭着眼都知道挖哪",
       "icon": "⛏️",
-      "description": "亲手翻找 10,000 次。"
+      "description": "亲手翻找 10K 次。"
     },
     "scavenge_100000": {
       "name": "手比工具快",
       "icon": "⛏️",
-      "description": "亲手翻找 100,000 次。"
+      "description": "亲手翻找 100K 次。"
     },
     "scavenge_1000000": {
       "name": "你成了废墟的一部分",
       "icon": "⛏️",
-      "description": "亲手翻找 1 million 次。"
+      "description": "亲手翻找 1M 次。"
     },
     "mutant_1": {
       "name": "第一次见到它",
@@ -546,7 +546,7 @@
     "mutant_1000": {
       "name": "你们算是一起活着",
       "icon": "🧬",
-      "description": "处理 1,000 次变异体。"
+      "description": "处理 1K 次变异体。"
     },
     "restart_1": {
       "name": "地下室",
@@ -581,27 +581,27 @@
     "shards_4000": {
       "name": "开始分类",
       "icon": "🔮",
-      "description": "她给抽屉贴了标签，用的还是上一世的字。（记忆残片 4,000）"
+      "description": "她给抽屉贴了标签，用的还是上一世的字。（记忆残片 4K）"
     },
     "shards_15000": {
       "name": "拼出第一句话",
       "icon": "🔮",
-      "description": "那句话是「不要一个人出去」。（记忆残片 15,000）"
+      "description": "那句话是「不要一个人出去」。（记忆残片 15K）"
     },
     "shards_45000": {
       "name": "拼出一张脸",
       "icon": "🔮",
-      "description": "她盯着那张脸看了很久，然后把它收起来了。（记忆残片 45,000）"
+      "description": "她盯着那张脸看了很久，然后把它收起来了。（记忆残片 45K）"
     },
     "shards_90000": {
       "name": "拼出一座城",
       "icon": "🔮",
-      "description": "整座城的轮廓，包括城墙外那一片。（记忆残片 90,000）"
+      "description": "整座城的轮廓，包括城墙外那一片。（记忆残片 90K）"
     },
     "shards_150000": {
       "name": "拼出一个人类",
       "icon": "🔮",
-      "description": "完整的那一种，会说话，会写字，会留下东西。（记忆残片 150,000）"
+      "description": "完整的那一种，会说话，会写字，会留下东西。（记忆残片 150K）"
     },
     "ach_end_revive": {
       "name": "复活人类",
@@ -819,7 +819,7 @@
     },
     "shard_lens": {
       "name": "残片镜",
-      "description": "全局产量 +0.05%／每片记忆残片（最多 1,500 片，+75%）。把碎片举到光底下，能看见上面还有字。",
+      "description": "全局产量 +0.05%／每片记忆残片（最多 1.5K 片，+75%）。把碎片举到光底下，能看见上面还有字。",
       "icon": "🔍"
     },
     "memory_weave": {
@@ -889,7 +889,7 @@
     },
     "ember_promise": {
       "name": "余烬之约",
-      "description": "全局产量 ×2，另按记忆残片加成（每 5,000 片 +10%，最多 60,000 片，+120%）。她答应过的东西比她自己记得的多。",
+      "description": "全局产量 ×2，另按记忆残片加成（每 5K 片 +10%，最多 60K 片，+120%）。她答应过的东西比她自己记得的多。",
       "icon": "🕯️"
     },
     "ember_always": {

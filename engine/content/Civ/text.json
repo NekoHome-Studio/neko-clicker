@@ -221,7 +221,7 @@
       "icon": "🪨",
       "entryText": "她醒来的时候，世界只有雨、石头和她自己。她做的第一件事是用石头围出一个坑，然后躺进去——那一夜她第一次没有被雨淋醒。",
       "exitText": "石堆旁边长出了第二个石堆，第三个紧挨着它。她数了数，又在旁边划了一块空地——够摆下后面好几个。",
-      "completionHint": "本轮累计 100,000，并解锁 3 个成就。"
+      "completionHint": "本轮累计 100K，并解锁 3 个成就。"
     },
     "village": {
       "name": "第 2 时代 · 村庄",
@@ -229,7 +229,7 @@
       "icon": "🏘️",
       "entryText": "第二个时代从一条路开始。那条路没有人修，只是每天出门的人都踩同一块地方。她走的时候会特意踩在那条线上，踩到后来，草就长不回去了。",
       "exitText": "村庄变成了城邦，城邦变成了不止一个。她开始需要一张地图才记得住自己有多少地方。",
-      "completionHint": "本轮累计 15 million、解锁 5 个成就，并攒下 40,000 点文化。"
+      "completionHint": "本轮累计 15M、解锁 5 个成就，并攒下 40K 点文化。"
     },
     "empire": {
       "name": "第 3 时代 · 城墙",
@@ -237,7 +237,7 @@
       "icon": "🧱",
       "entryText": "第一个时代她想活下去，第二个时代她想活得好一点。这个时代她开始算另一件事：墙外面的东西要多久才能翻进来，城里的粮够不够所有人吃一个冬天。",
       "exitText": "墙修到第三道的时候她停了手。她说再高下去，里面的人就看不见星星了。",
-      "completionHint": "本轮累计 300 million、解锁 8 个成就，并攒下 600,000 点文化。"
+      "completionHint": "本轮累计 300M、解锁 8 个成就，并攒下 600K 点文化。"
     },
     "enlightenment": {
       "name": "第 4 时代 · 学院",
@@ -245,7 +245,7 @@
       "icon": "🏛️",
       "entryText": "学院的第一堂课她只说了一句话：你不必相信我，你可以自己算一遍。说完她把讲义留在讲台上，自己坐到了最后一排。",
       "exitText": "她合上讲义的时候，台下已经有人写出了她看不懂的公式。她很高兴。",
-      "completionHint": "本轮累计 6 billion、文化 800,000，且峰值产量达到 40 million/s。"
+      "completionHint": "本轮累计 6B、文化 800K，且峰值产量达到 40M/s。"
     },
     "starport": {
       "name": "第 5 时代 · 星港",
@@ -253,7 +253,7 @@
       "icon": "🚀",
       "entryText": "星港的第一根柱子立起来那天，全城的人都来了。她站在最外面，仰着头看那根柱子插进云里，看了很久没说话。",
       "exitText": "船飞走之后，她在那块空地上蹲下来，用爪子划了一道痕——和第一个时代石堆上那道一模一样。",
-      "completionHint": "本轮累计 100 billion、文化 50,000，并解锁 20 个成就。"
+      "completionHint": "本轮累计 100B、文化 50K，并解锁 20 个成就。"
     }
   },
   "endings": {
@@ -412,82 +412,82 @@
     "earned_1e4": {
       "name": "第一堆够烧一夜",
       "icon": "🪨",
-      "description": "历史累计产出 10,000。"
+      "description": "历史累计产出 10K。"
     },
     "earned_1e6": {
       "name": "够盖一座村子",
       "icon": "🪨",
-      "description": "历史累计产出 1 million。"
+      "description": "历史累计产出 1M。"
     },
     "earned_1e8": {
       "name": "够养一座城",
       "icon": "🪨",
-      "description": "历史累计产出 100 million。"
+      "description": "历史累计产出 100M。"
     },
     "earned_1e10": {
       "name": "够修一道望不到头的墙",
       "icon": "🪨",
-      "description": "历史累计产出 10 billion。"
+      "description": "历史累计产出 10B。"
     },
     "earned_1e12": {
       "name": "够把知识印成书",
       "icon": "🪨",
-      "description": "历史累计产出 1 trillion。"
+      "description": "历史累计产出 1T。"
     },
     "earned_1e14": {
       "name": "够点亮一整颗行星",
       "icon": "🪨",
-      "description": "历史累计产出 100 trillion。"
+      "description": "历史累计产出 100T。"
     },
     "earned_1e16": {
       "name": "够造一支船队",
       "icon": "🪨",
-      "description": "历史累计产出 10 quadrillion。"
+      "description": "历史累计产出 10Qa。"
     },
     "earned_1e18": {
       "name": "够把恒星围起来",
       "icon": "🪨",
-      "description": "历史累计产出 1 quintillion。"
+      "description": "历史累计产出 1Qi。"
     },
     "earned_1e20": {
       "name": "够重跑一遍文明",
       "icon": "🪨",
-      "description": "历史累计产出 100 quintillion。"
+      "description": "历史累计产出 100Qi。"
     },
     "earned_1e22": {
       "name": "数字开始不像产能了",
       "icon": "🪨",
-      "description": "历史累计产出 10 sextillion。"
+      "description": "历史累计产出 10Sx。"
     },
     "cps_1e3": {
       "name": "有人在搬石头",
       "icon": "⚙️",
-      "description": "每秒产出 1,000。"
+      "description": "每秒产出 1K。"
     },
     "cps_1e6": {
       "name": "有人在赶集",
       "icon": "⚙️",
-      "description": "每秒产出 1 million。"
+      "description": "每秒产出 1M。"
     },
     "cps_1e9": {
       "name": "整座城在动",
       "icon": "⚙️",
-      "description": "每秒产出 1 billion。"
+      "description": "每秒产出 1B。"
     },
     "cps_1e12": {
       "name": "一整个行星在运转",
       "icon": "⚙️",
-      "description": "每秒产出 1 trillion。"
+      "description": "每秒产出 1T。"
     },
     "cps_1e15": {
       "name": "机器开始自己造机器",
       "icon": "⚙️",
-      "description": "每秒产出 1 quadrillion。"
+      "description": "每秒产出 1Qa。"
     },
     "cps_1e18": {
       "name": "文明自己在跑",
       "icon": "⚙️",
-      "description": "每秒产出 1 quintillion。"
+      "description": "每秒产出 1Qi。"
     },
     "build_100": {
       "name": "拍出第一个坑",
@@ -497,22 +497,22 @@
     "build_1000": {
       "name": "爪子磨秃了",
       "icon": "🐾",
-      "description": "亲手拍下 1,000 次。"
+      "description": "亲手拍下 1K 次。"
     },
     "build_10000": {
       "name": "手比脑子快",
       "icon": "🐾",
-      "description": "亲手拍下 10,000 次。"
+      "description": "亲手拍下 10K 次。"
     },
     "build_100000": {
       "name": "停下来就难受",
       "icon": "🐾",
-      "description": "亲手拍下 100,000 次。"
+      "description": "亲手拍下 100K 次。"
     },
     "build_1000000": {
       "name": "你成了这条路上的第一块石头",
       "icon": "🐾",
-      "description": "亲手拍下 1 million 次。"
+      "description": "亲手拍下 1M 次。"
     },
     "disaster_1": {
       "name": "第一次洪水",
@@ -567,22 +567,22 @@
     "culture_2500": {
       "name": "第一句被传下去的话",
       "icon": "📜",
-      "description": "她把「火要留着」讲了三遍，第三只猫记住了。（文化 2,500）"
+      "description": "她把「火要留着」讲了三遍，第三只猫记住了。（文化 2.5K）"
     },
     "culture_12000": {
       "name": "第一本册子",
       "icon": "📜",
-      "description": "有人在墙上划记号，划满了整整一面。（文化 12,000）"
+      "description": "有人在墙上划记号，划满了整整一面。（文化 12K）"
     },
     "culture_80000": {
       "name": "有人替她记",
       "icon": "📜",
-      "description": "她发现自己不用再讲第二遍了。（文化 80,000）"
+      "description": "她发现自己不用再讲第二遍了。（文化 80K）"
     },
     "culture_400000": {
       "name": "整颗星球都记得",
       "icon": "📜",
-      "description": "她随便说一句话，第二天会有三个版本流传。（文化 400,000）"
+      "description": "她随便说一句话，第二天会有三个版本流传。（文化 400K）"
     },
     "ach_end_interstellar": {
       "name": "星际文明",
@@ -805,17 +805,17 @@
     },
     "oral_tradition": {
       "name": "口耳相传",
-      "description": "全局产量 +0.02%／每点文化（最多 2,000 点，+40%）。她开始把「怎么做」讲给下一只猫听，而不用每次都自己示范一遍。",
+      "description": "全局产量 +0.02%／每点文化（最多 2K 点，+40%）。她开始把「怎么做」讲给下一只猫听，而不用每次都自己示范一遍。",
       "icon": "🗣️"
     },
     "chronicle": {
       "name": "编年史",
-      "description": "全局产量 ×2、+0.025%／每点文化（最多 4,000 点，+100%）。第一本按年份排好的册子，翻到哪一年都能对上。",
+      "description": "全局产量 ×2、+0.025%／每点文化（最多 4K 点，+100%）。第一本按年份排好的册子，翻到哪一年都能对上。",
       "icon": "📜"
     },
     "everyone_remembers": {
       "name": "每个人都记得一段",
-      "description": "全局产量 ×3、+0.005%／每点文化（最多 40,000 点，+200%）、天灾奖励 ×2。她没写过那一段，但整颗星球都在讲。",
+      "description": "全局产量 ×3、+0.005%／每点文化（最多 40K 点，+200%）、天灾奖励 ×2。她没写过那一段，但整颗星球都在讲。",
       "icon": "🌍"
     },
     "nest_to_village": {
@@ -860,7 +860,7 @@
     },
     "the_long_record": {
       "name": "长记录",
-      "description": "全局产量 ×2、+0.003%／每点文化（最多 400,000 点，+1200%）。把所有时代的账本合订在一起，厚得需要一间屋子专门放。",
+      "description": "全局产量 ×2、+0.003%／每点文化（最多 400K 点，+1200%）。把所有时代的账本合订在一起，厚得需要一间屋子专门放。",
       "icon": "🗄️"
     },
     "the_first_promise": {
@@ -890,7 +890,7 @@
     },
     "written_everywhere": {
       "name": "到处都写着",
-      "description": "全局产量 ×2.5、+0.002%／每点文化（最多 400,000 点，+800%）。墙上有、碗底有、星星的排列里有。她留下的字比她自己活得久。",
+      "description": "全局产量 ×2.5、+0.002%／每点文化（最多 400K 点，+800%）。墙上有、碗底有、星星的排列里有。她留下的字比她自己活得久。",
       "icon": "🗿"
     },
     "generation_ships": {

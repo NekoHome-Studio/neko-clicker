@@ -133,11 +133,11 @@ internal static class HeadlessRunner
                 string era = engine.Content.HasEras ? $"  {EraLabel(engine, engine.State.Era)}" : string.Empty;
                 Console.WriteLine(
                     $"  [{NumFormat.Duration(totalSeconds - remaining),8}] " +
-                    $"{NumFormat.FormatLong(engine.State.Cookies),12} {engine.Content.CurrencyName}" +
-                    $"   产量 {NumFormat.FormatLong(engine.CookiesPerSecond),12}/s" +
-                    $"   建筑 {NumFormat.FormatPlain(engine.State.TotalBuildings()),6}" +
+                    $"{NumFormat.FormatShort(engine.State.Cookies),12} {engine.Content.CurrencyName}" +
+                    $"   产量 {NumFormat.FormatShort(engine.CookiesPerSecond),12}/s" +
+                    $"   建筑 {NumFormat.FormatShort(engine.State.TotalBuildings()),6}" +
                     $"   成就 {engine.State.Achievements.Count,3}" +
-                    $"   {package.GoldenCookieName} {NumFormat.FormatPlain(engine.State.GoldenCookiesClicked),4}" +
+                    $"   {package.GoldenCookieName} {NumFormat.FormatShort(engine.State.GoldenCookiesClicked),4}" +
                     era);
             }
         }
@@ -179,9 +179,9 @@ internal static class HeadlessRunner
         Field("货币", $"{snap.CookiesText} {snap.CurrencyName}");
         Field("每秒产量", $"{snap.CpsText}/s");
         Field("点击收益", snap.ClickPowerText);
-        Field("本轮累计赚取", NumFormat.FormatLong(state.CookiesEarnedThisRun));
-        Field("历史累计赚取", NumFormat.FormatLong(state.CookiesEarnedAllTime));
-        Field("手动点击", $"{NumFormat.FormatPlain(state.TotalClicks)} 次，共 {NumFormat.FormatLong(state.HandMadeCookies)}");
+        Field("本轮累计赚取", NumFormat.FormatShort(state.CookiesEarnedThisRun));
+        Field("历史累计赚取", NumFormat.FormatShort(state.CookiesEarnedAllTime));
+        Field("手动点击", $"{NumFormat.FormatShort(state.TotalClicks)} 次，共 {NumFormat.FormatShort(state.HandMadeCookies)}");
 
         Section("建筑");
         foreach (BuildingView building in snap.Buildings)
@@ -200,7 +200,7 @@ internal static class HeadlessRunner
         Field("成就", $"{state.Achievements.Count}/{snap.AchievementTotal}");
         Field(
             session.Package.GoldenCookieName,
-            $"点中 {NumFormat.FormatPlain(state.GoldenCookiesClicked)} 只，场上还剩 {state.GoldenCookies.Count} 只");
+            $"点中 {NumFormat.FormatShort(state.GoldenCookiesClicked)} 只，场上还剩 {state.GoldenCookies.Count} 只");
         Field("生效增益", state.Buffs.Count == 0
             ? "无"
             : string.Join("、", state.Buffs.Select(b => $"{b.Id} {NumFormat.Duration(b.RemainingSeconds)}")));
@@ -276,9 +276,9 @@ internal static class HeadlessRunner
 
         Section(session.Package.PrestigeActionName);
         Field("当前等级", snap.PrestigeLevel.ToString());
-        Field(engine.Content.PrestigeCurrencyName, NumFormat.FormatPlain(state.PrestigeChips));
-        Field($"若现在{session.Package.PrestigeActionName}", $"{snap.Prestige.NextLevel} 级（+{NumFormat.FormatPlain(snap.Prestige.ChipsOnAscend)} {engine.Content.PrestigeCurrencyName}）");
-        Field("下一级所需", NumFormat.FormatLong(snap.Prestige.CookiesForNextLevel));
+        Field(engine.Content.PrestigeCurrencyName, NumFormat.FormatShort(state.PrestigeChips));
+        Field($"若现在{session.Package.PrestigeActionName}", $"{snap.Prestige.NextLevel} 级（+{NumFormat.FormatShort(snap.Prestige.ChipsOnAscend)} {engine.Content.PrestigeCurrencyName}）");
+        Field("下一级所需", NumFormat.FormatShort(snap.Prestige.CookiesForNextLevel));
         Field($"{session.Package.PrestigeActionName}次数", state.Ascensions.ToString());
 
         Section("最近消息");
@@ -289,7 +289,7 @@ internal static class HeadlessRunner
         {
             Section("模块");
             foreach (string counterKey in state.Counters.Keys.OrderBy(k => k, StringComparer.Ordinal))
-                Field(counterKey, NumFormat.FormatPlain(state.Counters[counterKey]));
+                Field(counterKey, NumFormat.FormatShort(state.Counters[counterKey]));
         }
 
         Console.WriteLine();

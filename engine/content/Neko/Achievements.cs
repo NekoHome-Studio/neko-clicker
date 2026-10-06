@@ -233,5 +233,5 @@ internal static class Achievements
     }
 
     private static string NekoFormat(double value)
-        => NekoClicker.Core.Numbers.NumFormat.Format(value, NekoClicker.Core.Numbers.NumberStyle.Plain);
+        => NekoClicker.Core.Numbers.NumFormat.Format(value, NekoClicker.Core.Numbers.NumberStyle.Short);
 }

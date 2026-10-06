@@ -224,7 +224,7 @@
       "icon": "🧪",
       "entryText": "培养舱的玻璃上有雾。她在里面写了一个字，又擦掉了。",
       "exitText": "这一批结束了。你把她的一切写进档案，然后开始准备下一批。",
-      "completionHint": "本轮累计赚到 100,000 条数据。"
+      "completionHint": "本轮累计赚到 100K 条数据。"
     },
     "batch_2": {
       "name": "第 2 批 · 观测纪元",
@@ -232,7 +232,7 @@
       "icon": "🔭",
       "entryText": "新的一批。玻璃后面的眼睛和上一批不太一样——它们在看你。",
       "exitText": "观测结束。数据很好，好得让你有点不舒服。",
-      "completionHint": "本轮累计 10 million，并解锁 4 个成就。"
+      "completionHint": "本轮累计 10M，并解锁 4 个成就。"
     },
     "batch_3": {
       "name": "第 3 批 · 基因纪元",
@@ -240,7 +240,7 @@
       "icon": "🧬",
       "entryText": "抽屉拉开，里面是排得整整齐齐的她们。你分不清哪一个是上一批。",
       "exitText": "基因库满了。你签了字，允许下一批继续。",
-      "completionHint": "本轮累计 100 million，且峰值产量达到 1 million/s。"
+      "completionHint": "本轮累计 100M，且峰值产量达到 1M/s。"
     },
     "batch_4": {
       "name": "第 4 批 · 觉醒纪元",
@@ -248,7 +248,7 @@
       "icon": "🌅",
       "entryText": "这一批学会了问「为什么」。记录表上第一次出现了空栏。",
       "exitText": "她问的最后一个问题是：「下一批还是我吗？」你没有回答。",
-      "completionHint": "本轮累计 200 million，并解锁 10 个成就。"
+      "completionHint": "本轮累计 200M，并解锁 10 个成就。"
     },
     "batch_5": {
       "name": "第 5 批 · 伦理纪元",
@@ -256,7 +256,7 @@
       "icon": "⚖️",
       "entryText": "会议室第一次坐满了人。他们问的第一个问题是「她同意过吗」，没有人立刻回答，会议记录上那一条空到散会。",
       "exitText": "会议通过了。你保住了项目，代价写在附页上。",
-      "completionHint": "本轮累计 300 million，并积累 200 点伦理值。"
+      "completionHint": "本轮累计 300M，并积累 200 点伦理值。"
     },
     "batch_6": {
       "name": "第 6 批 · 记忆纪元",
@@ -264,7 +264,7 @@
       "icon": "🪡",
       "entryText": "记忆移植完成了。她睁眼的第一句话是上一批的最后一句话。",
       "exitText": "线不够了。她身上还留着一块空的。",
-      "completionHint": "本轮累计 500 million，并解锁 16 个成就。"
+      "completionHint": "本轮累计 500M，并解锁 16 个成就。"
     },
     "batch_7": {
       "name": "第 7 批 · 归档纪元",
@@ -272,7 +272,7 @@
       "icon": "🗄️",
       "entryText": "档案室的门开着。她走进去，在一排排抽屉之间找自己的编号。",
       "exitText": "她把自己那份档案放回了架子上。合上的声音很轻。",
-      "completionHint": "本轮累计 1 billion，并积累 2000 点伦理值。"
+      "completionHint": "本轮累计 1B，并积累 2000 点伦理值。"
     }
   },
   "endings": {
@@ -553,67 +553,67 @@
     "data_1e4": {
       "name": "第一批数据",
       "icon": "📊",
-      "description": "历史累计赚取 10,000 条数据。"
+      "description": "历史累计赚取 10K 条数据。"
     },
     "data_1e6": {
       "name": "够写一篇",
       "icon": "📊",
-      "description": "历史累计赚取 1 million 条数据。"
+      "description": "历史累计赚取 1M 条数据。"
     },
     "data_1e8": {
       "name": "够写一本书",
       "icon": "📊",
-      "description": "历史累计赚取 100 million 条数据。"
+      "description": "历史累计赚取 100M 条数据。"
     },
     "data_1e10": {
       "name": "够开一次发布会",
       "icon": "📊",
-      "description": "历史累计赚取 10 billion 条数据。"
+      "description": "历史累计赚取 10B 条数据。"
     },
     "data_1e12": {
       "name": "够建一座新楼",
       "icon": "📊",
-      "description": "历史累计赚取 1 trillion 条数据。"
+      "description": "历史累计赚取 1T 条数据。"
     },
     "data_1e14": {
       "name": "够买下整个机构",
       "icon": "📊",
-      "description": "历史累计赚取 100 trillion 条数据。"
+      "description": "历史累计赚取 100T 条数据。"
     },
     "data_1e16": {
       "name": "够重来七次",
       "icon": "📊",
-      "description": "历史累计赚取 10 quadrillion 条数据。"
+      "description": "历史累计赚取 10Qa 条数据。"
     },
     "data_1e18": {
       "name": "够忘掉为什么开始",
       "icon": "📊",
-      "description": "历史累计赚取 1 quintillion 条数据。"
+      "description": "历史累计赚取 1Qi 条数据。"
     },
     "cps_1e3": {
       "name": "仪器在响",
       "icon": "🔊",
-      "description": "每秒产量达到 1,000。"
+      "description": "每秒产量达到 1K。"
     },
     "cps_1e6": {
       "name": "整层楼在响",
       "icon": "🔊",
-      "description": "每秒产量达到 1 million。"
+      "description": "每秒产量达到 1M。"
     },
     "cps_1e9": {
       "name": "整栋楼在响",
       "icon": "🔊",
-      "description": "每秒产量达到 1 billion。"
+      "description": "每秒产量达到 1B。"
     },
     "cps_1e12": {
       "name": "城市听得到",
       "icon": "🔊",
-      "description": "每秒产量达到 1 trillion。"
+      "description": "每秒产量达到 1T。"
     },
     "cps_1e15": {
       "name": "你听不到了",
       "icon": "🔊",
-      "description": "每秒产量达到 1 quadrillion。"
+      "description": "每秒产量达到 1Qa。"
     },
     "log_100": {
       "name": "亲手记了一百次",
@@ -623,22 +623,22 @@
     "log_1000": {
       "name": "亲手记了一千次",
       "icon": "✍️",
-      "description": "手动记录 1,000 次。"
+      "description": "手动记录 1K 次。"
     },
     "log_10000": {
       "name": "亲手记了一万次",
       "icon": "✍️",
-      "description": "手动记录 10,000 次。"
+      "description": "手动记录 10K 次。"
     },
     "log_100000": {
       "name": "手比仪器更熟",
       "icon": "✍️",
-      "description": "手动记录 100,000 次。"
+      "description": "手动记录 100K 次。"
     },
     "log_1000000": {
       "name": "你成了仪器的一部分",
       "icon": "✍️",
-      "description": "手动记录 1 million 次。"
+      "description": "手动记录 1M 次。"
     },
     "accident_1": {
       "name": "第一次事故",
@@ -713,12 +713,12 @@
     "ethics_2000": {
       "name": "外部审计",
       "icon": "⚖️",
-      "description": "来了一个不归你管的人。（伦理值 2,000）"
+      "description": "来了一个不归你管的人。（伦理值 2K）"
     },
     "ethics_5000": {
       "name": "行业标准",
       "icon": "⚖️",
-      "description": "你做的事变成了别人要遵守的规矩。（伦理值 5,000）"
+      "description": "你做的事变成了别人要遵守的规矩。（伦理值 5K）"
     },
     "ach_end_utopia": {
       "name": "乌托邦",
@@ -1048,7 +1048,7 @@
     },
     "budget": {
       "name": "预算批下来了",
-      "description": "你要 100 万，他们给了 1000 万。你猜他们没细看你的方案。拨款通过 {duration}。",
+      "description": "你要 1M，他们给了 10M。你猜他们没细看你的方案。拨款通过 {duration}。",
       "icon": "💰"
     },
     "cascade": {

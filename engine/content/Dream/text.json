@@ -221,7 +221,7 @@
       "icon": "🛏️",
       "entryText": "她侧过身，把脸埋进枕头。数到第七只猫的时候，楼下的街换成了她认得的字。",
       "exitText": "她翻了个身，枕头凉了半边。这一层梦太薄，薄得能看见床单。她决定再往下睡一点。",
-      "completionHint": "本轮累计睡出 100,000 点梦。"
+      "completionHint": "本轮累计睡出 100K 点梦。"
     },
     "sleep_2": {
       "name": "第 2 层 · 深眠",
@@ -229,7 +229,7 @@
       "icon": "😴",
       "entryText": "第二层比第一层安静。她往下走的时候没有脚步声——梦里的地面不响。",
       "exitText": "她在这层待了很久，久到忘了上面还有一层。醒来时手背上有个印子，像是被什么压过。",
-      "completionHint": "本轮累计 2.4 billion，并解锁 4 个成就。"
+      "completionHint": "本轮累计 2.4B，并解锁 4 个成就。"
     },
     "sleep_3": {
       "name": "第 3 层 · 清明梦",
@@ -237,7 +237,7 @@
       "icon": "💡",
       "entryText": "她在梦里停住，抬手看了看自己的手指，然后说：「这是我的梦。」整层梦安静了一秒，接着开始按她说的长。",
       "exitText": "清明是有代价的：醒着的那部分她，再也没法完全睡过去。",
-      "completionHint": "本轮累计 16 billion，并解锁 10 个成就。"
+      "completionHint": "本轮累计 16B，并解锁 10 个成就。"
     },
     "sleep_4": {
       "name": "第 4 层 · 噩梦层",
@@ -245,7 +245,7 @@
       "icon": "🕷️",
       "entryText": "她往下走的时候，墙壁开始变软。有东西在深处呼吸，节奏和她一样。",
       "exitText": "她从噩梦里爬出来，指甲断了半片。梦没赢，但也没输。",
-      "completionHint": "本轮累计 450 billion，且峰值产量达到 40 million/s。"
+      "completionHint": "本轮累计 450B，且峰值产量达到 40M/s。"
     },
     "sleep_5": {
       "name": "第 5 层 · 梦核",
@@ -253,7 +253,7 @@
       "icon": "🔮",
       "entryText": "最里面没有房间，只有一颗慢慢转的东西。她把手放上去，整座梦认出了她。",
       "exitText": "梦核安静下来。现在整座梦都在等她决定：是醒，还是再往下。",
-      "completionHint": "本轮累计 1 trillion，且睡满 6 小时。"
+      "completionHint": "本轮累计 1T，且睡满 6 小时。"
     }
   },
   "endings": {
@@ -407,77 +407,77 @@
     "dream_1e4": {
       "name": "够打一个盹",
       "icon": "🌙",
-      "description": "历史累计睡出 10,000 点梦。"
+      "description": "历史累计睡出 10K 点梦。"
     },
     "dream_1e6": {
       "name": "够睡一下午",
       "icon": "🌙",
-      "description": "历史累计睡出 1 million 点梦。"
+      "description": "历史累计睡出 1M 点梦。"
     },
     "dream_1e8": {
       "name": "够睡过一整天",
       "icon": "🌙",
-      "description": "历史累计睡出 100 million 点梦。"
+      "description": "历史累计睡出 100M 点梦。"
     },
     "dream_1e10": {
       "name": "够睡过一整个冬天",
       "icon": "🌙",
-      "description": "历史累计睡出 10 billion 点梦。"
+      "description": "历史累计睡出 10B 点梦。"
     },
     "dream_1e12": {
       "name": "够睡到忘记醒",
       "icon": "🌙",
-      "description": "历史累计睡出 1 trillion 点梦。"
+      "description": "历史累计睡出 1T 点梦。"
     },
     "dream_1e14": {
       "name": "够睡完别人一辈子",
       "icon": "🌙",
-      "description": "历史累计睡出 100 trillion 点梦。"
+      "description": "历史累计睡出 100T 点梦。"
     },
     "dream_1e16": {
       "name": "够睡到世界换一遍",
       "icon": "🌙",
-      "description": "历史累计睡出 10 quadrillion 点梦。"
+      "description": "历史累计睡出 10Qa 点梦。"
     },
     "dream_1e18": {
       "name": "数字开始不像觉了",
       "icon": "🌙",
-      "description": "历史累计睡出 1 quintillion 点梦。"
+      "description": "历史累计睡出 1Qi 点梦。"
     },
     "dream_1e20": {
       "name": "够睡到梦外面",
       "icon": "🌙",
-      "description": "历史累计睡出 100 quintillion 点梦。"
+      "description": "历史累计睡出 100Qi 点梦。"
     },
     "cps_1e3": {
       "name": "梦里开始有动静",
       "icon": "⚙️",
-      "description": "每秒睡出 1,000 点梦。"
+      "description": "每秒睡出 1K 点梦。"
     },
     "cps_1e6": {
       "name": "整层梦都在响",
       "icon": "⚙️",
-      "description": "每秒睡出 1 million 点梦。"
+      "description": "每秒睡出 1M 点梦。"
     },
     "cps_1e9": {
       "name": "梦自己在长",
       "icon": "⚙️",
-      "description": "每秒睡出 1 billion 点梦。"
+      "description": "每秒睡出 1B 点梦。"
     },
     "cps_1e12": {
       "name": "一座梦抵一座城",
       "icon": "⚙️",
-      "description": "每秒睡出 1 trillion 点梦。"
+      "description": "每秒睡出 1T 点梦。"
     },
     "cps_1e15": {
       "name": "梦开始做梦",
       "icon": "⚙️",
-      "description": "每秒睡出 1 quadrillion 点梦。"
+      "description": "每秒睡出 1Qa 点梦。"
     },
     "cps_1e18": {
       "name": "梦核转得比心跳快",
       "icon": "⚙️",
-      "description": "每秒睡出 1 quintillion 点梦。"
+      "description": "每秒睡出 1Qi 点梦。"
     },
     "close_100": {
       "name": "闭上眼",
@@ -487,22 +487,22 @@
     "close_1000": {
       "name": "开始数数",
       "icon": "😌",
-      "description": "亲手闭眼 1,000 次。"
+      "description": "亲手闭眼 1K 次。"
     },
     "close_10000": {
       "name": "数到记不清",
       "icon": "😌",
-      "description": "亲手闭眼 10,000 次。"
+      "description": "亲手闭眼 10K 次。"
     },
     "close_100000": {
       "name": "不用数也能睡着",
       "icon": "😌",
-      "description": "亲手闭眼 100,000 次。"
+      "description": "亲手闭眼 100K 次。"
     },
     "close_1000000": {
       "name": "你已经分不清哪边是醒了",
       "icon": "😌",
-      "description": "亲手闭眼 1 million 次。"
+      "description": "亲手闭眼 1M 次。"
     },
     "nightmare_1": {
       "name": "第一只",
@@ -532,7 +532,7 @@
     "nightmare_1000": {
       "name": "你把它织进了梦里",
       "icon": "👁️",
-      "description": "面对 1,000 次梦魇。"
+      "description": "面对 1K 次梦魇。"
     },
     "sleep_1": {
       "name": "浅眠",
@@ -562,27 +562,27 @@
     "energy_2000": {
       "name": "梦开始变浓",
       "icon": "🔮",
-      "description": "她伸手的时候，梦里的空气是有一点阻力的。（梦境能量 2,000）"
+      "description": "她伸手的时候，梦里的空气是有一点阻力的。（梦境能量 2K）"
     },
     "energy_300000": {
       "name": "梦能拧出水",
       "icon": "🔮",
-      "description": "她把手指按在墙上，墙面凹下去一小块，慢慢又弹回来。（梦境能量 300,000）"
+      "description": "她把手指按在墙上，墙面凹下去一小块，慢慢又弹回来。（梦境能量 300K）"
     },
     "energy_20000000": {
       "name": "这一层我们说了算",
       "icon": "🔮",
-      "description": "她抬了一下手，楼自己往旁边挪了半米。（梦境能量 20 million）"
+      "description": "她抬了一下手，楼自己往旁边挪了半米。（梦境能量 20M）"
     },
     "energy_600000000": {
       "name": "梦里能造东西",
       "icon": "🔮",
-      "description": "她试着捏了一只猫，捏出来是热的。（梦境能量 600 million）"
+      "description": "她试着捏了一只猫，捏出来是热的。（梦境能量 600M）"
     },
     "energy_2000000000": {
       "name": "梦核认出了她",
       "icon": "🔮",
-      "description": "最里面那颗东西转得和她心跳一样快。（梦境能量 2 billion）"
+      "description": "最里面那颗东西转得和她心跳一样快。（梦境能量 2B）"
     },
     "ach_end_wake_her": {
       "name": "叫醒梦者",
@@ -810,7 +810,7 @@
     },
     "thickening": {
       "name": "梦在变浓",
-      "description": "全局产量 +0.05%／每点梦境能量（最多计入 20,000 点，即 +100%）。她抬手的时候，空气有一点阻力。",
+      "description": "全局产量 +0.05%／每点梦境能量（最多计入 20K 点，即 +100%）。她抬手的时候，空气有一点阻力。",
       "icon": "🌫️"
     },
     "dream_substance": {
@@ -825,7 +825,7 @@
     },
     "core_resonance": {
       "name": "和梦核共振",
-      "description": "全局产量 +0.3%／每点梦境能量（最多计入 600 million 点，即 +180%）。她和那颗东西对上了频率。",
+      "description": "全局产量 +0.3%／每点梦境能量（最多计入 600M 点，即 +180%）。她和那颗东西对上了频率。",
       "icon": "🔮"
     },
     "nest_under_pillow": {

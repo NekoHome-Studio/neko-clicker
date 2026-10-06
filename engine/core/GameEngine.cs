@@ -345,7 +345,7 @@ public sealed class GameEngine
             int affordable = Pricing.MaxAffordable(definition, owned, State.Cookies, priceMultiplier, amount);
             if (affordable <= 0)
                 return PurchaseResult.Fail(
-                    $"买不起「{definition.Name}」：需要 {NumFormat.FormatLong(total)}。", id);
+                    $"买不起「{definition.Name}」：需要 {NumFormat.FormatShort(total)}。", id);
 
             amount = affordable;
             total = Pricing.BulkPrice(definition, owned, amount, priceMultiplier);
@@ -359,7 +359,7 @@ public sealed class GameEngine
         if (Options.AutoCheckAchievements) CheckAchievements();
 
         return PurchaseResult.Ok(
-            $"购买 {amount} 个「{definition.Name}」，花费 {NumFormat.FormatLong(total)}。",
+            $"购买 {amount} 个「{definition.Name}」，花费 {NumFormat.FormatShort(total)}。",
             id, amount, total, owned + amount);
     }
 
@@ -388,7 +388,7 @@ public sealed class GameEngine
         Events.Publish(new BuildingSoldEvent(id, amount, refund, owned - amount));
 
         return PurchaseResult.Ok(
-            $"出售 {amount} 个「{definition.Name}」，返还 {NumFormat.FormatLong(refund)}。",
+            $"出售 {amount} 个「{definition.Name}」，返还 {NumFormat.FormatShort(refund)}。",
             id, amount, refund, owned - amount);
     }
 
@@ -415,7 +415,7 @@ public sealed class GameEngine
 
         if (wallet < total)
             return PurchaseResult.Fail(
-                $"买不起「{definition.Name}」：需要 {NumFormat.FormatLong(total)} {currencyName}。", id);
+                $"买不起「{definition.Name}」：需要 {NumFormat.FormatShort(total)} {currencyName}。", id);
 
         if (usesChips)
         {
@@ -435,7 +435,7 @@ public sealed class GameEngine
         if (Options.AutoCheckAchievements) CheckAchievements();
 
         return PurchaseResult.Ok(
-            $"购买「{definition.Name}」，花费 {NumFormat.FormatLong(total)} {currencyName}。",
+            $"购买「{definition.Name}」，花费 {NumFormat.FormatShort(total)} {currencyName}。",
             id, amount, total, owned + amount);
     }
 

@@ -221,7 +221,7 @@
       "icon": "📄",
       "entryText": "她醒来的时候，手里握着一支笔，面前摊着一本空白的东西。她试着写了一个字，纸把它吃了。",
       "exitText": "第一本写完了。最后一个句号落下的时候，整本书开始变厚——它长出了下一页。",
-      "completionHint": "本轮累计写到 100,000 页。"
+      "completionHint": "本轮累计写到 100K 页。"
     },
     "book_2": {
       "name": "第 2 本 · 第一个世界",
@@ -229,7 +229,7 @@
       "icon": "🌍",
       "entryText": "第二个世界比第一个大。她这次先画了地图，再往里放人。",
       "exitText": "她把第一个世界合上，放回书架。合上的声音比想象中轻。",
-      "completionHint": "本轮累计 15 million，并解锁 4 个成就。"
+      "completionHint": "本轮累计 15M，并解锁 4 个成就。"
     },
     "book_3": {
       "name": "第 3 本 · 被禁的书",
@@ -237,7 +237,7 @@
       "icon": "🔒",
       "entryText": "书脊上被人用红笔划过一道。她把它放进了铁栅栏后面，然后站在外面听。",
       "exitText": "查禁的人来过三次，每次都带走一本，第三次之后书架反而空了——因为大家都藏了一本。",
-      "completionHint": "本轮累计 300 million，并解锁 10 个成就。"
+      "completionHint": "本轮累计 300M，并解锁 10 个成就。"
     },
     "book_4": {
       "name": "第 4 本 · 合订本",
@@ -245,7 +245,7 @@
       "icon": "📖",
       "entryText": "她把三本书拆开，按时间顺序重新装订。装到一半她停手了——她发现自己也在里面。",
       "exitText": "合订本厚得拿不动。她说这本不借出去，谁也不借。",
-      "completionHint": "本轮累计 6 billion，且峰值产量达到 40 million/s。"
+      "completionHint": "本轮累计 6B，且峰值产量达到 40M/s。"
     },
     "book_5": {
       "name": "第 5 本 · 最后一页",
@@ -253,7 +253,7 @@
       "icon": "🔖",
       "entryText": "这一本她写得很慢。每写完一页就停下来摸一摸，像是在确认纸还在。",
       "exitText": "最后一页落笔。笔尖抬起来的那一刻，整座图书馆安静得能听见别人翻页。",
-      "completionHint": "本轮累计 100 billion，并解锁 18 个成就。"
+      "completionHint": "本轮累计 100B，并解锁 18 个成就。"
     }
   },
   "endings": {
@@ -407,77 +407,77 @@
     "pages_1e4": {
       "name": "够一篇短篇",
       "icon": "📄",
-      "description": "历史累计写到 10,000 页。"
+      "description": "历史累计写到 10K 页。"
     },
     "pages_1e6": {
       "name": "够一本长篇",
       "icon": "📄",
-      "description": "历史累计写到 1 million 页。"
+      "description": "历史累计写到 1M 页。"
     },
     "pages_1e8": {
       "name": "够一套系列",
       "icon": "📄",
-      "description": "历史累计写到 100 million 页。"
+      "description": "历史累计写到 100M 页。"
     },
     "pages_1e10": {
       "name": "够摆满一层楼",
       "icon": "📄",
-      "description": "历史累计写到 10 billion 页。"
+      "description": "历史累计写到 10B 页。"
     },
     "pages_1e12": {
       "name": "够摆满一整座馆",
       "icon": "📄",
-      "description": "历史累计写到 1 trillion 页。"
+      "description": "历史累计写到 1T 页。"
     },
     "pages_1e14": {
       "name": "够写到忘记为什么写",
       "icon": "📄",
-      "description": "历史累计写到 100 trillion 页。"
+      "description": "历史累计写到 100T 页。"
     },
     "pages_1e16": {
       "name": "够让每个世界都住满人",
       "icon": "📄",
-      "description": "历史累计写到 10 quadrillion 页。"
+      "description": "历史累计写到 10Qa 页。"
     },
     "pages_1e18": {
       "name": "够盖一座图书馆",
       "icon": "📄",
-      "description": "历史累计写到 1 quintillion 页。"
+      "description": "历史累计写到 1Qi 页。"
     },
     "pages_1e20": {
       "name": "数字开始不像字了",
       "icon": "📄",
-      "description": "历史累计写到 100 quintillion 页。"
+      "description": "历史累计写到 100Qi 页。"
     },
     "cps_1e3": {
       "name": "有人在抄",
       "icon": "⚙️",
-      "description": "每秒写出 1,000 页。"
+      "description": "每秒写出 1K 页。"
     },
     "cps_1e6": {
       "name": "有人在印",
       "icon": "⚙️",
-      "description": "每秒写出 1 million 页。"
+      "description": "每秒写出 1M 页。"
     },
     "cps_1e9": {
       "name": "有人在排队",
       "icon": "⚙️",
-      "description": "每秒写出 1 billion 页。"
+      "description": "每秒写出 1B 页。"
     },
     "cps_1e12": {
       "name": "一整个城市在翻页",
       "icon": "⚙️",
-      "description": "每秒写出 1 trillion 页。"
+      "description": "每秒写出 1T 页。"
     },
     "cps_1e15": {
       "name": "书自己在写自己",
       "icon": "⚙️",
-      "description": "每秒写出 1 quadrillion 页。"
+      "description": "每秒写出 1Qa 页。"
     },
     "cps_1e18": {
       "name": "字开始自己找读者",
       "icon": "⚙️",
-      "description": "每秒写出 1 quintillion 页。"
+      "description": "每秒写出 1Qi 页。"
     },
     "write_100": {
       "name": "写了第一句",
@@ -487,22 +487,22 @@
     "write_1000": {
       "name": "笔尖磨秃了",
       "icon": "🖊️",
-      "description": "亲手提笔 1,000 次。"
+      "description": "亲手提笔 1K 次。"
     },
     "write_10000": {
       "name": "手比脑子快",
       "icon": "🖊️",
-      "description": "亲手提笔 10,000 次。"
+      "description": "亲手提笔 10K 次。"
     },
     "write_100000": {
       "name": "停下来就难受",
       "icon": "🖊️",
-      "description": "亲手提笔 100,000 次。"
+      "description": "亲手提笔 100K 次。"
     },
     "write_1000000": {
       "name": "你成了这句话的一部分",
       "icon": "🖊️",
-      "description": "亲手提笔 1 million 次。"
+      "description": "亲手提笔 1M 次。"
     },
     "bookworm_1": {
       "name": "第一只",
@@ -532,7 +532,7 @@
     "bookworm_1000": {
       "name": "你把它写进了书里",
       "icon": "🐛",
-      "description": "处理 1,000 只蠹虫。"
+      "description": "处理 1K 只蠹虫。"
     },
     "book_1": {
       "name": "空白之书",
@@ -562,32 +562,32 @@
     "readers_2000": {
       "name": "第一个读者",
       "icon": "👤",
-      "description": "她站在门口看了很久，没敢出声。（被阅读度 2,000）"
+      "description": "她站在门口看了很久，没敢出声。（被阅读度 2K）"
     },
     "readers_8000": {
       "name": "有人读完了",
       "icon": "👤",
-      "description": "借阅卡上第一次出现了同一个名字两次。（被阅读度 8,000）"
+      "description": "借阅卡上第一次出现了同一个名字两次。（被阅读度 8K）"
     },
     "readers_20000": {
       "name": "有人读了两遍",
       "icon": "👤",
-      "description": "第二遍读的是注释，比正文还慢。（被阅读度 20,000）"
+      "description": "第二遍读的是注释，比正文还慢。（被阅读度 20K）"
     },
     "readers_38000": {
       "name": "有人开始引用",
       "icon": "👤",
-      "description": "她在别人的本子上看见了自己写过的一句话。（被阅读度 38,000）"
+      "description": "她在别人的本子上看见了自己写过的一句话。（被阅读度 38K）"
     },
     "readers_55000": {
       "name": "有人在等下一本",
       "icon": "👤",
-      "description": "门口的信箱里出现了没有寄件人的信。（被阅读度 55,000）"
+      "description": "门口的信箱里出现了没有寄件人的信。（被阅读度 55K）"
     },
     "readers_70000": {
       "name": "书架自己在长",
       "icon": "👤",
-      "description": "新的一排架子不是她搬进来的。（被阅读度 70,000）"
+      "description": "新的一排架子不是她搬进来的。（被阅读度 70K）"
     },
     "ach_end_read_to_the_end": {
       "name": "被读到最后",
@@ -800,7 +800,7 @@
     },
     "reading_group": {
       "name": "读书会",
-      "description": "全局产量 +0.2%／每点被阅读度（最多 40,000 点，+80%）。每周三晚上，六个人，同一本书。",
+      "description": "全局产量 +0.2%／每点被阅读度（最多 40K 点，+80%）。每周三晚上，六个人，同一本书。",
       "icon": "👥"
     },
     "book_club_network": {

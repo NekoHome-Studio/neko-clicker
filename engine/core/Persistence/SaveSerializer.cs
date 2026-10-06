@@ -190,7 +190,7 @@ public static class SaveSerializer
         {
             engine.Notify(
                 $"离线 {Numbers.NumFormat.Duration(offline.Value.CreditedSeconds)}，" +
-                $"猫猫们替你赚了 {Numbers.NumFormat.FormatLong(offline.Value.CookiesGained)}！",
+                $"猫猫们替你赚了 {Numbers.NumFormat.FormatShort(offline.Value.CookiesGained)}！",
                 NotificationKind.Rare,
                 engine.Content.CurrencyIcon);
         }

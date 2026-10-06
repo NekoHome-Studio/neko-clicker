@@ -221,7 +221,7 @@
       "icon": "🏠",
       "entryText": "她上岗第一天，庙是一块搁在灶台边的木板。第一炷香是蚊子香，第一位信徒是这家人养的仓鼠，它许的愿是不被吃掉。她把这个愿望记在了木板背面，编号一。",
       "exitText": "这家人搬走了，木板被小心地取下来带走。新家那边没有灶台，他们把木板钉在了鞋柜上面，高度和原来差不多。",
-      "completionHint": "本轮累计 100,000 香火，并积累 60,000 点信仰。"
+      "completionHint": "本轮累计 100K 香火，并积累 60K 点信仰。"
     },
     "myth_egypt": {
       "name": "第 2 层 · 埃及猫神",
@@ -229,7 +229,7 @@
       "icon": "🐈",
       "entryText": "换了神话体系，屋顶立刻高了三个数量级。祭司们说这是「应有的规格」。她盯着账本看了很久，问这笔钱能不能从香火里出，祭司说不能，她就自己记了一笔。",
       "exitText": "王朝更替，象形文字没人认得了。她把账本埋在沙里，顺手埋了那杆用来称供品的秤。",
-      "completionHint": "本轮累计 15 million 香火，并积累 300,000 点信仰。本层的神殿类建筑产量翻倍、信仰获取 ×1.5。"
+      "completionHint": "本轮累计 15M 香火，并积累 300K 点信仰。本层的神殿类建筑产量翻倍、信仰获取 ×1.5。"
     },
     "myth_greece": {
       "name": "第 3 层 · 希腊猫神",
@@ -237,7 +237,7 @@
       "icon": "🏺",
       "entryText": "这一套神话的规矩是「有问必答」。于是她每天要回三千条问题，其中两千九百条是问今天晚饭吃什么。",
       "exitText": "神话退化成故事，故事退化成星座。她发现自己被挂在天上，形状还挺好看，就是有点挤。",
-      "completionHint": "本轮累计 300 million 香火，并积累 900,000 点信仰。本层的神迹来得比别的层勤一倍。"
+      "completionHint": "本轮累计 300M 香火，并积累 900K 点信仰。本层的神迹来得比别的层勤一倍。"
     },
     "myth_norse": {
       "name": "第 4 层 · 北欧猫神",
@@ -245,7 +245,7 @@
       "icon": "⚡",
       "entryText": "英灵殿的第一条规矩是「没有下班」。她试着问了一句加班费，殿里的英灵们集体沉默，然后开始鼓掌。",
       "exitText": "诸神黄昏如期而至，节目单比往年还长了半小时。她看完才动手收拾，收拾完把那张节目单折好带走了。",
-      "completionHint": "本轮累计 6 billion 香火，并积累 2.2 million 点信仰。本层的离线收益上限翻倍（英灵殿不打烊）。"
+      "completionHint": "本轮累计 6B 香火，并积累 2.2M 点信仰。本层的离线收益上限翻倍（英灵殿不打烊）。"
     },
     "myth_cthulhu": {
       "name": "第 5 层 · 克苏鲁猫",
@@ -253,7 +253,7 @@
       "icon": "🐙",
       "entryText": "最后一套神话没有名字，只有一个读音，念出来会让麦克风失灵。她说没关系，反正观众听不清也会刷礼物。",
       "exitText": "直播到最后一秒，在线人数停在一个谁也数不清的数上。她关掉补光灯，屋子里第一次全是暗的。",
-      "completionHint": "本轮累计 100 billion 香火，且「直播在线人数」峰值达到 200,000。本层全局产量 ×3，但增益时长减半。"
+      "completionHint": "本轮累计 100B 香火，且「直播在线人数」峰值达到 200K。本层全局产量 ×3，但增益时长减半。"
     }
   },
   "endings": {
@@ -412,77 +412,77 @@
     "incense_1e4": {
       "name": "够点一整年的香",
       "icon": "🕯️",
-      "description": "历史累计收到 10,000 点香火。"
+      "description": "历史累计收到 10K 点香火。"
     },
     "incense_1e6": {
       "name": "够翻修一次屋顶",
       "icon": "🕯️",
-      "description": "历史累计收到 1 million 点香火。"
+      "description": "历史累计收到 1M 点香火。"
     },
     "incense_1e8": {
       "name": "够盖一座像样的神殿",
       "icon": "🕯️",
-      "description": "历史累计收到 100 million 点香火。"
+      "description": "历史累计收到 100M 点香火。"
     },
     "incense_1e10": {
       "name": "够养活一个祭司团",
       "icon": "🕯️",
-      "description": "历史累计收到 10 billion 点香火。"
+      "description": "历史累计收到 10B 点香火。"
     },
     "incense_1e12": {
       "name": "够买下一座城",
       "icon": "🕯️",
-      "description": "历史累计收到 1 trillion 点香火。"
+      "description": "历史累计收到 1T 点香火。"
     },
     "incense_1e14": {
       "name": "够做一次全球投放",
       "icon": "🕯️",
-      "description": "历史累计收到 100 trillion 点香火。"
+      "description": "历史累计收到 100T 点香火。"
     },
     "incense_1e16": {
       "name": "够供五套神话同时开张",
       "icon": "🕯️",
-      "description": "历史累计收到 10 quadrillion 点香火。"
+      "description": "历史累计收到 10Qa 点香火。"
     },
     "incense_1e18": {
       "name": "够把神龛开成连锁",
       "icon": "🕯️",
-      "description": "历史累计收到 1 quintillion 点香火。"
+      "description": "历史累计收到 1Qi 点香火。"
     },
     "incense_1e20": {
       "name": "数字开始不像钱了",
       "icon": "🕯️",
-      "description": "历史累计收到 100 quintillion 点香火。"
+      "description": "历史累计收到 100Qi 点香火。"
     },
     "cps_1e3": {
       "name": "有人开始许愿",
       "icon": "⚙️",
-      "description": "每秒收到 1,000 点香火。"
+      "description": "每秒收到 1K 点香火。"
     },
     "cps_1e6": {
       "name": "许愿要排队",
       "icon": "⚙️",
-      "description": "每秒收到 1 million 点香火。"
+      "description": "每秒收到 1M 点香火。"
     },
     "cps_1e9": {
       "name": "愿望开始自动实现",
       "icon": "⚙️",
-      "description": "每秒收到 1 billion 点香火。"
+      "description": "每秒收到 1B 点香火。"
     },
     "cps_1e12": {
       "name": "一整个时区在烧香",
       "icon": "⚙️",
-      "description": "每秒收到 1 trillion 点香火。"
+      "description": "每秒收到 1T 点香火。"
     },
     "cps_1e15": {
       "name": "神龛自己在长",
       "icon": "⚙️",
-      "description": "每秒收到 1 quadrillion 点香火。"
+      "description": "每秒收到 1Qa 点香火。"
     },
     "cps_1e18": {
       "name": "香火开始自己收自己",
       "icon": "⚙️",
-      "description": "每秒收到 1 quintillion 点香火。"
+      "description": "每秒收到 1Qi 点香火。"
     },
     "bless_100": {
       "name": "第一次显灵",
@@ -492,22 +492,22 @@
     "bless_1000": {
       "name": "手比法杖快",
       "icon": "✨",
-      "description": "亲手显灵 1,000 次。"
+      "description": "亲手显灵 1K 次。"
     },
     "bless_10000": {
       "name": "显灵成瘾",
       "icon": "✨",
-      "description": "亲手显灵 10,000 次。"
+      "description": "亲手显灵 10K 次。"
     },
     "bless_100000": {
       "name": "信徒开始怀疑这是特效",
       "icon": "✨",
-      "description": "亲手显灵 100,000 次。"
+      "description": "亲手显灵 100K 次。"
     },
     "bless_1000000": {
       "name": "你自己也信了",
       "icon": "✨",
-      "description": "亲手显灵 1 million 次。"
+      "description": "亲手显灵 1M 次。"
     },
     "miracle_1": {
       "name": "第一次神迹",
@@ -537,7 +537,7 @@
     "miracle_1000": {
       "name": "你已经分不清哪个是安排的",
       "icon": "🌟",
-      "description": "经历 1,000 次神迹。"
+      "description": "经历 1K 次神迹。"
     },
     "myth_1": {
       "name": "家猫神",
@@ -572,27 +572,27 @@
     "faith_5k": {
       "name": "有人替你说话",
       "icon": "🙏",
-      "description": "集市上出现了替她辩护的陌生人。（信仰 5,000）"
+      "description": "集市上出现了替她辩护的陌生人。（信仰 5K）"
     },
     "faith_40k": {
       "name": "有人替你写书",
       "icon": "🙏",
-      "description": "第一本《猫神言行录》出版，作者署的是别人的名字。（信仰 40,000）"
+      "description": "第一本《猫神言行录》出版，作者署的是别人的名字。（信仰 40K）"
     },
     "faith_300k": {
       "name": "有人替你吵架",
       "icon": "🙏",
-      "description": "两座城为「她更喜欢谁」打了一仗，谁也没赢。（信仰 300,000）"
+      "description": "两座城为「她更喜欢谁」打了一仗，谁也没赢。（信仰 300K）"
     },
     "faith_1_2m": {
       "name": "有人替你不甘心",
       "icon": "🙏",
-      "description": "祭司团开始研究怎么让她永远别退休。（信仰 1.2 million）"
+      "description": "祭司团开始研究怎么让她永远别退休。（信仰 1.2M）"
     },
     "faith_3m": {
       "name": "香火自己在产能",
       "icon": "🙏",
-      "description": "供品多到需要单独建一座仓库，仓库也满了。（信仰 3 million）"
+      "description": "供品多到需要单独建一座仓库，仓库也满了。（信仰 3M）"
     },
     "viewers_100": {
       "name": "开播第一个观众",
@@ -602,17 +602,17 @@
     "viewers_2500": {
       "name": "弹幕开始刷屏",
       "icon": "📹",
-      "description": "「直播在线人数」峰值达到 2,500。"
+      "description": "「直播在线人数」峰值达到 2.5K。"
     },
     "viewers_20000": {
       "name": "上了首页推荐",
       "icon": "📹",
-      "description": "「直播在线人数」峰值达到 20,000。"
+      "description": "「直播在线人数」峰值达到 20K。"
     },
     "viewers_80000": {
       "name": "全球同步直播",
       "icon": "📹",
-      "description": "「直播在线人数」峰值达到 80,000。"
+      "description": "「直播在线人数」峰值达到 80K。"
     },
     "ach_end_main_god": {
       "name": "成为主神",

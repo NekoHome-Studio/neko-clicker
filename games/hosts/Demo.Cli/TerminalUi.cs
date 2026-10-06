@@ -184,7 +184,7 @@ internal static class TerminalUi
         var line = UiLine.New()
             .Add(" ")
             .Add($"{snap.PrestigeCurrencyIcon} ", Ansi.S(Style.Green))
-            .Add(NumFormat.FormatPlain(snap.PrestigeChips), Ansi.S(Style.Bold + Style.Green))
+            .Add(NumFormat.FormatShort(snap.PrestigeChips), Ansi.S(Style.Bold + Style.Green))
             .Add($" {snap.PrestigeCurrencyName}", Ansi.S(Style.Gray))
             .Add($" Lv{snap.PrestigeLevel}", Ansi.S(Style.Bold + Style.Magenta))
             .Add($"  {session.Package.PrestigeActionName} {ProgressBar(snap.Prestige.Progress, 8)} ", Ansi.S(Style.Gray))
@@ -204,7 +204,7 @@ internal static class TerminalUi
 
         return line
             .Add($"  成就 {snap.AchievementCount}/{snap.AchievementTotal}", Ansi.S(Style.Gray))
-            .Add($"  建筑 {NumFormat.FormatPlain(snap.TotalBuildings)}", Ansi.S(Style.Gray));
+            .Add($"  建筑 {NumFormat.FormatShort(snap.TotalBuildings)}", Ansi.S(Style.Gray));
     }
 
     // 立场轴刻意不放进顶栏：顶栏那一半本来就快占满了，塞进去会把"建筑"之类的尾部挤掉。
@@ -218,7 +218,7 @@ internal static class TerminalUi
         {
             return line.Add($"! 确认{session.Package.PrestigeActionName}？", Ansi.S(Style.Bold + Style.Red))
                 .Add(" 将清空本轮进度（建筑、普通升级、增益），换取 ", Ansi.S(Style.Yellow))
-                .Add(NumFormat.FormatLong(snap.Prestige.ChipsOnAscend), Ansi.S(Style.Bold + Style.Green))
+                .Add(NumFormat.FormatShort(snap.Prestige.ChipsOnAscend), Ansi.S(Style.Bold + Style.Green))
                 .Add($" {snap.PrestigeCurrencyName}。按 ", Ansi.S(Style.Gray))
                 .Add("Y", Ansi.S(Style.Bold + Style.BrightGreen))
                 .Add(" 确认，其他键取消。", Ansi.S(Style.Gray));
@@ -257,7 +257,7 @@ internal static class TerminalUi
 
         return line.Add($"🌟 下一只{session.Package.GoldenCookieName} ", Ansi.S(Style.Gray))
             .Add(NumFormat.Duration(Math.Max(0, snap.GoldenCookieCountdown)), Ansi.S(Style.Gray))
-            .Add($"   已抓 {NumFormat.FormatPlain(snap.GoldenCookiesClicked)} 只", Ansi.S(Style.Gray))
+            .Add($"   已抓 {NumFormat.FormatShort(snap.GoldenCookiesClicked)} 只", Ansi.S(Style.Gray))
             .Add($"   游玩 {NumFormat.Duration(snap.PlayTimeSeconds)}", Ansi.S(Style.Gray));
     }
 

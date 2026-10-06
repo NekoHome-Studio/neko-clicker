@@ -30,9 +30,17 @@ public static class ViewTests
 
         GameSnapshot snapshot = engine.Snapshot();
 
-        Check.Equal("2.5 million", snapshot.CookiesText);
+        // 两个宿主都走短刻度（K/M/B/T）：见 NumFormat 的类型注释与 web-smoke §29。
+        Check.Equal("2.5M", snapshot.CookiesText);
         Check.Equal("0", snapshot.CpsText);
         Check.Equal("1", snapshot.ClickPowerText);
+        // 1000 以下一个字母都不加，1000 起才上 K 档。
+        engine.State.Cookies = 999;
+        engine.MarkDirty();
+        Check.Equal("999", engine.Snapshot().CookiesText);
+        engine.State.Cookies = 1_000;
+        engine.MarkDirty();
+        Check.Equal("1K", engine.Snapshot().CookiesText);
     }
 
     [Test]

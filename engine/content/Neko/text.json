@@ -255,32 +255,32 @@
     "earn_1k": {
       "name": "第一桶金",
       "icon": "🪙",
-      "description": "历史累计赚取 1,000 条小鱼干。"
+      "description": "历史累计赚取 1K 条小鱼干。"
     },
     "earn_1m": {
       "name": "小有积蓄",
       "icon": "💰",
-      "description": "历史累计赚取 1,000,000 条小鱼干。"
+      "description": "历史累计赚取 1M 条小鱼干。"
     },
     "earn_1b": {
       "name": "猫粮自由",
       "icon": "🏦",
-      "description": "历史累计赚取 1,000,000,000 条小鱼干。"
+      "description": "历史累计赚取 1B 条小鱼干。"
     },
     "earn_1t": {
-      "name": "兆级猫咖",
+      "name": "T 级猫咖",
       "icon": "🏛️",
-      "description": "历史累计赚取 1,000,000,000,000 条小鱼干。"
+      "description": "历史累计赚取 1T 条小鱼干。"
     },
     "earn_1q": {
       "name": "京级猫咖",
       "icon": "🌆",
-      "description": "历史累计赚取 1,000,000,000,000,000 条小鱼干。"
+      "description": "历史累计赚取 1Qa 条小鱼干。"
     },
     "earn_1qi": {
       "name": "猫粮通胀",
       "icon": "📈",
-      "description": "历史累计赚取 1,000,000,000,000,000,000 条小鱼干。"
+      "description": "历史累计赚取 1Qi 条小鱼干。"
     },
     "earn_1sx": {
       "name": "猫粮霸权",
@@ -295,17 +295,17 @@
     "cps_1m": {
       "name": "流量猫咖",
       "icon": "⚙️",
-      "description": "每秒产量达到 1,000,000。"
+      "description": "每秒产量达到 1M。"
     },
     "cps_1b": {
-      "name": "十亿产量",
+      "name": "1B 产量",
       "icon": "⚙️",
-      "description": "每秒产量达到 1,000,000,000。"
+      "description": "每秒产量达到 1B。"
     },
     "cps_1t": {
-      "name": "兆级流水线",
+      "name": "T 级流水线",
       "icon": "⚙️",
-      "description": "每秒产量达到 1,000,000,000,000。"
+      "description": "每秒产量达到 1T。"
     },
     "click_100": {
       "name": "手有点酸",
@@ -315,17 +315,17 @@
     "click_1000": {
       "name": "千次撸猫",
       "icon": "✋",
-      "description": "点击 1,000 次。"
+      "description": "点击 1K 次。"
     },
     "click_10000": {
       "name": "万次撸猫",
       "icon": "💪",
-      "description": "点击 10,000 次。作为奖励，点击收益 ×1.5。"
+      "description": "点击 10K 次。作为奖励，点击收益 ×1.5。"
     },
     "click_100000": {
       "name": "机械手臂",
       "icon": "🦾",
-      "description": "点击 100,000 次。你已经分不清是你在撸猫还是猫在撸你。"
+      "description": "点击 100K 次。你已经分不清是你在撸猫还是猫在撸你。"
     },
     "golden_1": {
       "name": "第一只金猫",
@@ -360,7 +360,7 @@
     "scale_1000": {
       "name": "猫咖王国",
       "icon": "🏰",
-      "description": "拥有 1,000 座建筑。"
+      "description": "拥有 1K 座建筑。"
     },
     "full_house": {
       "name": "全家福",

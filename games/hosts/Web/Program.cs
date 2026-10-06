@@ -748,7 +748,7 @@ internal static class Sessions
             {
                 Console.WriteLine(
                     $"[{package.Id}] 离线 {NumFormat.Duration(offline.CreditedSeconds)}，" +
-                    $"补发 {NumFormat.FormatLong(offline.CookiesGained)}。");
+                    $"补发 {NumFormat.FormatShort(offline.CookiesGained)}。");
             }
 
             return host;

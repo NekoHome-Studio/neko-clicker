@@ -276,7 +276,7 @@
       "icon": "📦",
       "entryText": "你睁开眼，先摸到的是纸箱的棱角。有东西在箱子里呼吸。",
       "exitText": "箱子塌了。但你已经知道怎么让下一个世界重新长出来。",
-      "completionHint": "本轮累计赚到 100,000 条小鱼干。"
+      "completionHint": "本轮累计赚到 100K 条小鱼干。"
     },
     "life_cafe": {
       "name": "第二命 · 咖啡馆纪元",
@@ -284,7 +284,7 @@
       "icon": "☕",
       "entryText": "这一次她推开门，门后是一家还没开张的店。招牌上缺一个名字。",
       "exitText": "打烊了。她把最后一只杯子擦干，然后熄了灯。",
-      "completionHint": "本轮累计 10 million，并解锁 4 个成就。"
+      "completionHint": "本轮累计 10M，并解锁 4 个成就。"
     },
     "life_lab": {
       "name": "第三命 · 实验室纪元",
@@ -292,7 +292,7 @@
       "icon": "🧪",
       "entryText": "培养舱的玻璃上有雾。她在里面写了一个字，又擦掉了。",
       "exitText": "实验中止。数据带不走，但问题跟着你走了。",
-      "completionHint": "本轮累计 100 million，且峰值产量达到 1 million/s。"
+      "completionHint": "本轮累计 100M，且峰值产量达到 1M/s。"
     },
     "life_civilization": {
       "name": "第四命 · 文明纪元",
@@ -300,7 +300,7 @@
       "icon": "🏘️",
       "entryText": "她画的第一个圈是房子，第二个圈是城墙，第三个圈她没有画完。",
       "exitText": "城还在，人换了。这大概就是文明的意思。",
-      "completionHint": "本轮累计 200 million，并解锁 10 个成就。"
+      "completionHint": "本轮累计 200M，并解锁 10 个成就。"
     },
     "life_cyber": {
       "name": "第五命 · 赛博纪元",
@@ -308,7 +308,7 @@
       "icon": "🖥️",
       "entryText": "启动日志的第一行写着「实例 0」。说明还有实例 1。",
       "exitText": "迁移完成。她在那台机器上留了一句话给下一个自己。",
-      "completionHint": "本轮累计 300 million，且峰值产量达到 100 million/s。"
+      "completionHint": "本轮累计 300M，且峰值产量达到 100M/s。"
     },
     "life_posthuman": {
       "name": "第六命 · 末世纪元",
@@ -316,7 +316,7 @@
       "icon": "🏚️",
       "entryText": "废墟里没有风。她把手放在一台机器上，机器凉得像没死透。",
       "exitText": "拼图缺了最后一块。她把它留给了下一世的自己。",
-      "completionHint": "本轮累计 500 million，并解锁 18 个成就。"
+      "completionHint": "本轮累计 500M，并解锁 18 个成就。"
     },
     "life_goddess": {
       "name": "第七命 · 神明纪元",
@@ -324,7 +324,7 @@
       "icon": "🏛️",
       "entryText": "第一炷香是纸箱味的。她咳了一声，然后端正了坐姿。",
       "exitText": "神不需要下班。但她还是关了灯。",
-      "completionHint": "本轮累计 700 million，并积累 50,000 点信仰。"
+      "completionHint": "本轮累计 700M，并积累 50K 点信仰。"
     },
     "life_dream": {
       "name": "第八命 · 梦境纪元",
@@ -332,7 +332,7 @@
       "icon": "💤",
       "entryText": "睡着比醒来更费力。她在梦里数羊，数到第九只的时候认出了它。",
       "exitText": "该醒了。可她不确定醒来的是谁。",
-      "completionHint": "本轮累计 1 billion，并解锁 26 个成就。"
+      "completionHint": "本轮累计 1B，并解锁 26 个成就。"
     },
     "life_library": {
       "name": "第九命 · 图书馆纪元",
@@ -340,7 +340,7 @@
       "icon": "📚",
       "entryText": "书架上有一本没有书名的书。翻开第一页，是你此刻正在读的这段字。",
       "exitText": "她把书合上了，没有放进箱子，摆在了架子最外面那一层。",
-      "completionHint": "本轮累计 1.5 billion，并解锁 30 个成就。走完这一世就是终局。"
+      "completionHint": "本轮累计 1.5B，并解锁 30 个成就。走完这一世就是终局。"
     }
   },
   "endings": {
@@ -666,32 +666,32 @@
     "earn_1e3": {
       "name": "第一桶鱼干",
       "icon": "🪙",
-      "description": "历史累计赚取 1,000 条小鱼干。"
+      "description": "历史累计赚取 1K 条小鱼干。"
     },
     "earn_1e6": {
       "name": "够活了",
       "icon": "💰",
-      "description": "历史累计赚取 1,000,000 条小鱼干。"
+      "description": "历史累计赚取 1M 条小鱼干。"
     },
     "earn_1e9": {
       "name": "够养一屋子猫",
       "icon": "🏦",
-      "description": "历史累计赚取 1,000,000,000 条小鱼干。"
+      "description": "历史累计赚取 1B 条小鱼干。"
     },
     "earn_1e12": {
-      "name": "兆级小店",
+      "name": "T 级小店",
       "icon": "🏛️",
-      "description": "历史累计赚取 1,000,000,000,000 条小鱼干。"
+      "description": "历史累计赚取 1T 条小鱼干。"
     },
     "earn_1e15": {
       "name": "京级产业",
       "icon": "🌆",
-      "description": "历史累计赚取 1,000,000,000,000,000 条小鱼干。"
+      "description": "历史累计赚取 1Qa 条小鱼干。"
     },
     "earn_1e18": {
       "name": "鱼干通胀",
       "icon": "📈",
-      "description": "历史累计赚取 1,000,000,000,000,000,000 条小鱼干。"
+      "description": "历史累计赚取 1Qi 条小鱼干。"
     },
     "earn_1e21": {
       "name": "鱼干霸权",
@@ -706,17 +706,17 @@
     "cps_1e6": {
       "name": "每分钟都在呼噜",
       "icon": "🎵",
-      "description": "每秒产量达到 1,000,000。"
+      "description": "每秒产量达到 1M。"
     },
     "cps_1e9": {
       "name": "整栋楼都在响",
       "icon": "🔊",
-      "description": "每秒产量达到 1,000,000,000。"
+      "description": "每秒产量达到 1B。"
     },
     "cps_1e12": {
       "name": "世界的心跳",
       "icon": "💗",
-      "description": "每秒产量达到 1,000,000,000,000。"
+      "description": "每秒产量达到 1T。"
     },
     "wake_2": {
       "name": "第 2 次醒来",
@@ -766,17 +766,17 @@
     "click_1000": {
       "name": "她把头靠过来了",
       "icon": "✋",
-      "description": "摸头 1,000 次。"
+      "description": "摸头 1K 次。"
     },
     "click_10000": {
       "name": "闭上眼也知道是你",
       "icon": "💪",
-      "description": "摸头 10,000 次。"
+      "description": "摸头 10K 次。"
     },
     "click_100000": {
       "name": "不用睁眼的默契",
       "icon": "🦾",
-      "description": "摸头 100,000 次。"
+      "description": "摸头 100K 次。"
     },
     "echo_1": {
       "name": "第一次残响",

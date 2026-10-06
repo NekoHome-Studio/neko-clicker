@@ -176,7 +176,7 @@ internal sealed class GameSession : IDisposable
         {
             Log($"已读取存档：{savePath}", "📂");
             if (Saves.LastOfflineProgress is { CookiesGained: > 0 } offline)
-                Log($"离线 {NumFormat.Duration(offline.CreditedSeconds)}，店里替你赚了 {NumFormat.FormatLong(offline.CookiesGained)} 条{Engine.Content.CurrencyName}。", "🌙");
+                Log($"离线 {NumFormat.Duration(offline.CreditedSeconds)}，店里替你赚了 {NumFormat.FormatShort(offline.CookiesGained)} 条{Engine.Content.CurrencyName}。", "🌙");
         }
         else
         {
@@ -510,15 +510,15 @@ internal sealed class GameSession : IDisposable
         if (!preview.CanAscend)
         {
             Log(
-                $"还不能{Package.PrestigeActionName}：历史累计 {NumFormat.FormatLong(Engine.State.CookiesEarnedAllTime)} / " +
-                $"{NumFormat.FormatLong(preview.CookiesForNextLevel)}。",
+                $"还不能{Package.PrestigeActionName}：历史累计 {NumFormat.FormatShort(Engine.State.CookiesEarnedAllTime)} / " +
+                $"{NumFormat.FormatShort(preview.CookiesForNextLevel)}。",
                 "!");
             return;
         }
 
         AwaitingAscendConfirm = true;
         Log(
-            $"确认{Package.PrestigeActionName}？将清空本轮进度，换取 {NumFormat.FormatLong(preview.ChipsOnAscend)} {Engine.Content.PrestigeCurrencyName}。按 Y 确认，其他键取消。",
+            $"确认{Package.PrestigeActionName}？将清空本轮进度，换取 {NumFormat.FormatShort(preview.ChipsOnAscend)} {Engine.Content.PrestigeCurrencyName}。按 Y 确认，其他键取消。",
             "🌿");
     }
 

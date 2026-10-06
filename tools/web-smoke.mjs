@@ -21,8 +21,9 @@
 // 覆盖边界（诚实）: 它证明的是"真的被执行过的路径不抛异常"。没被执行到的分支
 // （`if (!pill) return` 这类防御）只有 node --check 的语法保证。
 //
-// 这个脚本**从 2026-10 起进了 tools/build.ps1**（也进了 CI）：一条 252 条断言
-// （§32「焦点在重画之间不许跑掉」起；那一轮之前是 244——§29「刻度名 K/M/B/T」＋
+// 这个脚本**从 2026-10 起进了 tools/build.ps1**（也进了 CI）：一条 254 条断言
+// （§29 里那两条「服务端那张表必须从 K 起」＋「两个宿主对同一个数说同一句话」起；
+// 那一轮之前是 252——§32「焦点在重画之间不许跑掉」；再此前是 244——§29「刻度名 K/M/B/T」＋
 // §30「大猫那两处标签的字号」＋ §31「还差多少」；再此前是 224 条、§28「分享链接」之前是 208 条、
 // §26 的「右栏填满」之前是 203 条、
 // §26 的「富余高度钉在最后一行」之前是 202 条、
@@ -427,7 +428,7 @@ function snapshot(overrides = {}) {
     currencyName: "猫饼",
     currencyIcon: "🐟",
     clickActionName: "撸猫",
-    cpsText: "12.3 千",
+    cpsText: "12.345K",
     clickPowerText: "7",
     cookies: 1.2e6,
     cookiesPerSecond: 12345,
@@ -2046,7 +2047,7 @@ section("24. 存档的导出 / 导入窗口（入口 / 复制 / 下载 / 导入�
     '  "FormatVersion": 1,',
     '  "PackId": "neko",',
     '  "SaveVersion": 1,',
-    '  "FrameworkVersion": "1.11.0",',
+    '  "FrameworkVersion": "1.12.0",',
     '  "Checksum": "sha256:deadbeef",',
     '  "Save": "{\\"Version\\":1,\\"Cookies\\":1234.5}"',
     "}",
@@ -2060,7 +2061,7 @@ section("24. 存档的导出 / 导入窗口（入口 / 复制 / 下载 / 导入�
     别的包: "这份存档是内容包「cafe」的，当前会话是「neko」——两个包的建筑 / 升级 id 不一样，灌进来只会得到一份这个包答不上的存档，所以拒绝导入。磁盘上原来的存档与备份都没有被动过。",
     被改过: "校验和对不上（信封里写的是 sha256:deadbeef…，这份内容的实际值是 sha256:1234abcd…）——文本被改动或被截断过。请整份重新复制一次。",
   };
-  const IMPORT_OK = "已导入：内容包「neko」｜存档格式 1｜框架 1.11.0｜当前会话与 neko.json 都已换成这一份｜已核对包标识（neko）｜存档里的 id 这个包全都认识。";
+  const IMPORT_OK = "已导入：内容包「neko」｜存档格式 1｜框架 1.12.0｜当前会话与 neko.json 都已换成这一份｜已核对包标识（neko）｜存档里的 id 这个包全都认识。";
 
   /** 一个按命令回答的宿主桩：export 给文本，import 按内容给上面那几句。 */
   const reply = (body) => {
@@ -3099,7 +3100,7 @@ section("28. 分享链接：生成 / 复制 / 打开（密码不进链接、不�
   const TOKEN = "TktMMXPz0eHq8vYwRk2mQ4bN7cA1dF5gJ9kL3pX6tZ8uV0yB2nM4rS6wE-_.qDfGh";
   const PASSWORD = "correct-horse-battery";
   const MADE_MESSAGE = `已生成分享链接（${TOKEN.length} 个字符，内容包「neko」）——把它发给对方，对方用这个密码打开。密码不在链接里。`;
-  const OPEN_MESSAGE = "已解开分享链接（内容包「neko」、218 个字符的导出文本）｜已导入：内容包「neko」｜存档格式 1｜框架 1.11.0｜当前会话与 neko.json 都已换成这一份｜已核对包标识（neko）｜存档里的 id 这个包全都认识。";
+  const OPEN_MESSAGE = "已解开分享链接（内容包「neko」、218 个字符的导出文本）｜已导入：内容包「neko」｜存档格式 1｜框架 1.12.0｜当前会话与 neko.json 都已换成这一份｜已核对包标识（neko）｜存档里的 id 这个包全都认识。";
   const OPEN_FAILURE = "打不开：密码不对，或者这段链接被改过 / 被截断了。（这两件事在密码学上分不开。）请核对密码，或让对方重新发一次链接。";
 
   /** 宿主桩：把收到的密码记下来（这正是"密码走请求体、不走 URL"要被验的地方）。 */
@@ -3302,14 +3303,24 @@ section("28. 分享链接：生成 / 复制 / 打开（密码不进链接、不�
 //
 // 人 2026-10-05 报的：「把千换成 K」，追问之后选的是**全面换成 K/M/B/T**。
 // 动手前先查清了这一件事，它决定了这一节怎么写：**中文单位只活在前端**。
-// `engine/core/Numbers/NumFormat.cs` 的短刻度表从来是 `M / B / T / Qa…`（索引 0 对应 1e6，
+// `engine/core/Numbers/NumFormat.cs` 的短刻度表当时是 `M / B / T / Qa…`（索引 0 对应 1e6，
 // 没有千位那一档），而 `app.js` 自己有**两套**中文刻度的副本（`formatCookies` 的
 // `千/百万/十亿/万亿/千万亿/百京/千京` 与 `number()` 的 `千/百万/十亿/万亿/千万亿/百京`）。
-// 也就是说：这次改动**不需要动引擎**，而且方向是**把前端拉回服务端那一套**，不是拉开。
 // 于是这一节要守的第一件事不是"字符串长什么样"，而是"**两把尺子是同一把**"——
 // 直接从 `NumFormat.cs` 里把那张表读出来逐字对（谁单方面加一个刻度的名字，这里就红）。
 //
-// 剩下的两条：中文字面量不许回来；真的渲染出来的那两处（大计数器 / 卡片价格）确实换过了。
+// **2026-10-06 起那句话反过来了**：题目变成"把文本**都**换成 K/M/B/T"，
+// 而中文单位早就不在了——那一次只剩一件事没做：**引擎自己**。服务端此前只有长名
+// （`1.234 million`）与短名 `M/B/T…` 两种风格，`1000 ~ 999999` 一律写成 `1,234`；
+// 于是终端与浏览器对同一个数会说两种话（`#cps` 画的是服务端的 `cpsText`，即
+// `12.0 trillion`；`#cookies` 画的是前端自己的 `12.0T`）。那一轮给 `ShortScaleNames`
+// 补上了 `K` 档（索引 0 从 1e6 挪到 1e3），并让两个宿主都走 `NumberStyle.Short`。
+// 结果是**两张表逐字相同、连长度都一样**，前端那个"自己补的 K"没有了——
+// 所以下面第一条守卫的写法跟着改了：从 `["K", ...服务端那张表]` 改成**直接对表**，
+// 并额外钉住"服务端那张表的第 0 项必须是 K"（否则它又会退回到"M/B/T…"而没有千位档）。
+//
+// 剩下的三条：中文字面量不许回来；真的渲染出来的那两处（大计数器 / 卡片价格）确实换过了；
+// 以及**两个宿主对同一个数给出同一个字符串**（拿引擎用例里那条期望值来对，见下）。
 section("29. 大数缩写的刻度名：前端那张表就是服务端 NumFormat 那张表");
 {
   const numFormatCs = readFileSync(join(root, "engine", "core", "Numbers", "NumFormat.cs"), "utf8");
@@ -3318,13 +3329,23 @@ section("29. 大数缩写的刻度名：前端那张表就是服务端 NumFormat
   const jsBlock = /const SCALE_UNITS = \[([\s\S]*?)\];/.exec(appSource)?.[1] ?? "";
   const jsNames = [...jsBlock.matchAll(/"([^"]+)"/g)].map((match) => match[1]);
 
-  check("前端 `SCALE_UNITS` === [\"K\", ...服务端 `ShortScaleNames`]（逐字、逐序，一个都不能走样）", () => {
+  check("前端 `SCALE_UNITS` === 服务端 `ShortScaleNames`（逐字、逐序、连长度，一个都不能走样）", () => {
     // 假绿防线：两个正则各自读到空数组时，"两张空表相等"会假装通过。
     if (engineNames.length < 10) {
       throw new Error(`从 NumFormat.cs 只读到 ${engineNames.length} 个刻度名——上面那条正则该跟着源文件改`);
     }
     if (jsNames.length === 0) throw new Error("app.js 里没有读到 `const SCALE_UNITS = [...]`");
-    eq(jsNames.join(" / "), ["K", ...engineNames].join(" / "), "前端与服务端的刻度表");
+    eq(jsNames.join(" / "), engineNames.join(" / "), "前端与服务端的刻度表");
+  });
+
+  check("服务端那张表从 `K` 起（2026-10-06 之前是 `M/B/T…`：引擎没有千位那一档，" +
+    "于是它把 1000 写成 `1,000`、前端写成 `1K`——同一个数两种话）", () => {
+    if (engineNames[0] !== "K") {
+      throw new Error(`ShortScaleNames[0] 是 ${JSON.stringify(engineNames[0])}，不是 "K"——引擎的千位档又没了`);
+    }
+    if (engineNames.length !== 21) {
+      throw new Error(`ShortScaleNames 有 ${engineNames.length} 项，期望 21（K 起、到 Vg 止，档位 1e3 ~ 1e63）`);
+    }
   });
 
   check("那张表里**没有一个汉字**（2026-10-05 之前是 千 / 百万 / 十亿 / 万亿…，不许回来）", () => {
@@ -3375,6 +3396,29 @@ section("29. 大数缩写的刻度名：前端那张表就是服务端 NumFormat
     }
     if (!/text === "0" && value > 0 \? unitRate\(value\) : text/.test(appSource)) {
       throw new Error("`priceText()` 的小数退路不见了——正的小价格会被画成 0");
+    }
+  });
+
+  // **两个宿主不许对同一个数说两种话。** 这条跨套件对：终端那一侧（引擎）的期望串
+  // 写在 `engine/tests/NumbersTests.cs` 的 `FormatShort(7_579)` 上，浏览器这一侧的
+  // 真渲染读数就在上面那张 `counters` 表里。两边从不同的源里读出来、在这里相撞——
+  // 任何一侧单独改精度或刻度名，这条就红。
+  //
+  // 为什么挑 7579：它是人真正看到的那个数（卡片上 `7.58K` 就是由它来的），而且
+  // **它落在两个格式器唯一重合的那一档上**——计数器给"10 以下"留 3 位并补零
+  // （`toFixed(3)`），引擎的 `Trim(mantissa, 3)` 是"最多 3 位、去掉尾零"，
+  // 只有在**尾数恰好 3 位非零小数**时两者逐字相同。1.2e6 就不是：计数器 `1.200M`、
+  // 引擎 `Trim` 出 `1.2M`——**这一处差在补零、不在精度**，是前端刻意的定宽选择
+  // （避免每帧重绘时宽度抖动），本轮按"不许动精度"原样留着，不假装它们处处相同。
+  check("两个宿主对同一个数给出同一个字符串：浏览器大计数器 `7579` vs 引擎 `FormatShort(7579)` 的期望值", () => {
+    const numbersTests = readFileSync(join(root, "engine", "tests", "NumbersTests.cs"), "utf8");
+    const expected = /Check\.Equal\("([^"]+)",\s*NumFormat\.FormatShort\(7_579\)\)/.exec(numbersTests)?.[1];
+    if (!expected) {
+      throw new Error("`NumbersTests` 里找不到 `FormatShort(7_579)` 的期望值——引擎那一侧的钉子被拆了，这条无从对起");
+    }
+    eq(counter(7579), expected, "浏览器大计数器 vs 引擎 FormatShort");
+    if (!expected.includes("K")) {
+      throw new Error(`引擎给的期望值是 ${JSON.stringify(expected)}——它没有落在 K 档上，这条跨套件对就不再有意义`);
     }
   });
 }

@@ -3,10 +3,10 @@ namespace NekoClicker.Core.Numbers;
 /// <summary>数字的显示风格。</summary>
 public enum NumberStyle
 {
-    /// <summary>长刻度名：<c>1.234 million</c>。Cookie Clicker 默认风格。</summary>
+    /// <summary>长刻度名：<c>1.234 million</c>。Cookie Clicker 默认风格；<b>仓库里没有宿主再用它</b>。</summary>
     Long,
 
-    /// <summary>短刻度名：<c>1.234M</c>。</summary>
+    /// <summary>短刻度名：<c>1.234M</c>。1000 起缩写（<c>1K</c>）；<b>两个宿主用的都是它</b>。</summary>
     Short,
 
     /// <summary>科学计数法：<c>1.234e6</c>。</summary>
@@ -19,21 +19,33 @@ public enum NumberStyle
 /// <summary>
 /// 数值格式化。<para>
 /// 增量游戏的数字会跨越十几个数量级，直接打印既有 30 位整数没人读得懂，也会撑爆 UI。
-/// 这里实现 Cookie Clicker 的 <c>Beautify</c> 策略：小于 100 万显示完整数字，
-/// 之后按 3 位一档套用 short scale 名称（million / billion / trillion ...），
-/// 名称用尽后退回科学计数法。
+/// 这里实现 Cookie Clicker 的 <c>Beautify</c> 策略：按 3 位一档套用刻度名，
+/// 名称用尽后退回科学计数法。<b>两套表的档位基准不一样，这是故意的</b>——
+/// 短刻度（<see cref="ShortScaleNames"/>）从 <b>1e3</b> 起（<c>K</c> 那一档），
+/// 长名表（<see cref="LongScaleNames"/>）从 <b>1e6</b> 起（英文里 "1.234 thousand"
+/// 不是惯用写法，1000 ~ 999999 写成完整数字更好读）。于是：小于 1000 时四种风格一致，
+/// 1000 ~ 999999 只有 <see cref="NumberStyle.Short"/> 会缩写（<c>7.579K</c>）。
+/// </para>
+/// <para>
+/// <b>K/M/B/T 只有 <see cref="ShortScaleNames"/> 这一套，两个宿主都走
+/// <see cref="NumberStyle.Short"/>。</b>同一个数在终端与浏览器上必须是同一个字符串；
+/// 长名风格（<c>1.234 million</c>）留在公开 API 里供宿主自选，但仓库里没有任何一处宿主再用它。
 /// </para>
 /// </summary>
 public static class NumFormat
 {
-    /// <summary>短刻度名称表，索引 0 对应 1e6。</summary>
+    /// <summary>短刻度名称表，索引 0 对应 1e3（所以 1000 是 <c>1K</c>）。</summary>
     public static readonly string[] ShortScaleNames =
     [
-        "M", "B", "T", "Qa", "Qi", "Sx", "Sp", "Oc", "No", "Dc",
+        "K", "M", "B", "T", "Qa", "Qi", "Sx", "Sp", "Oc", "No", "Dc",
         "Ud", "Dd", "Td", "Qad", "Qid", "Sxd", "Spd", "Od", "Nd", "Vg",
     ];
 
-    /// <summary>长刻度名称表，索引 0 对应 1e6。</summary>
+    /// <summary>
+    /// 长刻度名称表，索引 0 对应 1e6（<b>没有千位那一档</b>，理由见类型注释）。
+    /// 与短刻度表逐档对齐、只差一个基准：<c>LongScaleNames[i]</c> 与
+    /// <c>ShortScaleNames[i + 1]</c> 指的是同一个档位。
+    /// </summary>
     public static readonly string[] LongScaleNames =
     [
         "million", "billion", "trillion", "quadrillion", "quintillion",
@@ -59,8 +71,9 @@ public static class NumFormat
 
         if (style == NumberStyle.Scientific) return sign + Scientific(abs);
 
-        // 小于 100 万时四种风格一致（整数部分加千分位、小数最多 3 位）。
-        if (abs < 1e6) return sign + FormatBelowMillion(abs);
+        // 还没到这一档的缩写门槛时四种风格一致（整数部分加千分位、小数最多 3 位）。
+        // Short 的门槛是 1000（K 档），其余三种是 100 万。
+        if (abs < ScaleFloor(style)) return sign + FormatBelowMillion(abs);
 
         // Plain 想要"完整数字"，但超过 1e21 之后连屏幕都放不下，退化为科学计数法。
         if (style == NumberStyle.Plain)
@@ -70,13 +83,25 @@ public static class NumFormat
                 : sign + Scientific(abs);
         }
 
-        string[] names = style == NumberStyle.Short ? ShortScaleNames : LongScaleNames;
-        return sign + FormatScaled(abs, names, space: style == NumberStyle.Long);
+        bool shortStyle = style == NumberStyle.Short;
+        string[] names = shortStyle ? ShortScaleNames : LongScaleNames;
+        return sign + FormatScaled(abs, names, space: !shortStyle, baseTier: BaseTier(shortStyle));
     }
 
-    /// <summary>用自定义刻度名称表格式化（例如本地化用"万/亿/兆"表）。</summary>
+    /// <summary>
+    /// 某一档风格开始缩写的门槛：短刻度从 1000 起（<c>K</c>），其余从 100 万起。
+    /// </summary>
+    private static double ScaleFloor(NumberStyle style) => style == NumberStyle.Short ? 1e3 : 1e6;
+
+    /// <summary>某一档刻度表的档位基准：索引 0 对应 1e3 时返回 1，对应 1e6 时返回 2。</summary>
+    private static int BaseTier(bool shortStyle) => shortStyle ? 1 : 2;
+
+    /// <summary>
+    /// 用自定义刻度名称表格式化。<b>基准与 <see cref="ShortScaleNames"/> 相同：索引 0 对应 1e3。</b>
+    /// （本地化时换一张表就能换一套刻度名，但"从千位起缩写"这条口径与内置短刻度一致。）
+    /// </summary>
     /// <param name="value">待格式化数值。</param>
-    /// <param name="scaleNames">刻度名称，索引 0 必须对应 1e6。</param>
+    /// <param name="scaleNames">刻度名称，索引 0 必须对应 1e3。</param>
     /// <param name="space">数字与名称之间是否加空格。</param>
     public static string Format(double value, IReadOnlyList<string> scaleNames, bool space = true)
     {
@@ -84,14 +109,14 @@ public static class NumFormat
 
         string sign = value < 0 ? "-" : string.Empty;
         double abs = Math.Abs(value);
-        if (abs < 1e6) return Format(value, NumberStyle.Plain);
-        return sign + FormatScaled(abs, scaleNames, space);
+        if (abs < 1e3) return Format(value, NumberStyle.Plain);
+        return sign + FormatScaled(abs, scaleNames, space, baseTier: 1);
     }
 
-    /// <summary>长名称风格（<c>1.234 million</c>）。</summary>
+    /// <summary>长名称风格（<c>1.234 million</c>）。<b>没有宿主再用它</b>，见类型注释。</summary>
     public static string FormatLong(double value) => Format(value, NumberStyle.Long);
 
-    /// <summary>短名称风格（<c>1.234M</c>）。</summary>
+    /// <summary>短名称风格（<c>1.234M</c>）。两个宿主显示大数时用的都是它。</summary>
     public static string FormatShort(double value) => Format(value, NumberStyle.Short);
 
     /// <summary>千分位整数风格（<c>1,234,567</c>）。</summary>
@@ -186,18 +211,18 @@ public static class NumFormat
         return abs.ToString("0.#####", System.Globalization.CultureInfo.InvariantCulture);
     }
 
-    private static string FormatScaled(double abs, IReadOnlyList<string> names, bool space)
+    private static string FormatScaled(double abs, IReadOnlyList<string> names, bool space, int baseTier)
     {
-        // log10/3 得到 3 位一档的档位；1e6 → 2，1e9 → 3 ...
+        // log10/3 得到 3 位一档的档位；1e3 → 1，1e6 → 2，1e9 → 3 ...
         int tier = (int)Math.Floor(Math.Log10(abs) / 3.0);
 
         // Math.Log10 在 10 的整数次幂附近可能有 1ulp 级舍入（例如 1e21 → 20.999…），
         // 会把档位算低一档并让尾数变成 1000。这里用实际的幂值双向校正，比加 epsilon 可靠。
         while (abs >= Pow10(3 * (tier + 1))) tier++;
-        while (tier >= 2 && abs < Pow10(3 * tier)) tier--;
+        while (tier >= baseTier && abs < Pow10(3 * tier)) tier--;
 
-        int index = tier - 2;
-        if (tier < 2 || index >= names.Count) return Scientific(abs);
+        int index = tier - baseTier;
+        if (index < 0 || index >= names.Count) return Scientific(abs);
 
         double mantissa = abs / Pow10(3 * tier);
 

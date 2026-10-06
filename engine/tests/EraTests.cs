@@ -170,7 +170,7 @@ public static class EraTests
         Check.Equal(1, gate.CurrentIndex);
         Check.Equal(2, gate.NextIndex);
         Check.NotNull(gate.BlockedReason);
-        Check.Contains(gate.BlockedReason!, "100,000");
+        Check.Contains(gate.BlockedReason!, "100K");
         Check.Close(0, gate.Progress, 1e-9);
     }
 
@@ -419,7 +419,7 @@ public static class EraTests
         Check.Equal(9, nine.Era.All.Count);
         Check.False(nine.Era.CanAdvance);
         Check.NotNull(nine.Era.BlockedReason);
-        Check.Contains(nine.Era.ProgressText, "100,000");
+        Check.Contains(nine.Era.ProgressText, "/ 100K");
     }
 
     [Test]
