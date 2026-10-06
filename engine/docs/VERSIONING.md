@@ -5,7 +5,19 @@
 > 一句话版本：**从 1.0.0 起，公开 API 只增不改。** 删改任何公开成员都必须升主版本号，
 > 而且这条规矩不是靠自觉——有测试守着。
 >
-> 当前版本 **1.11.0**：**minor——公开 API 只增不改**（依据下面 §2 那张表）。
+> 当前版本 **1.12.0**：**minor——公开表面只增 ＋ 一处已记录的行为变更**（依据下面 §2 那张表）。
+> 这一版只做一件事：**把文本都换成 K/M/B/T**。`NumFormat.ShortScaleNames` 补上了千位档
+> （索引 0 从 1e6 挪到 1e3，表首是 `"K"`，21 项），于是 `FormatShort` 在 `1000 ~ 999999`
+> 上的输出从 `1,234` 变成 `1.234K`；长名表与 `FormatLong` 一行没改（也没有宿主再用它），
+> 1000 以下一个字母都没加。两个宿主（终端与 Web）的全部显示点改成 `NumberStyle.Short`。
+> **公开表面只增**：`ShortScaleNames` 多一项，没有增删改名、没有改签名、没有改可空标注、
+> 没有改枚举成员的值——`PublicApi.txt` 因此只差首行 `version=`。
+> 但"改变已有成员的语义本该 major"这条字面上是被碰到的，所以它按先例记成**第四处例外**，
+> 理由与影响面见下面 **§2.1**。**存档格式一个字都没改**（`SaveSerializer.CurrentVersion`
+> 仍是 `1`、没有新迁移）。
+> 细节见 [CHANGELOG](../../CHANGELOG.md) 的 1.12.0。
+>
+> 上一版 **1.11.0**：**minor——公开 API 只增不改**（依据下面 §2 那张表）。
 > 新增 `LoreChannel.Note`（"玩家捡到的一张纸条"这种投放通道）、`LoreView.ChannelName`
 > （通道的线上 token，与 `GameSnapshot.ModeName` 同一个理由：**前端不该解释枚举序数**）、
 > `LoreChannelNames.WireName()`，以及把金猫出现计数的键从字面量提升成公开常量
@@ -114,8 +126,8 @@
 ```csharp
 using NekoClicker.Core;
 
-Console.WriteLine(ApiVersion.Current);        // "1.11.0"
-Console.WriteLine(ApiVersion.AssemblyVersion); // 1.11.0.0
+Console.WriteLine(ApiVersion.Current);        // "1.12.0"
+Console.WriteLine(ApiVersion.AssemblyVersion); // 1.12.0.0
 Console.WriteLine(ApiVersion.Major);           // 1
 ```
 
@@ -134,7 +146,7 @@ Console.WriteLine(ApiVersion.Major);           // 1
 "公开 API" = `NekoClicker.Core.dll` 里所有 `public` / `protected` 类型与成员。
 **internal 成员随便改**，没人看得见。
 
-### 已知的三次例外：1.1.0 / 1.5.0 / 1.6.0
+### 已知的四次例外：1.1.0 / 1.5.0 / 1.6.0 / 1.12.0
 
 **1.1.0 改了行为语义，却按 minor 发布。** 它让 `CheckEnding()` 在结局条件成立后先等一段
 宽限期（默认 30 模拟秒），期间返回 `null`——按上表属于"改变已有成员的语义"，本该 major。
@@ -156,6 +168,35 @@ Console.WriteLine(ApiVersion.Major);           // 1
 > 本身就是一个信号：要么这张表太高（"改落定时机"其实是这个框架承诺里的一部分），
 > 要么这段语义该先被设计稳定下来。这次仍然按先例走 minor，是因为改动**只**发生在
 > 落定时机上、公开表面一字未动；但这条理由不会一直成立。
+
+### 2.1 第四处例外：1.12.0（短刻度的千位档）
+
+**1.12.0 换了一处**，不再动结局的落定时机：`NumFormat.ShortScaleNames` 的索引 0 从
+`1e6` 挪到 `1e3`（表首新增 `"K"`），于是 `FormatShort` / `Format(x, NumberStyle.Short)`
+在 `1000 ~ 999999` 上的输出从 `1,234` 变成 `1.234K`；自定义刻度名那个重载的基准
+（索引 0 对应哪一档）也跟着从 1e6 挪到 1e3。
+
+**为什么不升 major。** 三条一起看：
+
+1. **公开表面一个字都没增删改**：没有新增/删除/重命名成员，没有改参数类型或顺序，
+   没有收紧可空标注，没有改任何枚举成员的值。唯一变的是**一个公开数组的内容**
+   （21 项：`["K","M","B","T",…,"Vg"]`），而快照记的是**签名**，所以
+   `PublicApi.txt` 只差首行 `version=`（`git diff --numstat` = `1 1`）。
+2. **变的那个成员只产出"给人看的文本"**。`NumFormat` 的整份契约就是"把这个数写成人读得懂
+   的样子"；同一个数从 `1,234` 写成 `1.234K` **不改变任何数值语义**——没有哪一行显示的
+   不再是那个数，也没有哪个消费者会因此算出别的结果。上表举的语义不兼容是
+   "原来返回本轮累计、现在返回历史累计"：**那是意思变了**，这是**写法换了**。
+   二者的区别是"消费者会不会拿到一个静默错误的结果"，这里的答案是不会。
+3. **唯一真正会静默出错的消费者，是按下标读这张公开数组的人**（仓库里就有一个：
+   `web-smoke` §29 的跨文件守卫）。那一处**在同一轮里一起改了**，而且改成了更强的写法
+   （从 `["K", ...服务端那张表]` 改成**直接对表**，另加"表首必须是 K、恰好 21 项"）。
+   破坏半径因此是**可测量的，并且已经量过**：这就是 `ShortScaleNames` 里
+   `M/B/T/Qa…` 逐字、逐序留在原表里的理由——老下标 +1 就是老名字。
+
+> **这一条与上面那三次不同的地方（值得下次拿来判）**：那三次改的是**判定时机**，
+> 这次改的是**显示写法**。共同点是"公开表面没动、语义有位移"。
+> 如果哪天要改的是**数值**语义（例如 `FormatPlain` 的舍入、`Percent` 的口径），
+> 那就不在这条豁免里——那是消费者会算出不同结果的一类改动，按表走 major。
 
 ### 容易漏掉的两类"不兼容"
 
@@ -188,7 +229,9 @@ engine/core/PublicApi.txt     ← 公开表面的逐项清单（行数随公开�
                                 1.11.0 又加了 LoreChannel.Note、LoreChannelNames 类型与
                                 WireName()、GoldenCookieSystem.SerialCounterKey、
                                 LoreView.ChannelName（**+5 项 / −0 项**，并多一行类间空行），
-                                所以现在是 2032 行；1.10.1 与 1.10.2 都是"一行没动"的 patch）
+                                所以现在是 2032 行；1.10.1 与 1.10.2 都是"一行没动"的 patch；
+                                1.12.0 **成员一项也没增删**，只改了 ShortScaleNames 的内容
+                                ——快照记的是签名，所以 `--numstat` 是 `1 1`，行数仍是 2032）
 ```
 
 它被**嵌进 `NekoClicker.Core.dll`**，随 dll 一起走。任何拿到这个 dll 的宿主都能断言
@@ -265,9 +308,9 @@ git tag -a v1.0.0 -m "NekoClicker.Core 1.0.0"
 > [RELEASING](RELEASING.md)。下面是判据清单。
 
 - [ ] `pwsh -File tools/build.ps1 -Strict` 退出码 0，0 警告
-- [ ] 全部用例通过（当前 **593** 个；2026-10-05 实测——这个数现在由 `TestCountDriftTests` 守着：加了用例却没改这一行，闸门会点名报红，见 OPEN_WORK 的 W1）
+- [ ] 全部用例通过（当前 **595** 个；2026-10-05 实测——这个数现在由 `TestCountDriftTests` 守着：加了用例却没改这一行，闸门会点名报红，见 OPEN_WORK 的 W1）
 - [ ] 若这次动了 Web 宿主或启动器：`pwsh -File tools/api-test.ps1` 全部端到端检查通过（当前 101 项；脚本收尾自己核对"源码几处检查点 / 这次执行到几处"）
-- [ ] 若这次动了 Web 前端：`node tools/web-smoke.mjs` 全绿（当前 **252** 条；S1 起它也在 `-Strict` 里跑。⚠️ 这个数没有机器守卫，以脚本打印的那一行为准）
+- [ ] 若这次动了 Web 前端：`node tools/web-smoke.mjs` 全绿（当前 **254** 条；S1 起它也在 `-Strict` 里跑。⚠️ 这个数没有机器守卫，以脚本打印的那一行为准）
 - [ ] `Directory.Build.props` 的 `Version` / `AssemblyVersion` / `FileVersion` 三处一致
 - [ ] `CHANGELOG.md` 有当前版本的带日期条目，写清了兼容性影响
 - [ ] 若公开 API 有变动：快照已更新，且**确实**是有意为之

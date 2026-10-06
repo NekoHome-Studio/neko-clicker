@@ -19,7 +19,7 @@
 #   `-SkipWebSmoke` 是刻意的：前端那一层已经有自己的作业，而它的判据与操作系统无关。
 #
 # 四个作业：
-#   build-and-test  引擎侧：tools/build.ps1 -Strict（0 警告 + 593 用例 + 主/Web 两条 sln + 前端冒烟）
+#   build-and-test  引擎侧：tools/build.ps1 -Strict（0 警告 + 595 用例 + 主/Web 两条 sln + 前端冒烟）
 #                   （这个数在 1.9.0 时是 531；S13 的 5 条守卫 → 536；2026-10-04 把
 #                     save-transfer-1.10.0 / tools-s1-s13 / click-power-bridge 三条分支合并后
 #                     实测 **556**，同一天做完存档导出/导入的两个窗口（W13/W14）之后是 **564**。

@@ -323,7 +323,7 @@ public sealed record EraView
     /// <summary>向下一个阶段推进的比例 [0,1]；已在最后一个阶段时为 1。</summary>
     public double StageProgress { get; init; }
 
-    /// <summary>下一个阶段门槛的文本形式（与 <see cref="ProgressText"/> 同一个格式），例如 <c>4.5 万 / 600 万（1%）</c>。</summary>
+    /// <summary>下一个阶段门槛的文本形式（与 <see cref="ProgressText"/> 同一个格式），例如 <c>45K / 6M（1%）</c>。</summary>
     public string StageProgressText { get; init; } = string.Empty;
 
     /// <summary>下一层的层号；已是最后一层时为 <c>null</c>。</summary>
@@ -559,7 +559,7 @@ public sealed record OfflineView
     /// <summary>计入收益时长的文本形式，例如 <c>3 小时</c>。</summary>
     public string DurationText { get; init; } = string.Empty;
 
-    /// <summary>补发货币的文本形式，例如 <c>1.2 百万</c>。</summary>
+    /// <summary>补发货币的文本形式，例如 <c>1.2M</c>。</summary>
     public string CookiesText { get; init; } = string.Empty;
 }
 

@@ -34,6 +34,13 @@ public static class NumbersTests
         Check.Equal("2.5 trillion", NumFormat.Format(2.5e12));
         Check.Equal("7 quadrillion", NumFormat.Format(7e15));
         Check.Equal("1 sextillion", NumFormat.Format(1e21));
+        // 长名风格在 1000 ~ 999999 上**没有缩写**（"1.234 thousand" 不是英文惯用写法），
+        // 也**没有千位档**——这是它和短刻度唯一的口径差别，钉在这里免得有人顺手给它也加一档。
+        // （2026-10-06 起仓库里已经没有宿主用它了，见 NumFormat 的类型注释。）
+        Check.Equal("1,234", NumFormat.Format(1_234));
+        Check.Equal("7,579", NumFormat.Format(7_579));
+        Check.Equal("117 million", NumFormat.Format(117_000_000));
+        Check.Equal("2.92 billion", NumFormat.Format(2_920_000_000));
     }
 
     [Test]
@@ -55,8 +62,35 @@ public static class NumbersTests
     }
 
     [Test]
+    public static void Format_ShortScale_StartsAtTheKiloTier()
+    {
+        // 短刻度表的索引 0 从 1e6 挪到了 1e3（K 那一档）：1000 起就缩写。
+        Check.Equal("1K", NumFormat.FormatShort(1_000));
+        Check.Equal("7.579K", NumFormat.FormatShort(7_579));
+        Check.Equal("999.999K", NumFormat.FormatShort(999_999));
+        Check.Equal("1.2M", NumFormat.FormatShort(1_200_000));
+        Check.Equal("117M", NumFormat.FormatShort(117_000_000));
+        Check.Equal("2.92B", NumFormat.FormatShort(2_920_000_000));
+        Check.Equal("4T", NumFormat.FormatShort(4e12));
+        Check.Equal("-1.5K", NumFormat.FormatShort(-1_500));
+    }
+
+    [Test]
+    public static void Format_ShortScale_LeavesSubThousandAlone()
+    {
+        // 1000 以下一个字母都不加：0.5 不许被抹成 "0"、999 不许变成 "0.999K"。
+        Check.Equal("999", NumFormat.FormatShort(999));
+        Check.Equal("0.5", NumFormat.FormatShort(0.5));
+        Check.Equal("0.0001", NumFormat.FormatShort(0.0001));
+        Check.Equal("1e-6", NumFormat.FormatShort(1e-6));
+        // 尾数四舍五入后进位跨档：999999.6 → 1000K 是读不通的，必须进位成 1M。
+        Check.Equal("1M", NumFormat.FormatShort(999_999.6));
+    }
+
+    [Test]
     public static void Format_ShortStyle()
     {
+        Check.Equal("1K", NumFormat.Format(1e3, NumberStyle.Short));
         Check.Equal("1M", NumFormat.Format(1e6, NumberStyle.Short));
         Check.Equal("1.5M", NumFormat.Format(1.5e6, NumberStyle.Short));
         Check.Equal("1B", NumFormat.Format(1e9, NumberStyle.Short));
@@ -76,10 +110,19 @@ public static class NumbersTests
     [Test]
     public static void Format_CustomScaleNames_AreHonoured()
     {
-        // 本地化场景：用"万/亿"表替换英文刻度名（索引 0 对应 1e6）。
-        string[] chinese = ["百万", "十亿", "万亿"];
-        Check.Equal("2.5百万", NumFormat.Format(2.5e6, chinese, space: false));
-        Check.Equal("3 十亿", NumFormat.Format(3e9, chinese));
+        // 自定义表与 ShortScaleNames 同一档位基准：**索引 0 对应 1e3**。
+        // （这份夹具此前是一张中文表 `百万/十亿/万亿`，基准 1e6——2026-10-06 随 K 档一起换掉：
+        //  刻度名只有 K/M/B/T 一套，那张表是仓库里最后一处中文单位的数字文本。）
+        string[] custom = ["k", "m", "b", "t"];
+        Check.Equal("2.5k", NumFormat.Format(2_500, custom, space: false));
+        Check.Equal("3 b", NumFormat.Format(3e9, custom));
+        // 表用尽后退回科学计数法（与内置短刻度同一条退路）。
+        Check.Equal("1e15", NumFormat.Format(1e15, custom));
+        // 空表退回科学计数法，不是抛异常。
+        Check.Equal("1e9", NumFormat.Format(1e9, []));
+        // 同一张内置表走自定义入口，结果必须与 FormatShort 逐字相同（两处基准不许漂）。
+        Check.Equal(NumFormat.FormatShort(7_579), NumFormat.Format(7_579, NumFormat.ShortScaleNames, space: false));
+        Check.Equal(NumFormat.FormatShort(1_000), NumFormat.Format(1_000, NumFormat.ShortScaleNames, space: false));
     }
 
     [Test]

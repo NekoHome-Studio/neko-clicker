@@ -133,7 +133,7 @@ public static class EraSystem
         engine.Events.Publish(new EraAdvancedEvent(current.Index, nextIndex, chips, inherited, next.Name));
 
         string gainedText = chips > 0
-            ? $"，获得 {NumFormat.FormatLong(chips)} {content.PrestigeCurrencyName}"
+            ? $"，获得 {NumFormat.FormatShort(chips)} {content.PrestigeCurrencyName}"
             : "（本层还不足以提升等级，但故事继续）";
         engine.Notify($"舍去第 {current.Index} 命{gainedText}。", NotificationKind.Rare, next.Icon);
 
@@ -255,7 +255,7 @@ public static class EraSystem
 
         if (current.Completion.TryGetProgress(engine.Metrics, out double currentValue, out double target) && target > 0)
         {
-            return $"{NumFormat.FormatLong(Math.Min(currentValue, target))} / {NumFormat.FormatLong(target)}" +
+            return $"{NumFormat.FormatShort(Math.Min(currentValue, target))} / {NumFormat.FormatShort(target)}" +
                    $"（{NumFormat.Percent(Math.Clamp(currentValue / target, 0, 1), 0)}）";
         }
 

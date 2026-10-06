@@ -210,7 +210,7 @@ public static class GoldenCookieSystem
     {
         string template = string.IsNullOrWhiteSpace(outcome.Description) ? outcome.Name : outcome.Description;
         return template
-            .Replace("{amount}", NumFormat.FormatLong(Math.Abs(net)), StringComparison.Ordinal)
+            .Replace("{amount}", NumFormat.FormatShort(Math.Abs(net)), StringComparison.Ordinal)
             .Replace("{duration}", NumFormat.Duration(buffSeconds), StringComparison.Ordinal)
             .Replace("{name}", outcome.Name, StringComparison.Ordinal);
     }

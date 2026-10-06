@@ -135,7 +135,7 @@ public sealed record Scaling(
             ? NumFormat.Format(PerUnit, NumberStyle.Short)
             : NumFormat.Percent(PerUnit, 2);
 
-        string suffix = double.IsPositiveInfinity(Cap) ? string.Empty : $"（上限 {NumFormat.Format(Cap, NumberStyle.Plain)}）";
+        string suffix = double.IsPositiveInfinity(Cap) ? string.Empty : $"（上限 {NumFormat.Format(Cap, NumberStyle.Short)}）";
         return $"{unit} +{per}{suffix}";
     }
 }
@@ -164,9 +164,9 @@ public sealed record Modifier(
         string target = Target.Describe(content);
         string body = Operation switch
         {
-            ModifierOperation.Flat => $"{target} +{NumFormat.Format(Value, NumberStyle.Plain)}",
+            ModifierOperation.Flat => $"{target} +{NumFormat.Format(Value, NumberStyle.Short)}",
             ModifierOperation.AdditivePercent => $"{target} +{NumFormat.Percent(Value, 1)}",
-            ModifierOperation.Multiplicative => $"{target} ×{NumFormat.Format(Value, NumberStyle.Plain)}",
+            ModifierOperation.Multiplicative => $"{target} ×{NumFormat.Format(Value, NumberStyle.Short)}",
             ModifierOperation.Power => $"{target} 的 {Value} 次方",
             _ => target,
         };

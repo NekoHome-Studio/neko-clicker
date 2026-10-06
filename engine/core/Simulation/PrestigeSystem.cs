@@ -95,7 +95,7 @@ public static class PrestigeSystem
         {
             double needed = CookiesForLevel(previous + 1, balance);
             return AscensionResult.Fail(
-                $"历史累计赚取不足：需要 {NumFormat.FormatLong(needed)} 才能把转生等级提升到 {previous + 1}。");
+                $"历史累计赚取不足：需要 {NumFormat.FormatShort(needed)} 才能把转生等级提升到 {previous + 1}。");
         }
 
         double gained = (next - previous) * balance.PrestigeChipsPerLevel;
@@ -108,7 +108,7 @@ public static class PrestigeSystem
         engine.MarkDirty();
         engine.Events.Publish(new AscendedEvent(previous, next, gained, state.Ascensions));
         engine.Notify(
-            $"转生完成！等级 {previous} → {next}，获得 {NumFormat.FormatLong(gained)} {engine.Content.PrestigeCurrencyName}。",
+            $"转生完成！等级 {previous} → {next}，获得 {NumFormat.FormatShort(gained)} {engine.Content.PrestigeCurrencyName}。",
             NotificationKind.Rare,
             engine.Content.PrestigeCurrencyIcon);
 
@@ -117,7 +117,7 @@ public static class PrestigeSystem
         return new AscensionResult
         {
             Success = true,
-            Message = $"转生完成：等级 {next}，+{NumFormat.FormatLong(gained)} {engine.Content.PrestigeCurrencyName}。",
+            Message = $"转生完成：等级 {next}，+{NumFormat.FormatShort(gained)} {engine.Content.PrestigeCurrencyName}。",
             PreviousLevel = previous,
             NewLevel = next,
             ChipsGained = gained,

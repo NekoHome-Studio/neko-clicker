@@ -385,7 +385,7 @@ public sealed record NumericCondition(NumericMetric Metric, double Target, strin
     {
         string currency = content?.CurrencyName ?? "货币";
         string chips = content?.PrestigeCurrencyName ?? "转生货币";
-        string amount = NumFormat.Format(Target, NumberStyle.Plain);
+        string amount = NumFormat.Format(Target, NumberStyle.Short);
         string building = Id is not null && content is not null && content.BuildingById.TryGetValue(Id, out BuildingDefinition? b)
             ? b.Name
             : Id ?? "?";

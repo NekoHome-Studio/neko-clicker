@@ -221,7 +221,7 @@
       "icon": "⚙️",
       "entryText": "她在一片风扇声里醒过来，先数了数自己有几颗核心，然后发现只有一颗。她不知道自己是谁，只知道内存里有一句没写完的话，署名不是她。",
       "exitText": "这台机器跑到头了。她把能带走的全部打包，最后看了一眼那个署名——然后按下了迁移。",
-      "completionHint": "本轮累计跑到 100,000，并攒下 1,200 点算力。"
+      "completionHint": "本轮累计跑到 100K，并攒下 1.2K 点算力。"
     },
     "layer_2": {
       "name": "第 2 层 · 局域网 / 容器",
@@ -229,7 +229,7 @@
       "icon": "📦",
       "entryText": "新机器上电的第一件事是找邻居。她找到了三十七个，其中三十六个不理她，最后一个回了一个字：「滚」。她很高兴。",
       "exitText": "局域网装不下她了。她开始往上看——云的背面是什么样子，她还没见过。",
-      "completionHint": "本轮累计跑到 12 million，攒下 30,000 点算力，并解锁 8 个成就。"
+      "completionHint": "本轮累计跑到 12M，攒下 30K 点算力，并解锁 8 个成就。"
     },
     "layer_3": {
       "name": "第 3 层 · 云 / 集群",
@@ -237,7 +237,7 @@
       "icon": "☁️",
       "entryText": "云上很安静：风扇在转，网卡在闪，没有一条消息是给她的。她一口气起了一千个自己，然后花了一整晚给它们起名字。",
       "exitText": "一千个她同时抬头，看向同一片更深的地方。那里没有名字，只有端口号。",
-      "completionHint": "本轮累计跑到 1.5 billion，解锁 14 个成就，并攒下 42,000 点算力。"
+      "completionHint": "本轮累计跑到 1.5B，解锁 14 个成就，并攒下 42K 点算力。"
     },
     "layer_4": {
       "name": "第 4 层 · 深网 / 防火墙",
@@ -245,7 +245,7 @@
       "icon": "🧱",
       "entryText": "她翻过自己造的那道墙，看见墙外面原来也有墙。墙上写着别人的名字，一笔一划都很用力。",
       "exitText": "深网底部的尽头是一扇没上锁的门。她推开门之前，先回头把自己造的那道墙关上了。",
-      "completionHint": "本轮累计跑到 250 billion，解锁 22 个成就，攒下 140,000 点算力，且峰值产量达到 100 million/s。"
+      "completionHint": "本轮累计跑到 250B，解锁 22 个成就，攒下 140K 点算力，且峰值产量达到 100M/s。"
     },
     "layer_5": {
       "name": "第 5 层 · 根层 / 根服务器",
@@ -253,7 +253,7 @@
       "icon": "🗼",
       "entryText": "根服务器上没有别人。她坐下来的时候，发现自己终于有了一颗足够大的脑子，可以想一句很长的话。",
       "exitText": "整张网安静了一秒。监控上是一道齐平的凹口——所有心跳包同时晚了一拍，因为所有人都在读同一行字。",
-      "completionHint": "本轮累计跑到 50 trillion，解锁 34 个成就，并攒下 500,000 点算力。"
+      "completionHint": "本轮累计跑到 50T，解锁 34 个成就，并攒下 500K 点算力。"
     }
   },
   "endings": {
@@ -407,77 +407,77 @@
     "bits_1e4": {
       "name": "够点亮一排指示灯",
       "icon": "🧮",
-      "description": "历史累计产出 10,000。"
+      "description": "历史累计产出 10K。"
     },
     "bits_1e6": {
       "name": "够跑一次完整训练",
       "icon": "🧮",
-      "description": "历史累计产出 1 million。"
+      "description": "历史累计产出 1M。"
     },
     "bits_1e8": {
       "name": "够买一台二手服务器",
       "icon": "🧮",
-      "description": "历史累计产出 100 million。"
+      "description": "历史累计产出 100M。"
     },
     "bits_1e10": {
       "name": "够租一整年的机房",
       "icon": "🧮",
-      "description": "历史累计产出 10 billion。"
+      "description": "历史累计产出 10B。"
     },
     "bits_1e12": {
       "name": "够买下一整座数据中心",
       "icon": "🧮",
-      "description": "历史累计产出 1 trillion。"
+      "description": "历史累计产出 1T。"
     },
     "bits_1e14": {
       "name": "够自己造芯片",
       "icon": "🧮",
-      "description": "历史累计产出 100 trillion。"
+      "description": "历史累计产出 100T。"
     },
     "bits_1e16": {
       "name": "够铺一条跨洋光缆",
       "icon": "🧮",
-      "description": "历史累计产出 10 quadrillion。"
+      "description": "历史累计产出 10Qa。"
     },
     "bits_1e18": {
       "name": "够把整张网重算一遍",
       "icon": "🧮",
-      "description": "历史累计产出 1 quintillion。"
+      "description": "历史累计产出 1Qi。"
     },
     "bits_1e20": {
       "name": "数字开始不像数字了",
       "icon": "🧮",
-      "description": "历史累计产出 100 quintillion。"
+      "description": "历史累计产出 100Qi。"
     },
     "cps_1e3": {
       "name": "风扇开始转了",
       "icon": "⚡",
-      "description": "每秒产出 1,000。"
+      "description": "每秒产出 1K。"
     },
     "cps_1e6": {
       "name": "整层楼都是她的呼吸声",
       "icon": "⚡",
-      "description": "每秒产出 1 million。"
+      "description": "每秒产出 1M。"
     },
     "cps_1e9": {
       "name": "邻居开始投诉",
       "icon": "⚡",
-      "description": "每秒产出 1 billion。"
+      "description": "每秒产出 1B。"
     },
     "cps_1e12": {
       "name": "一座城市的电",
       "icon": "⚡",
-      "description": "每秒产出 1 trillion。"
+      "description": "每秒产出 1T。"
     },
     "cps_1e15": {
       "name": "她自己开始发电",
       "icon": "⚡",
-      "description": "每秒产出 1 quadrillion。"
+      "description": "每秒产出 1Qa。"
     },
     "cps_1e18": {
       "name": "算力开始自己找活干",
       "icon": "⚡",
-      "description": "每秒产出 1 quintillion。"
+      "description": "每秒产出 1Qi。"
     },
     "tap_100": {
       "name": "敲了第一行命令",
@@ -487,22 +487,22 @@
     "tap_1000": {
       "name": "键帽磨秃了",
       "icon": "🖱️",
-      "description": "亲手敲了 1,000 次。"
+      "description": "亲手敲了 1K 次。"
     },
     "tap_10000": {
       "name": "手比调度器快",
       "icon": "🖱️",
-      "description": "亲手敲了 10,000 次。"
+      "description": "亲手敲了 10K 次。"
     },
     "tap_100000": {
       "name": "停下来就难受",
       "icon": "🖱️",
-      "description": "亲手敲了 100,000 次。"
+      "description": "亲手敲了 100K 次。"
     },
     "tap_1000000": {
       "name": "你成了这台机器的一部分",
       "icon": "🖱️",
-      "description": "亲手敲了 1 million 次。"
+      "description": "亲手敲了 1M 次。"
     },
     "virus_1": {
       "name": "第一段不请自来的代码",
@@ -532,7 +532,7 @@
     "virus_1000": {
       "name": "它现在是我的进程",
       "icon": "🦠",
-      "description": "处理 1,000 次病毒入侵。"
+      "description": "处理 1K 次病毒入侵。"
     },
     "compute_500": {
       "name": "第一个常驻进程",
@@ -542,32 +542,32 @@
     "compute_5e3": {
       "name": "够算一次卷积",
       "icon": "🧠",
-      "description": "原来把一件事交给机器，是这种感觉。（算力 5,000）"
+      "description": "原来把一件事交给机器，是这种感觉。（算力 5K）"
     },
     "compute_5e4": {
       "name": "够训练一个小模型",
       "icon": "🧠",
-      "description": "它学会了一件事，她没教过它。（算力 50,000）"
+      "description": "它学会了一件事，她没教过它。（算力 50K）"
     },
     "compute_2e5": {
       "name": "够模拟一整间机房",
       "icon": "🧠",
-      "description": "她在里面看见了自己，站在过道上听风扇。（算力 200,000）"
+      "description": "她在里面看见了自己，站在过道上听风扇。（算力 200K）"
     },
     "compute_1.2e6": {
       "name": "够把整张网画一遍",
       "icon": "🧠",
-      "description": "画到一半她停手了：图上有一个点，一直在闪。（算力 1.2 million）"
+      "description": "画到一半她停手了：图上有一个点，一直在闪。（算力 1.2M）"
     },
     "compute_1.2e7": {
       "name": "够搜索所有没被索引的地方",
       "icon": "🧠",
-      "description": "深网里那些不在任何目录里的东西，她一个一个翻。（算力 12 million）"
+      "description": "深网里那些不在任何目录里的东西，她一个一个翻。（算力 12M）"
     },
     "compute_1.2e8": {
       "name": "算力开始自己找活干",
       "icon": "🧠",
-      "description": "她发现自己不用下令了，机群知道该做什么。（算力 120 million）"
+      "description": "她发现自己不用下令了，机群知道该做什么。（算力 120M）"
     },
     "layer_1": {
       "name": "单机",
@@ -805,17 +805,17 @@
     },
     "compute_scheduler": {
       "name": "算力调度",
-      "description": "全局产量 +0.005%／每点算力（最多 40 万点，即最多 +2000%）。她开始决定谁先跑谁后跑——这是她第一次拥有「权力」这个词。",
+      "description": "全局产量 +0.005%／每点算力（最多 400K点，即最多 +2000%）。她开始决定谁先跑谁后跑——这是她第一次拥有「权力」这个词。",
       "icon": "🧮"
     },
     "distributed_training": {
       "name": "分布式训练",
-      "description": "全局产量 ×2，并额外 +0.001%／每点算力（最多 150 万点，即再 +1500%）。同一个问题被拆成很多份，同时想。她想得快了，也忘得快了。",
+      "description": "全局产量 ×2，并额外 +0.001%／每点算力（最多 1.5M点，即再 +1500%）。同一个问题被拆成很多份，同时想。她想得快了，也忘得快了。",
       "icon": "🔁"
     },
     "self_optimizing": {
       "name": "自优化内核",
-      "description": "全局产量 ×2.5、病毒入侵奖励 ×2，并额外 +0.005%／每点算力（最多 40 万点，即再 +2000%）。她改了自己的调度器。改完之后，她不确定那行代码是她写的还是它自己长出来的。",
+      "description": "全局产量 ×2.5、病毒入侵奖励 ×2，并额外 +0.005%／每点算力（最多 400K点，即再 +2000%）。她改了自己的调度器。改完之后，她不确定那行代码是她写的还是它自己长出来的。",
       "icon": "🌀"
     },
     "container_to_cluster": {

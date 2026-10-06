@@ -18,7 +18,7 @@ dotnet build NekoClicker.sln     # 或者用仓库根的 .\tools\build.ps1
 | `core/` | **引擎本体**。时间推进、数值管线、价格闭式解、解锁条件树、存档与迁移、事件总线、只读视图 |
 | `content/Neko/` | 示例内容包「猫咖物语」——引擎的技术演示，同时是框架回归基线 |
 | `content/{Cafe,NineLives,Lab,Company,Apocalypse,Library,God,Civ,Cyber,Dream}/` | 十个内容包，**每个都是独立的 csproj** |
-| `tests/` | 593 个用例 + 自研迷你测试运行器（零依赖，不需要 xunit） |
+| `tests/` | 595 个用例 + 自研迷你测试运行器（零依赖，不需要 xunit） |
 | `docs/` | 架构、内容作者指南、版本承诺 |
 
 **为什么内容包算引擎的一部分？** 因为它们是**引擎的集成测试探针**，不是某个作品的资产：
@@ -73,9 +73,16 @@ dotnet build NekoClicker.sln     # 或者用仓库根的 .\tools\build.ps1
 
 ## 版本与兼容性
 
-**当前 `1.11.0`。从 `1.0.0` 起，`NekoClicker.Core` 的公开 API 只增不改**，
+**当前 `1.12.0`。从 `1.0.0` 起，`NekoClicker.Core` 的公开 API 只增不改**，
 由 `core/PublicApi.txt`（快照，**嵌进 dll**）加四条守卫强制执行。
-规矩见 [docs/VERSIONING.md](docs/VERSIONING.md)。1.11.0 是 **minor：公开 API 只增不改**
+规矩见 [docs/VERSIONING.md](docs/VERSIONING.md)。1.12.0 是 **minor：公开表面只增
+＋ 一处已记录的行为变更**——**把文本都换成 K/M/B/T**：`NumFormat.ShortScaleNames`
+补上千位档（索引 0 从 1e6 挪到 1e3，表首 `"K"`），`FormatShort` 于是把
+`1000 ~ 999999` 写成 `1.234K` 而不是 `1,234`；公开成员一项没增删（快照只差首行
+`version=`，行数仍是 2032），两个宿主与 11 个包的短标签同步。
+判据见 [docs/VERSIONING.md](docs/VERSIONING.md) §2.1，细节见
+[CHANGELOG](../../CHANGELOG.md) 的 1.12.0。
+上一版 1.11.0 是 **minor：公开 API 只增不改**
 （**+5 / −0**：`LoreChannel.Note`、`LoreChannelNames` 类型与 `WireName()`、
 `GoldenCookieSystem.SerialCounterKey`、`LoreView.ChannelName`）——"**捡到一张纸条**"
 这种在虚构里教机制的叙事条目走**既有的**待读队列与"已看过"记录，

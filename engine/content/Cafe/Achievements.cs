@@ -117,7 +117,7 @@ internal static class Achievements
         }
     }
 
-    /// <summary>点击线：亲手做咖啡的四个台阶；「万次手冲」直接给点击倍率。</summary>
+    /// <summary>点击线：亲手做咖啡的四个台阶；「10K 次手冲」直接给点击倍率。</summary>
     private static IEnumerable<AchievementDefinition> ClickAchievements()
     {
         yield return new()

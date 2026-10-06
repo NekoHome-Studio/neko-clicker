@@ -312,7 +312,7 @@ public sealed class GameHost : IAsyncDisposable
 
     /// <summary>点击结果。引擎不产出面向玩家的文案（点一下不该刷屏），这里自己拼一句。</summary>
     public static CommandOutcome FromResult(ClickResult result, long seq)
-        => new(true, $"+{NumFormat.FormatLong(result.Gained)}", seq);
+        => new(true, $"+{NumFormat.FormatShort(result.Gained)}", seq);
 
     /// <summary>切换购买模式（改变快照里建筑/升级行的批量数量与总价）。</summary>
     public async Task<CommandOutcome> SetModeAsync(PurchaseMode mode)
@@ -796,7 +796,7 @@ public sealed class GameHost : IAsyncDisposable
     public static string Summarize(JsonObject snapshot)
     {
         double cookies = snapshot["cookies"]?.GetValue<double>() ?? 0;
-        string text = snapshot["cookiesText"]?.GetValue<string>() ?? NumFormat.FormatLong(cookies);
+        string text = snapshot["cookiesText"]?.GetValue<string>() ?? NumFormat.FormatShort(cookies);
         string currency = snapshot["currencyName"]?.GetValue<string>() ?? string.Empty;
         return $"{text} {currency}";
     }
