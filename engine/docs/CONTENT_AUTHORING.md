@@ -1286,11 +1286,11 @@ private static LoreEntry Make(string id, int order, UnlockCondition reveal, Lore
 `engine/tests/ProseToneTests.cs` 把上面三条判据变成可数的东西，并按包记一本账：
 
 ```
-当前上限（2026-10-05，试点之后；顺序 = 结尾引语 / 不是X是Y / 第一次觉得）
-  Apocalypse  17 / 5 / 3     Cafe       0 / 1 / 0     Civ     21 / 8 / 2
-  Company      1 / 0 / 0     Cyber      8 / 4 / 1     Dream    5 / 4 / 1
-  God         23 / 0 / 1     Lab       10 / 4 / 0     Library 18 / 7 / 1
-  Neko         0 / 0 / 0     NineLives  0 / 4 / 0
+当前上限（2026-10-05，试点 + 文明 / 神明 / 图书馆 / 赛博 / 实验室 / 梦境 / 九命清扫之后；顺序 = 结尾引语 / 不是X是Y / 第一次觉得）
+  Apocalypse  17 / 5 / 3     Cafe       0 / 1 / 0     Civ      1 / 0 / 0
+  Company      1 / 0 / 0     Cyber      0 / 0 / 0     Dream    0 / 0 / 0
+  God          1 / 0 / 0     Lab        1 / 0 / 0     Library  0 / 0 / 0
+  Neko         0 / 0 / 0     NineLives  0 / 0 / 0
 ```
 
 三条规矩：
@@ -1408,6 +1408,33 @@ private static LoreEntry Make(string id, int order, UnlockCondition reveal, Lore
 **建议顺序：文明 → 末世 → 神明 → 图书馆 → 赛博 → 实验室 → 梦境 → 九命。**
 每扫完一个包，就把 `ProseToneTests.Budgets` 里那一行改成实测值——
 **那一行就是进度条。**
+
+**清扫记录（2026-10-05，patch）**：上面这条顺序已经走完七条，**末世刻意跳过**，逐包一个提交：
+
+| 包 | 结尾引语 | `不是X是Y` | 第一次觉得 | 改动的 value | 提交 |
+|---|---|---|---|---|---|
+| 文明 Civ | 21 → **1** | 8 → 0 | 2 → 0 | 35 | `c2a0381` |
+| 神明 God | 23 → **1** | 0 → 0 | 1 → 0 | 26 | `a8eae09` |
+| 图书馆 Library | 18 → 0 | 7 → 0 | 1 → 0 | 24 | `cc0e281` |
+| 赛博 Cyber | 8 → 0 | 4 → 0 | 1 → 0 | 16 | `2c1efaf` |
+| 实验室 Lab | 10 → **1** | 4 → 0 | 0 → 0 | 15 | `c357bce` |
+| 梦境 Dream | 5 → 0 | 4 → 0 | 1 → 0 | 9 | `deca50c` |
+| 九命 NineLives | 0 → 0 | 4 → 0 | 0 → 0 | 4 | `2b0f17e` |
+
+**三个包各留下一条结尾引语，三条都是"记录"**（§12.4.2(b) 允许的那种）：
+文明 `endings.end_self_destruction` 的石板上刻的六个字、神明 `lore.cat_02` 表格**批注栏**里的小字、
+实验室 `endings.end_delete` 签字文件的**理由栏**——试点留下的 `lore.ledger_01`「不可省」是同一类。
+**咖啡馆一行没动**（1.9%，它是这套方法的标尺）。
+
+**末世（Apocalypse）为什么跳过**：同一轮里有另一个改动正在给它的 `text.json`
+**加 key**（「纸条」那条 storyline 与两条 note 正文，见 `FOUND_NOTES_PLAN.md`）。
+两个改动落在同一个文件上，分开做才能各自 revert；所以本轮**一个字节都没碰末世**，
+它的上限仍然是 17 / 5 / 3，`ProseToneTests` 那一行照旧。
+
+**这一轮没有做的**（都不在"改句法"的范围里）：
+改名（§12.4.6：634 处「建筑名」复制件 + 三处派生面）、
+`choices.*.prompt`、`buildings` / `achievements` / `upgrades` / `buffs` / `goldenCookies`
+（被模板与数字钉住的短标签），以及版本号与 11 处条数槽位（那是另一轮在改的地方）。
 
 ## 13. 选择、立场与结局
 
