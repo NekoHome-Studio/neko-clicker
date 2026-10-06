@@ -26,8 +26,12 @@
   <div id="offline" class="sheet-layer hidden">
     <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="offline-title">
       <h2 id="offline-title">🌙 欢迎回来</h2>
-      <p id="offline-text"></p>
-      <p id="offline-note" class="muted"></p>
+      <!-- 会长的只有这两段：它们住在**身体**里（见 app.css 的 `.sheet-body`），
+           于是补发说明再长也滚得动，而上面那行标题与下面那颗「收下」始终在眼前。 -->
+      <div class="sheet-body">
+        <p id="offline-text"></p>
+        <p id="offline-note" class="muted"></p>
+      </div>
       <button id="offline-ok" class="sheet-ok">收下</button>
     </div>
   </div>
@@ -47,7 +51,7 @@
         <h2 id="note-title"></h2>
         <button id="note-close" class="sheet-close" type="button" aria-label="把纸条收起来">&times;</button>
       </div>
-      <p id="note-body" class="note-body"></p>
+      <p id="note-body" class="note-body sheet-body"></p>
       <p id="note-more" class="muted"></p>
       <button id="note-ok" class="sheet-ok">收好</button>
     </div>
@@ -68,8 +72,14 @@
         <span id="stance-summary" class="muted"></span>
         <button id="choices-close" class="sheet-close" type="button" aria-label="收起表态窗口">&times;</button>
       </div>
-      <div id="choices" class="list"></div>
-      <div id="stances" class="stances"></div>
+      <!-- 待答表态 + 立场轴 + 结局是**一张 sheet 的身体**：内容比窗口高时滚的是这一块
+           （上限与滚动见 app.css 的 `.sheet-body`），而上面那行标题（唯一的 × 在里面）
+           与下面那颗「收起，稍后再答」留在它外面 —— 两个控件都不必先滚动才够得着。
+           里面的 `#choices` 因此**不再自带滚动条**（见 app.css 那条 ID 规则）。 -->
+      <div class="sheet-body">
+        <div id="choices" class="list"></div>
+        <div id="stances" class="stances"></div>
+      </div>
       <button id="choices-later" class="sheet-ok">收起，稍后再答</button>
     </div>
   </div>

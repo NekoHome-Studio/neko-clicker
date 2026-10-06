@@ -43,6 +43,16 @@ let connected = false;
 let offlineDismissed = false;
 
 /**
+ * 上一次画进「离线收益」那张 sheet 身体里的那几段字（见 `renderOffline`）。
+ *
+ * 身体是一个**滚动容器**（`app.css` 的 `.sheet-body`），而它每帧都会被过一遍（服务端
+ * 4 Hz 推帧）：逐帧 `textContent = ""` 重建正是这个仓库记过两次的病灶
+ * （滚动位置与键盘焦点都会跟着没掉，见 `renderUpgrades` 与 `OPEN_WORK` §0.27.2）。
+ * 所以只在**内容真的变了**的时候才动结构——这一格就是"变了没有"的判据。
+ */
+let offlineBodyKey = "";
+
+/**
  * 显示用的数字。<b>刻意不做"追赶式插值"</b>，而是按当前每秒产量持续累加。
  *
  * 为什么不能"追目标"：服务端每 250ms 才推一帧，追到之后剩下的 150ms 完全静止，
@@ -392,9 +402,14 @@ function renderNoteSheet() {
   if (!show) return;
 
   const note = notes[0];
-  $("#note-title").textContent = `${note.icon} ${note.title}`;
-  $("#note-body").textContent = note.body;
-  $("#note-more").textContent = notes.length > 1 ? `还有 ${notes.length - 1} 张。` : "";
+  // ⚠️ 三处都必须走 `setText`（只在真的变了才写）：`#note-body` **就是这张 sheet 的
+  // 滚动容器**（标记上带着 `sheet-body`，见 app.css），而 `render()` 每 250ms 就过一遍
+  // ——逐帧把同一个字符串重新写进去，正是 `renderUpgrades` / `OPEN_WORK` §0.27.2 记过的
+  // 那一类病灶：滚动容器里"内容高度归零的那一瞬"会把 `scrollTop` 夹回 0，人看到的就是
+  // 「纸条没法上下翻」（2026-10-06 人报）。内容一样时一个节点都不动，位置就留得住。
+  setText($("#note-title"), `${note.icon} ${note.title}`);
+  setText($("#note-body"), note.body);
+  setText($("#note-more"), notes.length > 1 ? `还有 ${notes.length - 1} 张。` : "");
 }
 
 /**
@@ -418,19 +433,25 @@ function renderOffline() {
   if (!show) return;
 
   const text = $("#offline-text");
-  text.textContent = "";
-  const head = document.createElement("span");
-  head.textContent = "你不在的这段时间里，它们自己涨了 ";
-  const amount = document.createElement("b");
-  amount.textContent = `${state.currencyIcon} ${report.cookiesText} ${state.currencyName}`;
-  const tail = document.createElement("span");
-  tail.textContent = "。";
-  text.append(head, amount, tail);
+  // 只在真的变了才重建（理由见 offlineBodyKey 那一段）。判据是**这次要画的东西**
+  // 那几个字段，不是"这一帧有没有来"——来了一帧而内容一样时，一个节点都不动。
+  const key = `${report.cookiesText}|${report.durationText}|${report.wasCapped}|${report.elapsedSeconds}`;
+  if (key !== offlineBodyKey) {
+    offlineBodyKey = key;
+    text.textContent = "";
+    const head = document.createElement("span");
+    head.textContent = "你不在的这段时间里，它们自己涨了 ";
+    const amount = document.createElement("b");
+    amount.textContent = `${state.currencyIcon} ${report.cookiesText} ${state.currencyName}`;
+    const tail = document.createElement("span");
+    tail.textContent = "。";
+    text.append(head, amount, tail);
+  }
 
   // 被上限截断时必须说清楚"只补了这么多"，否则玩家会以为自己少拿了钱。
-  $("#offline-note").textContent = report.wasCapped
+  setText($("#offline-note"), report.wasCapped
     ? `离线收益有上限：按上限补了 ${report.durationText}，实际离开了 ${duration(report.elapsedSeconds)}。`
-    : `补的是 ${report.durationText} 的产量。`;
+    : `补的是 ${report.durationText} 的产量。`);
 }
 
 /** 收下：先本地收起来（下一帧回来之前不该闪），再让宿主把那份状态清掉。 */
@@ -544,6 +565,17 @@ const collapsedChoices = new Set();
 /** 这张 sheet 现在该不该显示；`pinned` = 玩家自己点开只为看立场/结局，没有待答也要留住。 */
 let choicesSheetOpen = false;
 let choicesSheetPinned = false;
+
+/**
+ * 上一次画进这张 sheet 身体里的东西（选项 + 立场轴 + 结局）的指纹。
+ *
+ * 身体是一个**滚动容器**（`app.css` 的 `.sheet-body`），而它每帧都会被过一遍：
+ * "内容高度归零的那一瞬把 `scrollTop` 夹回 0"是这个仓库记过两次的病灶
+ * （`renderUpgrades` 与 `OPEN_WORK` §0.27.2）。所以结构只在指纹变了的时候才动
+ * ——与 `renderBuildings` / `renderUpgrades` 的"成员或顺序真的变了才动结构"同一条规矩。
+ * 判据取的是**画的时候真正读到的字段**（待答那一批、立场轴、结局），不是整份快照。
+ */
+let choicesBodyKey = null;
 
 /** 离线收益那张 sheet 此刻是不是开着（表态是否要让位的唯一判据）。 */
 function offlineSheetOpen() {
@@ -692,120 +724,129 @@ function renderChoicesSheet() {
 
   if (!show) return;
 
-  const host = $("#choices");
-  host.textContent = "";
-
-  if (pending.length === 0) {
-    const note = document.createElement("p");
-    note.className = "muted";
-    note.textContent = (state.stances ?? []).length > 0
-      ? "现在没有待答的表态。表态挂在这一层上，舍命之后就遇不到了。"
-      : "这个内容包没有表态机制。";
-    host.append(note);
-  }
-
-  for (const choice of pending) {
-    const card = document.createElement("div");
-    card.className = "choice";
-
-    const speaker = document.createElement("div");
-    speaker.className = "choice-speaker";
-    speaker.textContent = `🗣 ${choice.speaker}`;
-    card.append(speaker);
-
-    const prompt = document.createElement("p");
-    prompt.className = "choice-prompt";
-    prompt.textContent = choice.prompt;
-    card.append(prompt);
-
-    const options = document.createElement("div");
-    options.className = "choice-options";
-    for (const option of choice.options) {
-      const button = document.createElement("button");
-      button.className = "choice-option";
-
-      const label = document.createElement("b");
-      label.textContent = option.label;
-      button.append(label);
-
-      if (option.stanceName) {
-        const stance = document.createElement("span");
-        stance.className = "choice-stance";
-        stance.textContent = `${option.stanceIcon} ${option.stanceName} +${option.weight}`;
-        button.append(stance);
-      }
-      if (option.effectSummary) {
-        const effect = document.createElement("span");
-        effect.className = "choice-effect";
-        // 效果摘要是派生文本、不进增量帧，但全量帧里有；缺失时不显示这一行
-        effect.textContent = option.effectSummary;
-        button.append(effect);
-      }
-
-      button.addEventListener("click", () => send("answer", { id: choice.id, optionId: option.id }));
-      options.append(button);
-    }
-
-    card.append(options);
-    host.append(card);
-  }
-
-  // 立场轴：它在 sheet 里，因为"我偏向哪边"正是这些表态累积出来的结果。
   const stances = state.stances ?? [];
   const total = stances.reduce((sum, stance) => sum + stance.weight, 0);
-  // 这句说明没有立场轴时也要写（否则会留着上一批的旧文字）。
-  $("#stance-summary").textContent = stances.length === 0
+
+  // **身体里的东西只在指纹变了的时候才重建**（理由见 choicesBodyKey 那一段）：
+  // 待答选项、立场轴、结局是这张 sheet 上会长的那三块，而它们住在一个滚动容器里。
+  const key = JSON.stringify([pending, stances, state.ending ?? null]);
+  if (key !== choicesBodyKey) {
+    choicesBodyKey = key;
+
+    const host = $("#choices");
+    host.textContent = "";
+
+    if (pending.length === 0) {
+      const note = document.createElement("p");
+      note.className = "muted";
+      note.textContent = stances.length > 0
+        ? "现在没有待答的表态。表态挂在这一层上，舍命之后就遇不到了。"
+        : "这个内容包没有表态机制。";
+      host.append(note);
+    }
+
+    for (const choice of pending) {
+      const card = document.createElement("div");
+      card.className = "choice";
+
+      const speaker = document.createElement("div");
+      speaker.className = "choice-speaker";
+      speaker.textContent = `🗣 ${choice.speaker}`;
+      card.append(speaker);
+
+      const prompt = document.createElement("p");
+      prompt.className = "choice-prompt";
+      prompt.textContent = choice.prompt;
+      card.append(prompt);
+
+      const options = document.createElement("div");
+      options.className = "choice-options";
+      for (const option of choice.options) {
+        const button = document.createElement("button");
+        button.className = "choice-option";
+
+        const label = document.createElement("b");
+        label.textContent = option.label;
+        button.append(label);
+
+        if (option.stanceName) {
+          const stance = document.createElement("span");
+          stance.className = "choice-stance";
+          stance.textContent = `${option.stanceIcon} ${option.stanceName} +${option.weight}`;
+          button.append(stance);
+        }
+        if (option.effectSummary) {
+          const effect = document.createElement("span");
+          effect.className = "choice-effect";
+          // 效果摘要是派生文本、不进增量帧，但全量帧里有；缺失时不显示这一行
+          effect.textContent = option.effectSummary;
+          button.append(effect);
+        }
+
+        button.addEventListener("click", () => send("answer", { id: choice.id, optionId: option.id }));
+        options.append(button);
+      }
+
+      card.append(options);
+      host.append(card);
+    }
+
+    // 立场轴：它在 sheet 里，因为"我偏向哪边"正是这些表态累积出来的结果。
+    const axis = $("#stances");
+    axis.textContent = "";
+    if (stances.length > 0) {
+      const title = document.createElement("h3");
+      title.textContent = "立场轴";
+      axis.append(title);
+
+      for (const stance of stances) {
+        const row = document.createElement("div");
+        row.className = stance.isDominant ? "stance dominant" : "stance";
+        row.innerHTML = "";
+
+        const name = document.createElement("span");
+        name.className = "stance-name";
+        name.textContent = `${stance.icon} ${stance.name}${stance.isDominant ? " ▸" : ""}`;
+
+        const bar = document.createElement("i");
+        bar.style.width = `${Math.round(stance.share * 100)}%`;
+
+        const weight = document.createElement("span");
+        weight.className = "stance-weight";
+        weight.textContent = `${stance.weight}`;
+
+        row.append(name, bar, weight);
+        if (stance.costText) row.title = stance.costText;
+        axis.append(row);
+      }
+    }
+
+    // 结局：**不挂在立场轴里面**。11 个内容包里有 6 个（末日 / 文明 / 赛博 / 梦境 / 神 / 图书馆）
+    // 只有结局、没有立场轴（`Choices.cs` / `Stances.cs` 都没有），原先那层 `if (stances.length > 0)`
+    // 让这 6 个包的终局文本一次都没显示过。结局是走到了才有的东西，它跟立场轴一样属于这张 sheet。
+    if (state.ending) {
+      const ending = document.createElement("div");
+      ending.className = "ending";
+      ending.innerHTML = "";
+      const h = document.createElement("h3");
+      h.textContent = `${state.ending.icon} 结局：${state.ending.name}`;
+      const p = document.createElement("p");
+      p.textContent = state.ending.text;
+      ending.append(h, p);
+      axis.append(ending);
+    }
+  }
+
+  // 标题行里那句说明与底部那颗按钮在**身体外面**（它们不许跟着内容滚走），所以每帧照常
+  // 更新——`setText` 只在真的变了才写，于是"这一帧到底有没有变"仍然看得见。
+  setText($("#stance-summary"), stances.length === 0
     ? (state.ending ? "已落定" : "")
     : state.dominantStanceId
       ? `主导：${stances.find((s) => s.isDominant)?.name ?? "—"}`
-      : total === 0 ? "还没有表态" : "还没有占上风的立场";
+      : total === 0 ? "还没有表态" : "还没有占上风的立场");
 
-  // 底部那颗按钮：还有待答时是"收起"（表态不会丢，只是变成药丸），没有待答时就是"关闭"。
-  $("#choices-later").textContent = pending.length > 0 ? "收起，稍后再答" : "关闭";
-
-  const axis = $("#stances");
-  axis.textContent = "";
-  if (stances.length > 0) {
-    const title = document.createElement("h3");
-    title.textContent = "立场轴";
-    axis.append(title);
-
-    for (const stance of stances) {
-      const row = document.createElement("div");
-      row.className = stance.isDominant ? "stance dominant" : "stance";
-      row.innerHTML = "";
-
-      const name = document.createElement("span");
-      name.className = "stance-name";
-      name.textContent = `${stance.icon} ${stance.name}${stance.isDominant ? " ▸" : ""}`;
-
-      const bar = document.createElement("i");
-      bar.style.width = `${Math.round(stance.share * 100)}%`;
-
-      const weight = document.createElement("span");
-      weight.className = "stance-weight";
-      weight.textContent = `${stance.weight}`;
-
-      row.append(name, bar, weight);
-      if (stance.costText) row.title = stance.costText;
-      axis.append(row);
-    }
-  }
-
-  // 结局：**不挂在立场轴里面**。11 个内容包里有 6 个（末日 / 文明 / 赛博 / 梦境 / 神 / 图书馆）
-  // 只有结局、没有立场轴（`Choices.cs` / `Stances.cs` 都没有），原先那层 `if (stances.length > 0)`
-  // 让这 6 个包的终局文本一次都没显示过。结局是走到了才有的东西，它跟立场轴一样属于这张 sheet。
-  if (state.ending) {
-    const ending = document.createElement("div");
-    ending.className = "ending";
-    ending.innerHTML = "";
-    const h = document.createElement("h3");
-    h.textContent = `${state.ending.icon} 结局：${state.ending.name}`;
-    const p = document.createElement("p");
-    p.textContent = state.ending.text;
-    ending.append(h, p);
-    axis.append(ending);
-  }
+  // 还有待答时是"收起"（表态不会丢，只是变成药丸），没有待答时就是"关闭"。
+  setText($("#choices-later"), pending.length > 0 ? "收起，稍后再答" : "关闭");
 }
 
 // ---------------------------------------------------------------- 存档的导出与导入

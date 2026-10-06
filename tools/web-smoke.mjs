@@ -21,9 +21,10 @@
 // 覆盖边界（诚实）: 它证明的是"真的被执行过的路径不抛异常"。没被执行到的分支
 // （`if (!pill) return` 这类防御）只有 node --check 的语法保证。
 //
-// 这个脚本**从 2026-10 起进了 tools/build.ps1**（也进了 CI）：一条 254 条断言
-// （§29 里那两条「服务端那张表必须从 K 起」＋「两个宿主对同一个数说同一句话」起；
-// 那一轮之前是 252——§32「焦点在重画之间不许跑掉」；再此前是 244——§29「刻度名 K/M/B/T」＋
+// 这个脚本**从 2026-10 起进了 tools/build.ps1**（也进了 CI）：一条 271 条断言
+// （§33「sheet 的身体能滚」那 17 条起；那一轮之前是 254——§29 里那两条「服务端那张表必须
+// 从 K 起」＋「两个宿主对同一个数说同一句话」；再此前是 252——§32「焦点在重画之间不许跑掉」；
+// 再此前是 244——§29「刻度名 K/M/B/T」＋
 // §30「大猫那两处标签的字号」＋ §31「还差多少」；再此前是 224 条、§28「分享链接」之前是 208 条、
 // §26 的「右栏填满」之前是 203 条、
 // §26 的「富余高度钉在最后一行」之前是 202 条、
@@ -3709,6 +3710,297 @@ section("32. 焦点在重画之间不许跑掉（买升级 / 切档位的时候�
         throw new Error(`#${id} 上没有 tabindex="-1"——捕不到焦点的容器在真浏览器里 focus() 是空操作：<${tag}>`);
       }
     }
+  });
+}
+
+// 33. 每一张 sheet 的「身体」都能滚（2026-10-06 人报的两条：纸条翻不动、立场界面翻不动）
+//
+// 这一节守的是**形状**：会长的内容住在一个有视口高度上限的滚动容器里（`.sheet-body`），
+// 而标题行（唯一的 ×）与底部那颗主按钮留在它外面。两张都翻不动那一次，病灶是
+// "内容比窗口高，而这张卡片里没有任何一块是自己的滚动容器"——卡片自己那条
+// `max-height` ＋ `overflow-y` 管的是"卡片不许比窗口高"，一张比窗口高得多的卡片
+// 落在 `place-items: center` 的居中容器里，上面那一截是够不着的（见 `.sheet` 的注释）。
+//
+// ⚠️ **这个桩件没有布局引擎**：它证明的是"上限与滚动写对了、控件不在滚动的那一块里面"，
+//    证明不了"它真的滚得动"。真浏览器里那一眼只有人能给（`OPEN_WORK` H3，与"纸条那一套
+//    样式像不像同一个产品、长正文好不好读"记在同一处）。
+section("33. sheet 的身体：会长的内容有一个带视口高度上限的滚动容器，控件在它外面");
+{
+  const REM = 16;
+  const blockOf = (selector) =>
+    new RegExp(selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + " \\{([\\s\\S]*?)\\}").exec(cssRules)?.[1] ?? "";
+
+  /** 某条规则里某个属性的第一个值（`null` = 没有这条声明）。 */
+  const valueOf = (block, prop) => {
+    const m = new RegExp(`(?:^|[;{\\s])${prop}:\\s*([^;]+);`).exec(block);
+    return m ? m[1].trim() : null;
+  };
+  /** `1.2rem` / `44px` → px（负值照收：标题行那条上外边距就是负的）。 */
+  const toPx = (value, what) => {
+    const m = /^(-?[\d.]+)(px|rem)$/.exec(String(value ?? ""));
+    if (!m) throw new Error(`${what} 读不出尺寸：<${value}>`);
+    return Number(m[1]) * (m[2] === "rem" ? REM : 1);
+  };
+  /** `margin` / `padding` 简写的上下两个值。 */
+  const edgesOf = (block, prop) => {
+    const parts = String(valueOf(block, prop) ?? "").split(/\s+/).filter(Boolean);
+    if (parts.length === 1) return { top: parts[0], bottom: parts[0] };
+    if (parts.length === 2) return { top: parts[0], bottom: parts[0] };
+    if (parts.length === 3) return { top: parts[0], bottom: parts[2] };
+    if (parts.length === 4) return { top: parts[0], bottom: parts[2] };
+    throw new Error(`读不出 ${prop} 的简写：<${valueOf(block, prop)}>`);
+  };
+  /**
+   * 一段标记里，某个元素**自己包着的那一串**（按同名标签数深度配对）。
+   * 桩件里的元素是按 id 平铺的、没有父子关系，所以"控件在不在滚动容器里面"这件事
+   * 只能回到标记上量——这正是这一节要守的那条形状。
+   * 找不到那个开头标签返回 `null`（调用方必须区分"没包住"和"元素都不在了"）。
+   */
+  const innerOf = (markup, openPrefix) => {
+    const start = markup.indexOf(openPrefix);
+    if (start < 0) return null;
+    const tag = /^<([a-zA-Z][\w-]*)/.exec(openPrefix)?.[1];
+    const openEnd = markup.indexOf(">", start) + 1;
+    if (!tag || openEnd <= 0) return null;
+    const pattern = new RegExp(`<${tag}\\b|</${tag}>`, "g");
+    pattern.lastIndex = start;
+    let depth = 0;
+    for (let m = pattern.exec(markup); m; m = pattern.exec(markup)) {
+      if (m[0].startsWith("</")) {
+        depth--;
+        if (depth === 0) return markup.slice(openEnd, m.index);
+      } else {
+        depth++;
+      }
+    }
+    return null;
+  };
+
+  const bodyRule = blockOf(".sheet-body");
+  const sheetRule = blockOf(".sheet");
+  const headRule = blockOf(".sheet-head");
+  const closeRule = blockOf(".sheet-close");
+  const okRule = blockOf(".sheet-ok");
+  const paraRule = blockOf(".sheet p");
+
+  check("`.sheet-body` 声明了视口单位的高度上限，并且那条 overflow 允许滚动", () => {
+    if (!/max-height:\s*min\([^;]*dvh[^;]*\)/.test(bodyRule)) {
+      throw new Error(`.sheet-body 没有跟着可见视口走的高度上限：<${bodyRule.trim() || "(没有这条规则)"}>`);
+    }
+    if (!/overflow-y:\s*(auto|scroll)/.test(bodyRule)) {
+      throw new Error(`.sheet-body 没有可滚动的 overflow：内容比窗口高时没有出路：<${bodyRule.trim()}>`);
+    }
+  });
+
+  check("`vh` 那条写在 `dvh` 之前（旧浏览器丢掉的是后面那行，而不是没有上限）", () => {
+    const decls = [...bodyRule.matchAll(/max-height:\s*([^;]+);/g)].map((m) => m[1].trim());
+    const dvhAt = decls.findIndex((value) => value.includes("dvh"));
+    const vhAt = decls.findIndex((value) => /(^|[^d])vh\b/.test(value));
+    if (dvhAt < 0) throw new Error(`没有 dvh 那条（手机上 100vh = 地址栏藏起来时的高度）：<${decls.join(" / ")}>`);
+    if (vhAt < 0) throw new Error(`没有 vh 那条回退：<${decls.join(" / ")}>`);
+    if (!(vhAt < dvhAt)) throw new Error(`顺序反了（vh 必须在 dvh 前面）：<${decls.join(" / ")}>`);
+  });
+
+  // 卡片里**除身体以外**的固定高度，全部从 app.css 自己读出来（不手抄常量）：
+  //   标题行（44px 的 × ＋ 1.2rem 上内边距，被 −1.2rem 的上外边距抵掉 ＋ .55rem 下外边距）
+  //   ＋ 正文那一段自己的下外边距（.sheet p）
+  //   ＋ 纸条那行「还有 N 张」（也是 .sheet p，空文本时高度 0、只剩外边距）
+  //   ＋ 底部那颗主按钮（.5rem 上外边距 ＋ 44px）
+  //   ＋ 卡片自己的上 / 下内边距
+  const fixedHeight = (() => {
+    const headTop = toPx(valueOf(headRule, "padding-top"), ".sheet-head 的 padding-top");
+    const headPull = toPx(valueOf(headRule, "margin-top"), ".sheet-head 的 margin-top");
+    const headGap = toPx(valueOf(headRule, "margin-bottom"), ".sheet-head 的 margin-bottom");
+    const closeMin = toPx(valueOf(closeRule, "min-height"), ".sheet-close 的 min-height");
+    const paraGap = toPx(edgesOf(paraRule, "margin").bottom, ".sheet p 的下外边距");
+    const okGap = toPx(valueOf(okRule, "margin-top"), ".sheet-ok 的上外边距");
+    const okMin = toPx(valueOf(okRule, "min-height"), ".sheet-ok 的 min-height");
+    const sheetPad = edgesOf(sheetRule, "padding");
+    return {
+      total: (headTop + headPull + closeMin + headGap) + paraGap + paraGap + okGap + okMin
+        + toPx(sheetPad.top, ".sheet 的上内边距") + toPx(sheetPad.bottom, ".sheet 的下内边距"),
+      parts: `标题行 ${headTop + headPull + closeMin + headGap}px（× ${closeMin}px）、正文下外边距 ${paraGap}px、`
+        + `「还有 N 张」${paraGap}px、主按钮 ${okGap + okMin}px（${okMin}px）、上内边距 ${toPx(sheetPad.top, "上")}px、`
+        + `下内边距 ${toPx(sheetPad.bottom, "下")}px`,
+    };
+  })();
+
+  const reserveOf = (block, what) => {
+    const m = /calc\(100dvh - ([\d.]+)rem\)/.exec(block);
+    if (!m) throw new Error(`${what} 里找不到 calc(100dvh - Nrem) 那一条：<${block.trim()}>`);
+    return Number(m[1]) * REM;
+  };
+  const bodyReserve = reserveOf(bodyRule, ".sheet-body 的 max-height");
+  const cardReserve = reserveOf(sheetRule, ".sheet 的 max-height");
+
+  check("身体的上限替卡片里**除身体以外**的固定高度留了位置（`calc(100dvh - 12rem)` 那条预留够用）", () => {
+    const need = fixedHeight.total + cardReserve;
+    if (bodyReserve < need) {
+      throw new Error(`上限只留了 ${bodyReserve}px，而"除身体以外的固定高度 ${fixedHeight.total}px"
+        ＋ 卡片自己那条上限的预留 ${cardReserve}px = ${need}px —— 身体一长就会把 × 或主按钮顶出去。
+        （${fixedHeight.parts}）`);
+    }
+  });
+
+  check("400px 高的窗口里：身体的上限 ＋ 那些固定高度 ≤ 卡片自己的上限（两个控件都还在可视区里）", () => {
+    const viewport = 400;
+    const bodyCap = Math.min(26 * REM, viewport - bodyReserve);
+    const cardCap = viewport - cardReserve;
+    if (bodyCap + fixedHeight.total > cardCap) {
+      throw new Error(`400px 窗口：身体上限 ${bodyCap}px ＋ 固定高度 ${fixedHeight.total}px`
+        + ` = ${bodyCap + fixedHeight.total}px > 卡片上限 ${cardCap}px（${fixedHeight.parts}）`);
+    }
+  });
+
+  // ---- 一张一张点名：谁的身体是那块会长的内容 ----
+
+  check("纸条的正文**就是**那张 sheet 的身体（标记上带着 `sheet-body`，不是另加一层）", () => {
+    const tag = /<p id="note-body"[^>]*>/.exec(html)?.[0] ?? "";
+    if (!tag) throw new Error("index.html 里没有 #note-body");
+    if (!/\bclass="[^"]*\bsheet-body\b/.test(tag)) {
+      throw new Error(`#note-body 没有带上 sheet-body：纸条的正文比窗口高时没有自己的滚动容器：<${tag}>`);
+    }
+  });
+
+  check("纸条：× 与「收好」都**不在**滚动的正文里面", () => {
+    const sheet = innerOf(html, '<div id="note-sheet"');
+    if (sheet === null) throw new Error("找不到 #note-sheet 这一段标记");
+    const body = innerOf(sheet, '<p id="note-body"');
+    if (body === null) throw new Error("找不到 #note-body（判据落空）");
+    for (const what of ["note-close", "note-ok"]) {
+      if (new RegExp(`id="${what}"`).test(body)) {
+        throw new Error(`#${what} 落在滚动的正文里面了：正文一长，它就得先滚动才够得着`);
+      }
+    }
+  });
+
+  check("表态那张：待答选项与立场轴（+ 结局）住在身体里", () => {
+    const sheet = innerOf(html, '<div id="choices-sheet"');
+    if (sheet === null) throw new Error("找不到 #choices-sheet 这一段标记");
+    const body = innerOf(sheet, '<div class="sheet-body"');
+    if (body === null) throw new Error("表态那张没有 .sheet-body：立场轴 + 结局比窗口高时翻不动（人 2026-10-06 报的那一条）");
+    for (const id of ["choices", "stances"]) {
+      if (!new RegExp(`id="${id}"`).test(body)) throw new Error(`#${id} 不在身体里：它比窗口高时仍然没有自己的滚动容器`);
+    }
+  });
+
+  check("表态那张：× 与「收起，稍后再答」都**不在**身体里面", () => {
+    const sheet = innerOf(html, '<div id="choices-sheet"');
+    const body = innerOf(sheet ?? "", '<div class="sheet-body"');
+    if (body === null) throw new Error("找不到表态那张的 .sheet-body（判据落空）");
+    for (const what of ["choices-close", "choices-later"]) {
+      if (new RegExp(`id="${what}"`).test(body)) {
+        throw new Error(`#${what} 落在滚动的身体里面了：那正是 app.css 那条 ID 规则要避免的事`);
+      }
+    }
+  });
+
+  check("离线收益那张：两段说明住在身体里，「收下」在身体外面", () => {
+    const sheet = innerOf(html, '<div id="offline"');
+    if (sheet === null) throw new Error("找不到 #offline 这一段标记");
+    const body = innerOf(sheet, '<div class="sheet-body"');
+    if (body === null) throw new Error("离线收益那张没有 .sheet-body（同一类：它的两段话也可能比窗口高）");
+    for (const id of ["offline-text", "offline-note"]) {
+      if (!new RegExp(`id="${id}"`).test(body)) throw new Error(`#${id} 不在身体里`);
+    }
+    if (/id="offline-ok"/.test(body)) throw new Error("#offline-ok 落在身体里面了：「收下」不该需要先滚动才够得着");
+  });
+
+  check("存档那张**刻意没有** `.sheet-body`（豁免写在明处：它那几节与按钮是交替排的，套一层滚动容器会把按钮一起滚走）", () => {
+    const sheet = innerOf(html, '<div id="save-sheet"');
+    if (sheet === null) throw new Error("找不到 #save-sheet 这一段标记");
+    if (/class="[^"]*\bsheet-body\b/.test(sheet)) {
+      throw new Error("存档窗口套了一层 .sheet-body：它里面三节的按钮与文本框是交替排的，"
+        + "按钮会跟着内容一起滚走——要改就得先决定按钮搬去哪，那是一件独立的事");
+    }
+  });
+
+  check("卡片里仍然只有**一条**滚动条：`#choices` 自己那条上限与滚动关掉了（滚的是身体）", () => {
+    const rule = new RegExp("#choices-sheet #choices \\{([^}]*)\\}").exec(cssRules)?.[1] ?? "";
+    if (!/max-height:\s*none/.test(rule)) throw new Error(`#choices 没有把 .list 那条 26rem 上限让开：<${rule.trim() || "(没有这条规则)"}>`);
+    if (!/overflow:\s*visible/.test(rule)) throw new Error(`#choices 仍然自带滚动条（滚动条里的滚动条）：<${rule.trim()}>`);
+  });
+
+  // ---- 行为那一半：身体里的东西不许每帧重写（4 Hz） ----
+  //
+  // 滚动容器里的内容被逐帧 `textContent = ""` 重建，是这一仓库记过两次的病灶
+  // （`renderUpgrades` / `OPEN_WORK` §0.27.2）："内容高度归零的那一瞬"会把 `scrollTop`
+  // 夹回 0 —— 人看到的就是「翻不动」。所以这里守两条：**内容一样时不写**，
+  // **内容变了照写**（后半条不许漏，否则守卫会靠"什么都不画"过关）。
+
+  const NOTE_A = { id: "n1", icon: "📜", title: "湿的纸条", body: "第一行\n第二行\n第三行\n第四行", channelName: "note" };
+  const NOTE_B = { id: "n2", icon: "📜", title: "另一张", body: "换了一张。", channelName: "note" };
+  const STANCE_ROWS = [
+    { id: "warm", icon: "💗", name: "温情", weight: 4, share: 0.8, isDominant: true },
+    { id: "ambition", icon: "⚡", name: "野心", weight: 1, share: 0.2, isDominant: false },
+  ];
+  const OFFLINE_REPORT = { cookiesText: "1.2 万", wasCapped: true, durationText: "12m 30s", elapsedSeconds: 900 };
+
+  const bodyFrame = (seq, overrides) => ({ kind: "full", seq, snapshot: snapshot({ goldenCookies: [], ...overrides }) });
+  const scrollApp = await loadApp(copyAs("app-sheet-body.mjs", appSource));
+
+  /** 把某个节点的 `textContent` 写次数记下来（桩件里那次赋值只能这样看见）。 */
+  const countTextWrites = (node) => {
+    const descriptor = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(node), "textContent");
+    let writes = 0;
+    Object.defineProperty(node, "textContent", {
+      configurable: true,
+      get() { return descriptor.get.call(node); },
+      set(value) { writes++; descriptor.set.call(node, value); },
+    });
+    return () => writes;
+  };
+
+  await scrollApp.push(bodyFrame(1, { pendingLore: [NOTE_A] }));
+  check("前置条件：纸条那张画出来了，正文写进了身体里", () => {
+    eq(shown(scrollApp, "note-sheet"), true, "纸条那张");
+    eq(el(scrollApp, "note-body").textContent, NOTE_A.body, "正文");
+  });
+
+  const noteWrites = countTextWrites(el(scrollApp, "note-body"));
+  await scrollApp.push(bodyFrame(2, { pendingLore: [NOTE_A] }));
+  await scrollApp.push(bodyFrame(3, { pendingLore: [NOTE_A] }));
+  check("同一张纸条再来两帧（4 Hz 重现）：正文**一次都没被重写**（逐帧重写会把 scrollTop 夹回 0）", () => {
+    eq(noteWrites(), 0, "两帧里写 #note-body 的次数");
+  });
+
+  await scrollApp.push(bodyFrame(4, { pendingLore: [NOTE_B] }));
+  check("换了一张纸条：正文照常更新（守卫不许靠'什么都不画'过关）", () => {
+    eq(el(scrollApp, "note-body").textContent, NOTE_B.body, "换过之后的正文");
+    if (noteWrites() < 1) throw new Error("换了内容却一次都没写：这条判据在空扫");
+  });
+
+  // 表态 / 立场那一张：选项与立场轴只在指纹变了的时候才重建。
+  await scrollApp.push(bodyFrame(5, { pendingChoices: [CHOICE_A], stances: STANCE_ROWS }));
+  const axisRow = () => el(scrollApp, "stances").children[1];
+  const choiceCard = () => el(scrollApp, "choices").children[0];
+  const firstAxisRow = axisRow();
+  const firstChoiceCard = choiceCard();
+  await scrollApp.push(bodyFrame(6, { pendingChoices: [CHOICE_A], stances: STANCE_ROWS }));
+  check("同一批表态与立场轴再来一帧：身体里的节点**一个都没换**（结构只在指纹变了才动）", () => {
+    if (axisRow() !== firstAxisRow) throw new Error("立场轴那一行被重建了——滚动位置就挂在它的祖先上");
+    if (choiceCard() !== firstChoiceCard) throw new Error("选项卡片被重建了");
+  });
+
+  await scrollApp.push(bodyFrame(7, {
+    pendingChoices: [CHOICE_A],
+    stances: STANCE_ROWS.map((stance) => (stance.id === "warm" ? { ...stance, weight: 9, share: 0.9 } : stance)),
+  }));
+  check("立场轴的数字真的变了：那一行照常重建（第二次证明判据不是'什么都不画'）", () => {
+    if (axisRow() === firstAxisRow) throw new Error("立场轴变了却没重建");
+    const weight = axisRow().children[2];
+    eq(weight.textContent, "9", "重建之后那一行的权重");
+  });
+
+  // 离线收益那张：同一类（身体里的两段话此前也是逐帧清空重建的）。
+  const OFFLINE_REPORT_2 = { ...OFFLINE_REPORT, cookiesText: "2.4 万" };
+  const offlineWrites = countTextWrites(el(scrollApp, "offline-text"));
+  await scrollApp.push(bodyFrame(8, { pendingLore: [], offline: OFFLINE_REPORT_2 }));
+  await scrollApp.push(bodyFrame(9, { pendingLore: [], offline: OFFLINE_REPORT_2 }));
+  check("离线收益那段话：新内容写一次，再来一帧**一次都不写**（同一个病灶，短文本所以以前没人看见）", () => {
+    // 那一句话是由三个节点拼的（桩件里 `textContent` 读不到后代的文字，所以看中间那个 <b>）。
+    eq(el(scrollApp, "offline-text").children[1].textContent.includes("2.4 万"), true, "换过之后那段话里带着新的数字");
+    eq(offlineWrites(), 1, "两帧里写 #offline-text 的次数（新内容那一次）");
   });
 }
 
