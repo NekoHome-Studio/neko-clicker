@@ -2400,6 +2400,51 @@ hero 的直接子元素（`index.html` 的 `<section class="hero">`，按 DOM �
 可以单独做成一个可回滚的提交。本轮**刻意没有**顺手做——保持这次整合可审。
 其余"只有眼睛能判"的项仍归 **H3**（那台机器仍然起不了浏览器）。
 
+### 0.28.8 ⚠️ 推送**没有成功**（网络侧）——待推的哈希与复跑命令
+
+整合与验证都在本地做完了，**`main` 已经前进**，但推送出不去。两条路都断：
+
+| 路 | 实测原文 |
+|---|---|
+| HTTPS（`origin` 现在就是它） | `fatal: unable to access 'https://github.com/NekoHome-Studio/neko-clicker.git/': Failed to connect to github.com port 443 after 21133 ms: Could not connect to server` |
+| SSH | 22 端口**通**（`Test-NetConnection github.com -Port 22` = True），但 `ssh -T git@github.com` → `git@github.com: Permission denied (publickey).`；`~/.ssh` 里**没有任何私钥**，`ssh-add -l` → `Error connecting to agent: No such file or directory` |
+
+跑过 `tools/push-retry.ps1 -DeadlineMinutes 6 -DelaySeconds 20 -MaxAttempts 20`：**5 次尝试全失败**，
+每次都是"连不上 443"（日志在 `artifacts/push-retry.log`），它自己的判据——问服务器要哈希——
+从头到尾没拿到过远端 `main`。**没有 force、没有改写已推送的历史、没有动任何 tag。**
+
+**本地状态（这是待推的东西）**：
+
+| 项 | 值 |
+|---|---|
+| 被验证的提交 | **`f03c3b7`**（`tools/build.ps1 -Strict` **593 / 593** + 0 警告 + 冒烟 **252 / 252**；`api-test.ps1` **85 / 85**；`public-api.ps1` 重生成后**无 diff**） |
+| 待推的 tip | **`main` 的 tip**——`f03c3b7` 之后只有本记录这一个**纯文档**提交，取它用 `git rev-parse HEAD` |
+| 推送之前的 `main` | `427a255`（= 当时的 `origin/main`） |
+| 安全参考 | 分支 **`backup/pre-final`** = `427a255`（原地留着，没删） |
+| 整合分支 | **`integrate/final`** = 与 `main` 同一个提交 |
+| 本地 tag | 一个都没动（最新仍是 `v1.10.2`） |
+
+**怎么推（两条命令，第二条是判据）**：
+
+```powershell
+git -c http.sslBackend=openssl push origin main
+git ls-remote origin refs/heads/main   # 必须与 git rev-parse HEAD 的**完整**哈希逐字符相同
+```
+
+网络回来之前第二条必然失败；**推送成功的唯一判据是第二条的哈希对上**（`push` 自己打印的
+`main -> main` 不算证据，这条规矩见 `tools/push-retry.ps1` 的头部注释）。
+省事的做法是直接跑 `pwsh -NoProfile -File tools\push-retry.ps1`（它会反复试到服务器侧核对通过为止）。
+若要走 SSH，得先有私钥（这台机器上现在没有）。
+
+**宿主状态（已按任务书重建并重启，人现在就能在游戏里看）**：5273 上的新宿主
+**PID 25820**（`neko-clicker-web.exe`，父进程 `dotnet run` = 15544，10:32:38 起），
+日志落在 `artifacts/host-out.log` / `host-err.log`（后者**空**）。核对过：`/api/ping` →
+`apiVersion=1.11.0`、`assemblyVersion=1.11.0.0`；`/` **200**；**伺服出去的** `/app.js` 里同时有
+纸条那一条（`note-sheet` / `renderNoteSheet` / `noteSheetOpen` / `dismissNote`）与前端那一轮
+（`SCALE_UNITS` / `captureFocus` / `milestone`），`/app.css` 里有 `.sheet-note` / `.note-body` /
+`white-space: pre-wrap`。启动日志里那句 `[apocalypse] 离线 8m 20s，补发 94.93 million。`
+说明**人原来那份存档在 1.11.0 上正常读入**（存档格式没变的现场证据）。
+
 ---
 
 ## 1. 现在在哪（可核对的事实）
