@@ -10,9 +10,9 @@
 #   所以这一层的判据只能是**真的通**：起宿主、发请求、读 SSE 流、看着它回话。
 #
 # 与单元测试的分工：`tools/build.ps1 -Strict` 守引擎（593 个用例 + 公开 API 快照），
-# 本脚本守"宿主 + 浏览器协议"那一段。CI 里两条都跑（.github/workflows/ci.yml）。
+# 本脚本守"宿主 + 浏览器协议 + 启动器"那一段。CI 里两条都跑（.github/workflows/ci.yml）。
 #
-# 五条刻意为之的行为（都不是默认就该有的，是踩出来的）：
+# 七条刻意为之的行为（都不是默认就该有的，是踩出来的）：
 #   ① **自带临时存档目录**（--save-root）。探针会点击、会买入；跑在真实存档上等于
 #      把玩家的进度当测试夹具。旧版探针就是这么干的（.tmp/api-probe），收进仓库时必须改掉。
 #   ② **强制清掉 NEKO_DEBUG_KEY 再起子进程**，于是"缺省门是关着的"这条断言在任何开发机上
@@ -37,12 +37,22 @@
 #      **3 处调用点从来没执行过**（`if ($clickError)` 的一个面、`if ($laterDeltas…)` 的 `else` 里
 #      两处），同时 **1 处**写在 `foreach` 里跑了 3 次，一多一少正好相抵。计数对不上只是症状，
 #      "某条检查悄悄没跑"才是病——所以现在由机器来数，不靠这一行注释。
-#      当前是 **85 处**调用点（65 → 85 是令牌门与分享链接那一段加的 20 处，见 ⑥）。
+#      当前是 **101 处**调用点（65 → 85 是令牌门与分享链接那一段加的 20 处，见 ⑥；
+#      85 → 101 是启动器那一段加的 16 处，见 ⑦）。
 #   ⑥ **URL 上那两段加密载荷也在这条真链路上验**（`SHARE_LINK_PLAN` §11 的"第二刀"）：
 #      铸一枚跳层令牌 → 打真 URL → 断正文形状与四种拒绝、并复核明文门一个字节没变；
 #      生成的分享链接 → 错密码（**磁盘与会话一个字节都不许动**）→ 对密码。
 #      它补的是"单元测试只覆盖到编解码与会话对象、覆盖不到 HTTP 那一面"的那半张网。
 #      这一段还要一把钥匙：本脚本自己设 `NEKO_URL_KEY`（见下面的"环境重定向"，与 ② 正好相反）。
+#   ⑦ **启动器（`tools/start.ps1`）也在这条真链路上验**：端口上已有宿主时它必须**复用**
+#      （不杀、不重起、幂等），端口被别的程序占着时必须**点名端口报错**，而终端那条路在
+#      网页持着端口时必须**拒绝**启动。最后一条不是口味问题：两个宿主的默认存档是
+#      **同一个文件**（`saves/<包 id>.json`——Web 的 `Program.cs` 默认 `DefaultSaveRoot()`，
+#      终端的 `CliOptions.cs` 默认 `saves/<包 id>.json`），而两边每 60 秒各自按**自己内存里**
+#      的状态整份重写（`FileStorage` 的原子替换只保证"不会写坏"，**不保证**"不会互相覆盖"）
+#      ⇒ 同时跑就是后写的那份赢，另一边静默回退。这三件事都只有真的把宿主跑起来才看得见。
+#      这一段**绝不碰 5273**（真人正在玩的宿主，OPEN_WORK H1 等的就是它的样本）：
+#      只用本脚本自己挑的空闲端口、临时存档根，以及另外两个临时挑的空闲端口。
 #
 # 用法：
 #   powershell -File tools/api-test.ps1                 # 构建 + 起宿主 + 打全套 + 收尾
@@ -200,6 +210,100 @@ function Invoke-MintLink([string[]]$MintArgs, [switch]$WithoutUrlKey) {
     finally {
         if ($null -ne $savedKey) { $env:NEKO_URL_KEY = $savedKey }
     }
+}
+
+# ---------------------------------------------------------------- 启动器黑盒
+# 调一次启动器（tools/start.ps1）——退出码、stdout、stderr 分开拿。
+#
+# 为什么**故意**按 start.cmd 那条路调（powershell + -ExecutionPolicy Bypass + -File）：
+# 玩家双击走的就是这条路，BOM / GBK 解码 / 执行策略这些坑只有在**这一条**路上才发作。
+#
+# ★ 两处都是实测踩出来的，不是风格选择：
+#   ① 输出**落进文件**，不接管道。启动器在"端口空闲"那条路上会**分离启动**一个长命宿主，
+#      而 Windows 的 CreateProcess 是带 bInheritHandles 建的：那个宿主会**继承调用方的
+#      stdout 句柄**。于是"读管道读到 EOF"要等到宿主退出才发生——实测把启动器的输出接进管道，
+#      调用方会一直挂着（第一次跑这条守卫就是这么挂住的）。走 `cmd /c ... > 文件 2> 文件`：
+#      启动器的 stdout 就是那个文件，句柄继承顶多让宿主多握一个文件句柄，谁也不等谁。
+#   ② 走 `cmd /c` 而不是 Start-Process，是为了**退出码**：`Start-Process -PassThru -Wait`
+#      在本机拿回来的 ExitCode 是**空值**（见 Invoke-MintLink 那条注释；本次实测
+#      "文件重定向 + Start-Process" 那条路也一样是空值），而"拒绝了没有"只有一个判据——退出码。
+#      cmd 会把子进程的退出码原样交回来。
+#
+# 判据一律只用 **ASCII 针**（端口号 / `saves\<包>.json` / `-AllowSharedSave` / `Time Elapsed`…）：
+# Windows PowerShell 5.1 把中文写进重定向的输出时用的是控制台代码页，在非中文的机器上
+# （例如英文 CI）中文会变成 `?`——用中文当针，守卫会在别人的机器上假红。
+function Invoke-Launcher([string[]]$LauncherArgs) {
+    $launcherPath = Join-Path $root 'tools\start.ps1'
+    # 带空格的参数自己加引号（与 Invoke-MintLink 同一条规矩）。
+    $quoted = @(foreach ($a in $LauncherArgs) { if ($a -match '\s') { '"' + $a + '"' } else { $a } })
+
+    $stamp = [Guid]::NewGuid().ToString('N')
+    $outFile = Join-Path $workDir "launcher-$stamp.out.txt"
+    $errFile = Join-Path $workDir "launcher-$stamp.err.txt"
+
+    $psi = New-Object System.Diagnostics.ProcessStartInfo
+    $psi.FileName = 'cmd.exe'
+    $psi.Arguments = '/c ""powershell" -NoProfile -ExecutionPolicy Bypass -File "' + $launcherPath + '" ' +
+    ($quoted -join ' ') + ' > "' + $outFile + '" 2> "' + $errFile + '""'
+    $psi.UseShellExecute = $false
+    $psi.WorkingDirectory = $root
+    # 非交互：启动器的"按回车关闭"必须**不等**。这一条是安全网（启动器自己还有 NEKO_NO_PAUSE
+    # 与 IsInputRedirected 两道判据），少了它，一个写回 Read-Host 的改动会让整个作业挂到超时
+    # ——而"挂住"比"红"难查得多。
+    $psi.EnvironmentVariables['NEKO_NO_PAUSE'] = '1'
+
+    $proc = [System.Diagnostics.Process]::Start($psi)
+
+    # 上限 180 秒：启动器自己最多等宿主约 30 秒。卡住时宁可让这条守卫响，也不无限等下去。
+    if (-not $proc.WaitForExit(180000)) {
+        try { Stop-ProcessTree -ProcessId $proc.Id | Out-Null } catch { }
+        try { $proc.Kill() } catch { }
+    }
+
+    # 文件可能不存在（进程都没起来），也可能是**空文件**——两种都要变成 ""，不能是 $null。
+    # ⚠ PS 5.1 的坑（实测）：`[string](Get-Content -Raw <空文件>)` 得到的是 **$null** 而不是 ""，
+    # 对空文件返回的 $null 调 .Trim() 会直接抛 `You cannot call a method on a null-valued expression`
+    # ——启动器的 stderr 正常情况下就是空的，所以这条路上**每次**都会踩到。
+    $stdout = Get-TextOrEmpty $outFile
+    $stderr = Get-TextOrEmpty $errFile
+
+    return [pscustomobject]@{
+        ExitCode = [int]$proc.ExitCode
+        Output   = $stdout.Trim()
+        Error    = $stderr.Trim()
+    }
+}
+
+# 读一个可能不存在 / 可能是空文件的文本；两种情况都返回 ""（见 Invoke-Launcher 里那条实测注释）。
+function Get-TextOrEmpty([string]$Path) {
+    if (-not (Test-Path $Path)) { return '' }
+    $text = Get-Content -Path $Path -Raw -Encoding UTF8 -ErrorAction SilentlyContinue
+    if ($null -eq $text) { return '' }
+    return [string]$text
+}
+
+# 本仓库目录下的 Web 宿主进程（判据与 tools\build.ps1 第 49~54 行逐字同源：映像路径以仓库根开头）。
+# 用它断言"启动器没有**多起**一个宿主"——只看端口是不够的：起在别的端口上的宿主照样是第二个宿主，
+# 而它照样会和第一个抢同一份存档（这正是那次改动要防的事）。
+function Get-RepoWebHost([string]$Root) {
+    $found = @()
+    foreach ($proc in @(Get-Process -Name 'neko-clicker-web' -ErrorAction SilentlyContinue)) {
+        try {
+            if ($proc.Path -and $proc.Path.StartsWith($Root, [StringComparison]::OrdinalIgnoreCase)) { $found += $proc }
+        }
+        catch { }
+    }
+    return $found
+}
+
+# 端口上监听者的 PID（netstat；与启动器里 Get-ListenerPid 同一条判据、同一个理由）。
+function Get-ListenerPid([int]$Port) {
+    $pattern = '^\s*TCP\s+\S+:' + $Port + '\s+\S+\s+LISTENING\s+(\d+)\s*$'
+    foreach ($line in @(netstat -ano -p TCP 2>$null)) {
+        $match = [regex]::Match([string]$line, $pattern)
+        if ($match.Success) { return [int]$match.Groups[1].Value }
+    }
+    return 0
 }
 
 # ---------------------------------------------------------------- 宿主生命周期
@@ -1369,6 +1473,168 @@ try {
     Check '没设 NEKO_URL_KEY 时拒绝铸造（绝不产出一段宿主解不开的链接）' `
         (($noKeyMint.ExitCode -ne 0) -and $noKeyMint.Url.Length -eq 0 -and $noKeyMint.Error.Contains('NEKO_URL_KEY')) `
         "退出码 $($noKeyMint.ExitCode)；stdout <$($noKeyMint.Url)>；stderr <$($noKeyMint.Error)>"
+
+    # ------------------------------------------------------------ 启动器（tools/start.ps1）
+    # 为什么这条守卫长在这里（而不是"再读一遍启动器的源码"）：启动器在"端口上已经有一个宿主"
+    # 那条路上的正确性只有一个判据——**那个宿主还活着，而且没有多出第二个**。这两件事都只有
+    # 真的把宿主跑起来才看得见，而本脚本正好已经有一个活着的宿主（$Port）与一套按端口反查 /
+    # 树杀的收尾工具（Get-TestProcess / Stop-ProcessTree）。
+    #
+    # ★ 这一段**绝不碰 5273**：那是真人正在玩的宿主（OPEN_WORK H1 等的就是它的样本）。
+    #   它只用 $Port（本脚本自己挑的空闲端口 + 临时存档根）与另外两个临时挑的空闲端口。
+    Write-Section '启动器（tools/start.ps1）：复用 / 拒绝 / 绝不起第二个宿主'
+
+    $repoHostsBefore = @(Get-RepoWebHost -Root $root)
+    $listenerBefore = Get-ListenerPid -Port $Port
+
+    # ---- ① 端口上已有我们的宿主：复用它，而不是再起一个 ----------------------------
+    # 判据一律 ASCII：退出码、正文里那个**传进来的端口**与那个 **PID**、进程数与监听者不变。
+    # （中文不当针：PS 5.1 把中文写进重定向输出时用控制台代码页，英文机器上会变成 `?`。）
+    $reuse = Invoke-Launcher @('web', '-Port', "$Port", '-NoBrowser')
+    $reuseText = ($reuse.Output -split "`r?`n") -join ' / '
+    Check '网页那条路：端口上已有宿主时**复用**它（退出码 0）' `
+        ($reuse.ExitCode -eq 0) `
+        "退出码 $($reuse.ExitCode)；stdout <$reuseText>；stderr <$($reuse.Error)>"
+
+    # 这一条顺带钉住一个真实的坑：局部变量写成 `$port` 会和参数 `$Port` 撞成**同一个变量**
+    # （PowerShell 变量名不区分大小写），于是 `-Port` 被悄悄丢掉、脚本永远用 5273——
+    # 第一次跑这条守卫就是这么抓到的（见 tools/start.ps1 里那段注释）。
+    $reuseNamesPort = $reuse.Output.Contains(":$Port")
+    $reuseNamesHolder = $reuse.Output.Contains("PID $listenerBefore")
+    Check '复用认的是**传进来的端口**（不是默认 5273），并报出持有者 PID' `
+        ($reuseNamesPort -and $reuseNamesHolder) `
+        "含 <:$Port>: $reuseNamesPort；含 <PID $listenerBefore>: $reuseNamesHolder；stdout <$reuseText>"
+
+    $listenerAfterReuse = Get-ListenerPid -Port $Port
+    Check '复用**没有杀掉**持有端口的那个宿主（PID 不变）' `
+        ($listenerBefore -gt 0 -and $listenerAfterReuse -eq $listenerBefore) `
+        "端口 $Port 的监听者：$listenerBefore → $listenerAfterReuse"
+
+    $repoHostsAfterReuse = @(Get-RepoWebHost -Root $root)
+    Check '复用**没有多起**宿主（本仓库的 neko-clicker-web 进程数不变）' `
+        ($repoHostsAfterReuse.Count -eq $repoHostsBefore.Count) `
+        "$($repoHostsBefore.Count) → $($repoHostsAfterReuse.Count)（PID $(($repoHostsAfterReuse | ForEach-Object { $_.Id }) -join '、')）"
+
+    # ---- ② 幂等：再点一次 start.cmd 不许留下两个宿主 -------------------------------
+    $reuseAgain = Invoke-Launcher @('web', '-Port', "$Port", '-NoBrowser')
+    $listenerAfterSecond = Get-ListenerPid -Port $Port
+    $repoHostsAfterSecond = @(Get-RepoWebHost -Root $root)
+    Check '再点一次（幂等）：退出码 0、PID 不变、宿主数量不变' `
+        ($reuseAgain.ExitCode -eq 0 -and $listenerAfterSecond -eq $listenerBefore -and $repoHostsAfterSecond.Count -eq $repoHostsBefore.Count) `
+        "退出码 $($reuseAgain.ExitCode)；PID $listenerBefore → $listenerAfterSecond；宿主 $($repoHostsBefore.Count) → $($repoHostsAfterSecond.Count)"
+
+    # ---- ③ 终端那条路：网页持着端口、写同一份存档 ⇒ **拒绝**（而不是跑起来再互相覆盖）----
+    # 包名用本脚本的被测包：拒绝的正文必须点名**那份**存档（`saves\<包>.json`），
+    # 而不是一句"可能会冲突"——点名才查得动。
+    $sharedSave = Join-Path (Join-Path $root 'saves') "$Package.json"
+    $refused = Invoke-Launcher @('play', $Package, '-Port', "$Port")
+    $refusedText = ($refused.Output -split "`r?`n") -join ' / '
+    Check '终端那条路：网页持着端口时**拒绝**启动（退出码非 0）' `
+        ($refused.ExitCode -ne 0) `
+        "退出码 $($refused.ExitCode)；stdout <$refusedText>；stderr <$($refused.Error)>"
+
+    Check '拒绝时点名两个宿主共用的那份存档，并给出出路' `
+        ($refused.Output.Contains($sharedSave) -and $refused.Output.Contains('-AllowSharedSave')) `
+        "含 <$sharedSave>: $(($refused.Output).Contains($sharedSave))；含 -AllowSharedSave: $(($refused.Output).Contains('-AllowSharedSave'))"
+
+    $aliveAfterRefuse = Invoke-Get '/api/ping'
+    $listenerAfterRefuse = Get-ListenerPid -Port $Port
+    Check '拒绝之后那个宿主仍然活着（PID 不变、/api/ping 仍答）' `
+        ($aliveAfterRefuse.Success -and $listenerAfterRefuse -eq $listenerBefore) `
+        "HTTP $($aliveAfterRefuse.Status)；PID $listenerBefore → $listenerAfterRefuse"
+
+    # ---- ④ 端口被**别的程序**占着：点名端口报错，不猜也不杀 ------------------------
+    # 占位者是一个**原始 TcpListener**：它接受连接但一个字节都不回，正好是"有人在听、
+    # 但不是我们的宿主"这一形态（判据必须落在 /api/ping 的正文上，而不是"端口通不通"）。
+    $foreignListener = New-Object System.Net.Sockets.TcpListener -ArgumentList @([System.Net.IPAddress]::Loopback, 0)
+    $foreignListener.Start()
+    $foreignPort = ([System.Net.IPEndPoint]$foreignListener.LocalEndpoint).Port
+    try {
+        $foreign = Invoke-Launcher @('web', '-Port', "$foreignPort", '-NoBrowser')
+    }
+    finally {
+        $foreignListener.Stop()
+    }
+
+    Check '端口被别的程序占着时：点名端口报错退出（不猜、不杀、也不硬起）' `
+        ($foreign.ExitCode -ne 0 -and $foreign.Output.Contains("$foreignPort")) `
+        "退出码 $($foreign.ExitCode)；正文里含端口 <$foreignPort>: $(($foreign.Output).Contains("$foreignPort"))；stdout <$(($foreign.Output -split "`r?`n") -join ' / ')>"
+
+    $repoHostsAfterForeign = @(Get-RepoWebHost -Root $root)
+    Check '报错那条路上没有多起宿主' `
+        ($repoHostsAfterForeign.Count -eq $repoHostsBefore.Count) `
+        "$($repoHostsBefore.Count) → $($repoHostsAfterForeign.Count)"
+
+    # ---- ⑤ 端口空闲：**分离启动**真的起得来（唯一能证明那条路通的检查）------------
+    # -NoBuild 是必须的：本段不该再编一次，更不该让启动器去清"本仓库的残留进程"——
+    # 那会把**本脚本自己的宿主**一起杀掉（启动器把清理绑在构建上，正是为了这件事）。
+    $freeProbe = New-Object System.Net.Sockets.TcpListener -ArgumentList @([System.Net.IPAddress]::Loopback, 0)
+    $freeProbe.Start()
+    $freePort = ([System.Net.IPEndPoint]$freeProbe.LocalEndpoint).Port
+    $freeProbe.Stop()
+    $freeSaveRoot = Join-Path $workDir 'launcher-saves'
+    New-Item -ItemType Directory -Force -Path $freeSaveRoot | Out-Null
+
+    $launched = $null
+    try {
+        $launched = Invoke-Launcher @('web', '-Port', "$freePort", '-NoBrowser', '-NoBuild', '-SaveRoot', $freeSaveRoot)
+        Check '网页那条路：端口空闲时**后台分离启动**成功（退出码 0）' `
+            ($launched.ExitCode -eq 0) `
+            "退出码 $($launched.ExitCode)；stdout <$(($launched.Output -split "`r?`n") -join ' / ')>；stderr <$($launched.Error)>"
+
+        $freeUp = Invoke-Get "http://127.0.0.1:$freePort/api/ping"
+        Check '分离启动的那个宿主真的在服务（新端口 /api/ping 回话）' `
+            ([bool]($freeUp.Success -and $freeUp.Body -and $freeUp.Body.Contains('neko-clicker-web'))) `
+            "HTTP $($freeUp.Status)：<$($freeUp.Body)>"
+
+        # -NoBuild 被遵守：判据用 **ASCII** 的构建痕迹——dnet.ps1 设了 DOTNET_CLI_UI_LANGUAGE=en，
+        # 所以 MSBuild 的摘要一定是英文。这一条不只是"省一次编译"：-NoBuild 会连带跳过
+        # "清本仓库残留进程"那一步，而那一步会把**本脚本自己的宿主**一起杀掉
+        # ⇒ 它其实是这套守卫自身的安全联锁（少了它，这一次调用会把 api-test 的宿主带走）。
+        $buildMarkers = @('Time Elapsed', 'Build succeeded', 'Determining projects', 'MSBuild version')
+        $buildSeen = @($buildMarkers | Where-Object { $launched.Output.Contains($_) })
+        Check '-NoBuild 被遵守：这次没有构建（正文里没有任何 MSBuild 痕迹）' `
+            ($buildSeen.Count -eq 0) `
+            "命中：$(if ($buildSeen.Count -gt 0) { $buildSeen -join '、' } else { '（无）' })"
+
+        # -SaveRoot 真的传到了宿主：宿主启动时会自己报出"存档目录 <路径>"，而那份日志就是它。
+        # 这条钉的是"换存档根"这条路真的接通了（两个宿主各玩各的进度，靠的就是它）。
+        $hostOutLog = Join-Path $root 'artifacts\host-out.log'
+        $hostLogText = if (Test-Path $hostOutLog) { [string](Get-Content $hostOutLog -Raw -Encoding UTF8 -ErrorAction SilentlyContinue) } else { '' }
+        Check '-SaveRoot 真的传到了宿主（宿主日志里的存档目录 = 那个临时根）' `
+            ($hostLogText.Contains($freeSaveRoot)) `
+            "日志 <$hostOutLog> 里含 <$freeSaveRoot>: $($hostLogText.Contains($freeSaveRoot))"
+
+        # 浏览器那一半**没有**机器判据（要真有眼睛看窗口弹没弹出来）：归 OPEN_WORK 的 H3。
+        # 这里只把"它没开浏览器"这件事留给正文，不做断言——用中文当针在英文机器上会假红。
+    }
+    finally {
+        # 收掉**这次自己起的**那一棵树：启动器把包装进程的 PID 印在正文里
+        # （「停止：taskkill /PID N /T /F」），按它树杀才不会留下还在监听的孤儿。
+        if ($launched -and $launched.Output -match 'taskkill /PID (\d+)') {
+            Stop-ProcessTree -ProcessId ([int]$Matches[1]) | Out-Null
+        }
+        foreach ($p in @(Get-TestProcess -Port $freePort)) { Stop-ProcessTree -ProcessId $p.ProcessId | Out-Null }
+        for ($i = 0; $i -lt 40; $i++) {
+            if (-not (Test-PortBusy -Port $freePort)) { break }
+            Start-Sleep -Milliseconds 250
+        }
+    }
+
+    Check '启动器印出来的那条停止命令真的能停掉它（新端口已经松手）' `
+        (-not (Test-PortBusy -Port $freePort)) `
+        "端口 $freePort 仍被占用：$(Test-PortBusy -Port $freePort)"
+
+    # ---- ⑥ 模式开关：未知模式被拒绝（它以前会**静默**落进终端界面）----------------
+    # 传的正是包名——`start.cmd lab` 想选包、结果起了默认包，就是这个形态。
+    # 判据照样 ASCII：退出码、正文里那个 `<包名>`、以及三个合法模式的 token。
+    $unknownMode = Invoke-Launcher @($Package, '-Port', "$Port")
+    $unknownText = ($unknownMode.Output -split "`r?`n") -join ' / '
+    $unknownNamesIt = $unknownMode.Output.Contains("<$Package>")
+    $unknownListsModes = $unknownMode.Output.Contains('web') -and $unknownMode.Output.Contains('play') -and $unknownMode.Output.Contains('list')
+    Check '未知模式被拒绝，并列出可用模式（不再静默落进终端界面）' `
+        ($unknownMode.ExitCode -ne 0 -and $unknownNamesIt -and $unknownListsModes) `
+        "退出码 $($unknownMode.ExitCode)；含 <$Package>: $unknownNamesIt；列出 web/play/list: $unknownListsModes；stdout <$unknownText>"
 }
 finally {
     Write-Host ''
