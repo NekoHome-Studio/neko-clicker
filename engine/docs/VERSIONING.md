@@ -108,9 +108,9 @@
 单一事实来源是 **`Directory.Build.props` 里的 `<Version>`**：
 
 ```xml
-<Version>1.11.0</Version>
-<AssemblyVersion>1.11.0.0</AssemblyVersion>
-<FileVersion>1.11.0.0</FileVersion>
+<Version>1.12.0</Version>
+<AssemblyVersion>1.12.0.0</AssemblyVersion>
+<FileVersion>1.12.0.0</FileVersion>
 ```
 
 这个值会同时成为程序集版本、文件版本，以及 `ApiVersion.Current` 报告的版本。

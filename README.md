@@ -519,7 +519,7 @@ Console.WriteLine(ApiVersion.AssemblyVersion);  // 1.12.0.0
   `tools/build.ps1 -Strict` 打印的那一行——见 [OPEN_WORK](engine/docs/OPEN_WORK.md) 的 W1）。
 - **端到端回归与 CI 已落地**：`tools/api-test.ps1` 起真宿主打一遍全部端点（静态文件 / 前端面板 /
   元信息 / 快照 / 命令 / 通知 / 负数 / SSE 流 / **离线收益** / **永久线货币语义** /
-  **建筑专属升级** / **存档的导出与导入** / **跳层令牌与分享链接**，85 项检查——最后一段会带同一份存档
+  **建筑专属升级** / **存档的导出与导入** / **跳层令牌与分享链接**，101 项检查——最后一段会带同一份存档
   **再起一次宿主**，验"读档补发 → 没播报之前刷新不消失 → 收下之后消失"），自带临时存档目录、
   缺省把调试门关着、收尾按端口反查并清掉
   `dotnet run` 的子进程；`.github/workflows/ci.yml` 在每次 push / PR 上跑 `tools/build.ps1 -Strict`
