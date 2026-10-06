@@ -44,7 +44,11 @@ public static class LoreSystem
                     break;
 
                 case LoreChannel.Popup:
-                    // 弹窗不写进通知栏——它是"待处理"的，由 UI 点掉后调用 DismissLorePopup。
+                case LoreChannel.Note:
+                    // 弹窗与纸条都不写进通知栏——它们是"待处理"的，由 UI 点掉后调用
+                    // DismissLorePopup。两者共用这一条队列：**"已经放出来了、还没被点掉"
+                    // 这件事与"它长什么样"无关**，所以队列只有一条，皮由通道决定
+                    // （见 LoreChannel.Note 的注释与 FOUND_NOTES_PLAN §3.1）。
                     state.PendingLorePopups.Add(entry.Id);
                     break;
 

@@ -404,6 +404,9 @@ public static class GameViewFactory
             Order = entry.Order,
             Unlocked = unlocked,
             Channel = entry.Channel,
+            // 通道名与枚举一起给：前端只该按名字认"这一条用哪张皮"（它不认识枚举序数，
+            // 与 GameSnapshot.ModeName 同一条规矩）。
+            ChannelName = entry.Channel.WireName(),
             RevealHint = entry.Reveal.Describe(content),
             Progress = quantifiable ? Math.Clamp(current / target, 0, 1) : (unlocked ? 1 : 0),
             ProgressText = quantifiable && !unlocked

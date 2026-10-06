@@ -5,9 +5,15 @@
 + #3《猫娘实验室》+ #10《猫娘公司》+ #6《猫娘末世》+ #9《猫娘图书馆》
 + #7《猫娘神明》+ #4《猫娘文明》+ #5《赛博猫娘》+ #8《猫娘梦境》）和一个可玩的终端 Demo。
 
-**当前版本 `1.10.2`**（`NekoClicker.Core` 的公开 API 版本）。从 `1.0.0` 起
+**当前版本 `1.11.0`**（`NekoClicker.Core` 的公开 API 版本）。从 `1.0.0` 起
 **公开 API 只增不改**，而且有测试守着——见 [版本与兼容性承诺](#版本与兼容性承诺)。
-1.10.2 是 **patch：公开 API 一行没动**——动的全在前端、测试、工具链与文档：三轮界面改动
+1.11.0 是 **minor：公开 API 只增不改**——新增 `LoreChannel.Note` 与
+`LoreView.ChannelName`（通道的线上 token），把"**捡到一张纸条**"这种在虚构里教机制的
+叙事条目落到界面上：纸条与剧情弹窗共用同一条待读队列、同一份"已看过"记录
+（**存档格式一个字都没改**，`SaveSerializer.CurrentVersion` 仍是 `1`，不需要迁移），
+只是多了一层"纸"的样子与一个前端不必解释枚举序数的 token。
+方案与代价见 [engine/docs/FOUND_NOTES_PLAN.md](engine/docs/FOUND_NOTES_PLAN.md)。
+上一版 1.10.2 是 patch——公开 API 一行没动：三轮界面改动
 （图形缩放适配 ＋ 两栏对齐、批量档位写明「总价」、左右两块卡片等高）、三条新守卫
 （文档里的"当前用例数"与真实用例数一致、建筑的「单个产速」有值、横扫全部包的「拥有 ⇒ 已解锁」）、
 五处机械项（端到端探针的收尾不再依赖 CIM、打包产物自检进了 `pack.ps1`、引擎的 NuGet 元数据、
@@ -87,7 +93,7 @@
 > 代价是画面右侧与底部各有一格空白——这是换「拖横向不崩」付出的代价。
 
 ```powershell
-# 构建 + 跑测试（589 个用例，零依赖迷你运行器）
+# 构建 + 跑测试（590 个用例，零依赖迷你运行器）
 .\tools\build.ps1
 
 # 逐条计时：打印最慢的一批与分档占比（想知道"什么变慢了"就用它）
@@ -195,7 +201,7 @@ engine/content/Cyber/   内容包 #5《赛博猫娘》（五层数字层，迁�
 engine/content/Dream/   内容包 #8《猫娘梦境》（五层梦，越睡越浓的梦境能量）
 games/hosts/Demo.Cli/        终端 UI 适配层（ANSI 全屏 + 键盘 + 无头模式 + --package）
 games/hosts/Web/         Web 前端宿主（本地 HTTP + wwwroot，浏览器里可玩）
-engine/tests/    589 个测试 + 自研迷你测试运行器（含架构不变量与全程可达测试）
+engine/tests/    590 个测试 + 自研迷你测试运行器（含架构不变量与全程可达测试）
 engine/docs/ARCHITECTURE.md             架构与设计决策
 engine/docs/CONTENT_AUTHORING.md        如何写内容（数值节奏、校验规则、常见坑）
 engine/docs/VERSIONING.md               版本与兼容性承诺：什么改动升哪一位、公开 API 快照怎么用
@@ -403,7 +409,7 @@ Console.WriteLine(engine.Save());           // JSON 存档
 
 ## 版本与兼容性承诺
 
-**当前版本 `1.10.2`。从 `1.0.0` 起，`NekoClicker.Core` 的公开 API 只增不改。**
+**当前版本 `1.11.0`。从 `1.0.0` 起，`NekoClicker.Core` 的公开 API 只增不改。**
 
 | 改动 | 升哪一位 |
 |---|---|
@@ -480,7 +486,7 @@ Console.WriteLine(ApiVersion.AssemblyVersion);  // 1.10.2.0
 一条命令就是全仓库的验收：
 
 ```powershell
-.\tools\build.ps1 -Strict   # 引擎 + 内容 + 589 条用例 + Web 宿主 + 前端冒烟（0 警告）
+.\tools\build.ps1 -Strict   # 引擎 + 内容 + 590 条用例 + Web 宿主 + 前端冒烟（0 警告）
 .\tools\web.ps1   build -Strict   # 只编 Web 宿主时用它
 .\tools\api-test.ps1        # 再把宿主真起起来，打一遍端点（含 SSE 流）
 ```

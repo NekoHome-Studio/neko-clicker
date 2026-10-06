@@ -32,6 +32,27 @@
     </div>
   </div>
 
+  <!-- 纸条（待读叙事里通道为 `note` 的那些）：**第四张 sheet**，
+       形态与上面三张完全共用（`.sheet-layer` / `.sheet` / `.sheet-head` / `.sheet-close` /
+       `.sheet-ok` / `sheet-in` / Esc / 点遮罩）——这里同样没有第二套弹窗。
+       它是唯一一处**换皮**：`.sheet-note` 只改观感（纸色底、衬线正文、窄一点、按钮写「收好」），
+       机械一行都没另写。为什么要换皮：纸条是"别人留下的东西"，剧情弹窗是"游戏在跟你说话"，
+       两者共用一套机械但不能长得一样。
+       "这一条算不算纸条"由服务端的通道 token 决定（`pendingLore[].channelName === "note"`），
+       前端**不解释枚举序数**（与 mode / modeName 同一条规矩）。
+       四条次序（写在 app.js 的 renderNoteSheet）：离线收益 → 场上有金猫时让位 → 纸条 → 表态。 -->
+  <div id="note-sheet" class="sheet-layer sheet-note hidden">
+    <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="note-title">
+      <div class="sheet-head">
+        <h2 id="note-title"></h2>
+        <button id="note-close" class="sheet-close" type="button" aria-label="把纸条收起来">&times;</button>
+      </div>
+      <p id="note-body" class="note-body"></p>
+      <p id="note-more" class="muted"></p>
+      <button id="note-ok" class="sheet-ok">收好</button>
+    </div>
+  </div>
+
   <!-- 表态（待答选择 + 立场轴 + 结局）：它**不是页签，而是一张小窗口**，
        形态与上面那张离线收益完全共用（`.sheet-layer` / `.sheet` / `.sheet-ok` /
        `sheet-in`）——这里没有第二套弹窗。

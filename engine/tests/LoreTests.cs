@@ -247,6 +247,115 @@ public static class LoreTests
         Check.Equal(0, engine.Snapshot().PendingLore.Count);
     }
 
+    // ---------------------------------------------------------------- 纸条（通道 = Note）
+
+    /// <summary>
+    /// 纸条**没有自己的队列、也没有自己的"看过"集合**：它与剧情弹窗共用
+    /// <c>PendingLorePopups</c> 与 <c>LoreUnlocked</c>——而这两个字段在 v1 存档格式里早就有，
+    /// 所以"捡到过没有"这件事不需要动存档格式、也不需要迁移。
+    /// 这条用例守的就是这件事：一旦有人给纸条开了第二套状态，它会红。
+    /// 决定与代价见 <c>engine/docs/FOUND_NOTES_PLAN.md</c> §3.2。
+    /// </summary>
+    [Test]
+    public static void NoteChannel_UsesTheSamePendingQueue_AndTheSameSeenSet()
+    {
+        GameEngine engine = TestGame.CreateApocalypse(out _);
+
+        LoreEntry buy = engine.Content.LoreEntries.First(e => e.Id == "note_buy");
+        Check.Equal(LoreChannel.Note, buy.Channel);
+
+        // 门槛是"第一次**买得起**最便宜那座"（不是"买下了"）：纸条要在玩家动手之前到手。
+        double price = engine.Content.Buildings.First(b => b.Id == "ruins").BasePrice;
+
+        engine.CheckLore();
+        Check.False(engine.State.PendingLorePopups.Contains("note_buy"), "还没买得起就不该捡到纸条。");
+
+        while (engine.State.Cookies < price) engine.Click();
+        engine.CheckLore();
+
+        Check.True(engine.State.PendingLorePopups.Contains("note_buy"));
+        Check.True(engine.State.LoreUnlocked.Contains("note_buy"), "待读与已读是两件事：它同时进了已读集合。");
+
+        // 点掉 = 从待读队列划掉；它不会**再放一次**（已读集合拦着，与剧情同一条规矩）。
+        Check.True(engine.DismissLorePopup("note_buy"));
+        engine.CheckLore();
+        Check.False(engine.State.PendingLorePopups.Contains("note_buy"));
+    }
+
+    /// <summary>
+    /// 通道名是服务端给的 token：前端据此决定"这一条用哪张皮"，而**不需要**去解释枚举序数
+    /// （与 <c>mode</c> / <c>modeName</c> 同一条规矩）。反面对照是剧情弹窗仍然是 <c>popup</c>——
+    /// 两者在线上必须分得开，否则界面只能靠剧情线 id 去猜，那等于把内容知识写进前端。
+    /// </summary>
+    [Test]
+    public static void NoteChannel_CarriesItsOwnWireToken_SoTheFrontendNeedNotReadOrdinals()
+    {
+        GameEngine engine = TestGame.CreateApocalypse(out _);
+        while (engine.State.Cookies < engine.Content.Buildings.First(b => b.Id == "ruins").BasePrice) engine.Click();
+        engine.CheckLore();
+
+        LoreView note = engine.Snapshot().PendingLore.First(v => v.Id == "note_buy");
+        Check.Equal("note", note.ChannelName);
+
+        GameEngine cafe = TestGame.CreateCafe(out _);
+        cafe.Click();
+        cafe.CheckLore();
+        Check.Equal("popup", cafe.Snapshot().PendingLore[0].ChannelName);
+    }
+
+    /// <summary>
+    /// 金猫那张纸条的门槛是"第一次**真的有猫出现在场上**"——引擎自己写的
+    /// <c>GoldenCookieSystem.SerialCounterKey</c> 计数器，而不是"第一次抓到"
+    /// （<c>GoldenCookiesAtLeast(1)</c>）。理由与"错过"为什么判不了，见
+    /// <c>engine/docs/FOUND_NOTES_PLAN.md</c> §5.4。
+    /// </summary>
+    [Test]
+    public static void GoldenCatNote_FiresOnTheFirstSighting_NotOnTheFirstCatch()
+    {
+        GameEngine engine = TestGame.CreateApocalypse(out _);
+        double price = engine.Content.Buildings.First(b => b.Id == "ruins").BasePrice;
+
+        engine.CheckLore();
+        Check.False(engine.State.PendingLorePopups.Contains("note_cat"), "还没有猫的时候不该有这张纸条。");
+
+        Check.Equal(0, engine.State.GetCounter(GoldenCookieSystem.SerialCounterKey));
+        GoldenCookieSystem.Spawn(engine);
+        engine.CheckLore();
+        Check.False(
+            engine.State.PendingLorePopups.Contains("note_cat"),
+            "光有猫还不够：第一张纸条（买东西）得先生效——顺序由构造保证，见 FOUND_NOTES_PLAN §4。");
+
+        // 赚够第一座建筑的钱 = 第一张纸条的门槛。此后金猫那张才成立。
+        while (engine.State.CookiesEarnedThisRun < price) engine.Click();
+        engine.CheckLore();
+
+        Check.True(engine.State.PendingLorePopups.Contains("note_cat"));
+        Check.Equal(0, engine.State.GoldenCookiesClicked, "这条刻意**不**点猫：纸条是「看见了」就有的。");
+
+        // 同一线里"先来的排在前面"：界面一次只画一张，靠的就是这个顺序。
+        int buyIndex = engine.State.PendingLorePopups.IndexOf("note_buy");
+        int catIndex = engine.State.PendingLorePopups.IndexOf("note_cat");
+        Check.True(buyIndex >= 0 && buyIndex < catIndex, "先捡到「领料单」，再捡到「窗上的字条」。");
+    }
+
+    /// <summary>
+    /// 纸条的正文就是那张纸上的字，所以它有两个特征要被钉住：
+    /// ① 从 <c>text.json</c> 读（双向逐字那条守卫横扫全部条目，见 <c>ContentTextFileTests</c>）；
+    /// ② **有换行**——纸条是"清单 / 落款"这种形状，清单没有换行就不成清单。
+    /// 第二条是这条用例存在的唯一理由：它把"纸条该长什么样"钉在**数据**上，
+    /// 而不是靠下一个人记得去写（正文一个字都不许是"一句话说明"）。
+    /// </summary>
+    [Test]
+    public static void NoteChannel_TextIsALeafObject_WithLineBreaks()
+    {
+        foreach (string id in new[] { "note_buy", "note_cat" })
+        {
+            LoreEntry entry = TestGame.Apocalypse.LoreEntries.First(e => e.Id == id);
+            Check.Equal(LoreChannel.Note, entry.Channel);
+            Check.Contains(entry.Body, "\n", $"{id} 的正文没有换行——那就不像一张纸了。");
+        }
+    }
+
     // ---------------------------------------------------------------- 图鉴
 
     [Test]

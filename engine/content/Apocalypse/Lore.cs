@@ -27,13 +27,14 @@ internal static class Lore
     /// <summary>本包的散文文件（随包复制到 content/Apocalypse/text.json）。取不到就抛，绝不回退成空白。</summary>
     internal static ContentText Prose => ProseCache.Value;
 
-    /// <summary>四条剧情线。</summary>
+    /// <summary>四条剧情线 + 一条<b>纸条线</b>（纸条是"别人留下的东西"，与剧情分开成一条）。</summary>
     public static StorylineDefinition[] Storylines =>
     [
         Line("her", 12),
         Line("ruin", 10),
         Line("echo", 10),
         Line("seed", 8),
+        Line("note", 2),
     ];
 
     /// <summary>剧情线的名称 / 主题 / 图标来自文本文件；条数留在代码里（它是纪律，不是散文）。</summary>
@@ -53,7 +54,77 @@ internal static class Lore
         .. Ruin(),
         .. Echo(),
         .. Seed(),
+        .. Notes(),
     ];
+
+    /// <summary>
+    /// 纸条（<see cref="LoreChannel.Note"/>）：**在虚构里教机制**的那一类。<para>
+    /// 与剧情分开的三个理由：① 它的读者是刚上手的人，不是追故事的人；
+    /// ② 它的呈现是"捡到一张纸"，不是"游戏在跟你说话"（皮由通道决定）；
+    /// ③ 它一张只讲一件事，所以门槛是"第一次遇到那个情况"，而不是剧情那种量级门槛。
+    /// 方案与目录见 <c>engine/docs/FOUND_NOTES_PLAN.md</c> §4。
+    /// </para>
+    /// <para>
+    /// <b>门槛一律挑"第一次成立"的那一个瞬间</b>：引擎每秒扫一次，成立就锁存
+    /// （<c>LoreSystem.Check</c> 里 `LoreUnlocked` 那一句），所以"买得起"这种会退回去的
+    /// 条件照样能用——它只需要在某一刻为真。
+    /// </para>
+    /// </summary>
+    private static IEnumerable<LoreEntry> Notes() =>
+    [
+        new()
+        {
+            Id = "note_buy",
+            Title = Prose.Text("lore", "note_buy", "title"),
+            StorylineId = "note",
+            Order = 1,
+            Icon = "📝",
+            Channel = LoreChannel.Note,
+            // 第一次**赚够**最便宜那座的价钱——不是"买下了"，而是"买得起了"：
+            // 纸条要在玩家还没动手之前就到手，讲的是"这些东西领回来会自己下矿"。
+            //
+            // 为什么用"本轮累计赚到"而不是"手上现有"：`Cookies` 会被花掉，
+            // 而购买是**在买得起的那一刻立刻发生**的——"手上曾经到过这个数"在一秒一次的
+            // 检查里很容易整段错过（`ApocalypseContentTests.Storylines_ReadInOrderDuringARealPlaythrough`
+            // 第一次跑就是这么红的）。`CookiesEarnedThisRun` 单调递增，条件一旦成立就锁存，
+            // 所以它既能对上"第一次买得起"这个语义，又不会被采样错过。
+            Reveal = UnlockCondition.EarnedThisRunAtLeast(FirstBuildingPrice),
+            Body = Prose.Text("lore", "note_buy", "body"),
+        },
+        new()
+        {
+            Id = "note_cat",
+            Title = Prose.Text("lore", "note_cat", "title"),
+            StorylineId = "note",
+            Order = 2,
+            Icon = "🪟",
+            Channel = LoreChannel.Note,
+            // 第一次**真的有金猫出现在场上**：这是这个机制唯一的可判定信号
+            // （引擎刷出时自己写的计数器，见 GoldenCookieSystem.SerialCounterKey）。
+            // 它成立的那一刻场上正站着一只限时的猫，所以界面上必须**让位给猫**——
+            // 那条规则写在 Web 宿主的纸条 sheet 里（FOUND_NOTES_PLAN §5.4）。
+            //
+            // 为什么要**与第一张的条件取交**、而不是光看计数器：
+            // 纸条是一条线，而图鉴里同一线的序号必须与玩家真正遇到的先后一致
+            // （同包那条守卫 `Storylines_ReadInOrderDuringARealPlaythrough` 说的就是这件事）。
+            // 金猫最早 48 秒就来了，而"赚够一座建筑的钱"可能来得更晚——
+            // 两个条件各自成立时谁先谁后**取决于玩家**，那条守卫会在真实游玩里逮到倒挂。
+            // 取交之后，"学会买东西"永远不晚于"知道金猫"，顺序由构造保证，不靠运气。
+            Reveal = UnlockCondition.All(
+                UnlockCondition.Counter(GoldenCookieSystem.SerialCounterKey, 1),
+                UnlockCondition.EarnedThisRunAtLeast(FirstBuildingPrice)),
+            Body = Prose.Text("lore", "note_cat", "body"),
+        },
+    ];
+
+    /// <summary>
+    /// 第一座建筑（<c>ruins</c>）的标价：两张入门纸条都用它当门槛——
+    /// "第一次赚够这么多"就是"第一次买得起一座"。<para>
+    /// 按 id 取而不是按下标：建筑表重排时下标会悄悄换一座，而 id 不会。
+    /// </para>
+    /// </summary>
+    private static double FirstBuildingPrice
+        => Buildings.All.First(building => string.Equals(building.Id, "ruins", StringComparison.Ordinal)).BasePrice;
 
     private static IEnumerable<LoreEntry> Her() =>
     [

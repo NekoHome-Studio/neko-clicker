@@ -1,5 +1,6 @@
 using System.Text;
 using NekoClicker.Core;
+using NekoClicker.Core.Content;
 using NekoClicker.Core.Events;
 using NekoClicker.Core.Numbers;
 using NekoClicker.Core.Persistence;
@@ -394,7 +395,12 @@ internal sealed class GameSession : IDisposable
     }
 
     /// <summary>
-    /// 在图鉴里"读"一条：如果是待处理的弹窗就点掉它，已解锁的就在日志里重读一遍。
+    /// 在图鉴里"读"一条：如果是待处理的弹窗就点掉它，已解锁的就在日志里重读一遍。<para>
+    /// <b>纸条（<see cref="LoreChannel.Note"/>）是个例外：点掉它时要把正文一起写进日志。</b>
+    /// 终端没有弹窗（见类注释），纸条与剧情一样只能借"待读那一行 + 图鉴"出现；
+    /// 而纸条的全部内容就是那张纸上的字——只写标题等于把要教的东西吞掉一半。
+    /// 详见 <c>engine/docs/FOUND_NOTES_PLAN.md</c> §6。
+    /// </para>
     /// </summary>
     /// <param name="index">条目下标。</param>
     public void ActivateLore(int index)
@@ -405,7 +411,9 @@ internal sealed class GameSession : IDisposable
 
         if (Engine.DismissLorePopup(entry.Id))
         {
-            Log($"「{entry.Title}」", entry.Icon);
+            Log(
+                entry.Channel == LoreChannel.Note ? $"「{entry.Title}」{entry.Body}" : $"「{entry.Title}」",
+                entry.Icon);
             RefreshCache();
             return;
         }

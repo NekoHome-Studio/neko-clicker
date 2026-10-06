@@ -37,8 +37,10 @@ public static class ApocalypseContentTests
         Check.Equal(5, content.Eras.Count);
         for (int index = 1; index <= 5; index++) Check.Equal(index, content.Eras[index - 1].Index);
 
-        // 四条叙事线、三个结局。这个包刻意没有立场轴与表态。
-        Check.Equal(4, content.Storylines.Count);
+        // 四条叙事线 + 一条**纸条线**（入门用的"捡到一张纸"，见 FOUND_NOTES_PLAN），三个结局。
+        // 这个包刻意没有立场轴与表态。
+        Check.Equal(5, content.Storylines.Count);
+        Check.Equal(LoreChannel.Note, content.LoreEntries.First(e => e.Id == "note_buy").Channel);
         Check.Equal(3, content.Endings.Count);
         Check.Equal(0, content.Stances.Count);
         Check.Equal(0, content.Choices.Count);
@@ -167,11 +169,25 @@ public static class ApocalypseContentTests
             engine.Simulate(5);
         }
 
-        Check.AtMost(
-            engine.State.LoreUnlocked.Count,
-            3,
-            $"开局 10 分钟释放了 {engine.State.LoreUnlocked.Count} 条剧情——世界观被一次性讲掉了。");
-        Check.AtLeast(engine.State.LoreUnlocked.Count, 1, "开局 10 分钟一条都没放出来。");
+        // 这一条守的是**世界观**不许一次讲完——它的失败原文就是"世界观被一次性讲掉了"。
+        // 纸条不是世界观：它是**入门**，而且按设计就该在"第一次遇到那个情况"时出现
+        // （真人原话）。所以纸条**不计入**这一条，由下面那半条专门守。
+        // 这是一处**刻意的口径收窄**，记在 FOUND_NOTES_PLAN §7；把纸条也算进来，
+        // 就等于"要不许教机制、要不许早教"，两条需求直接互斥。
+        int story = engine.State.LoreUnlocked.Count(id =>
+            engine.Content.FindLore(id) is { Channel: not LoreChannel.Note });
+
+        Check.AtMost(story, 3, $"开局 10 分钟释放了 {story} 条剧情——世界观被一次性讲掉了。");
+        Check.AtLeast(story, 1, "开局 10 分钟一条剧情都没放出来。");
+
+        // 纸条反过来：**该讲的时候必须已经讲了**。两张入门纸条（买东西 / 金猫）的门槛
+        // 都落在开局几分钟里（第一次赚够一座建筑的钱 / 第一次有金猫出现），所以十分钟后
+        // 它们必须都已经到手。这条比"少于三条"更贴纸条的设计意图：
+        // **漏掉一张 = 那个机制没人教**，而那是沉默失败（界面上不会报错，玩家只是不知道）。
+        int notes = engine.State.LoreUnlocked.Count(id =>
+            engine.Content.FindLore(id) is { Channel: LoreChannel.Note });
+
+        Check.AtLeast(notes, 2, $"开局 10 分钟只捡到 {notes} 张纸条——入门的那两张该都到手了。");
     }
 
     [Test]

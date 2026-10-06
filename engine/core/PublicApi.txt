@@ -1,4 +1,4 @@
-# NekoClicker 公开 API 快照 format=1 assembly=NekoClicker.Core version=1.10.2
+# NekoClicker 公开 API 快照 format=1 assembly=NekoClicker.Core version=1.11.0
 
 public static class NekoClicker.Core.AchievementSystem
   method static System.Collections.Generic.List<NekoClicker.Core.Content.AchievementDefinition>! Check(NekoClicker.Core.Content.GameContent! content, NekoClicker.Core.GameState! state, NekoClicker.Core.IGameMetrics! metrics, NekoClicker.Core.Events.GameEventBus! events)
@@ -494,7 +494,11 @@ public enum NekoClicker.Core.Content.LoreChannel : System.Int32
   field Codex = Codex
   field EraText = EraText
   field Log = Log
+  field Note = Note
   field Popup = Popup
+
+public static class NekoClicker.Core.Content.LoreChannelNames
+  method static System.String! WireName(NekoClicker.Core.Content.LoreChannel channel)
 
 public sealed class NekoClicker.Core.Content.LoreEntry : System.IEquatable<NekoClicker.Core.Content.LoreEntry>
   ctor NekoClicker.Core.Content.LoreEntry()
@@ -1285,6 +1289,7 @@ public sealed class NekoClicker.Core.GoldenCookieSpawn
   prop System.String? ForcedOutcomeId { get; set; }
 
 public static class NekoClicker.Core.GoldenCookieSystem
+  field const System.String! SerialCounterKey = "goldenCookieSerial"
   method static NekoClicker.Core.GoldenCookieResult! Click(NekoClicker.Core.GameEngine! engine, System.String! instanceId)
   method static NekoClicker.Core.GoldenCookieSpawn! Spawn(NekoClicker.Core.GameEngine! engine, System.String? forcedOutcomeId = null)
   method static System.Double NextDelay(NekoClicker.Core.GameEngine! engine)
@@ -1936,6 +1941,7 @@ public sealed class NekoClicker.Core.Views.LoreView : System.IEquatable<NekoClic
   prop System.Double Progress { get; init; }
   prop System.Int32 Order { get; init; }
   prop System.String! Body { get; init; }
+  prop System.String! ChannelName { get; init; }
   prop System.String! Icon { get; init; }
   prop System.String! Id { get; init; }
   prop System.String! ProgressText { get; init; }

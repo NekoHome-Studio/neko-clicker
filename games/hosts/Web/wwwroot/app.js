@@ -304,9 +304,10 @@ function render() {
   renderUpgrades();
   renderPermanent();
   renderBatch();
-  // 两张 sheet 的次序在这里定：离线收益先算，表态那张才知道自己要不要让位
-  // （判据就是离线那张此刻的 class，见 renderChoicesSheet 的规则 3）。
+  // 三张 sheet 的次序在这里定：离线收益先算、纸条再让位给场上的金猫，
+  // 表态那张最后（判据是前两张此刻的 class，见 renderNoteSheet 与 renderChoicesSheet 的规则 3）。
   renderOffline();
+  renderNoteSheet();
   renderChoicesSheet();
   reportChoicesShown();
   renderCodex();
@@ -315,6 +316,85 @@ function render() {
 
   // 焦点放回它本来在的那个东西上（这一帧的重画到此为止）。
   restoreFocus();
+}
+
+/**
+ * 纸条（`GameSnapshot.pendingLore` 里通道为 `note` 的那些）。
+ *
+ * 它为什么是一张 **sheet** 而不是提示条：纸条换的是玩家的认知（"东西领回来会自己下矿"），
+ * 而提示条 2.6 秒就消失了（见 toast）。整套机械与上面三张**完全共用**——
+ * `index.html` 的 `#note-sheet` 只是给同一套 layer/卡片/关闭/主按钮加了一个换皮的类
+ * （`.sheet-note`），**这个文件里没有第二套弹窗**（与下面存档那一节开头的约定同一条）。
+ *
+ * 四条规则，都在下面这两段里执行：
+ *
+ * 1. **只画纸条。** `pendingLore` 里同时还有通道为 `popup` 的剧情转折，它们在这个界面上
+ *    仍然是"放了但没人看得见"的现状——把剧情弹窗也画出来是一件**独立**的事
+ *    （见 `engine/docs/FOUND_NOTES_PLAN.md` §9 第 2 条），不夹在这一片里做。
+ *    判据是服务端给的 token `channelName`：前端**不解释枚举序数**（与 mode / modeName 同一条规矩）。
+ * 2. **一次一张，先来的先看。** 队列顺序就是服务端 `PendingLorePopups` 的顺序；
+ *    点掉一张，下一帧自然露出下一张，下面那行写着还剩几张。
+ * 3. **场上有金猫时让位。** 金猫只停十几秒（各包 11~15 秒），而纸条是盖在画面上的卡片——
+ *    纸条压在上面，玩家在看字，猫在纸后面过期。所以只要 `goldenCookies` 非空就**先不弹**，
+ *    猫走了或者被抓了它自己出来。这与"离线收益先讲完才轮到表态"是同一类次序规则，
+ *    落在同一个位置（render() 里那三行的先后）。
+ * 4. **它不会丢。** 点掉之前它一直挂在引擎的待读队列里（`PendingLorePopups`，**进存档**），
+ *    刷新、重连、换个标签页、明天再来都还在。所以这里不做任何持久化——
+ *    真相只有一份，在服务端；"收好"就是让它把这一条划掉。
+ */
+function noteSheetOpen() {
+  return !$("#note-sheet").classList.contains("hidden");
+}
+
+/**
+ * 刚点掉、服务端还没确认的那几张：本地先记着，下一帧回来之前不该闪一下。
+ * 与离线那张同一条理由（见 dismissOffline），但它是一张**队列**，所以记的是一个集合；
+ * 服务端把它划掉之后，这里的记录自己清掉。
+ */
+const dismissedNotes = new Set();
+
+/** 这一批纸条里最靠前的一张（只挑通道为 note 的，见规则 1）。 */
+function pendingNotes() {
+  const all = (state?.pendingLore ?? []).filter((entry) => entry.channelName === "note");
+  for (const id of [...dismissedNotes]) {
+    if (!all.some((entry) => entry.id === id)) dismissedNotes.delete(id);
+  }
+  return all.filter((entry) => !dismissedNotes.has(entry.id));
+}
+
+/**
+ * 收好一张纸条：本地先收起来（下一帧回来之前不该闪），再让服务端把它划掉。
+ * 收好之后立刻重画表态那张——顺序规则要求"前面的讲完了，后面的立刻能回来"，
+ * 不等下一帧（与 dismissOffline 里的那两句同一个理由）。
+ */
+function dismissNote() {
+  const note = pendingNotes()[0];
+  if (!note) return;
+
+  dismissedNotes.add(note.id);
+  $("#note-sheet").classList.add("hidden");
+  renderChoicesSheet();
+  reportChoicesShown();
+  send("dismissLore", { id: note.id });
+}
+
+function renderNoteSheet() {
+  if (!state) return;
+
+  const notes = pendingNotes();
+  const cats = (state.goldenCookies ?? []).length;
+  // 规则 3：离线那张在最上面，然后是"场上有金猫就让位"，最后才轮到纸条。
+  const show = notes.length > 0 && cats === 0 && !offlineSheetOpen();
+
+  const layer = $("#note-sheet");
+  if (!layer) return;
+  layer.classList.toggle("hidden", !show);
+  if (!show) return;
+
+  const note = notes[0];
+  $("#note-title").textContent = `${note.icon} ${note.title}`;
+  $("#note-body").textContent = note.body;
+  $("#note-more").textContent = notes.length > 1 ? `还有 ${notes.length - 1} 张。` : "";
 }
 
 /**
@@ -598,15 +678,16 @@ function renderChoicesSheet() {
   // 规则 2 的另一半：答完就收。玩家自己点开看立场（当时没有待答）时不动它。
   if (pending.length === 0 && !choicesSheetPinned) choicesSheetOpen = false;
 
-  // 规则 3：离线收益先讲完，表态这张让位（dismissOffline 里一关就立刻重画，不等下一帧）。
-  const show = choicesSheetOpen && !offlineSheetOpen();
+  // 规则 3：离线收益先讲完，纸条再让位给场上的金猫，表态这张排在最后
+  // （dismissOffline / dismissNote 里一关就立刻重画，不等下一帧）。
+  const show = choicesSheetOpen && !offlineSheetOpen() && !noteSheetOpen();
 
   const layer = $("#choices-sheet");
   if (!layer) return;
   layer.classList.toggle("hidden", !show);
 
-  // 药丸：收起之后唯一的入口。离线那张开着时也不显示——它落在遮罩底下，点也点不到。
-  renderChoicesPill(pending.length, pending.length > 0 && !show && !offlineSheetOpen());
+  // 药丸：收起之后唯一的入口。前面那两张开着时也不显示——它落在遮罩底下，点也点不到。
+  renderChoicesPill(pending.length, pending.length > 0 && !show && !offlineSheetOpen() && !noteSheetOpen());
   renderStanceEntry();
 
   if (!show) return;
@@ -2207,6 +2288,13 @@ $("#offline").addEventListener("click", (event) => {
   if (event.target.id === "offline") dismissOffline();
 });
 
+// 纸条：主按钮 / 右上角 × / 点遮罩都能把它收好（"收好"= 让服务端从待读队列里划掉这一条）。
+$("#note-ok").addEventListener("click", dismissNote);
+$("#note-close").addEventListener("click", dismissNote);
+$("#note-sheet").addEventListener("click", (event) => {
+  if (event.target.id === "note-sheet") dismissNote();
+});
+
 // 表态 sheet：底部按钮 / 右上角 × / 点遮罩都只是"收起"（表态还在，只是变成药丸）；
 // 药丸与 hero 里那个立场按钮把它叫回来。
 $("#choices-later").addEventListener("click", collapseChoicesSheet);
@@ -2279,6 +2367,15 @@ document.addEventListener("keydown", (event) => {
   if (offlineOpen && (event.code === "Escape" || event.code === "Space")) {
     event.preventDefault();
     dismissOffline();
+    return;
+  }
+
+  // 纸条开着时：Esc 与空格都把它收好。空格在这里被吃掉而不是退回"点猫"——
+  // 那张窗口盖在游戏上面，按空格却在背后偷偷点一下猫，是一步谁也没要求过的操作
+  // （与离线那张、表态那张同一条规矩）。
+  if (noteSheetOpen() && (event.code === "Escape" || event.code === "Space")) {
+    event.preventDefault();
+    dismissNote();
     return;
   }
 
