@@ -2497,6 +2497,221 @@ git ls-remote origin refs/heads/main   # 必须与 git rev-parse HEAD 的**完�
 
 ---
 
+## 0.30 把 1.12.0 与启动器合成一棵树：合并、补 BOM、收口计数（2026-10-06）
+
+**两条已完工的分支合进 `main`**，一条一条来，安全参考 **`backup/pre-last` = `6e33381`**
+（隔离 worktree `.tmp/wt-last`）：
+
+| 提交 | 是什么 |
+|---|---|
+| `150047f` | 合入 **`tools-start-web`**（`977b1bf`）——启动游戏＝启动网页；**自动合并，零冲突** |
+| `8cc8586` | 合入 **`scale-kmbt`**（`427f21c`）——K/M/B/T 到 1.12.0；**三处冲突** |
+| `ed53b09` | 收口：扫净合并之后才露出来的四处"现在时"数字与版本字样 |
+| `daad557` | 补回 `tools/api-test.ps1` 的 UTF-8 BOM（见下面第 1 个坑）——**这就是被验证的那个提交** |
+
+### 0.30.1 三处冲突：没有一处是两边意图打架
+
+`CHANGELOG.md` 反而**自动合上了**（scale 的 1.12.0 插在最上面、启动器那条插在 `[未发布]` 里，
+两块不相邻）。真正冲突的是这三个文件：
+
+| 文件 | 两边各写了什么 | 合并后的答案 |
+|---|---|---|
+| `STATUS.md` §4 | 启动器那侧 api-test **101**、冒烟 252；scale 那侧 api-test 85、冒烟 **254** | api-test **101**（保留"或启动器"那句）、冒烟 **254**（保留 §29 跨套件对表那句） |
+| `engine/docs/VERSIONING.md` §5 | 同上，外加用例数 593 vs **595** | 用例数 **595**、api-test **101**、冒烟 **254** |
+| `tools/api-test.ps1` 头部 | 启动器那侧"宿主＋浏览器协议＋**启动器**"、593；scale 那侧 595、"宿主＋浏览器协议" | 取启动器那侧的措辞，只把引擎用例数改成 **595** |
+
+**`CHANGELOG` 的口径决定：启动器那条留在 `## [未发布]`，没有塞进 `1.12.0`。** 理由是仓库自己的
+先例——`1.11.0` 那一节写着"这一版**只含纸条这一件事**，下面 `[未发布]` 那一桶是另一条线上的
+改动，**没有**被这一版结掉，它按自己的判据（宿主功能、`engine/core` 一个字节没动 → patch）
+等它自己结桶"。启动器这条正是同一类（只动工具链、公开 API 一行没动 → patch），而 `1.12.0`
+自己也写着"这一版只做一件事"。**两条条目都在，只是分属两个桶**（当时什么都还没打 tag）。
+
+### 0.30.2 收口改的四处（自动合并之后才露出来的）
+
+两个分支各自只扫了自己那份，合起来之后就留下这四处现在时的说法：
+
+| 文件 | 改前 | 改后 | 为什么它算"现在时" |
+|---|---|---|---|
+| `README.md` §状态 | 85 项检查 | **101 项检查** | 描述 api-test 现在覆盖多少，没有日期（启动器那条分支漏了它） |
+| `engine/docs/RELEASING.md` 第 ⑧b 步 | 当前 **252** 条 | 当前 **254** 条 | 发布清单的现在时数；`scale-kmbt` 漏了这一处 |
+| `engine/docs/VERSIONING.md` §1 的 `<Version>` 代码块 | 1.11.0 ×3 | **1.12.0 ×3** | "单一事实来源长什么样"的现在时示例 |
+| `engine/docs/OPEN_WORK.md` §1 登记册"版本"行 | **1.11.0** | **1.12.0**（1.11.0 降格成"上一版"，1.10.2 及更早的链条原样保留） | 这一处**此前就漏过一次** |
+
+**冻结、一个字没动的**（带日期的实测记录，按 `RELEASING` §2「只改现在时、不改历史」）：
+`CHANGELOG` 各版本条目（含 1.12.0 里那句"用例数 593 → 595"、`[未发布]` 里启动器那条
+"在 `.tmp/wt-start` 上 593 / 252 / 101"）、§0.27、§0.28、`FOUND_NOTES_PLAN` §11、
+`CONTENT_AUTHORING` §12.4.8、`SHARE_LINK_PLAN` 的注入记录、`README.md` §状态那句
+"564 个测试（2026-10-04 实测）"、`RELEASING` 第 ⑦ 步那句"566 用例（2026-10-04 实测）"。
+
+### 0.30.3 版本与快照
+
+- `Directory.Build.props` 三处字段都是 **1.12.0**（scale 那一版的 bump；启动器是 patch 级、搭车）。
+- `engine/core/PublicApi.txt` 对 `6e33381` 的 `--numstat` = **`1 1`**、**只差首行 `version=`**、
+  行数仍是 **2032**——与 scale 分支自己的记录一致，合并没有让它漂，**不需要重生成**
+  （`tools/build.ps1 -Strict` 里的 `PublicApiTests` 三条也全绿）。
+- ⚠️ **2.0.0 那个疑问照原样带着**：`VERSIONING` §2.1 末尾那两段（"字面上该升 major"、
+  以及"这次改的是显示写法、不是数值语义，所以破坏半径可测且已量过"）**一个字没改**。
+  它是这一版判据的一部分，**不是**待修的笔误——**没有**被"顺手修正"。
+
+### 0.30.4 三个数（在合并树上实测，不是抄任何一边）
+
+全部在 **`daad557`** 上：
+
+| 命令 | 结果 |
+|---|---|
+| `tools/build.ps1 -Strict` | **595 / 595 全绿、0 警告、退出码 0**（两个 sln 各一条 `0 Warning(s) / 0 Error(s)`）；`TestCountDriftTests` 的 **11 处槽位一次全过**（它自己点名的数就是 595） |
+| `node tools/web-smoke.mjs` | **254 / 254 条通过、退出码 0**（§29 那条跨套件断言绿） |
+| `tools/api-test.ps1` | **101 / 101**（源码 101 处 ｜ 执行到 101 处 ｜ 通过 101 ｜ 失败 0 ｜ 跳过 0） |
+
+**第一遍是红的**，红在 BOM 那一条上——记成下面第 1 个坑。**没有对红树签字**。
+
+### 0.30.5 这一轮踩到的两个坑（别再踩第三次）
+
+1. **改 `.ps1` 的工具会剥掉 BOM，而且"看工作区那个文件"不算核对。** 第一遍 `-Strict` 就红在
+   `ToolingHygieneTests`：`tools/api-test.ps1（开头是 23 20 61）`。§0.28.5 已经记过 BOM 这条，
+   这次的新教训是**判据要落在 blob 上**：`git cat-file -s :tools/api-test.ps1` 必须是 **110602**
+   （110599 ＋ 3）、`git diff --cached --numstat` = `1 1`。附带查清了：**`git add` 不剥 BOM**
+   （那条路是干净的），剥它的是改文件的那个编辑工具。
+2. **⚠️ 受限沙箱下，一条 pwsh 命令若以错误收场，它在这条命令里做的文件写入会被回滚**
+   （同一条命令内部读得到、下一条命令读又是旧的）。这次因此白补了三次 BOM——每次都在同一条命令里
+   "验过"，下一条命令看又是旧的。绕法：**补字节与核对放在同一条没有报错的命令里做完**。
+3. 顺带记一条任务书里的坑：`--project games\hosts\Web`（**反斜杠**）在裸 `Start-Process` 那套参数里
+   **传不出去**（登记册 **W16** 说的就是它）——那样起的宿主日志是**空**的、进程立刻没了。
+   走 **`tools\start.ps1 -NoBrowser`** 才对（它用正斜杠、并绕一层 `tools/dnet.ps1`）。
+
+### 0.30.6 宿主状态（人现在就能在游戏里看）
+
+5273 上是这一轮重建并重启的宿主：应用宿主 `neko-clicker-web.exe` **PID 2540**，
+它的启动器 `pwsh -File tools/dnet.ps1 run` = **PID 13360**（`dotnet run` = 12200）；
+日志在 `artifacts/host-out.log` / `host-err.log`。核对过：
+
+- `/api/ping` → **`apiVersion=1.12.0`**、`assemblyVersion=1.12.0.0`；
+- `/` **200**；**伺服出去的** `/app.js` 里有 `.sheet-note` 那套纸条标记；
+- **K/M/B/T 的现场证据**（全部取自伺服中的宿主）：`apocalypse` 的
+  `cookiesText=111.394B`、`cpsText=30.196M`、`clickPowerText=1.812M`；`company` 的
+  `progressText` 里有 `285.81K / 1M`；`cafe` 有 `0 / 1K / 1M / 1B / 1T / 1Qa / 1Qi` **整条梯子**；
+  **七处快照里一个汉字量级词都没有**。
+
+**必须报、不许"修"的两件人数据**：
+
+- `artifacts/latency.txt` **多了 6 行 `# session start`**（3087 → 3538 字节）——每起一个会话追加一行，
+  这是既定行为，那 6 行是这一轮取快照／起宿主带出来的。
+- `saves/` 里 **`ninelines.json` 逐字节没动**（3718 字节、mtime 仍是 2026-09-25、sha256
+  `E4930E5A…`）；**其余六份被 5273 上那个活宿主自己重写了**。⚠️ **这里要更正一条本记录写早了的
+  结论**：中途查过一次，当时只有 `apocalypse.json` 在动，于是写下"5 份逐字节没动"——再查时
+  （04:22）`apocalypse` / `cafe` / `company` / `lab` / `neko` **五份都变了**，还多出一个
+  **`ninelives.json`**（新建）。**是宿主写的，不是测试写的**：测试项目里凡是碰存档的都显式用临时
+  目录并写明"仓库里的 `saves/` 是真人正在玩的进度"（`SaveFileTests.cs:20`、
+  `SaveTransferHostTests.cs:29`、`SaveTransferTests.cs:23`、`ShareLinkTests.cs:35`）。
+
+  | 文件 | 开工前 | 最后查到 | 谁写的 |
+  |---|---|---|---|
+  | `apocalypse.json` | 2952 B / 03:51:43 / `49FA693A…` | 2993 B / 04:22:27 / `590B4281…` | 活宿主（**开工前就在动**：03:47 → 03:51 → 04:07 → 04:22） |
+  | `cafe.json` | 840 B / 10-02 / `AE5C4DC8…` | 839 B / 04:22:33 / `01B99132…` | 活宿主（被下面那条机制带上的） |
+  | `company.json` | 1519 B / 10-04 / `A1CAA615…` | 1517 B / 04:22:33 / `C07884F7…` | 同上 |
+  | `lab.json` | 831 B / 10-02 / `FF7242EE…` | 833 B / 04:22:33 / `20F5E1EA…` | 同上 |
+  | `neko.json` | 846 B / 10-02 / `0E2015E2…` | 844 B / 04:22:33 / `64FB3A7D…` | 同上 |
+  | `ninelives.json` | **不存在** | 832 B / 04:22:47 / `D9650F83…` | 同上（新建） |
+  | `ninelines.json` | 3718 B / 2026-09-25 / `E4930E5A…` | **一模一样** | 没人碰它——见下面那条 |
+
+  ⚠️ **机制（新发现，值得单独记）**：`GET /api/snapshot?package=<包>` **看起来是只读的，其实不是**——
+  宿主会**为那个包开一个会话**（`artifacts/latency.txt` 里那 6 行 `# session start` 就是它），
+  而会话按 60 秒的节奏**自动存回真实的 `saves/<包 id>.json`**。这一轮为了取 K/M/B/T 的证据
+  请求过 `apocalypse` / `company` / `cafe` / `lab` / `neko` / `ninelives` 的快照 ⇒
+  上面那六份就是**这么被带动的**（包集合完全对上；开工时宿主只加载了 `apocalypse` 一个会话，
+  所以 04:07 那次查只有它在动）。**读一个包的快照 = 让它开始落盘**，这条以前没人写下来过。
+  代价：那几个会话多跑了一小段空闲进度；`cafe` / `company` / `lab` / `neko` 都是很久没玩的档
+  （10-02 / 10-04），没有"玩家刚刚的手感"被覆盖这回事。
+- ⚠️ **另一条要人拍板的**：**`saves/ninelines.json`（2026-09-25，3718 字节）没有任何宿主会读它**。
+  宿主读的是 `saves/<包 id>.json`，而这个包的 id 是 **`ninelives`**（目录名 `engine/content/NineLives`；
+  `--mint-link` 报的可用包里也是 `ninelives`）。所以那一份**要么是旧包名留下的孤儿，要么是真人
+  九命那一局的进度被搁在一个没人读的名字下**——两种可能只有人能判。**本轮一个字节都没碰它**
+  （不删、不改名），只是把这件事记下来。宿主要从头开一局九命，因此新写了一份 `ninelives.json`。
+- ⚠️ **按任务书"按端口停掉旧宿主"时用的是 `Stop-Process -Force`**（= TerminateProcess），
+  **没有走优雅退出那条存档路**，所以旧宿主最后一次自动存档（`03:51:43`）之后到进程结束之前那一段
+  （最多约一分钟的模拟进度）**没有落盘**。存档本身完好：新宿主正常读入（`111.394B` 就是从那读的）。
+
+### 0.30.7 ⚠️ 推送**仍然没有成功**（网络侧，与 §0.28.8 同一条）
+
+**12 次尝试全失败，而且卡在两道不同的门上**：
+
+| 谁跑的 | 次数 | 死在哪 |
+|---|---|---|
+| 本任务书那条 `git -c http.sslBackend=openssl push origin main` | **6** | 前 4 次：`Failed to connect to github.com port 443 after ~21000 ms: Could not connect to server`；后 2 次：`error: failed to execute prompt script (exit code 66)` ＋ `fatal: could not read Username for 'https://github.com'`（退出码 **128**） |
+| 仓库自己的 `pwsh -File tools\push-retry.ps1 -DeadlineMinutes 3 -DelaySeconds 25 -MaxAttempts 6` | **6** | 第 1 次 443 连不上；第 2~6 次 `schannel: AcquireCredentialsHandle failed: SEC_E_NO_CREDENTIALS`（那个脚本没带 `-c http.sslBackend=openssl`，所以它连大门都没走到）。日志在 `artifacts/push-retry.log` |
+| `git ls-remote origin refs/heads/main`（判据那条） | 多次 | 同样出不去（最近一次：`schannel: AcquireCredentialsHandle failed: SEC_E_NO_CREDENTIALS`，退出码 128） |
+
+**两道门都要修，缺一不可**：① 443 连不上（网络侧）；② **HTTPS 这条路还缺凭据**——后半程走到
+凭据那一步才死，`git` 去跑凭据提示脚本时沙箱里连 `sh` / `bash` 都起不来
+（`couldn't create signal pipe, Win32 error 5`），于是报"读不到用户名"。仓库里**没有**存下来的
+凭据。SSH 那条路也没变：22 端口**通**，但 `~/.ssh` **是空的**（没有私钥）。
+所以**即便 443 通了**，也还得先解决凭据（token 或私钥）。
+
+**没有 force、没有改写已推送的历史、没有动任何 tag**（本地 tag 仍是 14 个，最新的还是 `v1.10.2`；
+这一版**刻意没有打 tag**——推不出去就不该造一个推不出去的 tag）。
+
+| 项 | 值 |
+|---|---|
+| 被验证的提交 | **`daad557`**（595 / 254 / 101 三绿，见 §0.30.4） |
+| 待推的 tip | **`main` 的 tip**——`daad557` 之后只有本记录这一个**纯文档**提交，取它用 `git rev-parse HEAD` |
+| 推送之前的远端 `main` | `427a255`（与 §0.28.8 记的同一个，说明远端这期间没动过） |
+| 安全参考 | 分支 **`backup/pre-last` = `6e33381`**（原地留着，没删） |
+
+**怎么推（两条命令，第二条才是判据）**：
+
+```powershell
+git -c http.sslBackend=openssl push origin main
+git ls-remote origin refs/heads/main   # 必须与 git rev-parse HEAD 的**完整**哈希逐字符相同
+```
+
+网络回来之前第二条必然失败；**推送成功的唯一判据是第二条的哈希对上**（`push` 自己打印的
+`main -> main` 不算证据——这条规矩见 `tools/push-retry.ps1` 头部）。省事的做法是直接跑
+`pwsh -NoProfile -File tools\push-retry.ps1`（它会反复试到服务器侧核对通过为止）。
+
+### 0.30.8 还挂着的：两件要真人拍板、一件没做、四件新登记
+
+**两件仍然要真人拍板的事**（§0.28.6 挂着，这一轮**没有**替人决定）：
+
+1. **`.sheet-note` 那张"纸"的观感**——纸条那一套样式（`.sheet-note` / `.note-body` 的 `pre-wrap`）
+   跟另外三张 sheet 摆在一起像不像同一个产品，长正文好不好读，只有眼睛能判。
+2. **`G5` 的收窄 3 → 5，还是"第一次遇到就教"**——`G5_FirstTenMinutesRevealAtMostThreeEntries`
+   现在把前十分钟的投放卡在 3 条；另一个方向是放宽到 5 条、改成"第一次遇到某机制时当场教"。
+   这是设计取舍，不是缺陷。
+
+**末世（Apocalypse）的正文清扫仍然没做**：上限照旧 **17 / 5 / 3**（见 §0.28.7 与
+`ProseToneTests`）。它是最后一个没扫的包，而且现在**不再有冲突面**（纸条那条线已经落地并冻结），
+单独一个提交就能做。
+
+**这一轮新登记的五件**（都先记下来，**没有**动手）：
+
+1. **前端进位缺陷（先前就有，不是这一轮引入的）**：`formatCookies(999999)` = **`1000.0K`**、
+   `number(999999)` = **`1000K`**，而引擎 `NumFormat.FormatShort(999999)` = **`999.999K`**
+   （`engine/core/Numbers/NumFormat.cs:230` 有一条 `mantissa >= 999.9995` 的进位守卫，
+   前端的 `toFixed` 没有）。**实测方式**：`SCALE_UNITS` / `formatCookies` / `number` 是从
+   `app.js` 里**原样抽出来在 node 里跑的**，不是重写一遍。同一把尺子还能量到一个**更宽的差**：
+   尾数精度口径本来就不同——`123456` 前端给 `123.5K`（`formatCookies`）/ `123K`（`number`），
+   引擎给 `123.456K`（`Trim(mantissa, 3)`，`NumFormat.cs:237`）。所以 `CHANGELOG` 1.12.0 那句
+   "同一个数在两边现在是同一个字符串"**只在尾数 < 10 时被 §29 钉住过**（它验的是 `7579`）。
+   要不要统一、怎么统一，是一件要拍板的事。
+2. **夹具是离线手刷的**：`tools/fixtures/web-snapshot.json` 里那 110 个服务端渲染字段是
+   `scale-kmbt` 按引擎同一条规则**离线刷新**的（`tools/capture-fixture.ps1` 没跑，因为当时
+   本机没有可抓的新宿主）。理想做法是**在一台真宿主上重跑 `tools/capture-fixture.ps1`
+   重抓一份**再逐项对一遍。
+3. **`FormatLong` 现在零调用者**：`engine/core/Numbers/NumFormat.cs:117` 只剩声明、
+   `PublicApi.txt` 里那一行、以及几处文档提及（`git grep FormatLong` 实测）。它是公开 API，
+   删不得（要删得走 major），但"留在公开 API 里供宿主自选"这句现在**只是理论上的**。
+4. **叙事散文里的汉字量级词要不要也改**：作者**刻意没动**（`CHANGELOG` 1.12.0 写着"叙事散文
+   刻意一个字没动"），理由是那些 `万` / `十亿` 是**修辞**、不是数字文本。现在还剩
+   `Civ` 3 处 / `God` 2 处 / `Lab` 2 处 / `Neko` 1 处（`git grep` 实测）。要不要也换成 K/M/B/T
+   是一个口径问题（换了会把"十五万年前的约定"读成"150K 年前的约定"）。
+5. ⚠️ **`GET /api/snapshot?package=X` 会开一个会话并让它按 60 秒存回真实的 `saves/X.json`**
+   （看似只读、其实会落盘；机制与现场证据见 §0.30.6），以及**`saves/ninelines.json` 没有任何宿主
+   会去读它**（包 id 是 `ninelives`）——后者可能是真人九命那一局的进度搁在了一个没人读的名字下。
+   两件都要人拍板：前者要不要给"只读取快照"一条不落盘的路（或至少让 `?readonly=1` 存在），
+   后者那份 `ninelines.json` 是孤儿还是真进度。
+
+---
+
 ## 1. 现在在哪（可核对的事实）
 
 | 项 | 值 | 怎么核对 |
