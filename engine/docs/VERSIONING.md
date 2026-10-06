@@ -96,9 +96,9 @@
 单一事实来源是 **`Directory.Build.props` 里的 `<Version>`**：
 
 ```xml
-<Version>1.10.2</Version>
-<AssemblyVersion>1.10.2.0</AssemblyVersion>
-<FileVersion>1.10.2.0</FileVersion>
+<Version>1.11.0</Version>
+<AssemblyVersion>1.11.0.0</AssemblyVersion>
+<FileVersion>1.11.0.0</FileVersion>
 ```
 
 这个值会同时成为程序集版本、文件版本，以及 `ApiVersion.Current` 报告的版本。
@@ -114,8 +114,8 @@
 ```csharp
 using NekoClicker.Core;
 
-Console.WriteLine(ApiVersion.Current);        // "1.10.2"
-Console.WriteLine(ApiVersion.AssemblyVersion); // 1.10.2.0
+Console.WriteLine(ApiVersion.Current);        // "1.11.0"
+Console.WriteLine(ApiVersion.AssemblyVersion); // 1.11.0.0
 Console.WriteLine(ApiVersion.Major);           // 1
 ```
 
@@ -184,9 +184,11 @@ engine/core/PublicApi.txt     ← 公开表面的逐项清单（行数随公开�
                                 1.9.0 又加了 EraStage / EraStageGate / EraDefinition.Stages /
                                 EraSystem.Stage 一族 + EraView 的阶段六字段；
                                 1.10.0 加了 SaveTransfer / SaveTransferKind /
-                                SaveTransferResult + SaveManager 的三个成员，
-                                所以现在是 2026 行；1.10.1 与 1.10.2 都是"一行没动"的 patch，
-                                所以仍然是 2026 行）
+                                SaveTransferResult + SaveManager 的三个成员；
+                                1.11.0 又加了 LoreChannel.Note、LoreChannelNames 类型与
+                                WireName()、GoldenCookieSystem.SerialCounterKey、
+                                LoreView.ChannelName（**+5 项 / −0 项**，并多一行类间空行），
+                                所以现在是 2032 行；1.10.1 与 1.10.2 都是"一行没动"的 patch）
 ```
 
 它被**嵌进 `NekoClicker.Core.dll`**，随 dll 一起走。任何拿到这个 dll 的宿主都能断言
@@ -263,7 +265,7 @@ git tag -a v1.0.0 -m "NekoClicker.Core 1.0.0"
 > [RELEASING](RELEASING.md)。下面是判据清单。
 
 - [ ] `pwsh -File tools/build.ps1 -Strict` 退出码 0，0 警告
-- [ ] 全部用例通过（当前 **590** 个；2026-10-05 实测——这个数现在由 `TestCountDriftTests` 守着：加了用例却没改这一行，闸门会点名报红，见 OPEN_WORK 的 W1）
+- [ ] 全部用例通过（当前 **593** 个；2026-10-05 实测——这个数现在由 `TestCountDriftTests` 守着：加了用例却没改这一行，闸门会点名报红，见 OPEN_WORK 的 W1）
 - [ ] 若这次动了 Web 宿主：`pwsh -File tools/api-test.ps1` 全部端到端检查通过（当前 85 项；脚本收尾自己核对"源码几处检查点 / 这次执行到几处"）
 - [ ] 若这次动了 Web 前端：`node tools/web-smoke.mjs` 全绿（当前 **252** 条；S1 起它也在 `-Strict` 里跑。⚠️ 这个数没有机器守卫，以脚本打印的那一行为准）
 - [ ] `Directory.Build.props` 的 `Version` / `AssemblyVersion` / `FileVersion` 三处一致

@@ -1,8 +1,9 @@
 # 现状
 
 > 记录时间：**2026-10-02**（版本行 / 整合补记 **2026-10-03**；**1.10.1 发布 2026-10-04**；
-> **1.10.2 发布与推送 2026-10-05**）｜ 分支 `main` ｜ 工作树版本 **1.10.2**
-> （tag `v1.10.2` **已推送**——它现在就是已发布的最新版；`v1.5.0`…`v1.10.1` 也在远端，见本节末尾）
+> **1.10.2 发布与推送 2026-10-05**；**纸条系统 1.11.0 合进 main 2026-10-05——未打 tag、未发布**）
+> ｜ 分支 `main` ｜ 工作树版本 **1.11.0**
+> （已发布的最新 tag 仍是 `v1.10.2`——`v1.5.0`…`v1.10.2` 都在远端；`1.11.0` 只活在 `main` 上，见本节末尾）
 >
 > 这份文档只回答一个问题：**现在是什么状况**。它不重复别处已有的内容——
 > 架构看 [ARCHITECTURE](engine/docs/ARCHITECTURE.md)，规划与决策看 [ROADMAP](games/docs/ROADMAP.md)，
@@ -17,7 +18,7 @@
 
 | 分支 / tag | 内容 | 状态 |
 |---|---|---|
-| `main` | **唯一的开发线** | 工作树 = **1.10.2**（tag `v1.10.2` **已推送**，见本节末尾） |
+| `main` | **唯一的开发线** | 工作树 = **1.11.0**（minor，**未打 tag、未发布**；已发布的最新 tag 仍是 `v1.10.2`，见本节末尾） |
 | `v1.10.2` | 1.10.1 + 三轮界面改动 + 三条新守卫 + 五处机械项 + 两份测量记录 + Linux CI 作业 | 已发布（tag 已推送）——**已发布的最新版** |
 | `v1.10.1` | 1.10.0 + 结掉 `[未发布]` 桶（导出/导入的两个宿主窗口、十一个包的「点击 × 建筑」桥、两条宿主修复、一条工具链守卫） | 已发布（tag 已推送） |
 | `v1.4.0` | 1.3.0 + 升级行的货币语义（`UpgradeView` 三字段）+ Web 的「永久」面板 | 已发布（tag 已推送） |
@@ -28,7 +29,19 @@
 | `v1.0.0` | 首个承诺公开 API 稳定的版本 | 已发布 |
 | `feature/web-frontend-ui` | 旧分支，已并入 `main` | **作废**（远端还在，可删） |
 
-**工作树版本 `1.10.2`**（`NekoClicker.Core` 的公开 API 版本）：**patch——公开 API 一行没动**。
+**工作树版本 `1.11.0`**（`NekoClicker.Core` 的公开 API 版本）：**minor——公开 API 只增不改**
+（**+5 项 / −0 项**：`LoreChannel.Note`、`LoreChannelNames` 类型与 `WireName()`、
+`GoldenCookieSystem.SerialCounterKey`、`LoreView.ChannelName`；快照 2026 → **2032 行**）。
+内容是"**捡到一张纸条**"——一种**在虚构里教机制**的叙事条目。它与既有的剧情弹窗
+**共用同一条待读队列**（`PendingLorePopups`）与同一份"已看过"记录（`LoreUnlocked`），
+所以**存档格式一个字都没改**（`SaveSerializer.CurrentVersion` 仍是 `1`、没有新增任何 `ISaveMigration`），
+多出来的只有"它长什么样"：Web 的第 4 张 sheet（整段复用既有的 sheet 机械，只加一个换皮类
+`.sheet-note`）。试点是末世包的两张纸条。方案、取舍与**两处待真人拍板的问题**见
+[FOUND_NOTES_PLAN](engine/docs/FOUND_NOTES_PLAN.md)。**未打 tag、未推送**。
+实测：`tools/build.ps1 -Strict`（0 警告）／`node tools/web-smoke.mjs`／`tools/api-test.ps1`
+三个数见 §4 那三条命令——**本节刻意不复写它们**（每加一条守卫就会变）。
+
+**`1.10.2`（已发布、已推送；下面这段只作历史）**：**patch——公开 API 一行没动**。
 这一版把 `CHANGELOG` 的 `[未发布]` 桶结掉：桶里六节全是**前端 / 测试 / 工具链 / 文档**——
 三轮界面改动（图形缩放适配 ＋ 两栏对齐、批量档位写明「总价」、左右两块卡片等高）、
 三条新守卫（文档用例数漂移、`cpsEach` 的值、横扫全部包的「拥有 ⇒ 已解锁」）、
@@ -123,7 +136,7 @@
 engine/            自包含：搬走它 + 仓库根的 Directory.Build.props = 独立引擎仓库
   core/            引擎本体（平台中立，可在 Linux/macOS 直接构建）
   content/<包名>/  十一个内容包，一个包一个 csproj
-  engine/tests/    590 个用例 + 自研迷你运行器
+  engine/tests/    593 个用例 + 自研迷你运行器
   docs/            架构 / 内容作者指南 / 版本承诺 / 发布流程（RELEASING）
 games/             旗舰示例作品。依赖 engine/，反向不依赖
   hosts/Demo.Cli/  终端前端，同时是框架回归基线（FrameRenderTests 引用它）
@@ -153,7 +166,7 @@ start.cmd list               # 列出全部内容包
 走脚本的话：
 
 ```powershell
-.\tools\build.ps1 -Strict    # 一条命令：引擎 + 内容 + 590 用例 + Web 宿主 + 前端冒烟（0 警告）
+.\tools\build.ps1 -Strict    # 一条命令：引擎 + 内容 + 593 用例 + Web 宿主 + 前端冒烟（0 警告）
 .\tools\play.ps1             # 终端 Demo；--package <id> 换包
 .\tools\play.ps1 --package lab --simulate 21600 --auto   # 无头跑图 + 数值报告
 .\tools\web.ps1 run          # Web 前端（开发期必须 dotnet run 起，见 §7）
@@ -436,8 +449,9 @@ Web 宿主不在 `NekoClicker.sln` 里（它是独立的单项目 sln），但 `
 
 ## 8. 下一步与交接（给下一个接手的人）
 
-> **停在哪里（2026-10-05 复核）**：工作树 = **1.10.2**（已发布、已推送），`main` = `origin/main`，
-> tag 到 `v1.10.2`，最近一次 CI **四个作业** success，工作树干净。
+> **停在哪里（2026-10-05 复核）**：工作树 = **1.11.0**（minor：纸条系统，**未打 tag、未发布**），
+> 已发布的最新 tag 是 `v1.10.2`；推送状态与实测的三个数见 `OPEN_WORK` 顶部《下一步：唯一权威清单》
+> 与本文 §4 那三条命令。工作树干净。
 > **这一轮的收工总结**（做了什么、证据在哪、还剩什么）见
 > [HANDOVER_2026-10-05](engine/docs/HANDOVER_2026-10-05.md)——那是给下一个会话的**单一入口**。
 > **待办只有一个出处**：[OPEN_WORK](engine/docs/OPEN_WORK.md) 顶部的《下一步：唯一权威清单》

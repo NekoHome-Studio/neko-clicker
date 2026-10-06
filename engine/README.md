@@ -18,7 +18,7 @@ dotnet build NekoClicker.sln     # 或者用仓库根的 .\tools\build.ps1
 | `core/` | **引擎本体**。时间推进、数值管线、价格闭式解、解锁条件树、存档与迁移、事件总线、只读视图 |
 | `content/Neko/` | 示例内容包「猫咖物语」——引擎的技术演示，同时是框架回归基线 |
 | `content/{Cafe,NineLives,Lab,Company,Apocalypse,Library,God,Civ,Cyber,Dream}/` | 十个内容包，**每个都是独立的 csproj** |
-| `tests/` | 590 个用例 + 自研迷你测试运行器（零依赖，不需要 xunit） |
+| `tests/` | 593 个用例 + 自研迷你测试运行器（零依赖，不需要 xunit） |
 | `docs/` | 架构、内容作者指南、版本承诺 |
 
 **为什么内容包算引擎的一部分？** 因为它们是**引擎的集成测试探针**，不是某个作品的资产：
@@ -73,9 +73,16 @@ dotnet build NekoClicker.sln     # 或者用仓库根的 .\tools\build.ps1
 
 ## 版本与兼容性
 
-**当前 `1.10.2`。从 `1.0.0` 起，`NekoClicker.Core` 的公开 API 只增不改**，
+**当前 `1.11.0`。从 `1.0.0` 起，`NekoClicker.Core` 的公开 API 只增不改**，
 由 `core/PublicApi.txt`（快照，**嵌进 dll**）加四条守卫强制执行。
-规矩见 [docs/VERSIONING.md](docs/VERSIONING.md)。1.10.2 是 **patch：公开 API 一行没动**
+规矩见 [docs/VERSIONING.md](docs/VERSIONING.md)。1.11.0 是 **minor：公开 API 只增不改**
+（**+5 / −0**：`LoreChannel.Note`、`LoreChannelNames` 类型与 `WireName()`、
+`GoldenCookieSystem.SerialCounterKey`、`LoreView.ChannelName`）——"**捡到一张纸条**"
+这种在虚构里教机制的叙事条目走**既有的**待读队列与"已看过"记录，
+**存档格式一个字都没改**（`SaveSerializer.CurrentVersion` 仍是 `1`、没有新迁移）。
+细节见 [CHANGELOG](../../CHANGELOG.md) 的 1.11.0 与
+[FOUND_NOTES_PLAN](docs/FOUND_NOTES_PLAN.md)。
+上一版 1.10.2 是 **patch：公开 API 一行没动**
 （快照除首行版本号外**逐字节不变**：`--numstat` = `1 1`）——它把 `[未发布]` 桶结掉，
 桶里六节全是**前端 / 测试 / 工具链 / 文档**：三轮界面改动、三条新守卫、五处机械项、
 两份测量与验证记录，外加一个新的 Linux CI 作业。细节见

@@ -2046,7 +2046,7 @@ section("24. 存档的导出 / 导入窗口（入口 / 复制 / 下载 / 导入�
     '  "FormatVersion": 1,',
     '  "PackId": "neko",',
     '  "SaveVersion": 1,',
-    '  "FrameworkVersion": "1.10.2",',
+    '  "FrameworkVersion": "1.11.0",',
     '  "Checksum": "sha256:deadbeef",',
     '  "Save": "{\\"Version\\":1,\\"Cookies\\":1234.5}"',
     "}",
@@ -2060,7 +2060,7 @@ section("24. 存档的导出 / 导入窗口（入口 / 复制 / 下载 / 导入�
     别的包: "这份存档是内容包「cafe」的，当前会话是「neko」——两个包的建筑 / 升级 id 不一样，灌进来只会得到一份这个包答不上的存档，所以拒绝导入。磁盘上原来的存档与备份都没有被动过。",
     被改过: "校验和对不上（信封里写的是 sha256:deadbeef…，这份内容的实际值是 sha256:1234abcd…）——文本被改动或被截断过。请整份重新复制一次。",
   };
-  const IMPORT_OK = "已导入：内容包「neko」｜存档格式 1｜框架 1.10.2｜当前会话与 neko.json 都已换成这一份｜已核对包标识（neko）｜存档里的 id 这个包全都认识。";
+  const IMPORT_OK = "已导入：内容包「neko」｜存档格式 1｜框架 1.11.0｜当前会话与 neko.json 都已换成这一份｜已核对包标识（neko）｜存档里的 id 这个包全都认识。";
 
   /** 一个按命令回答的宿主桩：export 给文本，import 按内容给上面那几句。 */
   const reply = (body) => {
@@ -3099,7 +3099,7 @@ section("28. 分享链接：生成 / 复制 / 打开（密码不进链接、不�
   const TOKEN = "TktMMXPz0eHq8vYwRk2mQ4bN7cA1dF5gJ9kL3pX6tZ8uV0yB2nM4rS6wE-_.qDfGh";
   const PASSWORD = "correct-horse-battery";
   const MADE_MESSAGE = `已生成分享链接（${TOKEN.length} 个字符，内容包「neko」）——把它发给对方，对方用这个密码打开。密码不在链接里。`;
-  const OPEN_MESSAGE = "已解开分享链接（内容包「neko」、218 个字符的导出文本）｜已导入：内容包「neko」｜存档格式 1｜框架 1.10.2｜当前会话与 neko.json 都已换成这一份｜已核对包标识（neko）｜存档里的 id 这个包全都认识。";
+  const OPEN_MESSAGE = "已解开分享链接（内容包「neko」、218 个字符的导出文本）｜已导入：内容包「neko」｜存档格式 1｜框架 1.11.0｜当前会话与 neko.json 都已换成这一份｜已核对包标识（neko）｜存档里的 id 这个包全都认识。";
   const OPEN_FAILURE = "打不开：密码不对，或者这段链接被改过 / 被截断了。（这两件事在密码学上分不开。）请核对密码，或让对方重新发一次链接。";
 
   /** 宿主桩：把收到的密码记下来（这正是"密码走请求体、不走 URL"要被验的地方）。 */

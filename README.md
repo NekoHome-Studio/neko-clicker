@@ -93,7 +93,7 @@
 > 代价是画面右侧与底部各有一格空白——这是换「拖横向不崩」付出的代价。
 
 ```powershell
-# 构建 + 跑测试（590 个用例，零依赖迷你运行器）
+# 构建 + 跑测试（593 个用例，零依赖迷你运行器）
 .\tools\build.ps1
 
 # 逐条计时：打印最慢的一批与分档占比（想知道"什么变慢了"就用它）
@@ -201,7 +201,7 @@ engine/content/Cyber/   内容包 #5《赛博猫娘》（五层数字层，迁�
 engine/content/Dream/   内容包 #8《猫娘梦境》（五层梦，越睡越浓的梦境能量）
 games/hosts/Demo.Cli/        终端 UI 适配层（ANSI 全屏 + 键盘 + 无头模式 + --package）
 games/hosts/Web/         Web 前端宿主（本地 HTTP + wwwroot，浏览器里可玩）
-engine/tests/    590 个测试 + 自研迷你测试运行器（含架构不变量与全程可达测试）
+engine/tests/    593 个测试 + 自研迷你测试运行器（含架构不变量与全程可达测试）
 engine/docs/ARCHITECTURE.md             架构与设计决策
 engine/docs/CONTENT_AUTHORING.md        如何写内容（数值节奏、校验规则、常见坑）
 engine/docs/VERSIONING.md               版本与兼容性承诺：什么改动升哪一位、公开 API 快照怎么用
@@ -427,8 +427,8 @@ Console.WriteLine(engine.Save());           // JSON 存档
 ```csharp
 using NekoClicker.Core;
 
-Console.WriteLine(ApiVersion.Current);         // "1.10.2"
-Console.WriteLine(ApiVersion.AssemblyVersion);  // 1.10.2.0
+Console.WriteLine(ApiVersion.Current);         // "1.11.0"
+Console.WriteLine(ApiVersion.AssemblyVersion);  // 1.11.0.0
 ```
 
 ### 这条承诺是怎么被守住的
@@ -486,7 +486,7 @@ Console.WriteLine(ApiVersion.AssemblyVersion);  // 1.10.2.0
 一条命令就是全仓库的验收：
 
 ```powershell
-.\tools\build.ps1 -Strict   # 引擎 + 内容 + 590 条用例 + Web 宿主 + 前端冒烟（0 警告）
+.\tools\build.ps1 -Strict   # 引擎 + 内容 + 593 条用例 + Web 宿主 + 前端冒烟（0 警告）
 .\tools\web.ps1   build -Strict   # 只编 Web 宿主时用它
 .\tools\api-test.ps1        # 再把宿主真起起来，打一遍端点（含 SSE 流）
 ```
@@ -606,10 +606,14 @@ Console.WriteLine(ApiVersion.AssemblyVersion);  // 1.10.2.0
 **接下来做什么**：见 [OPEN_WORK 顶部的《下一步：唯一权威清单》](engine/docs/OPEN_WORK.md)
 （H / D / W 三张表——只有真人能做的、先要人拍一句话的、以及不需要人的机械项）。
 `STATUS.md` 的 §8 是**历史记录**，不再产生待办；**这一轮的收工总结**在
-[HANDOVER_2026-10-05](engine/docs/HANDOVER_2026-10-05.md)。工作树是 **1.10.2**
-（patch：三轮界面改动 + 三条新守卫 + 五处机械项 + 两份测量记录 + 一个 Linux CI 作业；
+[HANDOVER_2026-10-05](engine/docs/HANDOVER_2026-10-05.md)。工作树是 **1.11.0**
+（minor：公开 API **+5 / −0**——`LoreChannel.Note`、`LoreChannelNames.WireName`、
+`GoldenCookieSystem.SerialCounterKey`、`LoreView.ChannelName`——把"**捡到一张纸条**"
+这种在虚构里教机制的叙事条目落到界面上，共用既有的待读队列与"已看过"记录，
+**存档格式一个字没改**，见 [FOUND_NOTES_PLAN](engine/docs/FOUND_NOTES_PLAN.md)。
+上一版 1.10.2 是 patch：三轮界面改动 + 三条新守卫 + 五处机械项 + 两份测量记录 + 一个 Linux CI 作业；
 **公开 API 一行没动**，快照除首行版本号外逐字节不变。
-上一版 1.10.1 是导出/导入第一次有了两个宿主里的窗口（W13 / W14）+ 十一个包的「点击 × 建筑」桥
+再上一版 1.10.1 是导出/导入第一次有了两个宿主里的窗口（W13 / W14）+ 十一个包的「点击 × 建筑」桥
 + 两处宿主修复。
 再上一版 1.10.0 是引擎侧那一半：信封 + 校验和 + 尺寸闸 + "坏输入绝不弄坏能用的存档"的
 12 类失败语义，**存档格式一个字没改**，见
