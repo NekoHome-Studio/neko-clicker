@@ -2288,6 +2288,120 @@ hero 的直接子元素（`index.html` 的 `<section class="hero">`，按 DOM �
 
 ---
 
+## 0.28 把两条线合成一棵树：纸条系统 ＋ 七包语气清扫（2026-10-05，minor **1.11.0**）
+
+**任务**：两条各自验完的分支同时并进 `main`（`427a255`），在**合并后的那棵树**上重跑三条命令、
+把"现在时"的计数与版本字样重算、重建并重启 5273 上的宿主，然后推送。
+
+**做法（可复跑）**：先 `git branch backup/pre-final 427a255` 留安全参考，再在**隔离 worktree**
+`.tmp/wt-final` 里**一次合一条**（冲突才归得因）：
+
+| 步骤 | 提交 | 结果 |
+|---|---|---|
+| 合 `prose-tone-sweep`（`53fb8e1`） | **`21c45f0`** | **零冲突**——它只动 7 个包的 `text.json`（values only）＋ 棘轮 ＋ `CONTENT_AUTHORING` §12.4.8 |
+| 合 `found-notes`（`433bcfb`） | **`086fece`** | 8 处冲突（全是数字，见下）；`wwwroot/*` 三件**自动合上了**，两边意图都在 |
+| 重算三个数 ＋ 扫净版本字样 | **`0221c56`** | 见"三个数"与"版本"两段 |
+
+### 0.28.1 8 处冲突：没有一处是两边意图打架，全是同一句话里的数字
+
+`.github/workflows/ci.yml`、`README.md`×3、`STATUS.md`×2、`engine/README.md`、
+`games/README.md`、`games/docs/ROADMAP.md`、`engine/docs/VERSIONING.md`、`tools/api-test.ps1`
+——`589` vs `590`，正好就是 `TestCountDriftTests` 守着的那 **11 处槽位**所在的文件。
+按仓库规矩**没有抄任何一边的数**：先落一个占位值让树能编，再由 `TestCountDriftTests` 自己点名。
+
+### 0.28.2 三个数（在合并树上实测，不是从任何一条分支抄的）
+
+| 命令 | 结果 | 为什么是这个数 |
+|---|---|---|
+| `tools/build.ps1 -Strict` | **593 / 593 全绿、0 警告**（两个 sln 各一条 `0 Warning(s) / 0 Error(s)`，退出码 0），含前端冒烟 | `586`（两条线的共同祖先 `d3f9c55`）＋ **3**（语气试点 `20c1a3f` 的守卫）＋ **4**（纸条的 `LoreTests`）＝ **593**。纸条那条分支自己量到的 **590** 是"只有它自己"的数——试点那 3 条不在它的基线上 |
+| `node tools/web-smoke.mjs` | **252 / 252 全绿** | 纸条那条分支**没有**加冒烟用例（它只动 `wwwroot/*` 的渲染）；`252` 是前端那一轮（`966358b`）的数。文档里三处"当前 252 条"因此**不用改** |
+| `tools/api-test.ps1` | **85 / 85**（源码 85 处 ｜ 执行到 85 处 ｜ 通过 85 ｜ 失败 0 ｜ 跳过 0，退出码 0） | 与 `main` 相同；它自己挑空闲端口（这次 `64420`）＋自带临时存档根，**与 5273 上那个给人玩的宿主无关** |
+
+`TestCountDriftTests` 自己打印的原文：`当前用例数：593 条，11 处文档槽位一致。`
+
+### 0.28.3 `wwwroot/*` 那三处"预计会冲突"的地方其实自动合上了
+
+`FOUND_NOTES_PLAN` §10 末尾预判了三处冲突（`render()` 的次序行、keydown 段、`app.css` 的 sheet 节）
+——实际上三处都是**纯插入**，git 的三点合并把两边都留下了。收尾复核的是"**两边意图都在**"：
+
+- **纸条那一条**：`renderNoteSheet()` / `noteSheetOpen()` / `dismissNote()` / `#note-sheet`、
+  `.sheet-note` 一节（对 `main` 是**纯新增 41 行**）；
+- **前端那一轮四件**：`SCALE_UNITS = ["K", ...ShortScaleNames]`、`.card .milestone`、
+  买满的 `×N 总价`、`captureFocus` 按稳定键恢复焦点。
+
+合并后的 `app.js` 里唯一"被改掉的旧行"是 `renderChoicesSheet` 的让位判据：
+`!offlineSheetOpen()` → `!offlineSheetOpen() && !noteSheetOpen()`——**这正是纸条那一条的意图**
+（次序规则：离线收益 → 场上有金猫时让位 → 纸条 → 表态），不是谁覆盖了谁。
+
+### 0.28.4 版本：三处一致、快照 +5/−0、顺序按 `VERSIONING.md` §4
+
+`Directory.Build.props` 的 `Version` / `AssemblyVersion` / `FileVersion` 三处在纸条那条分支上
+就已经是 **1.11.0**（合并未改动，三处一致）。判据照任务书复核过：
+`git diff 427a255 <整合树> -- engine/core/PublicApi.txt` = **+5 / −0 ＋ 首行 `version=`**——
+`LoreChannel.Note`、`LoreChannelNames` 类型与 `WireName()`、`GoldenCookieSystem.SerialCounterKey`、
+`LoreView.ChannelName`（再加一行类间空行 ⇒ **2026 → 2032 行**），**没有任何别的公开成员被动过**。
+`tools/public-api.ps1` 在**重建之后**重跑（顺序按 §4），产出与树上的快照**逐字节一致**
+（`git status` 空），首行 `version=1.11.0`、2032 行。
+
+**同一趟扫掉的"现在时版本字样"**（纸条那条分支只扫了它自己会碰的几处：
+`README` 首段与"版本与兼容性承诺"那一行）：
+
+| 文件 | 扫掉的是什么 |
+|---|---|
+| `STATUS.md` | 头两行的"工作树版本"、§1 分支表的 `main` 行、"**工作树版本 `1.x`**"那一段、§8"停在哪里" |
+| `engine/README.md` | "**当前 `1.x`**"那一段（并把 1.10.2 降级成"上一版"） |
+| `README.md` | `ApiVersion` 示例输出、结尾"工作树是 `1.x`"那一段 |
+| `engine/docs/VERSIONING.md` | §1 的单一事实来源 XML 示例、`ApiVersion` 示例输出、§3 的快照行数（2026 → **2032**） |
+| `engine/docs/OPEN_WORK.md` | **本文档 §1 的"版本"行**（这一行以前被漏过一次） |
+| `engine/core/Persistence/SaveTransfer.cs` | XML 注释里的信封示例 `FrameworkVersion` |
+| `engine/docs/SAVE_TRANSFER_PLAN.md` | §2.1 的信封示例 |
+| `tools/web-smoke.mjs` | 三处**夹具字面量**（`ENVELOPE` / `IMPORT_OK` / `OPEN_MESSAGE` 里的 `框架 1.x`） |
+
+> 最后一行要说清：那三处**不是**"当前版本"断言——宿主桩自己回什么、用例就断言什么，
+> 所以**不升版本也能过**（纸条那条分支在 1.11.0 上跑 224 全绿就是证据）。
+> 改它们只是与 **1.10.2 发布**那一次的做法保持一致，长度也一样（都是 6 个字符），
+> 不牵动任何按长度写死的断言。
+
+**带日期的历史一律没动**（`RELEASING` §2"只改现在时、不改历史"）：`CHANGELOG` 的
+`## [1.11.0]` 那条仍写着"用例 **586 → 590**"——那是**纸条那一次改动自身**的记录（它的基线是
+`586`），与整合树的 `593` 不矛盾（`1.10.2` 条目里写着 `571`，而后来树上是 `586`，同一条规矩）。
+`HANDOVER_2026-10-05`、`RELEASING` §7、`STATUS` §8 的 `1.10.2` 段、本文各轮记录同样原样留着。
+
+### 0.28.5 ⚙️ 一处工具链上的真坑：`edit` 工具 + `.ps1` 的 BOM + 相对路径
+
+`edit` 工具会把 `.ps1` 的 UTF-8 BOM 去掉，而 `ToolingHygieneTests` 守它——**这一轮真的红过一次**
+（`tools/api-test.ps1（开头是 23 20 61）`）。补 BOM 时踩到了第二个坑，两个都值得记：
+
+1. **相对路径不落在你以为的地方**：`[System.IO.File]::WriteAllBytes('tools\x.ps1', …)` 解析的是
+   `[Environment]::CurrentDirectory`（pwsh 的**启动目录**），而**不是** PowerShell 的 `Set-Location`。
+   在 worktree 里这么写会**静默改到主树的同名文件**（本轮就因此误建过 `tools/zz-bomtest.ps1`
+   在主树上——已立刻删除并复核主树 `git status` 干净、`HEAD` 仍是 `427a255`）。
+   **写成绝对路径**，或用 cmdlet（`Get-Content` / `Set-Content` 跟着 PowerShell 的位置走）。
+2. **判据要用 git 自己的字节**，不能用 .NET 读：确认到底写没写进去，看
+   `git cat-file blob :tools/api-test.ps1` 的前三个字节是不是 `EF BB BF`（12 个 `.ps1` 逐个核过）。
+
+### 0.28.6 两件仍然要真人拍板的事（不替人决定）
+
+1. **纸条那张"纸"的观感够不够**（`FOUND_NOTES_PLAN` §3.1 / §9.1）：`.sheet-note` 只是给
+   现有那一套 sheet 换皮。若要"**完全不像现有弹窗**"，代价是第二套弹窗机械与它的重复维护。
+2. **`ApocalypseContentTests.G5_FirstTenMinutesRevealAtMostThreeEntries` 的口径收窄**
+   （`FOUND_NOTES_PLAN` §7.3）：纸条不再计入这一条（**实测 3 → 5**），补偿是"开局十分钟里
+   两张入门纸条必须都已到手"。**若人要把纸条算作剧情**，那"第一次遇到就教"这条设计就得让掉
+   ——**两者不能同时成立**。
+
+`FOUND_NOTES_PLAN` §9 另外还挂着三条更小的待定（`Popup` 要不要也画、纸条要不要在图鉴里单列、
+"第一次打开存档窗口"这个触发要不要宿主侧信号），一并留在那里。
+
+### 0.28.7 还没做的
+
+**末世（Apocalypse）的正文清扫**——上限仍是 **17 / 5 / 3**，它是八个有叙事分区的包里
+**唯一没扫**的那一个（`CONTENT_AUTHORING` §12.4.8 的顺序里占 38.7%，排第三）。
+它**现在不再有冲突面**了（纸条那条线已经落地并冻结，没人再改它的 `text.json`），
+可以单独做成一个可回滚的提交。本轮**刻意没有**顺手做——保持这次整合可审。
+其余"只有眼睛能判"的项仍归 **H3**（那台机器仍然起不了浏览器）。
+
+---
+
 ## 1. 现在在哪（可核对的事实）
 
 | 项 | 值 | 怎么核对 |

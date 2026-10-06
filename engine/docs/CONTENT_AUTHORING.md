@@ -1436,6 +1436,20 @@ private static LoreEntry Make(string id, int order, UnlockCondition reveal, Lore
 `choices.*.prompt`、`buildings` / `achievements` / `upgrades` / `buffs` / `goldenCookies`
 （被模板与数字钉住的短标签），以及版本号与 11 处条数槽位（那是另一轮在改的地方）。
 
+**两条线已经合流（2026-10-05，整合提交 `086fece`；重算三个数的提交 `0221c56`）**：
+上面这轮清扫与**纸条系统**（`FOUND_NOTES_PLAN`，它当时正在改 `Apocalypse/text.json`，
+所以末世被跳过）现在在**同一棵树**上。合流之后：
+
+- **末世（Apocalypse）仍是唯一没扫的包**，上限照旧 **17 / 5 / 3**（`ProseToneTests` 那一行没动）；
+  而且它**不再有冲突面**——纸条那条线已经落地并冻结，"同一个文件正在被另一轮改"这个理由消失了。
+  顺序里剩下的就是它（占比 38.7%，排第三，本就该早做），单独一个提交即可。
+- 合流本身**没有新增任何正文改动**：7 个包是清扫的 `value` 级改动（**0 个 key 被动过**），
+  末世那个文件只被纸条那条线**追加**过（新 storyline ＋ 两条 note 正文）。
+- 整合树上实测：`tools/build.ps1 -Strict` **593 / 593**（0 警告）、
+  `node tools/web-smoke.mjs` **252 / 252**、`tools/api-test.ps1` **85 / 85**；
+  公开 API 快照 **2026 → 2032 行**（+5 / −0），版本 **1.11.0**（minor）。
+  明细与冲突解法见 `OPEN_WORK` §0.28。
+
 ## 13. 选择、立场与结局
 
 一次**选择**（`ChoiceDefinition`）是一个需要玩家表态的时刻：条件达成后进入待答队列，
