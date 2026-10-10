@@ -172,6 +172,26 @@ function Convert-FromJsonSafe([string]$Text) {
     try { return $Text | ConvertFrom-Json } catch { return $null }
 }
 
+# 文件的 sha256（**刻意不用 `Get-FileHash`**）。<para>
+# 那个 cmdlet 在 Windows PowerShell 5.1 上**不总是存在**：实测本机（PSVersion 5.1.26100）
+# 一个干净的 `powershell -NoProfile` 会话里 `Get-FileHash` 就是 CommandNotFound
+# （`Microsoft.PowerShell.Utility` 加载了、命令却没有），于是脚本会在"保护对象"那一句
+# **直接终止**——没有汇总、没有覆盖审计，只有一段英文错误；而同一份脚本在 pwsh 7 上一切正常。
+# 这份脚本恰恰是由 `start.cmd` 用 5.1 执行的（见头部 ② 那条环境说明），所以自己算：
+# SHA256 是 BCL，两个解释器上逐字节一致。返回**大写十六进制**（与 `Get-FileHash` 的 `.Hash`
+# 同形，所有既有报错文案因此一个字都不用改）；读不到文件时返回 `$null`。
+function Get-FileSha256([string]$Path) {
+    try {
+        $bytes = [System.IO.File]::ReadAllBytes($Path)
+        $sha = [System.Security.Cryptography.SHA256]::Create()
+        try { $digest = $sha.ComputeHash($bytes) } finally { $sha.Dispose() }
+        return ((($digest | ForEach-Object { $_.ToString('x2') }) -join '').ToUpperInvariant())
+    }
+    catch {
+        return $null
+    }
+}
+
 # 铸一枚跳层令牌：调**同一支二进制**的 `--mint-link`（SHARE_LINK_PLAN §4.2）。
 # 三样东西分开拿：退出码（拒绝铸造时非 0）、stdout（那**一行 URL**）、stderr（给人看的那句话）。
 # 刻意不把三者合成一个布尔值——"铸出来了"与"拒绝得对"是两件事，混在一起就分不出是哪一件。
@@ -970,52 +990,103 @@ try {
     # 上面「快照」那一节只验了**档位名能往返**（mode → modeName），这一段之前的「命令」
     # 那几条买的是**明写 amount** 的那条路（钳位用例）；两条都没有问过一个问题：
     # "切到 ×10 之后，点一下到底买了几个、扣了多少钱"。所以这一段走一遍玩家真实的路：
-    # 切档位 → 攒够钱 → 发一条**与前端逐字节同形**的命令（只有 type 与 id）→ 读 owned 与钱。
+    # 切档位 → 确认快照真的跟着换了 → 攒够钱 → 发一条**与前端逐字节同形**的命令
+    # （只有 type 与 id）→ 读 owned 与钱。
     #
     # ⚠️ 它**放在「命令」这一节的末尾**是必须的：它会把钱花光，而上面"超大数量被钳到预算内"
     # 要的是"有钱可买"这个前提（钱为 0 时引擎如实回"买不起"，那条判据不是为这个形态写的）。
     # 位置换来的是：前面的检查点一个字都不用改。
+    #
+    # ⚠️⚠️ 这一节的前提**必须全部是显式的**——第一版在这里真红过一次（2026-10-10，而且**只在
+    # Windows PowerShell 5.1 上红、在 pwsh 7 上绿**，因为跑的人用的解释器不同）。两条教训：
+    #   ① **`$x = if (…) { @(… | Select-Object -First 1) } else { @() }` 在 5.1 里不是数组**：
+    #      单个结果被拆成标量 `PSCustomObject`，而标量的 `.Count` 在 5.1 上取不到（`$null`），
+    #      于是 `if ($x.Count -gt 0)` **恒假**——判据假红，且只在 5.1 上红。这个脚本由
+    #      `start.cmd` 用 Windows PowerShell 5.1 执行（见头部 ② 那条环境说明），所以这里：
+    #      要计数就把 `@()` 写在**赋值右边**（`$arr = @(…管道…)`），只问"有没有"就用 `$null -ne`。
+    #   ② **"×10 能不能给出整批数量"与有没有钱无关**：`GameViewFactory` 对**固定档位**直接给
+    #      `requested`（10），只有"买满"才按预算算。所以这一条判据的前提是**档位真的到了服务端**，
+    #      不是"这一局有钱"——攒钱是**下一条**的前提。
     Write-Section '批量档位（×10）真的买 10 个，而且扣的是卡片上那个总价'
 
     $batchRowOf = {
         param($snapshot, $key)
         if ($null -eq $snapshot) { return $null }
-        return @($snapshot.buildings | Where-Object { $_.id -ceq $key }) | Select-Object -First 1
+        $row = @($snapshot.buildings | Where-Object { $_.id -ceq $key }) | Select-Object -First 1
+        return $row
     }
 
     # 这一节之前的档位（跑完还原）：前面的「快照」一节把它还原成原样了，而这一段要动它。
     $batchModeBefore = Convert-FromJsonSafe (Invoke-Get "/api/snapshot?package=$Package").Body
     $batchModeRestore = if ($null -ne $batchModeBefore) { [string]$batchModeBefore.modeName } else { 'buy1' }
-    Invoke-PostJson "/api/command?package=$Package" @{ type = 'mode'; mode = 'buy10' } | Out-Null
+    if ([string]::IsNullOrEmpty($batchModeRestore)) { $batchModeRestore = 'buy1' }
 
-    $batchBefore = Convert-FromJsonSafe (Invoke-Get "/api/snapshot?package=$Package").Body
-    # 目标 = ×10 总价**最小**的那一座：攒钱那一段才不会点几千下。
-    $batchPick = if ($null -ne $batchBefore) {
-        @($batchBefore.buildings |
-            Where-Object { $_.isUnlocked -and [int]$_.batchAmount -gt 1 } |
-            Sort-Object -Property @{ Expression = { [double]$_.batchPrice } } | Select-Object -First 1)
-    } else { @() }
-    $batchTarget = if ($batchPick.Count -gt 0) { $batchPick[0] } else { $null }
+    # 切档位**并确认它真的反映到快照里**：SetModeAsync 自己会推一份全量，正常一发就到位；
+    # 这里的轮询只是不让"哪一帧先到"变成判据的一部分（上限 2 秒，"等了几次"会说出来）。
+    $batchModeCommand = Invoke-PostJson "/api/command?package=$Package" @{ type = 'mode'; mode = 'buy10' }
+    $batchModeReply = Convert-FromJsonSafe $batchModeCommand.Body
+    $batchModeOk = $batchModeCommand.Success -and ($null -ne $batchModeReply) -and ($batchModeReply.ok -eq $true)
+
+    $batchModeWait = 0
+    $batchBefore = $null
+    while ($batchModeWait -lt 20) {
+        $batchBefore = Convert-FromJsonSafe (Invoke-Get "/api/snapshot?package=$Package").Body
+        if (($null -ne $batchBefore) -and ([string]$batchBefore.modeName -ceq 'buy10')) { break }
+        Start-Sleep -Milliseconds 100
+        $batchModeWait++
+    }
+    $batchModeReached = ($null -ne $batchBefore) -and ([string]$batchBefore.modeName -ceq 'buy10')
+
+    # 目标建筑 = 上一节已经证明"存在且解锁"的那一座（钳位用例买的就是它）；拿不到就退回
+    # "快照里已解锁建筑里整批总价最小的那一座"。
+    $batchTarget = $null
+    if ($null -ne $buildingId) { $batchTarget = & $batchRowOf $batchBefore $buildingId }
+    if ($null -eq $batchTarget) {
+        $batchTarget = @($batchBefore.buildings |
+            Where-Object { $_.isUnlocked } |
+            Sort-Object -Property @{ Expression = { [double]$_.batchPrice } } |
+            Select-Object -First 1) | Select-Object -First 1
+    }
     $batchId = if ($null -ne $batchTarget) { [string]$batchTarget.id } else { $null }
 
-    Check '切到 ×10 之后，快照给出的整批数量是 10、总价也给了（档位真的到了服务端）' `
-        ($null -ne $batchId -and [int]$batchTarget.batchAmount -eq 10 -and [double]$batchTarget.batchPrice -gt 0) `
-        $(if ($null -ne $batchId) { "<$batchId>：batchAmount=$($batchTarget.batchAmount)、单价 $($batchTarget.unitPrice)、总价 $($batchTarget.batchPrice)" } `
-          else { '没有任何已解锁建筑给出 batchAmount > 1' })
+    # 三种失败要分得开（这正是第一版最缺的：一句"没有 batchAmount > 1"说不出是哪一种）。
+    $batchModeDiag = if (-not $batchModeOk) {
+        "mode 命令没被接受：HTTP $($batchModeCommand.Status) $([string]$batchModeReply.message)"
+    } elseif (-not $batchModeReached) {
+        "mode 命令回了 ok，但快照里的档位还是 <$($batchBefore.modeName)>（等了 $batchModeWait 次 × 100ms）"
+    } elseif ($null -eq $batchId) {
+        "×10 下没有可用的已解锁建筑（快照里 $(@($batchBefore.buildings).Count) 行、已解锁 $(@($batchBefore.buildings | Where-Object { $_.isUnlocked }).Count) 行）"
+    } else {
+        "<$batchId>：batchAmount=$($batchTarget.batchAmount)、单价 $($batchTarget.unitPrice)、总价 $($batchTarget.batchPrice)"
+    }
 
-    # 攒钱：点一下给 ClickPower，所以次数由"还差多少"决定，不是拍一个魔数。
-    # 上限 4000 是**说出来**的：点不到就照实报红（下面那条），而不是把这一段悄悄跳过。
-    # 停止条件用的是**视图**里的钱，而视图只会落后于引擎（250ms 一帧）⇒ 停得早、不会停晚。
+    Check '切到 ×10：命令被接受、快照的档位与整批数量都跟着换了（档位真的到了购买路径上）' `
+        ($batchModeOk -and $batchModeReached -and $null -ne $batchId -and [int]$batchTarget.batchAmount -eq 10 -and [double]$batchTarget.batchPrice -gt 0) `
+        $batchModeDiag
+
+    # 攒钱：**要按几下由服务端自己的两个数算出来**——(整批总价 − 手上的钱) ÷ 每次点击收益，
+    # 再加 20 下余量（4Hz 视图的滞后 + 把批次点满整十）。不是拍一个魔数，也不指望"这一局刚好有钱"。
+    # 上限 6000 是**说出来**的：真点不到就由下面那条照实报红，而不是悄悄跳过。
     $batchClicks = 0
+    $batchPlanned = 0
+    $batchClickPower = 1.0
     if ($null -ne $batchId) {
-        while ($batchClicks -lt 4000) {
-            $batchLive = Convert-FromJsonSafe (Invoke-Get "/api/snapshot?package=$Package").Body
-            $batchLiveRow = & $batchRowOf $batchLive $batchId
-            if (($null -ne $batchLiveRow) -and ([double]$batchLive.cookies -ge [double]$batchLiveRow.batchPrice)) { break }
-            for ($i = 0; $i -lt 10; $i++) {
+        $batchNeed = [double]$batchTarget.batchPrice
+        $batchLive = Convert-FromJsonSafe (Invoke-Get "/api/snapshot?package=$Package").Body
+        $batchHave = if ($null -ne $batchLive) { [double]$batchLive.cookies } else { 0.0 }
+        if (($null -ne $batchLive) -and ([double]$batchLive.clickPower -gt 0)) { $batchClickPower = [double]$batchLive.clickPower }
+        $batchPlanned = [int][Math]::Ceiling([Math]::Max(0.0, $batchNeed - $batchHave) / $batchClickPower) + 20
+        if ($batchPlanned -gt 6000) { $batchPlanned = 6000 }
+
+        while ($batchClicks -lt $batchPlanned) {
+            for ($i = 0; $i -lt 10 -and $batchClicks -lt $batchPlanned; $i++) {
                 Invoke-PostJson "/api/command?package=$Package" @{ type = 'click' } | Out-Null
                 $batchClicks++
             }
+            $batchLive = Convert-FromJsonSafe (Invoke-Get "/api/snapshot?package=$Package").Body
+            $batchLiveRow = & $batchRowOf $batchLive $batchId
+            # 停止条件用的是**视图**里的钱，而视图只会落后于引擎（250ms 一帧）⇒ 停得早、不会停晚。
+            if (($null -ne $batchLiveRow) -and ([double]$batchLive.cookies -ge [double]$batchLiveRow.batchPrice)) { break }
         }
     }
 
@@ -1027,8 +1098,8 @@ try {
     $batchBeforeRow = & $batchRowOf $batchBefore $batchId
     $batchAffordable = ($null -ne $batchBeforeRow) -and ([double]$batchBefore.cookies -ge [double]$batchBeforeRow.batchPrice)
     Check '点击攒钱之后买得起一次 ×10（下面两条的前提）' $batchAffordable `
-        $(if ($null -ne $batchBeforeRow) { "$batchClicks 次点击之后：$([double]$batchBefore.cookies.ToString('F0')) ≥ 整批总价 $($batchBeforeRow.batchPrice)" } `
-          else { '没拿到那座建筑的行（上一条已报红）' })
+        $(if ($null -ne $batchBeforeRow) { "计划 $batchPlanned 下 / 实点 $batchClicks 下（每次点击 $batchClickPower）：$([double]$batchBefore.cookies.ToString('F0')) ≥ 整批总价 $($batchBeforeRow.batchPrice)" } `
+          else { "没拿到 <$batchId> 那一行（快照里 $(@($batchBefore.buildings).Count) 行）" })
 
     # 命令与前端逐字节同形：`send("buy", { id })`（app.js）——**只有 type 与 id**。
     $batchSkip = if ($batchAffordable) { '' } else { '钱不够，这一条没走到' }
@@ -1370,7 +1441,7 @@ try {
 
     # 保护对象：磁盘上那一份（第一段宿主存下来的）。没有它就显式跳过——不能静默空过。
     $guardSkip = if (-not $savePath -or -not (Test-Path $savePath)) { '没有唯一的存档文件可保护，这一段无从判定' } else { '' }
-    $hashBefore = if ($guardSkip.Length -eq 0) { (Get-FileHash $savePath -Algorithm SHA256).Hash } else { '' }
+    $hashBefore = if ($guardSkip.Length -eq 0) { (Get-FileSha256 $savePath) } else { '' }
 
     $badImports = @(
         @{ What = '一句人话'; Payload = '这不是存档，只是一句话。'; Fragment = '不是本游戏导出' }
@@ -1396,7 +1467,7 @@ try {
         ($badMisses.Count -eq 0) $(if ($badMisses.Count -eq 0) { '3 / 3' } else { $badMisses -join '；' })
 
     $hashAfter = if ($guardSkip.Length -eq 0 -and (Test-Path $savePath)) {
-        (Get-FileHash $savePath -Algorithm SHA256).Hash
+        (Get-FileSha256 $savePath)
     }
     else { '' }
     Check '被拒绝的导入一个字节都不许动磁盘上那份能用的存档' `
@@ -1449,7 +1520,7 @@ try {
     # 保护对象：磁盘上那一份能用的存档（第一段宿主存下来的）。没有它就**显式跳过**——
     # 与上面导出/导入那一段同一条规矩：不能静默空过。
     $shareGuardSkip = if (-not $savePath -or -not (Test-Path $savePath)) { '没有唯一的存档文件可保护，这一段无从判定' } else { '' }
-    $shareHashBefore = if ($shareGuardSkip.Length -eq 0) { (Get-FileHash $savePath -Algorithm SHA256).Hash } else { '' }
+    $shareHashBefore = if ($shareGuardSkip.Length -eq 0) { (Get-FileSha256 $savePath) } else { '' }
     $shareClicksBefore = -1
     $beforeWrongPass = Convert-FromJsonSafe (Invoke-Get "/api/snapshot?package=$Package").Body
     if ($null -ne $beforeWrongPass) { $shareClicksBefore = [double]$beforeWrongPass.totalClicks }
@@ -1466,7 +1537,7 @@ try {
         ($shareOk -and $shareClicksBefore -ge 0 -and $shareClicksAfter -eq $shareClicksBefore) `
         "totalClicks $shareClicksBefore → $shareClicksAfter"
 
-    $shareHashAfterWrong = if ($shareGuardSkip.Length -eq 0 -and (Test-Path $savePath)) { (Get-FileHash $savePath -Algorithm SHA256).Hash } else { '' }
+    $shareHashAfterWrong = if ($shareGuardSkip.Length -eq 0 -and (Test-Path $savePath)) { (Get-FileSha256 $savePath) } else { '' }
     Check '错密码之后磁盘上那份能用的存档逐字节不变' `
         ($shareGuardSkip.Length -gt 0 -or ($shareHashBefore.Length -gt 0 -and $shareHashBefore -ceq $shareHashAfterWrong)) `
         "sha256 $(if ($shareHashBefore) { $shareHashBefore.Substring(0, 12) } else { '—' }) → $(if ($shareHashAfterWrong) { $shareHashAfterWrong.Substring(0, 12) } else { '—' })" `
@@ -1482,7 +1553,7 @@ try {
         ($goodShareOk -and ([string]$goodShareResult.message).Contains($Package)) `
         $(if ($goodShareOk) { [string]$goodShareResult.message } else { '导入没成功' })
 
-    $shareHashAfterGood = if ($shareGuardSkip.Length -eq 0 -and (Test-Path $savePath)) { (Get-FileHash $savePath -Algorithm SHA256).Hash } else { '' }
+    $shareHashAfterGood = if ($shareGuardSkip.Length -eq 0 -and (Test-Path $savePath)) { (Get-FileSha256 $savePath) } else { '' }
     Check '对密码的导入真的落了盘（与上面「错密码没动」互为对照）' `
         ($shareGuardSkip.Length -gt 0 -or ($shareHashAfterGood.Length -gt 0 -and $shareHashAfterGood -cne $shareHashBefore)) `
         "sha256 $(if ($shareHashBefore) { $shareHashBefore.Substring(0, 12) } else { '—' }) → $(if ($shareHashAfterGood) { $shareHashAfterGood.Substring(0, 12) } else { '—' })" `
