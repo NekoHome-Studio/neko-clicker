@@ -18,7 +18,7 @@ dotnet build NekoClicker.sln     # 或者用仓库根的 .\tools\build.ps1
 | `core/` | **引擎本体**。时间推进、数值管线、价格闭式解、解锁条件树、存档与迁移、事件总线、只读视图 |
 | `content/Neko/` | 示例内容包「猫咖物语」——引擎的技术演示，同时是框架回归基线 |
 | `content/{Cafe,NineLives,Lab,Company,Apocalypse,Library,God,Civ,Cyber,Dream}/` | 十个内容包，**每个都是独立的 csproj** |
-| `tests/` | 595 个用例 + 自研迷你测试运行器（零依赖，不需要 xunit） |
+| `tests/` | 599 个用例 + 自研迷你测试运行器（零依赖，不需要 xunit） |
 | `docs/` | 架构、内容作者指南、版本承诺 |
 
 **为什么内容包算引擎的一部分？** 因为它们是**引擎的集成测试探针**，不是某个作品的资产：

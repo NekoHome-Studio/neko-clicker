@@ -249,10 +249,12 @@ public static class Program
             case "click":
                 return await host.ExecuteAsync(engine => GameHost.FromResult(engine.Click(), host.Seq)).ConfigureAwait(false);
 
+            // 数量**不在这一层决定**：命令里没写 amount 时由会话自己的档位说了算
+            // （快照里那卡片的 batchAmount / batchPrice 就是按它算的），而档位是游戏线程
+            // 拥有的状态——所以解析和购买一起发生在 GameHost.BuyAsync 里。见那个方法的注释。
             case "buy":
                 if (id is null) return Missing("id");
-                return await host.ExecuteAsync(engine => GameHost.FromResult(
-                    amount > 0 ? engine.BuyBuilding(id, amount) : engine.BuyBuilding(id), host.Seq)).ConfigureAwait(false);
+                return await host.BuyAsync(id, amount).ConfigureAwait(false);
 
             case "sell":
                 if (id is null) return Missing("id");

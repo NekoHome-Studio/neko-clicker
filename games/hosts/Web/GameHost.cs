@@ -324,6 +324,46 @@ public sealed class GameHost : IAsyncDisposable
             return new CommandOutcome(true, $"批量：{Describe(mode)}", Seq);
         }).ConfigureAwait(false);
 
+    /// <summary>
+    /// 按<b>会话自己的档位</b>买一座建筑。<para>
+    /// <b>为什么数量在这里决定，而不是在命令里</b>：快照里那张卡片上的
+    /// <c>batchAmount</c> / <c>batchPrice</c> 就是按 <see cref="_mode"/> 算出来的
+    /// （<c>GameViewFactory</c> 与 <c>GameEngine.BuyBuilding</c> 用的是同一个
+    /// <c>Pricing.BulkPrice</c>），所以"点一下买几个"与"卡片上写的是几个"必须是**同一个档位**
+    /// 的答案。此前 <c>Program.cs</c> 的 buy 分支只认命令里明写的 <c>amount</c>，而前端点建筑卡片
+    /// 发的是 <c>{"type":"buy","id":…}</c>——**不带数量**（数量本就该由服务端定，见
+    /// <c>app.js</c> 的 <c>send("buy", { id })</c>）。于是它退回了 <c>BuyBuilding(id)</c> 的默认值
+    /// <c>1</c>：卡片上写着「×10 总价」，点下去只买 1 个（2026-10-10 人报的那一条）。
+    /// </para>
+    /// <para>
+    /// <b>解析必须发生在这条游戏线程上</b>：<see cref="_mode"/> 由这条线程写
+    /// （见 <see cref="SetModeAsync"/>），HTTP 线程直接读它就是在读一个没有同步的字段。
+    /// "这次买几个"与"这次买"因此只能在<b>同一轮</b>里发生——这也是这段代码不写在
+    /// <c>Program.cs</c> 的派发表里的理由（那一层拿不到游戏线程的所有权）。
+    /// </para>
+    /// </summary>
+    /// <param name="id">建筑 id。</param>
+    /// <param name="amount">
+    /// 命令里**明写**的数量；<c>0</c>（命令没写这个字段）时由当前档位决定。
+    /// 明写仍然优先：<c>amount</c> 是"买 N 个"这种直接请求的入口
+    /// （<c>tools/api-test.ps1</c> 的钳位用例就走它），档位只是**没写数量时的默认值**。
+    /// </param>
+    public async Task<CommandOutcome> BuyAsync(string id, int amount = 0)
+        => await ExecuteAsync(engine =>
+            GameHost.FromResult(engine.BuyBuilding(id, amount > 0 ? amount : BuyAmountForMode()), Seq))
+            .ConfigureAwait(false);
+
+    /// <summary>
+    /// 当前档位下"买一次"的数量（<c>0</c> = 买到买不起为止，引擎的约定，见
+    /// <see cref="PurchaseModes.RequestedAmount"/>）。<para>
+    /// 卖档（<c>sell*</c>）回 <c>1</c>：Web 界面的档位行只有四个**买**档
+    /// （<c>app.js</c> 的 <c>renderBatch</c> 里那四个 token），所以"卖档 + 买"今天到不了。
+    /// 真到了那天，该由一条卖命令去认那个档位，而不是让买命令替它解释——
+    /// 这里回 <c>1</c> 是为了让那条不可达的路**保持改动前的行为**，而不是给它一个新语义。
+    /// </para>
+    /// </summary>
+    private int BuyAmountForMode() => _mode.IsSell() ? 1 : _mode.RequestedAmount();
+
     /// <summary>立刻存一次盘（正常退出时也必须调它）。</summary>
     public async Task<CommandOutcome> SaveAsync()
         => await ExecuteAsync(_ =>

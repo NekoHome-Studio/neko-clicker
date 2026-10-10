@@ -9,7 +9,7 @@
 #     · 增量推送的派生字段没处理干净 → 每帧 28KB，而"变化字段数 ≤ 4"的用例照样绿。
 #   所以这一层的判据只能是**真的通**：起宿主、发请求、读 SSE 流、看着它回话。
 #
-# 与单元测试的分工：`tools/build.ps1 -Strict` 守引擎（595 个用例 + 公开 API 快照），
+# 与单元测试的分工：`tools/build.ps1 -Strict` 守引擎（599 个用例 + 公开 API 快照），
 # 本脚本守"宿主 + 浏览器协议 + 启动器"那一段。CI 里两条都跑（.github/workflows/ci.yml）。
 #
 # 七条刻意为之的行为（都不是默认就该有的，是踩出来的）：
@@ -37,8 +37,10 @@
 #      **3 处调用点从来没执行过**（`if ($clickError)` 的一个面、`if ($laterDeltas…)` 的 `else` 里
 #      两处），同时 **1 处**写在 `foreach` 里跑了 3 次，一多一少正好相抵。计数对不上只是症状，
 #      "某条检查悄悄没跑"才是病——所以现在由机器来数，不靠这一行注释。
-#      当前是 **101 处**调用点（65 → 85 是令牌门与分享链接那一段加的 20 处，见 ⑥；
-#      85 → 101 是启动器那一段加的 16 处，见 ⑦）。
+#      当前是 **105 处**调用点（65 → 85 是令牌门与分享链接那一段加的 20 处，见 ⑥；
+#      85 → 101 是启动器那一段加的 16 处，见 ⑦；
+#      101 → 105 是「批量档位真的买 N 个」那一段加的 4 处——人 2026-10-10 报的
+#      「×10 之后点一下只能买一个」此前一条判据都没有）。
 #   ⑥ **URL 上那两段加密载荷也在这条真链路上验**（`SHARE_LINK_PLAN` §11 的"第二刀"）：
 #      铸一枚跳层令牌 → 打真 URL → 断正文形状与四种拒绝、并复核明文门一个字节没变；
 #      生成的分享链接 → 错密码（**磁盘与会话一个字节都不许动**）→ 对密码。
@@ -957,6 +959,118 @@ try {
     Check 'POST answer 对不存在的表态明确失败（ok=false + 一句人话）' `
         ($badAnswer.Success -and $badAnswerResult.ok -eq $false -and ([string]$badAnswerResult.message).Length -gt 0) `
         "HTTP $($badAnswer.Status)：ok=$($badAnswerResult.ok)；$([string]$badAnswerResult.message)"
+
+    # ------------------------------------------------------------ 批量档位真的买 N 个
+    # 这一段的由来：人 2026-10-10 报「×10 之后点一下只能买一个」。病灶**不在前端**——
+    # 前端点建筑卡片发的就是 `{"type":"buy","id":…}`，**不带数量**（数量本该由服务端按
+    # 会话档位决定，前端自己乘一个 10 出去就是"前端重实现游戏逻辑"）；病在命令侧：
+    # `Program.cs` 的 buy 分支只认命令里明写的 `amount`，没写就退回引擎的默认值 1，
+    # 而快照里那张卡片的 batchAmount / batchPrice 是按档位算的——两边各算各的。
+    #
+    # 上面「快照」那一节只验了**档位名能往返**（mode → modeName），这一段之前的「命令」
+    # 那几条买的是**明写 amount** 的那条路（钳位用例）；两条都没有问过一个问题：
+    # "切到 ×10 之后，点一下到底买了几个、扣了多少钱"。所以这一段走一遍玩家真实的路：
+    # 切档位 → 攒够钱 → 发一条**与前端逐字节同形**的命令（只有 type 与 id）→ 读 owned 与钱。
+    #
+    # ⚠️ 它**放在「命令」这一节的末尾**是必须的：它会把钱花光，而上面"超大数量被钳到预算内"
+    # 要的是"有钱可买"这个前提（钱为 0 时引擎如实回"买不起"，那条判据不是为这个形态写的）。
+    # 位置换来的是：前面的检查点一个字都不用改。
+    Write-Section '批量档位（×10）真的买 10 个，而且扣的是卡片上那个总价'
+
+    $batchRowOf = {
+        param($snapshot, $key)
+        if ($null -eq $snapshot) { return $null }
+        return @($snapshot.buildings | Where-Object { $_.id -ceq $key }) | Select-Object -First 1
+    }
+
+    # 这一节之前的档位（跑完还原）：前面的「快照」一节把它还原成原样了，而这一段要动它。
+    $batchModeBefore = Convert-FromJsonSafe (Invoke-Get "/api/snapshot?package=$Package").Body
+    $batchModeRestore = if ($null -ne $batchModeBefore) { [string]$batchModeBefore.modeName } else { 'buy1' }
+    Invoke-PostJson "/api/command?package=$Package" @{ type = 'mode'; mode = 'buy10' } | Out-Null
+
+    $batchBefore = Convert-FromJsonSafe (Invoke-Get "/api/snapshot?package=$Package").Body
+    # 目标 = ×10 总价**最小**的那一座：攒钱那一段才不会点几千下。
+    $batchPick = if ($null -ne $batchBefore) {
+        @($batchBefore.buildings |
+            Where-Object { $_.isUnlocked -and [int]$_.batchAmount -gt 1 } |
+            Sort-Object -Property @{ Expression = { [double]$_.batchPrice } } | Select-Object -First 1)
+    } else { @() }
+    $batchTarget = if ($batchPick.Count -gt 0) { $batchPick[0] } else { $null }
+    $batchId = if ($null -ne $batchTarget) { [string]$batchTarget.id } else { $null }
+
+    Check '切到 ×10 之后，快照给出的整批数量是 10、总价也给了（档位真的到了服务端）' `
+        ($null -ne $batchId -and [int]$batchTarget.batchAmount -eq 10 -and [double]$batchTarget.batchPrice -gt 0) `
+        $(if ($null -ne $batchId) { "<$batchId>：batchAmount=$($batchTarget.batchAmount)、单价 $($batchTarget.unitPrice)、总价 $($batchTarget.batchPrice)" } `
+          else { '没有任何已解锁建筑给出 batchAmount > 1' })
+
+    # 攒钱：点一下给 ClickPower，所以次数由"还差多少"决定，不是拍一个魔数。
+    # 上限 4000 是**说出来**的：点不到就照实报红（下面那条），而不是把这一段悄悄跳过。
+    # 停止条件用的是**视图**里的钱，而视图只会落后于引擎（250ms 一帧）⇒ 停得早、不会停晚。
+    $batchClicks = 0
+    if ($null -ne $batchId) {
+        while ($batchClicks -lt 4000) {
+            $batchLive = Convert-FromJsonSafe (Invoke-Get "/api/snapshot?package=$Package").Body
+            $batchLiveRow = & $batchRowOf $batchLive $batchId
+            if (($null -ne $batchLiveRow) -and ([double]$batchLive.cookies -ge [double]$batchLiveRow.batchPrice)) { break }
+            for ($i = 0; $i -lt 10; $i++) {
+                Invoke-PostJson "/api/command?package=$Package" @{ type = 'click' } | Out-Null
+                $batchClicks++
+            }
+        }
+    }
+
+    # ⚠️ 读基线之前**先等视图追上**：快照是宿主按 4Hz 推出来的视图，最后一次点击的钱可能还没进那一帧。
+    # 不等的话"实付"会**正好差掉那份滞后**（实测差 4.43 小鱼干，而整批总价是 304.556——一条假红）。
+    # 等 600ms 之后视图与引擎对齐（产量为 0 的那一段时钟一 tick 都不进账，差值就是真的）。
+    Start-Sleep -Milliseconds 600
+    $batchBefore = Convert-FromJsonSafe (Invoke-Get "/api/snapshot?package=$Package").Body
+    $batchBeforeRow = & $batchRowOf $batchBefore $batchId
+    $batchAffordable = ($null -ne $batchBeforeRow) -and ([double]$batchBefore.cookies -ge [double]$batchBeforeRow.batchPrice)
+    Check '点击攒钱之后买得起一次 ×10（下面两条的前提）' $batchAffordable `
+        $(if ($null -ne $batchBeforeRow) { "$batchClicks 次点击之后：$([double]$batchBefore.cookies.ToString('F0')) ≥ 整批总价 $($batchBeforeRow.batchPrice)" } `
+          else { '没拿到那座建筑的行（上一条已报红）' })
+
+    # 命令与前端逐字节同形：`send("buy", { id })`（app.js）——**只有 type 与 id**。
+    $batchSkip = if ($batchAffordable) { '' } else { '钱不够，这一条没走到' }
+    $batchMessage = ''
+    $batchAfter = $null
+    $batchAfterRow = $null
+    $batchMoneyBefore = -1.0
+    $batchMoneyAfter = -1.0
+    $batchElapsed = 0.0
+    if ($batchAffordable) {
+        $batchMoneyBefore = [double]$batchBefore.cookies
+        $batchWall = [System.Diagnostics.Stopwatch]::StartNew()
+        $batchCommand = Invoke-PostJson "/api/command?package=$Package" @{ type = 'buy'; id = $batchId }
+        $batchWall.Stop()
+        $batchElapsed = $batchWall.Elapsed.TotalSeconds
+        $batchMessage = [string](Convert-FromJsonSafe $batchCommand.Body).message
+        # 同样等视图追上（买完那一下在下一帧里才看得见）。
+        Start-Sleep -Milliseconds 600
+        $batchAfter = Convert-FromJsonSafe (Invoke-Get "/api/snapshot?package=$Package").Body
+        $batchAfterRow = & $batchRowOf $batchAfter $batchId
+        $batchMoneyAfter = [double]$batchAfter.cookies
+    }
+    Invoke-PostJson "/api/command?package=$Package" @{ type = 'mode'; mode = $batchModeRestore } | Out-Null
+
+    $batchOwnedBefore = if ($null -ne $batchBeforeRow) { [int]$batchBeforeRow.owned } else { -1 }
+    $batchOwnedAfter = if ($null -ne $batchAfterRow) { [int]$batchAfterRow.owned } else { -1 }
+    $batchDelta = $batchOwnedAfter - $batchOwnedBefore
+    Check '×10 档位下买一次，owned 涨 10（不是 1）' ($batchDelta -eq 10) `
+        "owned $batchOwnedBefore → $batchOwnedAfter（Δ $batchDelta）；命令回话：$batchMessage" $batchSkip
+
+    # 实付 = 买之前的钱 - 买之后的钱，再放掉这段时间的**自然产量**：
+    # 引擎一直在产，而两次快照之间隔着"命令 + 600ms 的推送等待"。
+    # 用买卖**两侧**较大的那个 Cps 算上界（买完这一下产量才刚涨起来），多放一秒的余量。
+    $batchPeakCps = [Math]::Max([double]$batchBefore.cookiesPerSecond, [double]$batchAfter.cookiesPerSecond)
+    $batchTolerance = $batchPeakCps * ($batchElapsed + 1.0) * 2 + [double]$batchBeforeRow.batchPrice * 1e-6
+    $batchPaid = if ($batchAffordable) { $batchMoneyBefore - $batchMoneyAfter } else { -1 }
+    $batchPriceOk = $batchAffordable -and `
+        ($batchPaid -ge ([double]$batchBeforeRow.batchPrice - $batchTolerance)) -and `
+        ($batchPaid -le ([double]$batchBeforeRow.batchPrice + $batchTolerance))
+    Check '×10 档位下扣的就是卡片上那个总价（不是单价）' $batchPriceOk `
+        $(if ($null -ne $batchBeforeRow) { "整批总价 $([Math]::Round([double]$batchBeforeRow.batchPrice, 3))（单价 $($batchBeforeRow.unitPrice)）／实付 $([Math]::Round($batchPaid, 3))，容忍 ±$([Math]::Round($batchTolerance, 3))" } `
+          else { '没拿到那座建筑的行' }) $batchSkip
 
     # ------------------------------------------------------------ 负数
     Write-Section '负数（不该静默成功的地方必须明确失败）'
