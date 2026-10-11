@@ -383,6 +383,10 @@ Web 宿主不在 `NekoClicker.sln` 里（它是独立的单项目 sln），但 `
   [运行 37221314893](https://github.com/NekoHome-Studio/neko-clicker/actions/runs/37221314893)，
   **204 秒，四个作业全部 success**。这一轮之后 `origin` 已永久改到 SSH，
   推送走 `tools/push-retry.ps1`（判据是服务器侧核对，不是 push 自己的输出）。
+  **2026-10-11（playtest 收口 → 1.12.1）**：`a651c67`（工具链＋文档那一提交）
+  [运行 38106775846](https://github.com/NekoHome-Studio/neko-clicker/actions/runs/38106775846)，
+  **214 秒，四个作业全部 success**（`engine-linux` / `build-and-test` / `web-smoke` / `end-to-end`），
+  推送**第一次就成功**（`origin` 已是 SSH，见 §7 第 10 条）。
 - **`engine/tests/ArchitectureTests.cs` 直接枚举内容包**：A1 守卫以内容包为探针，
   搬走内容包就失去判别力。将来真要分离引擎仓库，补救方向是改用极小的合成测试包
   （沿用阶段 3A"全部用合成内容测试"的既有做法）。
