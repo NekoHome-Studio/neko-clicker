@@ -7,6 +7,61 @@
 
 ---
 
+## [1.12.1] - 2026-10-11
+
+**patch：公开 API 一行没动。** 这一版改的全在**工具链与文档**里——它是一次
+**真人游玩（playtest）**带出来的收口：跑起来、玩到、把发现落进文档，顺便给
+"这台机器上怎么把这一局开起来"留下一个可重复的文件。
+
+### 新增 `tools/play-web.ps1`（这台机器上唯一能把 Web 宿主开起来的路径）
+
+`games/hosts/Web` 声明的是 `net8.0`，而**本机没有 `Microsoft.AspNetCore.App 8.x`**
+（只有 10.0.x；`Microsoft.NETCore.App 8.0.22` 倒是有）。于是直接跑产物会得到
+`You must install .NET to run this application`。脚本做三件**都是必需**的事：
+
+- `DOTNET_ROLL_FORWARD=Major`——让 net8 的应用在 10.x 上跑起来
+  （`tools/api-test.ps1` / `capture-fixture.ps1` / `pack.ps1` 早就在自己的子进程里这么干了，
+  只是**给人玩的那条路**此前没有）；
+- `Logging__EventLog__LogLevel__Default=None`——**这条是硬要求，不是化妆**：
+  EventLog 这个日志 provider 会去写 Windows 事件日志，在本机被拒
+  （`Win32Exception 5 拒绝访问`），于是**每写一条日志就把宿主打挂**
+  （实测：一句无害的 `WebRootPath was not found` 警告 → `AggregateException` → 进程退出，
+  而真正的原因被这条次生异常**盖住了**）；
+- `ASPNETCORE_CONTENTROOT=<games/hosts/Web>`——开发期 `bin` 旁边没有 `wwwroot`
+  （静态文件靠 staticwebassets 解析到源码目录），内容根不指过去就只有 `/api/*` 通、**首页 404**。
+
+用法与两个自带修复：`-Package <id>` 换包、`-Port` 换端口、`-SaveRoot <目录>` 换存档根、
+`-Stop` 停**这个端口上**的宿主、`-StopAll` 收工清场。开发过程中它自己踩了两个坑，
+都当场修掉并写进注释：① 第一版按**进程名**杀 `neko-clicker-web`，于是"起第二个宿主
+（另一个端口 / 另一份存档根）"会把第一个一起杀掉（实测：给人玩的那个 5273 被测试用的
+5274 顺手带走）——现在**只认端口**；② `-Port` 此前只用于打印与探活、**没传给宿主**，
+宿主照样监听 5273，于是第二个实例红在 `address already in use`——现在传 `--urls`。
+埋点文件按端口隔离：5273 仍是 `artifacts/latency.txt`（**真人数据那条线一个字节都不动**），
+其它端口落到 `artifacts/play-<端口>/`。
+
+### 文档：一次真人 playtest 的发现与登记
+
+- **4 条真人延迟样本**（`artifacts/latency.txt`，2026-10-11，
+  `company` 包第 1~4 条表态：31.9 / 9.9 / 38.9 / 3.0 模拟秒，平均 20.9、
+  最长 38.9——模拟秒与真实秒一一对应，**不是挂机刷出来的**）。
+  这是全项目第一条"玩家从看到表态到作答要多久"的真实数据，`OPEN_WORK` 的 **H1 就此结案**；
+  它同时让"30 秒宽限期"第一次有了可比对的实测。
+- **H2 的半侧结论**：离线 sheet 的服务端那一半查清了——`dismissOffline` 真的收得下、
+  宿主不会把它塞回来（三种互斥现象里排掉两种），只剩"矮窗口里好不好看"要眼睛。
+  判据、读数与复跑方式见 `OPEN_WORK` §0.33.3。
+- **新登记 F 组四条**（`OPEN_WORK` 顶部清单）：F1 根地址默认给"字母序第一个包"
+  （`apocalypse`）而前端另一处 fallback 写的是 `neko`；F2 页面上没有换包入口
+  （`/api/packs` 有 11 个包，前端一次都没请求过）；F3 `play-web.ps1` 与
+  `start.cmd` 的环境口径还没统一（重启宿主会吃掉最多 60 秒进度）；
+  F4 本机 ASP.NET 8 运行时缺失这件事仍没有机器守卫。
+- **交接件**：[HANDOVER_2026-10-11](engine/docs/HANDOVER_2026-10-11.md)。
+
+### 未做（刻意留给下一个会话）
+
+- **未打 tag、未打包、未推送发布产物**：按 `RELEASING` §1 的 ⑨⑩⑪ 走。
+- **`OPEN_WORK` 的 H3 与 D1 / D2 / D11 仍然开着**——它们要的是人的眼睛与一句话，
+  这一版只把"已经有答案的那半"（H1、H2 的服务端侧）关掉。
+
 ## [1.12.0] - 2026-10-06
 
 **minor：公开表面只增（`ShortScaleNames` 多一项）＋ 一处已记录的行为变更。**

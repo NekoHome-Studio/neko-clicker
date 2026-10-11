@@ -5,7 +5,15 @@
 > 一句话版本：**从 1.0.0 起，公开 API 只增不改。** 删改任何公开成员都必须升主版本号，
 > 而且这条规矩不是靠自觉——有测试守着。
 >
-> 当前版本 **1.12.0**：**minor——公开表面只增 ＋ 一处已记录的行为变更**（依据下面 §2 那张表）。
+> 当前版本 **1.12.1**：**patch——公开 API 一行没动**（依据下面 §2 那张表）。
+> 这一版改的全在**工具链与文档**里：新增 `tools/play-web.ps1`（本机没有
+> `Microsoft.AspNetCore.App 8.x`，它把 `net8.0` 的 Web 宿主正确地开起来——运行时上滚、
+> 关掉会写挂宿主的 EventLog provider、内容根指向源码目录），外加一次**真人 playtest**
+> 带来的收口（4 条真人作答延迟样本、离线收益那半侧结论、四条新登记）。
+> **公开表面没动的证据是快照本身**：重生成之后只差首行 `version=`。
+> 细节见 [CHANGELOG](../../CHANGELOG.md) 的 1.12.1。
+>
+> 上一版 **1.12.0**：**minor——公开表面只增 ＋ 一处已记录的行为变更**（依据下面 §2 那张表）。
 > 这一版只做一件事：**把文本都换成 K/M/B/T**。`NumFormat.ShortScaleNames` 补上了千位档
 > （索引 0 从 1e6 挪到 1e3，表首是 `"K"`，21 项），于是 `FormatShort` 在 `1000 ~ 999999`
 > 上的输出从 `1,234` 变成 `1.234K`；长名表与 `FormatLong` 一行没改（也没有宿主再用它），
@@ -108,9 +116,9 @@
 单一事实来源是 **`Directory.Build.props` 里的 `<Version>`**：
 
 ```xml
-<Version>1.12.0</Version>
-<AssemblyVersion>1.12.0.0</AssemblyVersion>
-<FileVersion>1.12.0.0</FileVersion>
+<Version>1.12.1</Version>
+<AssemblyVersion>1.12.1.0</AssemblyVersion>
+<FileVersion>1.12.1.0</FileVersion>
 ```
 
 这个值会同时成为程序集版本、文件版本，以及 `ApiVersion.Current` 报告的版本。
@@ -126,8 +134,8 @@
 ```csharp
 using NekoClicker.Core;
 
-Console.WriteLine(ApiVersion.Current);        // "1.12.0"
-Console.WriteLine(ApiVersion.AssemblyVersion); // 1.12.0.0
+Console.WriteLine(ApiVersion.Current);        // "1.12.1"
+Console.WriteLine(ApiVersion.AssemblyVersion); // 1.12.1.0
 Console.WriteLine(ApiVersion.Major);           // 1
 ```
 

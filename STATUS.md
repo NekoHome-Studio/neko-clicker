@@ -2,9 +2,10 @@
 
 > 记录时间：**2026-10-02**（版本行 / 整合补记 **2026-10-03**；**1.10.1 发布 2026-10-04**；
 > **1.10.2 发布与推送 2026-10-05**；**纸条系统 1.11.0 合进 main 2026-10-05**；
-> **K/M/B/T 统一 1.12.0 落在工作树 2026-10-06——未打 tag、未发布**）
-> ｜ 分支 `main` ｜ 工作树版本 **1.12.0**
-> （已发布的最新 tag 仍是 `v1.10.2`——`v1.5.0`…`v1.10.2` 都在远端；`1.11.0` 与 `1.12.0` 只活在 `main` 上，见本节末尾）
+> **K/M/B/T 统一 1.12.0 落在工作树 2026-10-06**；**playtest 收口 1.12.1 落在工作树 2026-10-11
+> ——未打 tag、未发布**）
+> ｜ 分支 `main` ｜ 工作树版本 **1.12.1**
+> （已发布的最新 tag 仍是 `v1.10.2`——`v1.5.0`…`v1.10.2` 都在远端；`1.11.0`、`1.12.0` 与 `1.12.1` 只活在 `main` 上，见本节末尾）
 >
 > 这份文档只回答一个问题：**现在是什么状况**。它不重复别处已有的内容——
 > 架构看 [ARCHITECTURE](engine/docs/ARCHITECTURE.md)，规划与决策看 [ROADMAP](games/docs/ROADMAP.md)，
@@ -19,7 +20,7 @@
 
 | 分支 / tag | 内容 | 状态 |
 |---|---|---|
-| `main` | **唯一的开发线** | 工作树 = **1.12.0**（minor，**未打 tag、未发布**；已发布的最新 tag 仍是 `v1.10.2`，见本节末尾） |
+| `main` | **唯一的开发线** | 工作树 = **1.12.1**（patch，**未打 tag、未发布**；已发布的最新 tag 仍是 `v1.10.2`，见本节末尾） |
 | `v1.10.2` | 1.10.1 + 三轮界面改动 + 三条新守卫 + 五处机械项 + 两份测量记录 + Linux CI 作业 | 已发布（tag 已推送）——**已发布的最新版** |
 | `v1.10.1` | 1.10.0 + 结掉 `[未发布]` 桶（导出/导入的两个宿主窗口、十一个包的「点击 × 建筑」桥、两条宿主修复、一条工具链守卫） | 已发布（tag 已推送） |
 | `v1.4.0` | 1.3.0 + 升级行的货币语义（`UpgradeView` 三字段）+ Web 的「永久」面板 | 已发布（tag 已推送） |
@@ -30,21 +31,24 @@
 | `v1.0.0` | 首个承诺公开 API 稳定的版本 | 已发布 |
 | `feature/web-frontend-ui` | 旧分支，已并入 `main` | **作废**（远端还在，可删） |
 
-**工作树版本 `1.12.0`**（`NekoClicker.Core` 的公开 API 版本）：**minor——公开表面只增
-＋ 一处已记录的行为变更**（`NumFormat.ShortScaleNames` 多一项、索引 0 从 1e6 挪到 1e3；
-`FormatShort` 在 `1000 ~ 999999` 上的输出从 `1,234` 变成 `1.234K`；公开**成员**一项没增删，
-快照只差首行 `version=`，行数仍是 **2032**）。
-这一版只做一件事：**把文本都换成 K/M/B/T**——两个宿主（终端与 Web）的全部显示点改成
-`NumberStyle.Short`，同一个数在两边现在是同一个字符串；11 个内容包里 **294 处**
-被数字钉住的短标签同步改（成就说明 / 纪元完成提示 / 升级说明里的数值），
-**叙事散文一个字没动**（界线见 `CONTENT_AUTHORING` §12.4.1）。
-判据（为什么不升 major、破坏半径怎么量的）见
-[VERSIONING §2.1](engine/docs/VERSIONING.md)，明细见 [CHANGELOG](CHANGELOG.md) 的 1.12.0。
-上一版 1.11.0 是 "**捡到一张纸条**"——一种**在虚构里教机制**的叙事条目：它与既有的剧情弹窗
+**工作树版本 `1.12.1`**（`NekoClicker.Core` 的公开 API 版本）：**patch——公开 API 一行没动**
+（快照重生成之后与 HEAD 只差首行 `version=`，`--numstat` = `1 1`，行数仍是 **2032**）。
+这一版改的全在**工具链与文档**里，来自一次**真人 playtest**：新增 `tools/play-web.ps1`
+（本机没有 `Microsoft.AspNetCore.App 8.x`——它把 `net8.0` 的 Web 宿主正确地开起来：
+运行时上滚 + 关掉会写挂宿主的 EventLog provider + 内容根指向源码目录），
+外加 4 条**真人作答延迟样本**、离线收益那半侧结论、四条新登记（F 组）。
+明细见 [CHANGELOG](CHANGELOG.md) 的 1.12.1；这一轮的收工总结见
+[HANDOVER_2026-10-11](engine/docs/HANDOVER_2026-10-11.md)。
+上一版 1.12.0 是 **minor**——**把文本都换成 K/M/B/T**：公开表面只增一项
+（`NumFormat.ShortScaleNames` 补上千位档、索引 0 从 1e6 挪到 1e3），两个宿主（终端与 Web）
+的全部显示点改成 `NumberStyle.Short`，11 个内容包里 **294 处**被数字钉住的短标签同步改，
+**叙事散文一个字没动**（界线见 `CONTENT_AUTHORING` §12.4.1）；判据（为什么不升 major、
+破坏半径怎么量的）见 [VERSIONING §2.1](engine/docs/VERSIONING.md)，明细见
+[CHANGELOG](CHANGELOG.md) 的 1.12.0。
+再上一版 1.11.0 是 "**捡到一张纸条**"——一种**在虚构里教机制**的叙事条目：它与既有的剧情弹窗
 **共用同一条待读队列**（`PendingLorePopups`）与同一份"已看过"记录（`LoreUnlocked`），
 **存档格式一个字都没改**（`SaveSerializer.CurrentVersion` 仍是 `1`、没有新增任何 `ISaveMigration`）。
 方案、取舍与**两处待真人拍板的问题**见 [FOUND_NOTES_PLAN](engine/docs/FOUND_NOTES_PLAN.md)。
-**未打 tag、未推送**。
 实测：`tools/build.ps1 -Strict`（0 警告）／`node tools/web-smoke.mjs`／`tools/api-test.ps1`
 三个数见 §4 那三条命令——**本节刻意不复写它们**（每加一条守卫就会变）。
 
@@ -467,16 +471,44 @@ Web 宿主不在 `NekoClicker.sln` 里（它是独立的单项目 sln），但 `
     顺带一条同源的：**要看退出码就把输出重定向到文件**（`... *> .tmp\strict.log; "EXIT=$LASTEXITCODE"`），
     别用管道（`... 2>&1 | Select-Object -Last N`）——本轮用管道跑时出现过一次
     "输出 571 全绿而进程退出码 1"，重定向重跑是 `EXIT=0`，根因没定位（记在 `OPEN_WORK` §0.23.10）。
+13. **本机没有 `Microsoft.AspNetCore.App 8.x`，而 Web 宿主声明的是 `net8.0`**（2026-10-11 实测，
+    与 §3.2 记过的同一件事）：`dotnet --list-runtimes` 只有 `Microsoft.AspNetCore.App 10.0.7 / 10.0.11`
+    （`Microsoft.NETCore.App 8.0.22` 倒是有），SDK 是 10.0.203 / 10.0.400。
+    于是**直接跑** `games\hosts\Web\bin\...\neko-clicker-web.exe` 会红在
+    `You must install .NET to run this application`。仓库里已有三处**在自己的子进程里**处理了它
+    （`tools/api-test.ps1:616`、`capture-fixture.ps1:53`、`pack.ps1:148` 都设 `DOTNET_ROLL_FORWARD=Major`），
+    但**给人玩的那条路**此前没有——现在有了：`tools/play-web.ps1`（1.12.1）。
+14. **EventLog 这个日志 provider 在本机会把宿主写挂**（2026-10-11 实测，新发现）：
+    宿主起来之后，任何一条**经由 `ILogger` 的日志**都会让 provider 去写 Windows 事件日志，
+    而本机拒绝（`Win32Exception 5 拒绝访问`），于是日志器自己抛
+    `AggregateException: An error occurred while writing to logger(s)` → **进程直接退出**。
+    最坏的地方是它的**形态**：真正的原因（本轮是一句无害的
+    `The WebRootPath was not found: ...\wwwroot`）被这条次生异常**盖住了**，
+    栈顶是 `Microsoft.Extensions.Logging` 而不是出问题的那一行。
+    对策（`play-web.ps1` 已内置，也是它三件事里最不显眼但最必需的一件）：
+    `Logging__EventLog__LogLevel__Default=None`——**用环境变量**而不是改 `Program.cs`，
+    因为这是环境约束、不是应用行为。
+15. **`engine/tests/bin` 里的旧 dll 会让 `tools\public-api.ps1` 生成一份"看起来正常"的错快照**
+    （2026-10-11 实测）：快照工具跑的是 `engine\tests\bin\Debug\net8.0\NekoClicker.Core.Tests.dll`
+    里的 `--public-api` 那条路（`public-api.ps1:20`），所以**测试项目没重建时**，
+    它打印的是**上一个版本**的公开表面——本轮实测：bump 到 1.12.1 之后先跑它，
+    得到一份首行写着 `version=1.10.2`、且**丢掉 1.11.0 那四个成员**的快照；
+    重建测试项目后重跑，才是 `1 1`（只差首行）的那份。
+    这正是 `RELEASING` §1 第 ⑤ 步"**先构建一次**再生成快照"要防的事——它写的是"版本号改了没重编，
+    快照会带旧版本号且看起来完全正常"，本轮把它的**代价**量化了：那不是一次无害的漂移，
+    而是一份会**静默删掉公开成员**的快照（`--numstat` 从 `1 1` 变成 `1 7`）。
 
 ---
 
 ## 8. 下一步与交接（给下一个接手的人）
 
-> **停在哪里（2026-10-06 复核）**：工作树 = **1.12.0**（minor：K/M/B/T 统一，**未打 tag、未发布**），
+> **停在哪里（2026-10-11 复核）**：工作树 = **1.12.1**（patch：playtest 收口——
+> `tools/play-web.ps1` + 4 条真人延迟样本 + 四条新登记，**未打 tag、未发布**），
 > 已发布的最新 tag 是 `v1.10.2`；推送状态与实测的三个数见 `OPEN_WORK` 顶部《下一步：唯一权威清单》
-> 与本文 §4 那三条命令。工作树干净。
+> 与本文 §4 那三条命令。
 > **这一轮的收工总结**（做了什么、证据在哪、还剩什么）见
-> [HANDOVER_2026-10-05](engine/docs/HANDOVER_2026-10-05.md)——那是给下一个会话的**单一入口**。
+> [HANDOVER_2026-10-11](engine/docs/HANDOVER_2026-10-11.md)——那是给下一个会话的**单一入口**
+> （上一轮是 [HANDOVER_2026-10-05](engine/docs/HANDOVER_2026-10-05.md)）。
 > **待办只有一个出处**：[OPEN_WORK](engine/docs/OPEN_WORK.md) 顶部的《下一步：唯一权威清单》
 > （H / D / W 三张表）——本节以及 §8.1~§8.7 是**历史记录**，不再产生待办。
 > 这一段此前写的是"1.4.0 已发布 / 已经就位、只差执行的事没有了"，那是 2026-10-02 的事实，

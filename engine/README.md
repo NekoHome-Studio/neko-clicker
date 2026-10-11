@@ -73,9 +73,12 @@ dotnet build NekoClicker.sln     # 或者用仓库根的 .\tools\build.ps1
 
 ## 版本与兼容性
 
-**当前 `1.12.0`。从 `1.0.0` 起，`NekoClicker.Core` 的公开 API 只增不改**，
+**当前 `1.12.1`。从 `1.0.0` 起，`NekoClicker.Core` 的公开 API 只增不改**，
 由 `core/PublicApi.txt`（快照，**嵌进 dll**）加四条守卫强制执行。
-规矩见 [docs/VERSIONING.md](docs/VERSIONING.md)。1.12.0 是 **minor：公开表面只增
+规矩见 [docs/VERSIONING.md](docs/VERSIONING.md)。1.12.1 是 **patch：公开 API 一行没动**——
+改的全在工具链与文档（新增 `tools/play-web.ps1`、一次真人 playtest 的收口），
+细节见 [CHANGELOG](../../CHANGELOG.md) 的 1.12.1。
+上一版 1.12.0 是 **minor：公开表面只增
 ＋ 一处已记录的行为变更**——**把文本都换成 K/M/B/T**：`NumFormat.ShortScaleNames`
 补上千位档（索引 0 从 1e6 挪到 1e3，表首 `"K"`），`FormatShort` 于是把
 `1000 ~ 999999` 写成 `1.234K` 而不是 `1,234`；公开成员一项没增删（快照只差首行
