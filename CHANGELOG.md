@@ -273,6 +273,47 @@ PID 26772；正文里有那条命令: False`，`通过 111 ｜ 失败 1`；改�
 **版本**：**patch，停在 `[未发布]` 桶，不升** —— 只动 `tools/`、`start.cmd`、文档与守卫；
 `engine/core` 与 `engine/core/PublicApi.txt` 一个字节没动。上游 1.12.1 的版本号也不碰
 （两边已经分叉，怎么集成由人决定）。
+### 外置存档：`WriteFailed` 那一类失败第一次有了守卫（2026-10-17，测试加固）
+
+`SaveManager.Import` 的 **12 类失败**里，`WriteFailed`（校验全过、落盘炸了：磁盘满 /
+权限不足 / 被占着）是唯一**可达**却零守卫的一类——`SAVE_TRANSFER_PLAN` §5.4 承诺
+"§3.3 那张表逐行一条用例"，唯独"存储写不进去"这一行一直没落（§13 注入过的
+`ApplyFailed` 则按方案 §3.2 明确记录为不可达，不属于欠账）。它同时是**最会被误报成功**
+的一类：`Save()` 的同类故障早已被
+`SaveManager_StorageFailureIsReportedNotSwallowed` 钉住，而导入这条路上的它只有
+代码与文案，没有任何用例说得出"落盘炸了之后会话没被换掉"。
+
+**修法：加深那条既有用例，而不是新增一条。**
+`SaveFileTests.SaveManager_StorageFailureIsReportedNotSwallowed` 在原有
+`Save()` 那一半之后，补上 `Import` 那一半：同一台引擎、同一个
+`ThrowingStorage`，导入一份**真信封**（另一台 `MemoryStorage` 会话 `Export()` 出来的，
+不是手拼的——校验若被绕过，这条用例就红得没有意义），断言五件事：
+
+- `Ok == false` 且 `Kind == WriteFailed`（12 类各有各的那一句，不许压成一个 `false`）；
+- 消息转发存储层原话（`磁盘满了`），并说清"旧存档与备份都还在"（玩家唯一关心的损失面）；
+- `LastError` 留痕；
+- **会话一个字段都没变**——它守的正是"先落盘、后应用"这个顺序：把那两步对调，
+  磁盘上什么都没写进去、内存里却已经是导入的那份，玩家看到一次"成功了的"导入，
+  而下次启动一切如旧；
+- 落盘失败的导入**不发** `GameSavedEvent`（宿主会拿它当"已存档"说给玩家）。
+
+**判别力（已注入、已还原、已核对 sha256）**：把 `SaveSerializer.Apply` 提前到
+`_storage.Write` 之前（镜像方案 §5 那次"落盘提前"注入——那次只证明了
+"坏输入不动盘"，没证明"好输入写不进时不动会话"）⇒ 恰好 1 条红，原文：
+
+```
+✗ SaveFileTests.SaveManager_StorageFailureIsReportedNotSwallowed
+      AssertionException: 落盘失败时应用绝不能已经发生（先落盘、后应用，顺序即保证）。
+      ｜期望 55 ± 1E-09，实际 4242（差值 4187）。
+```
+
+还原后 `SaveManager.cs` 的 sha256 与注入前逐字节相同（`2707AAF7…`），全绿。
+
+- **用例数不变（599）**：这条是**加深**而非新增，`TestCountDriftTests` 守着的
+  11 处文档槽位一处都不用动。
+- **公开 API 零变化**：只改了 `engine/tests/`，连 patch 都算不上——按仓库口径它是
+  测试加固，随下一次结桶一并带走。
+- `games/docs/` 与 `engine/docs/GUI_OPTIMIZATION_PLAN.md` 一处未碰（本轮明令禁区）。
 
 ### ×10 / ×100 / 买满：点一下真的买 N 个（2026-10-10，宿主 + 两条守卫）
 

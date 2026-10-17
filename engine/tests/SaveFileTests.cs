@@ -315,17 +315,28 @@ public static class SaveFileTests
     }
 
     /// <summary>
-    /// 存储层直接抛（磁盘满 / 权限不足 / 被别的进程占着）时，<c>Save()</c> 也必须失败得响亮。<para>
+    /// 存储层直接抛（磁盘满 / 权限不足 / 被别的进程占着）时，<c>Save()</c> 与
+    /// <see cref="SaveManager.Import(string)"/> 都必须失败得响亮。<para>
     /// 自动存档是<b>无人值守</b>的：它静默失败的话，玩家要到下一次启动才发现自己丢了一整局。
     /// 所以这里钉的不是"抛不抛"，而是"有没有对外报告成功"——尤其是那条
     /// <c>GameSavedEvent</c>：发了它，宿主就会理直气壮地告诉玩家"已存档"。
+    /// </para>
+    /// <para>
+    /// <b>Import 那一半是 12 类失败里唯一"校验全过、落盘炸了"的一类</b>（<c>WriteFailed</c>，
+    /// SAVE_TRANSFER_PLAN §3.3 表的"存储写不进去"一行）。那张表在方案 §5.4 承诺
+    /// "逐行一条用例"，唯独这一行一直没落——它也是 12 类里唯一<b>可达</b>却零守卫的一类
+    /// （<c>ApplyFailed</c> 今天不可达，见方案 §3.2 的诚实边界）。
+    /// 判据里最有分量的是"会话一个字段都没变"：它守的是"先落盘、后应用"这个顺序——
+    /// 把那两步对调，磁盘上什么都没写进去、内存里却已经是导入的那份，玩家看到的是一次
+    /// "成功了"的导入，而下次启动一切如旧（正是方案 §5 那次"落盘提前"注入的镜像故障，
+    /// 那次只证明了"坏输入不动盘"，没证明"好输入写不进时不动会话"）。
     /// </para>
     /// </summary>
     [Test]
     public static void SaveManager_StorageFailureIsReportedNotSwallowed()
     {
         GameEngine engine = TestGame.CreateMini(out _);
-        using var manager = new SaveManager(engine, new ThrowingStorage(), Slot);
+        using var manager = new SaveManager(engine, new ThrowingStorage(), Slot) { PackId = "mini" };
 
         bool savedEvent = false;
         using IDisposable subscription = engine.Events.Subscribe<GameSavedEvent>(_ => savedEvent = true);
@@ -335,6 +346,27 @@ public static class SaveFileTests
         Check.Contains(manager.LastError!.Message, "磁盘满了", "LastError 里要看得见真正的原因。");
         Check.False(savedEvent, "存档失败却发了 GameSavedEvent，正是静默失败最典型的形状。");
         Check.Null(manager.LastSaveAt, "没存上就不该记下存档时刻。");
+
+        // ---- 同一种存储故障发生在 Import 的落盘那一步：七道校验全过、写盘炸了。
+        // 一份真信封（不是手拼的）：校验若被绕过，这条用例就红得没有意义。
+        GameEngine source = TestGame.CreateMini(out _);
+        source.State.Cookies = 4_242;
+        source.MarkDirty();
+        using var sourceManager = new SaveManager(source, new MemoryStorage(), Slot) { PackId = "mini" };
+        string exported = sourceManager.Export();
+
+        engine.State.Cookies = 55;
+        engine.MarkDirty();
+
+        SaveTransferResult result = manager.Import(exported);
+
+        Check.False(result.Ok, "落盘炸了时 Import 必须回报失败，而不是假装成功。");
+        Check.Equal(SaveTransferKind.WriteFailed, result.Kind, "12 类失败各有各的那一句：这里必须是 WriteFailed。");
+        Check.Contains(result.Message, "磁盘满了", "结果那句话要转发存储层的原话（方案 §3.3 那一行的承诺）。");
+        Check.Contains(result.Message, "都还在", "还要说清旧存档与备份没被动过——那是玩家唯一关心的损失面。");
+        Check.NotNull(manager.LastError, "Import 的失败同样要留痕（LastError）。");
+        Check.Close(55, engine.State.Cookies, 1e-9, "落盘失败时应用绝不能已经发生（先落盘、后应用，顺序即保证）。");
+        Check.False(savedEvent, "落盘失败的导入不许发 GameSavedEvent（宿主会拿它当『已存档』说给玩家）。");
     }
 
     /// <summary>
