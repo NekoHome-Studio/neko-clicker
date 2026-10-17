@@ -3140,7 +3140,9 @@ git ls-remote origin refs/heads/main   # 必须与 git rev-parse HEAD 的**完�
 
 ### 0.34.1 三条命令的实测（同一个提交、同一个独立 worktree）
 
-全部在 **`c4b903c`**（= 测完那一刻的 `main` = `origin/main` 之前的 tip，见 §0.33.6）上，
+全部在 **`c4b903c`** —— 那是**测完那一刻本地 `main` 的 tip**。
+⚠️ **它已经不是 `origin/main` 了**：远端那时早就是 `c858bc1`（2026-10-11 推的），
+只是本地的**远程跟踪引用还是旧的**，所以一开始没看出来——见 §0.33.6。
 在**隔离 worktree `.tmp/wt-consolidate`** 里跑，**全程不碰 5273 那个试玩宿主**：
 
 | 命令 | 解释器 | 结果 |
@@ -3168,8 +3170,12 @@ git ls-remote origin refs/heads/main   # 必须与 git rev-parse HEAD 的**完�
 `artifacts/host-out.log` 最后一条是 **2026-10-11 10:47:49**，内容是那条 SSE 流结束
 （`GET /api/stream … 48904953.3336ms` ≈ 13.6 小时），`host-err.log` 是 **0 字节**
 （写于 2026-10-10 21:43）。也就是说**宿主在四天前就没了**。
-**这一轮没有重启它、没有杀它、没有往 5273 发过任何写命令**（H1/H3 那两条"真人去玩"的前提
-因此仍然悬着——人现在打不开那个页面）。要不要重新起一个，是一件要人说话的事。
+**这一轮没有重启它、没有杀它、没有往 5273 发过任何写命令。**
+⚠️ **但要更正一句本记录最先写下的话**：它原来说"H1 / H3 那两条'真人去玩'的前提因此仍然悬着"——
+**H1 已经不在欠账里了**：`origin/main` 上的 **`a651c67`**（`suan-11`，2026-10-11 10:56）标题就是
+"把这一轮**真人 playtest** 收成 **1.12.1**（**H1 结案**）"（这两个提交本地原先没有，见 §0.33.6）。
+所以"宿主现在不在跑"影响的是**下一次**要看一眼 / 玩一次（**H3** 与 **H2**），
+而不是 H1 有没有人玩过。要不要重新起一个宿主，是一件要人说话的事。
 
 ### 0.34.3 登记：最后两天**只写在 §0.x 散文里、没进权威清单**的那些
 
@@ -3243,23 +3249,68 @@ git ls-remote origin refs/heads/main   # 必须与 git rev-parse HEAD 的**完�
   `saves-baseline.txt` 之类的一次性生成器与中间产物。**这一轮只删自己那条命令的临时文件**
   （见报告），其余原样留着——`.tmp/` 全在 `.gitignore` 里。
 
-### 0.34.6 推送（结果回填在本节的后续提交里，按 §0.28.8 / §0.30.7 的先例）
+### 0.34.6 ⚠️ 推送**没有成功**，而且是两道独立的门（凭据 ＋ 实际分叉）
 
-直连那条路**仍然是坏的**：`github.com` 解析到一个不可达的 IP（**边缘 IP 可达**——
+**直连那条路仍然是坏的**：`github.com` 解析到一个不可达的 IP（**边缘 IP 可达**——
 本轮实测 `140.82.112.4` / `140.82.113.4` / `140.82.121.4` 通，`20.205.243.166` 超时）。
-所以走的是**本地 TCP 中继 ＋ git 的 `http.proxy`**：中继监听 `127.0.0.1:8899`，
-每条连接转发到 `140.82.112.4:443`，读完客户端的 `CONNECT` 头后回
+于是按 §0.28.8 / §0.30.7 的先例起**本地 TCP 中继 ＋ git 的 `http.proxy`**：中继监听
+`127.0.0.1:8899`，每条连接转发到 `140.82.112.4:443`，读完客户端的 `CONNECT` 头后回
 `HTTP/1.1 200 Connection Established`，再双向 `Stream.CopyToAsync`。
 
-**判据不是 `push` 自己的输出**（它打印 `main -> main` 不算证据，规矩见 `push-retry.ps1` 头部），
-而是这一条的**完整哈希**与 `git rev-parse HEAD` **逐字符相同**：
+**这条中继对"读"有效、对"写"不够——这是这一轮最值钱的一条现场结论**：
 
-```powershell
-git -c http.sslBackend=openssl -c http.proxy=http://127.0.0.1:8899 push origin main
-git -c http.sslBackend=openssl -c http.proxy=http://127.0.0.1:8899 ls-remote origin refs/heads/main
+| 动作（都经中继） | 结果 |
+|---|---|
+| `git ls-remote origin refs/heads/main` | **成功** → `c858bc1f95aa99c971fe72a7003a3af96ad9737a` |
+| `git fetch origin main` | **成功** → `c4b903c..c858bc1  main -> origin/main` |
+| `git push origin main` | **失败，退出码 128**——**卡在凭据，连 divergence 都还没走到** |
+
+`push` 失败的原文（真推与 `--dry-run` 各一次，字一样）：
+
+```
+0 [main] sh (6608) C:\Program Files\Git\usr\bin\sh.exe: *** fatal error - couldn't create signal pipe, Win32 error 5
+0 [main] bash (20764) C:\Program Files\Git\usr\bin\bash.exe: *** fatal error - couldn't create signal pipe, Win32 error 5
+error: failed to execute prompt script (exit code 66)
+fatal: could not read Username for 'https://github.com': No such file or directory
 ```
 
+`credential.helper=manager` 是全局配置，但仓库里**没有存下任何凭据**
+（`~/.git-credentials` 不存在），而沙箱里凭据提示脚本连 `sh` / `bash` 都起不来
+（`couldn't create signal pipe, Win32 error 5`）⇒ git 直接报"读不到用户名"。
+这与 §0.30.7 记的**是同一道门**：**中继解决的是 443，解决不了凭据**。
+所以"中继那条路已经证明过两次"这个说法，在这台机器上**至少还差一把 token 或一份私钥**。
+
+**第二道门与凭据无关、独立成立：`origin/main` 已经分叉，一次普通推送本来就是非快进**：
+
+| | |
+|---|---|
+| `origin/main` | **`c858bc1f95aa99c971fe72a7003a3af96ad9737a`** |
+| 本轮 `HEAD` | `fd71de204e121f67d765fe0647523785df75efb9`（`fd71de2`） |
+| 共同祖先 | **`c4b903c`**（＝这一轮全部实测所在的那个提交） |
+| `origin/main` 是 `HEAD` 的祖先？ | **否** |
+| `HEAD` 是 `origin/main` 的祖先？ | **否** |
+
+远端那 **2 个**提交（作者 **`suan-11 <3132190387@qq.com>`**，2026-10-11）本地原先一个都没有：
+
+- **`a651c67`**「工具链＋文档：把这一轮**真人 playtest** 收成 **1.12.1**（**H1 结案**）」——
+  `Directory.Build.props` 已是 **`1.12.1`**，新增 `tools/play-web.ps1` 与
+  `engine/docs/HANDOVER_2026-10-11.md`，并改了 `CHANGELOG` / `README` / `STATUS` /
+  `OPEN_WORK` / `VERSIONING` / `engine/README` / `PublicApi.txt`（10 个文件，**+594 / −42**）
+- **`c858bc1`**「把这一轮的推送与 CI 结果回填（运行 38106775846，四作业全绿 / 214 秒）」
+
+⇒ **这一条整合提交（`fd71de2`）只活在本地，没有推上去，也**不能**靠 force 推上去**：
+远端那两个是有作者、有 CI 记录的**已推送历史**，重写它正是任务书明令禁止的事。
 **没有 force、没有改写任何已推送的历史、没有动任何 tag**（本地 tag 仍是 14 个，最新仍是 `v1.10.2`）。
+这一轮**刻意没有 merge 上游那两个提交**：那会把一个 1.12.1 的版本提交并进一条"只动文档、
+不升版本"的整合提交里，而且在没有凭据、根本推不出去的前提下白造一次冲突。
+**怎么合（merge 进来，还是把这一轮重做到新 tip 上）要人拍一句话。**
+
+**因此下面这些只对 `c4b903c` 那棵树成立，请连着这一段一起读**：§0.33.1 的三个数
+（599 / 271 / 105）、§0.33.3 的新编号、§0.33.4 改掉的"现在时"、§0.33.5 的脚手架清点。
+上游那 2 个提交落地之后，至少**三处要重新对表**：① **`H1` 已结案**（真人 playtest），
+权威清单里 H1 那一行在上游是**已完成**的；② 工作树版本上游是 **1.12.1**，不是本书写的 1.12.0；
+③ 上游的 `OPEN_WORK` 又长了 **127 行**，与本节大概率落在**同一片区域**——下一轮整合
+**要先做一次真正的三方对表**，别直接覆盖。
 
 ---
 
