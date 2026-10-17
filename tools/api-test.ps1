@@ -37,10 +37,12 @@
 #      **3 处调用点从来没执行过**（`if ($clickError)` 的一个面、`if ($laterDeltas…)` 的 `else` 里
 #      两处），同时 **1 处**写在 `foreach` 里跑了 3 次，一多一少正好相抵。计数对不上只是症状，
 #      "某条检查悄悄没跑"才是病——所以现在由机器来数，不靠这一行注释。
-#      当前是 **105 处**调用点（65 → 85 是令牌门与分享链接那一段加的 20 处，见 ⑥；
+#      当前是 **112 处**调用点（65 → 85 是令牌门与分享链接那一段加的 20 处，见 ⑥；
 #      85 → 101 是启动器那一段加的 16 处，见 ⑦；
 #      101 → 105 是「批量档位真的买 N 个」那一段加的 4 处——人 2026-10-10 报的
-#      「×10 之后点一下只能买一个」此前一条判据都没有）。
+#      「×10 之后点一下只能买一个」此前一条判据都没有；
+#      105 → 112 是「把两个起网页的入口统一成一个」加的 7 处：`stop` 模式、跨端口拒绝、
+#      按端口分开的日志/埋点、停止命令点名的 PID、以及别名 `tools/play-web.ps1` 的三条，见 ⑦）。
 #   ⑥ **URL 上那两段加密载荷也在这条真链路上验**（`SHARE_LINK_PLAN` §11 的"第二刀"）：
 #      铸一枚跳层令牌 → 打真 URL → 断正文形状与四种拒绝、并复核明文门一个字节没变；
 #      生成的分享链接 → 错密码（**磁盘与会话一个字节都不许动**）→ 对密码。
@@ -48,13 +50,19 @@
 #      这一段还要一把钥匙：本脚本自己设 `NEKO_URL_KEY`（见下面的"环境重定向"，与 ② 正好相反）。
 #   ⑦ **启动器（`tools/start.ps1`）也在这条真链路上验**：端口上已有宿主时它必须**复用**
 #      （不杀、不重起、幂等），端口被别的程序占着时必须**点名端口报错**，而终端那条路在
-#      网页持着端口时必须**拒绝**启动。最后一条不是口味问题：两个宿主的默认存档是
+#      **任何端口**上有本仓库的 Web 宿主时都必须**拒绝**启动（以前只认一个端口）。
+#      同一条规则还有另一半：端口空闲、但别的端口上有宿主、又没给 `-SaveRoot` 时，网页那条路
+#      也不再起第二个；`-SaveRoot` 是新存档根 = 唯一的出路。最后一条不是口味问题：两个宿主的默认存档是
 #      **同一个文件**（`saves/<包 id>.json`——Web 的 `Program.cs` 默认 `DefaultSaveRoot()`，
 #      终端的 `CliOptions.cs` 默认 `saves/<包 id>.json`），而两边每 60 秒各自按**自己内存里**
 #      的状态整份重写（`FileStorage` 的原子替换只保证"不会写坏"，**不保证**"不会互相覆盖"）
-#      ⇒ 同时跑就是后写的那份赢，另一边静默回退。这三件事都只有真的把宿主跑起来才看得见。
+#      ⇒ 同时跑就是后写的那份赢，另一边静默回退。这几件事都只有真的把宿主跑起来才看得见。
+#      这一段还验 `stop` 只停**这个端口上我们的**宿主、停止命令命名的 PID 是真正在服务的
+#      apphost（不是包装进程）、非默认端口的日志/埋点落在 `artifacts\play-<端口>\` 而真人那条
+#      `artifacts\latency.txt` 一个字节没动，以及兼容别名 `tools/play-web.ps1` 转发到同一条路、
+#      它的 `-StopAll` 被明确拒绝。
 #      这一段**绝不碰 5273**（真人正在玩的宿主，OPEN_WORK H1 等的就是它的样本）：
-#      只用本脚本自己挑的空闲端口、临时存档根，以及另外两个临时挑的空闲端口。
+#      只用本脚本自己挑的空闲端口、临时存档根，以及另外几个临时挑的空闲端口。
 #
 # 用法：
 #   powershell -File tools/api-test.ps1                 # 构建 + 起宿主 + 打全套 + 收尾
@@ -254,8 +262,8 @@ function Invoke-MintLink([string[]]$MintArgs, [switch]$WithoutUrlKey) {
 # 判据一律只用 **ASCII 针**（端口号 / `saves\<包>.json` / `-AllowSharedSave` / `Time Elapsed`…）：
 # Windows PowerShell 5.1 把中文写进重定向的输出时用的是控制台代码页，在非中文的机器上
 # （例如英文 CI）中文会变成 `?`——用中文当针，守卫会在别人的机器上假红。
-function Invoke-Launcher([string[]]$LauncherArgs) {
-    $launcherPath = Join-Path $root 'tools\start.ps1'
+function Invoke-Launcher([string[]]$LauncherArgs, [string]$Script = 'tools/start.ps1') {
+    $launcherPath = Join-Path $root $Script
     # 带空格的参数自己加引号（与 Invoke-MintLink 同一条规矩）。
     $quoted = @(foreach ($a in $LauncherArgs) { if ($a -match '\s') { '"' + $a + '"' } else { $a } })
 
@@ -1665,8 +1673,14 @@ try {
     # 真的把宿主跑起来才看得见，而本脚本正好已经有一个活着的宿主（$Port）与一套按端口反查 /
     # 树杀的收尾工具（Get-TestProcess / Stop-ProcessTree）。
     #
+    # 这一段覆盖统一后的**每一个分支**：复用（①）、幂等（②）、终端拒绝（③ / ③.5）、
+    # 外来占位者报错（④）、跨端口"同存档根"拒绝（④.5）、-SaveRoot 的出路与分离启动（⑤）、
+    # `stop` 只停这个端口（⑥）、未知模式（⑦）、以及兼容别名 play-web.ps1（⑧ / ⑨）。
+    # 非默认端口的日志/埋点落在 artifacts\play-<端口>\，真人那条 artifacts\latency.txt
+    # 在 ⑤ 里用长度 + mtime + sha256 三重比对（实验局的会话行不许混进真人样本）。
+    #
     # ★ 这一段**绝不碰 5273**：那是真人正在玩的宿主（OPEN_WORK H1 等的就是它的样本）。
-    #   它只用 $Port（本脚本自己挑的空闲端口 + 临时存档根）与另外两个临时挑的空闲端口。
+    #   它只用 $Port（本脚本自己挑的空闲端口 + 临时存档根）与另外几个临时挑的空闲端口。
     Write-Section '启动器（tools/start.ps1）：复用 / 拒绝 / 绝不起第二个宿主'
 
     $repoHostsBefore = @(Get-RepoWebHost -Root $root)
@@ -1728,6 +1742,20 @@ try {
         ($aliveAfterRefuse.Success -and $listenerAfterRefuse -eq $listenerBefore) `
         "HTTP $($aliveAfterRefuse.Status)；PID $listenerBefore → $listenerAfterRefuse"
 
+    # ---- ③.5 终端那条路：别的端口上有 Web 宿主、又没给 -SaveRoot ⇒ 也拒绝 ------------
+    # 判据故意用**一个空闲端口**：拒绝必须来自"本仓库还有宿主"（存档按包走，不按端口走），
+    # 而不是"这个端口被占"。它以前只认 $Port —— 换个端口跑的宿主照样写同一份 saves\<包>.json，
+    # 而终端的默认存档就是那份。
+    $secondProbe = New-Object System.Net.Sockets.TcpListener -ArgumentList @([System.Net.IPAddress]::Loopback, 0)
+    $secondProbe.Start()
+    $secondPort = ([System.Net.IPEndPoint]$secondProbe.LocalEndpoint).Port
+    $secondProbe.Stop()
+
+    $refusedOtherPort = Invoke-Launcher @('play', $Package, '-Port', "$secondPort", '-NoBuild')
+    Check '终端那条路：别的端口上有 Web 宿主、又没给 -SaveRoot 时也拒绝（不再只看一个端口）' `
+        ($refusedOtherPort.ExitCode -ne 0) `
+        "退出码 $($refusedOtherPort.ExitCode)；stdout <$(($refusedOtherPort.Output -split "`r?`n") -join ' / ')>"
+
     # ---- ④ 端口被**别的程序**占着：点名端口报错，不猜也不杀 ------------------------
     # 占位者是一个**原始 TcpListener**：它接受连接但一个字节都不回，正好是"有人在听、
     # 但不是我们的宿主"这一形态（判据必须落在 /api/ping 的正文上，而不是"端口通不通"）。
@@ -1750,15 +1778,42 @@ try {
         ($repoHostsAfterForeign.Count -eq $repoHostsBefore.Count) `
         "$($repoHostsBefore.Count) → $($repoHostsAfterForeign.Count)"
 
+    # ---- ④.5 端口空闲、但别的端口上有宿主、又没给 -SaveRoot：拒绝，而不是起第二个 ----
+    # 这是"绝不让两个宿主写同一份存档"在 web 那条路上的另一半：复用管的是**同一个端口**，
+    # 这一条管的是**同一个存档根**（默认两边都是 <仓库>\saves\<包>.json）。
+    # -SaveRoot 是显式声明"这份是隔离的"；所以下面 ⑤ 用 -SaveRoot 起得起来，正好证明那条出路是通的。
+    $second = Invoke-Launcher @('web', '-Port', "$secondPort", '-NoBrowser', '-NoBuild')
+    $secondText = ($second.Output -split "`r?`n") -join ' / '
+    Check '网页那条路：别的端口上有宿主、又没给 -SaveRoot 时**拒绝**再起一个' `
+        ($second.ExitCode -ne 0 -and $second.Output.Contains('-SaveRoot') -and $second.Output.Contains('-AllowSharedSave') -and $second.Output.Contains("PID $listenerBefore")) `
+        "退出码 $($second.ExitCode)；含 -SaveRoot: $($second.Output.Contains('-SaveRoot'))；含 -AllowSharedSave: $($second.Output.Contains('-AllowSharedSave'))；点名持有者 PID ${listenerBefore}: $($second.Output.Contains("PID $listenerBefore"))；stdout <$secondText>"
+
+    $repoHostsAfterSecondRefusal = @(Get-RepoWebHost -Root $root)
+    Check '拒绝那条路上没有多起宿主（本仓库的 neko-clicker-web 进程数不变）' `
+        ($repoHostsAfterSecondRefusal.Count -eq $repoHostsBefore.Count) `
+        "$($repoHostsBefore.Count) → $($repoHostsAfterSecondRefusal.Count)"
+
     # ---- ⑤ 端口空闲：**分离启动**真的起得来（唯一能证明那条路通的检查）------------
-    # -NoBuild 是必须的：本段不该再编一次，更不该让启动器去清"本仓库的残留进程"——
-    # 那会把**本脚本自己的宿主**一起杀掉（启动器把清理绑在构建上，正是为了这件事）。
+    # -NoBuild 是必须的：本段不该再编一次（这条同时证明启动器真的遵守了 -NoBuild）。
+    # 此时本仓库还有本脚本自己的宿主在跑，所以 -SaveRoot 也是必须的 —— 它正是 ④.5 那条
+    # "拒绝"的**出路**：显式换一份存档根，两个宿主就各玩各的进度。
     $freeProbe = New-Object System.Net.Sockets.TcpListener -ArgumentList @([System.Net.IPAddress]::Loopback, 0)
     $freeProbe.Start()
     $freePort = ([System.Net.IPEndPoint]$freeProbe.LocalEndpoint).Port
     $freeProbe.Stop()
     $freeSaveRoot = Join-Path $workDir 'launcher-saves'
     New-Item -ItemType Directory -Force -Path $freeSaveRoot | Out-Null
+
+    # 非默认端口的日志/埋点落点（start.ps1：5273 走 artifacts\host-*.log，其它端口走
+    # artifacts\play-<端口>\）。真人那条 latency.txt 的指纹先记下来，跑完要比对。
+    $freeLogDir = Join-Path (Join-Path $root 'artifacts') "play-$freePort"
+    $hostOutLog = Join-Path $freeLogDir 'host-out.log'
+    $hostLatencyLog = Join-Path $freeLogDir 'latency.txt'
+    $realLatencyLog = Join-Path (Join-Path $root 'artifacts') 'latency.txt'
+    $realLatencyBefore = if (Test-Path $realLatencyLog) {
+        '{0}|{1}|{2}' -f (Get-Item $realLatencyLog).Length, (Get-Item $realLatencyLog).LastWriteTimeUtc.Ticks, (Get-FileSha256 $realLatencyLog)
+    }
+    else { '<missing>' }
 
     $launched = $null
     try {
@@ -1784,18 +1839,45 @@ try {
 
         # -SaveRoot 真的传到了宿主：宿主启动时会自己报出"存档目录 <路径>"，而那份日志就是它。
         # 这条钉的是"换存档根"这条路真的接通了（两个宿主各玩各的进度，靠的就是它）。
-        $hostOutLog = Join-Path $root 'artifacts\host-out.log'
-        $hostLogText = if (Test-Path $hostOutLog) { [string](Get-Content $hostOutLog -Raw -Encoding UTF8 -ErrorAction SilentlyContinue) } else { '' }
+        # ★ 日志按端口分开之后，这里读的是 artifacts\play-<端口>\host-out.log（不再是 artifacts\host-out.log）。
+        $hostLogText = Get-TextOrEmpty $hostOutLog
         Check '-SaveRoot 真的传到了宿主（宿主日志里的存档目录 = 那个临时根）' `
             ($hostLogText.Contains($freeSaveRoot)) `
             "日志 <$hostOutLog> 里含 <$freeSaveRoot>: $($hostLogText.Contains($freeSaveRoot))"
+
+        # 非默认端口的那条线：日志与埋点必须落在 artifacts\play-<端口>\，而且宿主确实收到了
+        # 那个 --latency-log（它启动时会自己报出埋点路径）。真人那条 artifacts\latency.txt
+        # 用长度 + mtime + sha256 三重比对——实验局的会话行混进真人样本是最难查的那类坏账。
+        $realLatencyAfter = if (Test-Path $realLatencyLog) {
+            '{0}|{1}|{2}' -f (Get-Item $realLatencyLog).Length, (Get-Item $realLatencyLog).LastWriteTimeUtc.Ticks, (Get-FileSha256 $realLatencyLog)
+        }
+        else { '<missing>' }
+        Check '非默认端口的日志与埋点落在 artifacts\play-<端口>\，真人那条 latency.txt 一个字节没动' `
+            ((Test-Path $hostLatencyLog) -and $hostLogText.Contains($hostLatencyLog) -and ($realLatencyAfter -eq $realLatencyBefore)) `
+            "play 目录里 latency.txt: $(Test-Path $hostLatencyLog)；日志点名它: $($hostLogText.Contains($hostLatencyLog))；真人 latency.txt <$realLatencyBefore> → <$realLatencyAfter>"
+
+        # 停止那条命令必须点名**真正在服务**的那个 PID（按端口认出来的 apphost），
+        # 而不是启动器 / 包装进程 —— 包装进程退出之后那个 PID 就不存在了（上一版的实际形态）。
+        $liveListener = Get-ListenerPid -Port $freePort
+        Check '停止那条命令点名的是**真正在服务**的 PID（不是包装进程）' `
+            ($liveListener -gt 0 -and $launched.Output.Contains("taskkill /PID $liveListener /T /F")) `
+            "监听 $freePort 的 PID $liveListener；正文里有那条命令: $($launched.Output.Contains("taskkill /PID $liveListener /T /F"))"
+
+        # ---- ⑥ stop 模式：只停这个端口上的宿主，端口立刻松手 ---------------------
+        # 这一条替换了旧版"印出来的 taskkill 能停掉它"：stop 模式做的就是同一件事
+        # （同一句 taskkill /PID <apphost> /T /F），而上面那条已经钉住印出来的 PID 是监听者。
+        $stopped = Invoke-Launcher @('stop', '-Port', "$freePort")
+        $released = -not (Test-PortBusy -Port $freePort)
+        Check 'stop 模式：只停这个端口上的宿主（点名它、退出码 0、端口松手）' `
+            ($stopped.ExitCode -eq 0 -and $stopped.Output.Contains("PID $liveListener") -and $released) `
+            "退出码 $($stopped.ExitCode)；正文含 PID ${liveListener}: $($stopped.Output.Contains("PID $liveListener"))；端口松手: $released；stdout <$(($stopped.Output -split "`r?`n") -join ' / ')>"
 
         # 浏览器那一半**没有**机器判据（要真有眼睛看窗口弹没弹出来）：归 OPEN_WORK 的 H3。
         # 这里只把"它没开浏览器"这件事留给正文，不做断言——用中文当针在英文机器上会假红。
     }
     finally {
-        # 收掉**这次自己起的**那一棵树：启动器把包装进程的 PID 印在正文里
-        # （「停止：taskkill /PID N /T /F」），按它树杀才不会留下还在监听的孤儿。
+        # 安全网：上面任何一条断言红了也别把宿主留在端口上。启动器在正文里印的
+        # 「taskkill /PID N /T /F」就是那个 apphost，按它树杀；再按端口反查兜底。
         if ($launched -and $launched.Output -match 'taskkill /PID (\d+)') {
             Stop-ProcessTree -ProcessId ([int]$Matches[1]) | Out-Null
         }
@@ -1806,20 +1888,35 @@ try {
         }
     }
 
-    Check '启动器印出来的那条停止命令真的能停掉它（新端口已经松手）' `
-        (-not (Test-PortBusy -Port $freePort)) `
-        "端口 $freePort 仍被占用：$(Test-PortBusy -Port $freePort)"
-
-    # ---- ⑥ 模式开关：未知模式被拒绝（它以前会**静默**落进终端界面）----------------
+    # ---- ⑦ 模式开关：未知模式被拒绝（它以前会**静默**落进终端界面）----------------
     # 传的正是包名——`start.cmd lab` 想选包、结果起了默认包，就是这个形态。
     # 判据照样 ASCII：退出码、正文里那个 `<包名>`、以及三个合法模式的 token。
     $unknownMode = Invoke-Launcher @($Package, '-Port', "$Port")
     $unknownText = ($unknownMode.Output -split "`r?`n") -join ' / '
     $unknownNamesIt = $unknownMode.Output.Contains("<$Package>")
-    $unknownListsModes = $unknownMode.Output.Contains('web') -and $unknownMode.Output.Contains('play') -and $unknownMode.Output.Contains('list')
+    $unknownListsModes = $unknownMode.Output.Contains('web') -and $unknownMode.Output.Contains('play') -and $unknownMode.Output.Contains('list') -and $unknownMode.Output.Contains('stop')
     Check '未知模式被拒绝，并列出可用模式（不再静默落进终端界面）' `
         ($unknownMode.ExitCode -ne 0 -and $unknownNamesIt -and $unknownListsModes) `
-        "退出码 $($unknownMode.ExitCode)；含 <$Package>: $unknownNamesIt；列出 web/play/list: $unknownListsModes；stdout <$unknownText>"
+        "退出码 $($unknownMode.ExitCode)；含 <$Package>: $unknownNamesIt；列出 web/play/list/stop: $unknownListsModes；stdout <$unknownText>"
+
+    # ---- ⑧ 兼容别名 play-web.ps1：走的是**同一条路**（复用、不重起、指向 start.cmd）----
+    # 别名留着的唯一理由是人还记着这个命令；它自己不再有第二套行为（1.12.1 那版会先杀掉
+    # 端口上的宿主再重起，还会按进程名 -StopAll 清场 —— 那两件都不再继承）。
+    $alias = Invoke-Launcher -Script 'tools\play-web.ps1' -LauncherArgs @('-Port', "$Port", '-NoBrowser')
+    $aliasText = ($alias.Output -split "`r?`n") -join ' / '
+    $aliasHosts = @(Get-RepoWebHost -Root $root)
+    Check '兼容别名 play-web.ps1：转发到同一个入口（复用、点名 PID、指向 start.cmd）' `
+        ($alias.ExitCode -eq 0 -and $alias.Output.Contains("PID $listenerBefore") -and $alias.Output.Contains(":$Port") -and $alias.Output.Contains('start.cmd') -and $aliasHosts.Count -eq $repoHostsBefore.Count) `
+        "退出码 $($alias.ExitCode)；含 PID ${listenerBefore}: $($alias.Output.Contains("PID $listenerBefore"))；含 :${Port}: $($alias.Output.Contains(":$Port"))；含 start.cmd: $($alias.Output.Contains('start.cmd'))；宿主 $($repoHostsBefore.Count) → $($aliasHosts.Count)；stdout <$aliasText>"
+
+    # ---- ⑨ 别名的 -StopAll：**明确拒绝**（按进程名清场会带走真人那个 5273 宿主）----
+    # 这条不是"兼容性测试"而是安全网：旧脚本的 -StopAll 会杀掉本机所有 neko-clicker-web，
+    # 统一后它必须响亮地失败，而不是静默地什么都不做、也不是偷偷照着旧行为清场。
+    $stopAll = Invoke-Launcher -Script 'tools\play-web.ps1' -LauncherArgs @('-StopAll')
+    $stopAllText = ($stopAll.Output -split "`r?`n") -join ' / '
+    Check '别名 -StopAll：明确拒绝并指回按端口停（不再按进程名清场）' `
+        ($stopAll.ExitCode -eq 2 -and $stopAll.Output.Contains('-StopAll') -and $stopAll.Output.Contains('start.cmd')) `
+        "退出码 $($stopAll.ExitCode)（期望 2）；含 -StopAll: $($stopAll.Output.Contains('-StopAll'))；含 start.cmd: $($stopAll.Output.Contains('start.cmd'))；stdout <$stopAllText>"
 }
 finally {
     Write-Host ''

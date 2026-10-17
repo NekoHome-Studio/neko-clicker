@@ -10,7 +10,12 @@ rem   start.cmd                the browser side (default): web host + opens the 
 rem   start.cmd web company    same, with a specific content pack
 rem   start.cmd play lab       terminal UI + a specific pack (does NOT start the web host)
 rem   start.cmd list           show pack ids
+rem   start.cmd stop           stop the web host on the default port (only if it is ours)
+rem   start.cmd stop -Port 5300  same, on another port
 rem   start.cmd web -NoBrowser start / reuse the host without opening a browser
+rem
+rem tools\play-web.ps1 is now a compatibility alias for `start.cmd web` (same code
+rem path, same behaviour); `start.cmd stop` replaces its -Stop. See tools\start.ps1.
 rem
 rem Why the browser is the default: the terminal and the web host write the SAME save file
 rem (saves\<pack>.json), and each rewrites it whole every 60s from its own memory, so running
