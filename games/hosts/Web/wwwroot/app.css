@@ -61,8 +61,6 @@ header {
 h1 { font-size: 1.35rem; margin: 0; }
 
 .status { display: flex; align-items: center; gap: .5rem; font-size: .85rem; color: var(--dim); }
-.status a { color: var(--accent); text-decoration: none; margin-left: .75rem; }
-.status a:hover { text-decoration: underline; }
 
 .dot { width: .6rem; height: .6rem; border-radius: 50%; background: var(--dim); }
 .dot.ok { background: var(--ok); box-shadow: 0 0 8px var(--ok); }
@@ -718,6 +716,36 @@ kbd {
 }
 .tabs button:hover { color: var(--fg); }
 .tabs button.active { background: var(--card-hi); border-color: var(--accent-deep); color: var(--fg); }
+
+/* 换包按钮（F2）：页签行的末尾、被推到那一行的右端（margin-left: auto 吃掉 flex
+   换行前的全部富余）。`.ghost` 那套样子（描边、透明底）正好是"次要动作"的那一档。 */
+#pack-open { margin-left: auto; }
+
+/* 换包那张 sheet 的清单行：每行一个真按钮（读屏认得、键盘 Tab 得到），
+   铺满整行（文字部分左对齐、欢迎语的灰字在名字右边）。
+   `aria-current="true"` 是"你现在在玩的正是这一包"——.active 那套高亮
+   （与页签同一个变量）只是它画出来的样子。 */
+.pack-list { display: flex; flex-direction: column; gap: .4rem; }
+.pack-row {
+  display: flex;
+  align-items: baseline;
+  gap: .6rem;
+  text-align: left;
+  background: var(--bg-soft);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: .55rem .8rem;
+  cursor: pointer;
+  font: inherit;
+  color: var(--fg);
+}
+.pack-row:hover { border-color: var(--accent-deep); }
+.pack-row .pack-name { font-weight: 600; }
+.pack-row .pack-welcome { color: var(--dim); font-size: .8rem; flex: 1; }
+.pack-row[aria-current="true"] {
+  background: var(--card-hi);
+  border-color: var(--accent-deep);
+}
 
 /* 「表态」不再是页签（它是自己冒出来的那张 sheet，见文件末尾的「表态」一节）。
    所以这里只剩下"收起之后那个药丸冒出来时必须被看见"这一条：一圈扩散的光环，
