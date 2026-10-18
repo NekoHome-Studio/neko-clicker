@@ -1,0 +1,925 @@
+[作答延迟埋点] 写不进 <C:\Users\haoxu\Downloads\NekoHome\neko-clicker\artifacts\latency-tests\bad1f87dce0f4cc5864903fea826c3fe\blocker\latency.txt>：Cannot create 'C:\Users\haoxu\Downloads\NekoHome\neko-clicker\artifacts\latency-tests\bad1f87dce0f4cc5864903fea826c3fe\blocker' because a file or directory with the same name already exists.（后续失败不再逐条刷屏；次数会在会话结束的汇总里给出。）
+[作答延迟埋点] <C:\Users\haoxu\Downloads\NekoHome\neko-clicker\artifacts\latency-tests\b68e526d6c024d60bc36059377e29223\latency.txt> 里已有非本埋点写入的内容：不覆盖，补一段表头说明后继续追加。
+[neko] 退出前已存档：neko.json
+[neko] 作答延迟：这次没有量到样本（宽限期参数 30s（1.5.0 起已退役，判定不再使用））。
+[neko] 退出前已存档：neko.json
+[neko] 退出前已存档：neko.json
+[neko] 作答延迟：这次没有量到样本（宽限期参数 30s（1.5.0 起已退役，判定不再使用））。
+[neko] 作答延迟：这次没有量到样本（宽限期参数 30s（1.5.0 起已退役，判定不再使用））。
+[neko] 退出前已存档：neko.json
+[neko] 作答延迟：这次没有量到样本（宽限期参数 30s（1.5.0 起已退役，判定不再使用））。
+[neko] 退出前已存档：neko.json
+[neko] 作答延迟：这次没有量到样本（宽限期参数 30s（1.5.0 起已退役，判定不再使用））。
+[neko] 退出前已存档：neko.json
+[neko] 作答延迟：这次没有量到样本（宽限期参数 30s（1.5.0 起已退役，判定不再使用））。
+[neko] 退出前已存档：neko.json
+[neko] 作答延迟：这次没有量到样本（宽限期参数 30s（1.5.0 起已退役，判定不再使用））。
+[lab] 调试模式：退出时不写存档。
+[lab] 作答延迟：这次没有量到样本（宽限期参数 30s（1.5.0 起已退役，判定不再使用））。
+      一次完整游玩解锁 42/42 条叙事
+      结束时：记忆残片 182167；图鉴 42；成就 44；未读到的条目 []
+      第 1 次重启结束于 0.5 游戏小时
+      第 2 次重启结束于 1.1 游戏小时
+      第 3 次重启结束于 3.4 游戏小时
+      第 4 次重启结束于 3.8 游戏小时
+      五次重启用时 3.8 小时；记忆残片 170646；图鉴 36/42；成就 37
+  [建筑升级] 九命：全量 65101 字节 / 一 tick 增量 188 字节（0.3%，判据是 <5%；带着的字段：cookies、cookiesEarnedThisRun、cookiesEarnedAllTime、playTimeSeconds、goldenCookieCountdown）
+      一次完整游玩解锁 40/40 条叙事
+      第 1 个时代结束于 0.4 游戏小时（当时文化 15330）
+      第 2 个时代结束于 1.0 游戏小时（当时文化 511680）
+      第 3 个时代结束于 1.1 游戏小时（当时文化 2344260）
+      第 4 个时代结束于 1.3 游戏小时（当时文化 5960220）
+      五个时代用时 1.3 小时；文化 5960220；图鉴 32/40；成就 26；天灾 3
+      走到最后时：文化 9975643（门槛 1000000）；成就 42；转生等级 43；火种 43；图鉴 40/40；未读到的条目 []
+      时长    层  本轮累计     每秒产量     算力       成就 病毒 图鉴 建筑
+        0.0h  1    1.60E+001    1.00E-001   0.00E+000     2    0   0/40     1
+        0.5h  1    6.50E+004    2.69E+002   1.29E+003     9    3   7/40    57
+        1.0h  2    5.65E+004    3.04E+002   2.70E+003    11    8  10/40    55
+        1.5h  2    4.23E+007    8.23E+004   1.98E+004    20   13  17/40   155
+        2.0h  3    1.26E+007    2.80E+004   3.31E+004    24   16  20/40    69
+        2.5h  3    1.71E+008    1.22E+005   7.46E+004    27   16  23/40   234
+        3.0h  4    1.44E+009    9.34E+006   1.11E+005    31   20  27/40    78
+        3.5h  5    6.82E+012    3.97E+010   1.73E+005    39   23  35/40    92
+        4.0h  5    3.71E+015    3.51E+012   5.46E+005    46   26  35/40   307
+        4.5h  5    2.09E+016    2.23E+013   1.24E+006    52   28  36/40   787
+        5.0h  5    8.30E+016    3.17E+013   2.15E+006    52   30  36/40  1244
+        5.5h  5    2.19E+017    4.34E+013   3.17E+006    52   32  37/40  1522
+        6.0h  5    3.55E+017    5.28E+013   4.24E+006    52   35  37/40  1561
+        6.5h  5    4.74E+017    6.10E+013   5.33E+006    52   37  37/40  1584
+        7.0h  5    6.38E+017    7.09E+013   6.43E+006    53   38  37/40  1605
+        7.5h  5    8.64E+017    8.19E+013   7.56E+006    53   41  37/40  1624
+        8.0h  5    1.16E+018    9.42E+013   8.70E+006    54   45  38/40  1642
+        8.5h  5    1.53E+018    1.07E+014   9.86E+006    54   49  38/40  1659
+        9.0h  5    1.76E+018    1.17E+014   1.10E+007    55   52  38/40  1670
+        9.5h  5    2.01E+018    1.27E+014   1.22E+007    56   55  38/40  1680
+       10.0h  5    2.57E+018    2.84E+014   1.34E+007    57   60  39/40  1693
+       10.5h  5    3.43E+018    3.13E+014   1.46E+007    58   63  39/40  1712
+       11.0h  5    4.19E+018    3.37E+014   1.58E+007    58   67  39/40  1726
+       11.5h  5    5.10E+018    3.66E+014   1.70E+007    58   71  40/40  1739
+      第 1 层：  0.0h →   0.5h（ 0.5h）（进层时累计 0.00E+000，算力 0.00E+000）
+      第 2 层：  0.5h →   1.6h（ 1.1h）（进层时累计 0.00E+000，算力 1.68E+003）
+      第 3 层：  1.6h →   2.7h（ 1.1h）（进层时累计 0.00E+000，算力 3.05E+004）
+      第 4 层：  2.7h →   3.2h（ 0.5h）（进层时累计 0.00E+000，算力 1.04E+005）
+      第 5 层：  3.2h →   4.0h（ 0.8h）（进层时累计 0.00E+000，算力 1.41E+005）
+      五层用时 4.0 小时；算力 5.05E+005；成就 46；图鉴 35/40；产率 3E+002/s；结算根权限 172
+      一次完整游玩解锁 39/40 条叙事
+      走到最后用了 5.3 游戏小时；算力 6.00E+006；成就 57；图鉴 38/40
+      走到最后时：算力 6000609（门槛 6000000）；产率 710/s；成就 57；未读到的条目 [intrusion_07, intrusion_08]
+      [她]  1 her_01   轮      0 / 阈值 1.00E+000
+      [她]  2 her_02   轮     26 / 阈值 2.75E+007
+      [她]  3 her_03   轮     26 / 阈值 1.60E+008
+      [她]  4 her_04   轮     51 / 阈值 1.50E+009
+      [她]  5 her_05   轮     55 / 阈值 1.00E+010
+      [她]  6 her_06   轮     81 / 阈值 1.80E+011
+      [她]  7 her_07   轮     83 / 阈值 2.50E+011
+      [她]  8 her_08   轮    932 / 阈值 3.50E+011
+      [她]  9 her_09   轮    936 / 阈值 4.80E+011
+      [她] 10 her_10   轮    944 / 阈值 6.50E+011
+      [她] 11 her_11   轮    947 / 阈值 8.50E+011
+      [她] 12 her_12   轮    947 / 阈值 9.80E+011
+      [梦层]  1 lay_01   轮     26 / 阈值 2.90E+007
+      [梦层]  2 lay_02   轮     26 / 阈值 1.45E+008
+      [梦层]  3 lay_03   轮     26 / 阈值 1.50E+008
+      [梦层]  4 lay_04   轮     51 / 阈值 1.40E+009
+      [梦层]  5 lay_05   轮     55 / 阈值 8.50E+009
+      [梦层]  6 lay_06   轮    796 / 阈值 1.60E+010
+      [梦层]  7 lay_07   轮    874 / 阈值 5.60E+010
+      [梦层]  8 lay_08   轮    928 / 阈值 1.90E+011
+      [梦层]  9 lay_09   轮    932 / 阈值 2.70E+011
+      [梦层] 10 lay_10   轮    936 / 阈值 3.80E+011
+      [梦魇]  1 mar_01   轮      3 / 阈值 2.50E+001
+      [梦魇]  2 mar_02   轮     26 / 阈值 2.95E+007
+      [梦魇]  3 mar_03   轮     26 / 阈值 1.70E+008
+      [梦魇]  4 mar_04   轮     51 / 阈值 1.30E+009
+      [梦魇]  5 mar_05   轮     54 / 阈值 7.50E+009
+      [梦魇]  6 mar_06   轮     78 / 阈值 7.80E+010
+      [梦魇]  7 mar_07   轮     82 / 阈值 2.15E+011
+      [梦魇]  8 mar_08   轮    928 / 阈值 2.20E+011
+      [梦魇]  9 mar_09   轮    932 / 阈值 2.90E+011
+      [梦魇] 10 mar_10   轮    936 / 阈值 4.40E+011
+      [清醒]  1 wak_01   轮     12 / 阈值 1.00E+002
+      [清醒]  2 wak_02   轮     26 / 阈值 3.20E+007
+      [清醒]  3 wak_03   轮     26 / 阈值 1.90E+008
+      [清醒]  4 wak_04   轮     51 / 阈值 1.20E+009
+      [清醒]  5 wak_05   轮     54 / 阈值 6.50E+009
+      [清醒]  6 wak_06   轮     77 / 阈值 5.50E+010
+      [清醒]  7 wak_07   轮     82 / 阈值 2.10E+011
+      [清醒]  8 wak_08   轮    940 / 阈值 5.20E+011
+      一次完整游玩解锁 40/40 条叙事
+      前十分钟放出：her_01（点击 240 / 本轮 2.67E+007 / 阈值 1.00E+000）
+      前十分钟放出：mar_01（点击 240 / 本轮 2.67E+007 / 阈值 2.50E+001）
+      前十分钟放出：wak_01（点击 240 / 本轮 2.67E+007 / 阈值 1.00E+002）
+      前十分钟放出：her_01（点击 240 / 本轮 2.67E+007 / 阈值 1.00E+000）
+      前十分钟放出：mar_01（点击 240 / 本轮 2.67E+007 / 阈值 2.50E+001）
+      前十分钟放出：wak_01（点击 240 / 本轮 2.67E+007 / 阈值 1.00E+002）
+      第 1 层结束于 0.1 游戏小时（当时梦境能量 22680）
+      第 2 层结束于 0.3 游戏小时（当时梦境能量 477840）
+      第 3 层结束于 0.5 游戏小时（当时梦境能量 1746570）
+      第 4 层结束于 0.7 游戏小时（当时梦境能量 9427470）
+      五层梦用时 0.7 小时；梦境能量 9427470；图鉴 26/40；成就 25
+      睡到最深处时：12.0 游戏小时；梦境能量 1.14E+010（门槛 4.50E+009）；梦层类建筑 1227；成就 57；图鉴 40/40；未读到的条目 []
+      第 1 命结束于 0.8 游戏小时
+      第 2 命结束于 2.2 游戏小时
+      第 3 命结束于 5.1 游戏小时
+      第 4 命结束于 6.9 游戏小时
+      第 5 命结束于 12.5 游戏小时
+      第 6 命结束于 14.2 游戏小时
+      第 7 命结束于 18.8 游戏小时
+      第 8 命结束于 19.8 游戏小时
+      #2 九命：10.0 游戏小时内走过 6 层，每层进度单调不减（末态 0 %）
+      #3 实验室：10.0 游戏小时内走过 7 层，每层进度单调不减（末态 100 %）
+      #7 神明：10.0 游戏小时内走过 5 层，每层进度单调不减（末态 30 %）
+      #4 文明：10.0 游戏小时内走过 5 层，每层进度单调不减（末态 100 %）
+      #5 赛博：10.0 游戏小时内走过 5 层，每层进度单调不减（末态 100 %）
+      观测了 5 个「完成条件引用内容计数器」的包；跳过 4 个（只用量级 / 成就 / 时长，或只用引擎维护的峰值产量）。
+      #7 神明：9 建筑 / 50 升级 / 71 成就 / 8 增益 / 10 神迹 / 40 条叙事 / 5 层神话 / 3 个结局
+      一次完整游玩解锁 40/40 条叙事
+      第 1 层结束于 0.78 游戏小时（历史累计 1.494E+009；信仰 6.077E+004；在线 1.584E+003；结算神格 0）
+      第 2 层结束于 2.01 游戏小时（历史累计 2.794E+013；信仰 3.020E+005；在线 7.940E+003；结算神格 18）
+      第 3 层结束于 3.62 游戏小时（历史累计 6.617E+014；信仰 9.033E+005；在线 2.307E+004；结算神格 52）
+      第 4 层结束于 5.75 游戏小时（历史累计 5.630E+015；信仰 2.209E+006；在线 5.579E+004；结算神格 107）
+      五层用时 5.8 小时；历史累计 5.630E+015；神格 107（等级 107）；图鉴 28/40；成就 52
+      走到最后时：用时 7.85 小时；信仰 7.967E+006；在线 2.000E+005；图鉴 40/40；成就 61；神格 107；未读到的条目 []
+      第 1 批结束于 0.6 游戏小时
+      第 2 批结束于 1.9 游戏小时
+      第 3 批结束于 3.1 游戏小时
+      第 4 批结束于 4.2 游戏小时
+      第 5 批结束于 5.5 游戏小时
+      第 6 批结束于 6.0 游戏小时
+      一次完整游玩解锁 40/40 条叙事
+      第 1 本结束于 1.1 游戏小时（当时被阅读度 8275）
+      第 2 本结束于 2.7 游戏小时（当时被阅读度 29967）
+      第 3 本结束于 5.1 游戏小时（当时被阅读度 47098）
+      第 4 本结束于 8.4 游戏小时（当时被阅读度 79295）
+      五本书用时 8.4 小时；被阅读度 0；图鉴 31/40；成就 40
+      读到最后时：被阅读度 89308（门槛 60000）；读者类建筑 393；成就 45；未读到的条目 []
+      #2 九命：11.8 游戏小时走到结局，结算 100 点转生货币，永久线总价 80（2 / 4 / 9 / 20 / 45），点击桥买到过：是
+      #3 实验室：4.5 游戏小时走到结局，结算 74 点转生货币，永久线总价 47（2 / 5 / 12 / 28），点击桥买到过：是
+      #10 公司：1.5 游戏小时走到结局，结算 142 点转生货币，永久线总价 115（2 / 4 / 8 / 16 / 30 / 55），点击桥买到过：是
+      #6 末世：3.0 游戏小时走到结局，结算 112 点转生货币，永久线总价 80（2 / 4 / 9 / 20 / 45），点击桥买到过：是
+      #9 图书馆：11.1 游戏小时走到结局，结算 101 点转生货币，永久线总价 80（2 / 4 / 9 / 20 / 45），点击桥买到过：是
+      #7 神明：7.5 游戏小时走到结局，结算 110 点转生货币，永久线总价 80（2 / 4 / 9 / 20 / 45），点击桥买到过：是
+      #4 文明：1.4 游戏小时走到结局，结算 43 点转生货币，永久线总价 21（1 / 2 / 3 / 4 / 4 / 4 / 3），点击桥买到过：是
+      #5 赛博：5.2 游戏小时走到结局，结算 188 点转生货币，永久线总价 80（2 / 4 / 9 / 20 / 45），点击桥买到过：是
+      #8 梦境：6.0 游戏小时走到结局，结算 136 点转生货币，永久线总价 60（2 / 4 / 9 / 18 / 27），点击桥买到过：是
+[neko] 作答延迟：这次没有量到样本（宽限期参数 30s（1.5.0 起已退役，判定不再使用））。
+      [实测] 存档本体 767 字符 → 导出文本 1448 字符（外壳与转义 +681 字符，+88.8%）。
+      链接长度：导出文本 6203 字符 → base64url 2212 字符（上限 8000）。
+内容包：猫咖物语（--package neko）
+目标时长：1m 00s｜策略：自动购买｜种子：随机
+作答延迟埋点：本次不落盘（机器人作答不是人类数据；要写请给 --latency-log）
+
+  [     10s]            8 小鱼干   产量            0/s   建筑      0   成就   0   金猫    0
+  [     20s]            1 小鱼干   产量          0.1/s   建筑      1   成就   1   金猫    0
+  [     30s]       10.008 小鱼干   产量          0.1/s   建筑      1   成就   1   金猫    0
+  [     40s]        1.766 小鱼干   产量          0.2/s   建筑      2   成就   1   金猫    0
+  [     50s]       11.782 小鱼干   产量          0.2/s   建筑      2   成就   1   金猫    0
+  [  1m 00s]        1.961 小鱼干   产量          0.3/s   建筑      3   成就   1   金猫    0
+
+── 总览 ──────────────────────────────────────────
+  游戏内时长       60s
+  实际计算耗时     0.02 秒（约 2561× 实时）
+  模拟逻辑帧       1,800
+  货币             1.961 小鱼干
+  每秒产量         0.3/s
+  点击收益         1.003
+  本轮累计赚取     54.048
+  历史累计赚取     54.048
+  手动点击         48 次，共 48.048
+
+── 建筑 ──────────────────────────────────────────
+  🐈 蜷缩的猫       ×3     单价     22.813 产量        0.3/s 占   100%
+  🪵 猫抓板         ×0     单价        100 产量          0/s 占     0%
+
+── 升级 / 成就 / 金猫 ────────────────────────────
+  已购升级         0 种
+  成就             1/66
+  金猫             点中 0 只，场上还剩 0 只
+  生效增益         无
+
+── 转生 ──────────────────────────────────────────
+  当前等级         0
+  猫薄荷           0
+  若现在转生       0 级（+0 猫薄荷）
+  下一级所需       1T
+  转生次数         0
+
+── 最近消息 ──────────────────────────────────────
+  🐱 欢迎来到猫咖物语！先按空格撸猫，攒够 15 条小鱼干就能买下第一只蜷缩的猫。
+  🐈 成就解锁：蜷缩的猫的开端
+
+  📏 作答延迟：这次没有量到样本（宽限期参数 30s（1.5.0 起已退役，判定不再使用））。
+
+提示：catnip 系升级需要成就数量，小猫系升级按成就给全局加成——多解锁成就永远划算。
+内容包：猫娘公司（--package company）
+目标时长：1h 00m｜策略：自动购买｜种子：12345
+作答延迟埋点：C:\Users\haoxu\Downloads\NekoHome\neko-clicker\artifacts\latency-tests\7dce8d31d4774c41ad6b7a26ba926ef6\latency.txt（只追加；机器人作答只在该路径被显式指定时才写）
+
+  [  6m 00s]      125.078 营收   产量         10.2/s   建筑     23   成就   6   甲方改需求    1  第 1 轮 · 车库创业
+  [ 12m 00s]      155.018 营收   产量         19.2/s   建筑     40   成就   8   甲方改需求    1  第 1 轮 · 车库创业
+  [ 18m 00s]       1.002K 营收   产量       82.446/s   建筑     53   成就  11   甲方改需求    2  第 1 轮 · 车库创业
+  [ 24m 00s]       3.228K 营收   产量       225.88/s   建筑     77   成就  13   甲方改需求    3  第 1 轮 · 车库创业
+  [ 25m 05s] —— 重组：第 1 轮 · 车库创业 → 第 2 轮 · A 轮 ——
+  [ 30m 00s]       252.24 营收   产量      299.263/s   建筑     24   成就  15   甲方改需求    4  第 2 轮 · A 轮
+  [ 36m 00s]     173.199K 营收   产量      569.27K/s   建筑    107   成就  19   甲方改需求    5  第 2 轮 · A 轮
+  [ 41m 45s] —— 重组：第 2 轮 · A 轮 → 第 3 轮 · 上市 ——
+  [ 42m 00s]           12 营收   产量            0/s   建筑      0   成就  25   甲方改需求    6  第 3 轮 · 上市
+  [ 48m 00s]      33.311K 营收   产量       4.582K/s   建筑     47   成就  25   甲方改需求    7  第 3 轮 · 上市
+  [ 54m 00s]     255.756K 营收   产量     172.516K/s   建筑    119   成就  25   甲方改需求    7  第 3 轮 · 上市
+  [  1h 00m]       5.826M 营收   产量     278.667M/s   建筑    205   成就  28   甲方改需求    9  第 3 轮 · 上市
+
+── 总览 ──────────────────────────────────────────
+  游戏内时长       60m 00s
+  实际计算耗时     7.21 秒（约 499× 实时）
+  模拟逻辑帧       108,000
+  货币             101.507K 营收
+  每秒产量         281.761M/s
+  点击收益         29.754M
+  本轮累计赚取     1.994B
+  历史累计赚取     2.096B
+  手动点击         2.88K 次，共 154.717M
+
+── 建筑 ──────────────────────────────────────────
+  🪑 工位           ×32    单价    873.462 产量    38.085K/s 占     0%
+  🗣️ 会议室         ×42    单价    23.558K 产量   499.868K/s 占   0.2%
+  🧵 外包基地       ×42    单价   259.134K 产量     3.999M/s 占   1.4%
+  🖥️ 服务器         ×39    单价     1.859M 产量    21.816M/s 占   7.7%
+  📈 增长团队       ×31    单价     6.583M 产量    95.927M/s 占    34%
+  🎤 IPO 路演厅     ×16    单价     8.712M 产量    66.649M/s 占  23.7%
+  🗄️ 数据中心       ×4     单价    23.262M 产量    92.833M/s 占  32.9%
+  🌏 海外分部       ×0     单价    219.45M 产量          0/s 占     0%
+  🏢 总部大楼       ×0     单价     3.392B 产量          0/s 占     0%
+
+── 升级 / 成就 / 甲方改需求 ──────────────────────
+  已购升级         29 种
+  成就             28/66
+  甲方改需求       点中 9 只，场上还剩 0 只
+  生效增益         requirement_change 32s
+
+── 图鉴 ──────────────────────────────────────────
+  已读到           40/40（100%）
+  🐾 她            14/14  ████████████
+  🕴️ 你            10/10  ████████████
+  👥 同事           8/8   ████████████
+  📒 账本           8/8   ████████████
+  待点掉的弹窗     10
+
+── 纪元 ──────────────────────────────────────────
+  当前             第 3 / 3 层 · 第 3 轮 · 上市
+  本层主线         这是最后一层。主线已完成，接下来是终局判定。
+  进度             500M / 500M（100%）
+  本层阶段         第 8 / 8 阶段（刚越过「海外分部」）　这一层的阶段走完了
+  下一层           已是最后一层
+  本层规则         所有建筑产量 ×1.5；所有建筑产量 +0%；每点「士气」 +1%（上限 100）
+
+── 立场 ──────────────────────────────────────────
+  >🔔 上市派       6 点（50%）　<- 主导
+   ✊ 工会派       4 点（33%）
+   🧳 清算派       2 点（17%）
+  待表态           0 项
+  已表态           6 项
+
+── 结局 ──────────────────────────────────────────
+  结局             📄 无疾而终
+  正文             公司活了下来，不好也不坏。没有人问过你那些问题，所以你一个也没有回答。几年后的一次聚会上，有人提起这家公司，想了半天才说：「哦，他们啊，还在。」她当时正在跟服务员要第二杯水，没听见这句。
+
+── 重组 ──────────────────────────────────────────
+  当前等级         142
+  期权             142
+  若现在重组       391 级（+249 期权）
+  下一级所需       2.108B
+  重组次数         2
+
+── 最近消息 ──────────────────────────────────────
+  🎫 已购买「期权池」。
+  📈 已购买「整层楼的增长团队」。
+  📄 结局「无疾而终」：公司活了下来，不好也不坏。没有人问过你那些问题，所以你一个也没有回答。几年后的一次聚会上，有人提起这家公司，想了半天才说：「哦，他们啊，还在。」她当时正在跟服务员要第二杯水，没听见这句。
+  📏 作答延迟：样本 6 条，最长 4.1s，平均 1.8s（宽限期参数 30s（1.5.0 起已退役，判定不再使用））。
+  📄 成就解锁：无疾而终
+  🔔 已购买「敲钟彩排」。
+  🏡 已购买「弹性办公」。
+  🗄️ 已购买「正式配齐的数据中心」。
+
+── 模块 ──────────────────────────────────────────
+  $ending_ready_at_play_time 3.582K
+  $era_stage_garage 5
+  $era_stage_ipo   8
+  $era_stage_series_a 8
+  ending_end_fade  1
+  goldenCookieSerial 9
+  morale           14.43K
+  peak_cps         101.782M
+
+  📏 作答延迟：样本 6 条，最长 4.1s，平均 1.8s（宽限期参数 30s（1.5.0 起已退役，判定不再使用））。
+
+提示：士气靠团队建筑养、被加班吃，所以「又快又不累」在这个包里做不到——三条劳资方向会在上市前收束成三个结局。
+      当前用例数：599 条，11 处文档槽位一致。
+      有建筑的包：11 / 11；检查了 27 行「拥有 ⇒ 已解锁」
+      重开过的包：9 / 9；重开前持有 74 行，重开后仍持有并检查 9 行
+      带永久升级线的包：11 / 11
+      cpsEach：已持有 93 行 / 未持有 104 行，11 / 11 个包有已持有行。
+[neko] 作答延迟：这次没有量到样本（宽限期参数 30s（1.5.0 起已退役，判定不再使用））。
+[neko] 作答延迟：这次没有量到样本（宽限期参数 30s（1.5.0 起已退役，判定不再使用））。
+[neko] 作答延迟：这次没有量到样本（宽限期参数 30s（1.5.0 起已退役，判定不再使用））。
+[neko] 作答延迟：这次没有量到样本（宽限期参数 30s（1.5.0 起已退役，判定不再使用））。
+  [32m✓[0m ApocalypseContentTests.Structure_IsComplete
+  [32m✓[0m ApocalypseContentTests.LoreRevealsAreUnique
+  [32m✓[0m ApocalypseContentTests.Orders_AreContiguousWithinEachStoryline
+  [32m✓[0m ApocalypseContentTests.Storylines_ReadInOrderDuringARealPlaythrough
+  [32m✓[0m ApocalypseContentTests.EveryStorylineOpensEarlyEnough
+  [32m✓[0m ApocalypseContentTests.G5_FirstTenMinutesRevealAtMostThreeEntries
+  [32m✓[0m ApocalypseContentTests.MemoryShards_AreProducedOnlyByWhatSurvived
+  [32m✓[0m ApocalypseContentTests.InheritBuildingRatio_DefaultsToZero_Elsewhere
+  [32m✓[0m ApocalypseContentTests.OwnedBuildings_StayUnlockedAfterARestart
+  [32m✓[0m ApocalypseContentTests.RobotWalksAllFiveRestarts
+  [32m✓[0m ApocalypseContentTests.MemoryShards_ExceedTheEndingThreshold_InARealRun
+  [32m✓[0m ApocalypseContentTests.EveryEndingIsReachableAndExclusive
+  [32m✓[0m ArchitectureTests.Architecture_CoreDoesNotReferenceContentProjects
+  [32m✓[0m ArchitectureTests.Architecture_CoreContainsNoContentIds
+  [32m✓[0m ArchitectureTests.Architecture_ContentPacksDoNotReferenceEachOther
+  [32m✓[0m ArchitectureTests.Architecture_CoreHasNoEraSpecificBranches
+  [32m✓[0m BuildingUpgradeTests.BuildingCategories_ResolveToRealBuildings_InEveryPack
+  [32m✓[0m BuildingUpgradeTests.BuildingWithoutATrack_AnswersWithAnEmptyList
+  [32m✓[0m BuildingUpgradeTests.Track_IsOrderedByTier_NotByDeclarationOrder
+  [32m✓[0m BuildingUpgradeTests.BuildingCategory_WithAnUnknownBuilding_FailsLoudly
+  [32m✓[0m BuildingUpgradeTests.BuildingCategory_WithAnEmptyId_FailsLoudly
+  [32m✓[0m BuildingUpgradeTests.BuildingCategory_WhoseModifiersIgnoreTheBuilding_FailsLoudly
+  [32m✓[0m BuildingUpgradeTests.BuildingCategory_WithAGlobalEffect_IsAllowed
+  [32m✓[0m BuildingUpgradeTests.UpgradeWithoutABuildingCategory_StaysOutOfEveryTrack
+  [32m✓[0m BuildingUpgradeTests.UpgradeCategories_RoundTripAndRejectTheWrongShapes
+  [32m✓[0m BuildingUpgradeTests.BuildingView_CarriesTheTrack_ForEveryBuilding
+  [32m✓[0m BuildingUpgradeTests.WireShape_UpgradeIdsIsAnArrayOfStrings
+  [32m✓[0m BuildingUpgradeTests.UpgradeIds_AreStaticBetweenFrames_AndTheIdleDeltaStaysSmall
+  [32m✓[0m CafeContentTests.CafeContent_BuildsWithExpectedShape
+  [32m✓[0m CafeContentTests.CafeContent_IdsAreGloballyConsistent
+  [32m✓[0m CafeContentTests.CafeContent_EveryUnlockIsReachable
+  [32m✓[0m CafeContentTests.CafeContent_BuildingCurveIsSane
+  [32m✓[0m CafeContentTests.CafeContent_UnlockThresholdsRiseWithTier
+  [32m✓[0m CafeContentTests.CafeContent_MemoryUpgradesArePermanentAndChipPriced
+  [32m✓[0m CafeContentTests.CafeContent_BalanceMatchesTheHealingTone
+  [32m✓[0m CafeContentTests.CafeContent_EventWeightsArePositiveFeedbackDominant
+  [32m✓[0m CafeContentTests.CafeContent_OutcomeBuffReferencesExist
+  [32m✓[0m CafeContentTests.Cafe_HappinessModuleAccumulates
+  [32m✓[0m CafeContentTests.Cafe_HappinessModuleAccruesOffline
+  [32m✓[0m CafeContentTests.Cafe_HappinessSurvivesAscension
+  [32m✓[0m CafeContentTests.Cafe_HappinessGatesUpgradesWithProgressBar
+  [32m✓[0m CafeContentTests.Cafe_HappinessCanDriveModifiers
+  [32m✓[0m ChoiceTests.Answer_AccumulatesStanceWeights
+  [32m✓[0m ChoiceTests.DominantStance_SwitchesWhenAnotherOvertakes
+  [32m✓[0m ChoiceTests.DominantStance_IsDeterministicOnTies
+  [32m✓[0m ChoiceTests.DominantStance_ModifiersActuallyChangeProduction
+  [32m✓[0m ChoiceTests.ChosenOptionModifiersApply_UnchosenOnesDoNot
+  [32m✓[0m ChoiceTests.Trigger_QueuesChoice_WithoutAnyEffectUntilAnswered
+  [32m✓[0m ChoiceTests.Answer_IsOneShot
+  [32m✓[0m ChoiceTests.Answer_RejectsUnknownChoiceOrOption
+  [32m✓[0m ChoiceTests.ChoicesAndStances_SurviveEraAdvance
+  [32m✓[0m ChoiceTests.ChoicesAndStances_SurvivePrestige
+  [32m✓[0m ChoiceTests.ChoiceMadeAndStanceWeight_WorkInConditions
+  [32m✓[0m ChoiceTests.Snapshot_ExposesPendingChoicesAndStanceAxis
+  [32m✓[0m ChoiceTests.Snapshot_StancesAreNullForPacksWithoutStances
+  [32m✓[0m ChoiceTests.SaveRoundTrip_PreservesChoicesAndStances
+  [32m✓[0m ChoiceTests.Validator_RejectsChoiceWithOneOption
+  [32m✓[0m ChoiceTests.Validator_RejectsDuplicateOptionId
+  [32m✓[0m ChoiceTests.Validator_RejectsUnknownStance
+  [32m✓[0m ChoiceTests.Validator_RejectsStanceOptionWhenNoStanceIsDeclared
+  [32m✓[0m ChoiceTests.Validator_RejectsWeightWithoutStance
+  [32m✓[0m ChoiceTests.Validator_RejectsNeverTrigger
+  [32m✓[0m ChoiceTests.Validator_RejectsChoiceThatDependsOnUnreachableContent
+  [32m✓[0m ChoiceTests.Validator_RejectsChoiceConditionReferencingMissingChoice
+  [32m✓[0m ChoiceTests.EraBoundChoice_OnlyTriggersInItsOwnEra
+  [32m✓[0m ChoiceTests.Validator_RejectsUnknownEraId
+  [32m✓[0m CivContentTests.Structure_IsComplete
+  [32m✓[0m CivContentTests.BuildingCurve_FollowsTheSharedRecipe
+  [32m✓[0m CivContentTests.HeritageUpgrades_ArePermanentAndChipPriced
+  [32m✓[0m CivContentTests.LoreRevealsAreUnique
+  [32m✓[0m CivContentTests.Orders_AreContiguousWithinEachStoryline
+  [32m✓[0m CivContentTests.Storylines_ReadInOrderDuringARealPlaythrough
+  [32m✓[0m CivContentTests.EveryStorylineOpensEarlyEnough
+  [32m✓[0m CivContentTests.G5_FirstTenMinutesRevealAtMostThreeEntries
+  [32m✓[0m CivContentTests.Culture_IsProducedOnlyByRecorderBuildings
+  [32m✓[0m CivContentTests.Culture_AccruesOffline
+  [32m✓[0m CivContentTests.Culture_SurvivesEraChanges
+  [32m✓[0m CivContentTests.CultureScaling_HitsItsEndpoints
+  [32m✓[0m CivContentTests.Culture_RefreshesProduction_WithoutAnyOtherEvent
+  [32m✓[0m CivContentTests.CultureKeys_AreRegisteredWithDisplayNames
+  [32m✓[0m CivContentTests.RobotWalksAllFiveEras
+  [32m✓[0m CivContentTests.NaturalPlaythrough_ReachesTheInterstellarEnding
+  [32m✓[0m CivContentTests.EveryEndingIsReachableAndExclusive
+  [32m✓[0m CivContentTests.CultureAtTheEnd_IsWhatSeparatesTheTwoCommittedEndings
+  [32m✓[0m CivContentTests.Snapshot_RendersTheWholePack
+  [32m✓[0m ClickBridgeTests.EveryPackHasExactlyOneBridge_WithTheSameShape
+  [32m✓[0m ClickBridgeTests.Bridge_RaisesClickPowerByTheClaimedShare_AndStopsAtTheCap
+  [32m✓[0m ClickBridgeTests.TotalBuildings_IsOnlyUsedByTheBridge
+  [32m✓[0m CompanyContentTests.Structure_IsComplete
+  [32m✓[0m CompanyContentTests.LoreRevealsAreUnique
+  [32m✓[0m CompanyContentTests.EveryChoiceIsARealFork
+  [32m✓[0m CompanyContentTests.EveryStanceCanReachTheEndingThreshold
+  [32m✓[0m CompanyContentTests.EveryEndingHasItsOwnAchievement
+  [32m✓[0m CompanyContentTests.Morale_IsGrownByTeamsAndEatenByOvertime
+  [32m✓[0m CompanyContentTests.EveryChoiceTriggersDuringARealPlaythrough
+  [32m✓[0m CompanyContentTests.EveryCommittedEndingIsReachableAndExclusive
+  [32m✓[0m CompanyContentTests.AvoidingEveryChoiceYieldsTheFallbackEnding
+  [32m✓[0m ContentTests.NekoContent_BuildsWithExpectedShape
+  [32m✓[0m ContentTests.NekoContent_IdsAreGloballyConsistent
+  [32m✓[0m ContentTests.NekoContent_EveryUnlockIsReachable
+  [32m✓[0m ContentTests.NekoContent_BuildingCurveIsSane
+  [32m✓[0m ContentTests.BuildingCurve_FollowsTheRecipeInEveryContentPack
+  [32m✓[0m ContentTests.NekoContent_UnlockThresholdsRiseWithTier
+  [32m✓[0m ContentTests.NekoContent_HeavenlyUpgradesArePermanentAndChipPriced
+  [32m✓[0m ContentTests.CounterNames_AreRegisteredForEveryReferencedCounter
+  [32m✓[0m ContentTests.DuplicateIds_AreRejected
+  [32m✓[0m ContentTests.DanglingReferences_AreRejected
+  [32m✓[0m ContentTests.InvalidNumbers_AreRejected
+  [32m✓[0m ContentTests.EmptyContent_IsValid
+  [32m✓[0m ContentTests.HiddenAchievement_IsConcealedInView
+  [32m✓[0m ContentTests.UnlockHints_AreHumanReadable
+  [32m✓[0m ContentTextFileTests.Table_CoversExactlyThePacksThatHaveATextFile
+  [32m✓[0m ContentTextFileTests.BuildingCountTable_CoversExactlyTheGuardTable
+  [32m✓[0m ContentTextFileTests.EraCountTable_CoversExactlyTheGuardTable
+  [32m✓[0m ContentTextFileTests.EndingCountTable_CoversExactlyTheGuardTable
+  [32m✓[0m ContentTextFileTests.StanceCountTable_CoversExactlyTheGuardTable
+  [32m✓[0m ContentTextFileTests.ChoiceCountTable_CoversExactlyTheGuardTable
+  [32m✓[0m ContentTextFileTests.AchievementCountTable_CoversExactlyTheGuardTable
+  [32m✓[0m ContentTextFileTests.BuffCountTable_CoversExactlyTheGuardTable
+  [32m✓[0m ContentTextFileTests.UpgradeCountTable_CoversExactlyTheGuardTable
+  [32m✓[0m ContentTextFileTests.GoldenCookieOutcomeCountTable_CoversExactlyTheGuardTable
+  [32m✓[0m ContentTextFileTests.EveryTextFile_IsCopiedToTheOutput_AndMatchesTheRepo
+  [32m✓[0m ContentTextFileTests.EveryEntryAndStoryline_ResolvesItsProseFromTheFile
+  [32m✓[0m ContentTextFileTests.EveryBuilding_ResolvesItsTextFromTheFile
+  [32m✓[0m ContentTextFileTests.EveryEra_ResolvesItsTextFromTheFile
+  [32m✓[0m ContentTextFileTests.EveryEnding_ResolvesItsTextFromTheFile
+  [32m✓[0m ContentTextFileTests.EveryStance_ResolvesItsTextFromTheFile
+  [32m✓[0m ContentTextFileTests.EveryChoice_ResolvesItsTextFromTheFile
+  [32m✓[0m ContentTextFileTests.EveryAchievement_ResolvesItsTextFromTheFile
+  [32m✓[0m ContentTextFileTests.EveryBuff_ResolvesItsTextFromTheFile
+  [32m✓[0m ContentTextFileTests.EveryUpgrade_ResolvesItsTextFromTheFile
+  [32m✓[0m ContentTextFileTests.EveryGoldenCookieOutcome_ResolvesItsTextFromTheFile
+  [32m✓[0m ContentTextFileTests.EditingTheFileWrongly_FailsLoudly
+  [32m✓[0m ContentTextFileTests.EditingTheBuildingTextWrongly_FailsLoudly
+  [32m✓[0m ContentTextFileTests.EditingTheEraTextWrongly_FailsLoudly
+  [32m✓[0m ContentTextFileTests.EditingTheEndingTextWrongly_FailsLoudly
+  [32m✓[0m ContentTextFileTests.EditingTheStanceTextWrongly_FailsLoudly
+  [32m✓[0m ContentTextFileTests.EditingTheChoiceTextWrongly_FailsLoudly
+  [32m✓[0m ContentTextFileTests.EditingTheAchievementTextWrongly_FailsLoudly
+  [32m✓[0m ContentTextFileTests.EditingTheBuffTextWrongly_FailsLoudly
+  [32m✓[0m ContentTextFileTests.EditingTheUpgradeTextWrongly_FailsLoudly
+  [32m✓[0m ContentTextFileTests.EditingTheGoldenCookieOutcomeTextWrongly_FailsLoudly
+  [32m✓[0m ContentTextFileTests.EveryPack_PassesTheFreeTableRulesWithItsRealFile
+  [32m✓[0m ContentTextFileTests.EveryDeclaredTable_ExistsInTheFile_AndAtLeastOneFreeTableExists
+  [32m✓[0m ContentTextTests.ValidFile_ResolvesTextAndPassesTheOrphanCheck
+  [32m✓[0m ContentTextTests.MissingFile_ThrowsInsteadOfSilentlyHavingNoStory
+  [32m✓[0m ContentTextTests.MissingId_Throws
+  [32m✓[0m ContentTextTests.MissingField_Throws
+  [32m✓[0m ContentTextTests.MissingSectionOrOption_Throws
+  [32m✓[0m ContentTextTests.OrphanEntry_ThrowsAndNamesItself
+  [32m✓[0m ContentTextTests.OrphanChoiceOption_Throws
+  [32m✓[0m ContentTextTests.OptionalField_FallsBackAndStaysOutOfTheOrphanMath
+  [32m✓[0m ContentTextTests.DeclaredFreeTable_IsExemptFromTheOrphanCheck
+  [32m✓[0m ContentTextTests.FreeTableThatCodeReads_Throws
+  [32m✓[0m ContentTextTests.DeclaredConsumedTable_NobodyReadsIt_StillThrows
+  [32m✓[0m ContentTextTests.FlippingToConsumed_NeedsNoNewApi_AndRestoresStrictness
+  [32m✓[0m ContentTextTests.BrokenManifest_ThrowsForEachShape
+  [32m✓[0m ContentTextTests.BrokenFreeTableEntry_ThrowsForEachShape
+  [32m✓[0m ContentTextTests.UndeclaredTableOfPlainText_Throws
+  [32m✓[0m ContentTextTests.DuplicateKey_IsRejectedAndNamed
+  [32m✓[0m ContentTextTests.WithoutAManifest_EverythingBehavesAsBefore
+  [32m✓[0m ContentTextTests.MalformedJson_Throws
+  [32m✓[0m ContentTextTests.ConcurrentReaders_DoNotCorruptTheUsedSet
+  [32m✓[0m CrashLogTests.Write_PersistsExceptionAndEnvironment
+  [32m✓[0m CyberContentTests.Structure_IsComplete
+  [32m✓[0m CyberContentTests.Buildings_CurveIsSane
+  [32m✓[0m CyberContentTests.LoreRevealsAreUnique
+  [32m✓[0m CyberContentTests.Orders_AreContiguousWithinEachStoryline
+  [32m✓[0m CyberContentTests.EveryStorylineOpensEarlyEnough
+  [32m✓[0m CyberContentTests.G5_FirstTenMinutesRevealAtMostThreeEntries
+  [32m✓[0m CyberContentTests.Compute_GrowsWithTheResidentBuildingsOnly
+  [32m✓[0m CyberContentTests.Compute_AccumulatesAndNeverGoesBackwards
+  [32m✓[0m CyberContentTests.Compute_SurvivesMigration
+  [32m✓[0m CyberContentTests.Compute_AccruesOfflineWithTheSameFormula
+  [32m✓[0m CyberContentTests.Compute_DrivesProduction_AndTheCapIsInRawPoints
+  [32m✓[0m CyberContentTests.Compute_IsReferencedByAtLeastFiveUnlockGates
+  [32m✓[0m CyberContentTests.EnvelopeProbe_ReportsTheRealCurve
+  [32m✓[0m CyberContentTests.RobotWalksAllFiveLayers
+  [32m✓[0m CyberContentTests.Storylines_ReadInOrderDuringARealPlaythrough
+  [32m✓[0m CyberContentTests.EveryEndingIsReachableAndExclusive
+  [32m✓[0m CyberContentTests.EndingThresholds_AreOrdered
+  [32m✓[0m CyberContentTests.Endings_AreAllGatedBehindTheLastLayer
+  [32m✓[0m CyberContentTests.ComputeAtTheEnd_ExceedsTheEndingThreshold
+  [32m✓[0m DreamContentTests.Structure_IsComplete
+  [32m✓[0m DreamContentTests.LoreRevealsAreUnique
+  [32m✓[0m DreamContentTests.Orders_AreContiguousWithinEachStoryline
+  [32m✓[0m DreamContentTests.Storylines_ReadInOrderDuringARealPlaythrough
+  [32m✓[0m DreamContentTests.EveryStorylineOpensEarlyEnough
+  [32m✓[0m DreamContentTests.G5_FirstTenMinutesRevealAtMostThreeEntries
+  [32m✓[0m DreamContentTests.DreamEnergy_IsProducedOnlyByDreamLayerBuildings
+  [32m✓[0m DreamContentTests.DreamEnergy_MatchesItsOwnRatePerSecond
+  [32m✓[0m DreamContentTests.DreamEnergy_OnlyEverGrows_AndSurvivesGoingDeeper
+  [32m✓[0m DreamContentTests.DreamEnergy_OfflineAndOnlineAgreeOnTheSameElapsedTime
+  [32m✓[0m DreamContentTests.DeepDreamScaling_HitsTheEndpointsWrittenInTheText
+  [32m✓[0m DreamContentTests.DreamEnergy_GatesUpgradesAndAchievementsWithAProgressBar
+  [32m✓[0m DreamContentTests.DreamEnergy_RefreshesProduction_WithoutAnyOtherEvent
+  [32m✓[0m DreamContentTests.Eras_EachLayerChangesTheRulesInItsOwnWay
+  [32m✓[0m DreamContentTests.RobotWalksAllFiveSleepLayers
+  [32m✓[0m DreamContentTests.DreamEnergyAtTheEnd_ExceedsTheEndingThreshold
+  [32m✓[0m DreamContentTests.EveryEndingIsReachableAndExclusive
+  [32m✓[0m EndingGraceTests.CommittedEndingWaitsForTheChoiceThatLandsOnTheSameTick
+  [32m✓[0m EndingGraceTests.ShownButUnansweredChoicesStallTheEndingForeverAndThatIsDeliberate
+  [32m✓[0m EndingGraceTests.ShowingChoicesNoLongerLetsTheEndingLockAnsweringIsWhatDoes
+  [32m✓[0m EndingGraceTests.ReportingBeforeAChoiceExistsDoesNotPreApproveItAndItStillBlocksUntilAnswered
+  [32m✓[0m EndingGraceTests.AnsweringEveryPendingChoiceLetsTheEndingLock
+  [32m✓[0m EndingGraceTests.WithoutPendingChoicesTheEndingLocksExactlyAsBefore
+  [32m✓[0m EndingGraceTests.ShownnessSurvivesASaveTripButDoesNotBecomeAnAnswer
+  [32m✓[0m EndingGraceTests.LoadingASaveInventsNeitherShownnessNorAnswers
+  [32m✓[0m EndingGraceTests.UnanswerablePendingChoicesDoNotStallTheRunAndTheEngineSaysSo
+  [32m✓[0m EndingGraceTests.AdvancingTheEraKeepsPendingChoicesAnswerableSoTheNewRuleCannotHang
+  [32m✓[0m EndingGraceTests.PrestigeKeepsPendingChoicesAnswerable
+  [32m✓[0m EndingGraceTests.BecomingReadyTellsThePlayerThatItIsWaitingOnThem
+  [32m✓[0m EndingGraceTests.TheRetiredGraceSettingNoLongerDelaysAnythingAndSaysSo
+  [32m✓[0m EndingTests.Ending_IsChosenByPriority
+  [32m✓[0m EndingTests.Ending_RecordsOnlyOne_AndNeverRepicks
+  [32m✓[0m EndingTests.Ending_EachBranchIsReachable
+  [32m✓[0m EndingTests.Ending_FallsBackWhenPlayerAvoidsEveryChoice
+  [32m✓[0m EndingTests.Ending_DoesNotResetTheSave
+  [32m✓[0m EndingTests.Ending_PublishesEventAndUnlocksAchievementGatedOnIt
+  [32m✓[0m EndingTests.SaveRoundTrip_PreservesEnding
+  [32m✓[0m EndingTests.Snapshot_ExposesEndingAndNullForPacksWithoutEndings
+  [32m✓[0m EndingTests.Validator_RequiresAFallbackEnding
+  [32m✓[0m EndingTests.Validator_RejectsFallbackThatCanBecomeFalse
+  [32m✓[0m EndingTests.Validator_RejectsAchievementGatedOnUnknownEnding
+  [32m✓[0m EndingTests.Validator_RejectsNeverEnding
+  [32m✓[0m EndingTests.Validator_RejectsUnreachableEnding
+  [32m✓[0m EndingTests.Validator_RejectsEndingMissingText
+  [32m✓[0m EndingTests.Validator_RejectsEndingThatPreemptsLastEraChoices
+  [32m✓[0m EndingTests.Validator_AcceptsEndingAsStrictAsTheLastEraMainline
+  [32m✓[0m EngineTests.Click_WithoutBuildings_GivesBasePower
+  [32m✓[0m EngineTests.Click_ScalesWithCps
+  [32m✓[0m EngineTests.BuyBuilding_DeductsPrice_AndRaisesCps
+  [32m✓[0m EngineTests.BuyBuilding_FailsWhenUnaffordable
+  [32m✓[0m EngineTests.BuyBuilding_DowngradesToAffordableAmount
+  [32m✓[0m EngineTests.BuyBuilding_LockedContent_IsRejectedWithHint
+  [32m✓[0m EngineTests.SellBuilding_RefundsConfiguredRate
+  [32m✓[0m EngineTests.SellBuilding_FailsWhenNothingOwned
+  [32m✓[0m EngineTests.BuyUpgrade_HonoursUnlock_And_IsSinglePurchase
+  [32m✓[0m EngineTests.BuyUpgrade_FailsWhenUnaffordable
+  [32m✓[0m EngineTests.BuyUpgrade_UnknownId_IsRejected
+  [32m✓[0m EngineTests.Achievements_UnlockAtThresholds
+  [32m✓[0m EngineTests.Achievements_FireEvents_And_MarkNotifications
+  [32m✓[0m EngineTests.BuyMax_HandlesEnormousBudgets
+  [32m✓[0m EngineTests.Update_ClampsCatchUp
+  [32m✓[0m EngineTests.Update_AccumulatesFixedSteps
+  [32m✓[0m EngineTests.Notifications_AreCapped
+  [32m✓[0m EraStageTests.Company_StagesAreExactlyTheBuildingsThatOpenWithinEachEra
+  [32m✓[0m EraStageTests.Company_StageCountsPerEra_AreFiveEightEight
+  [32m✓[0m EraStageTests.Company_Headquarters_IsNotAStageBecauseItSitsAboveTheFinalCompletion
+  [32m✓[0m EraStageTests.PacksWithoutStages_HaveNoneAnywhere
+  [32m✓[0m EraStageTests.StageGates_StayBelowTheirEraCompletion
+  [32m✓[0m EraStageTests.StageGateGuard_RejectsAStageAboveItsEraCompletion
+  [32m✓[0m EraStageTests.StageIndex_FollowsTheDeclaredThresholds
+  [32m✓[0m EraStageTests.Stage_NeverGoesBackwards_AndIsFinishedBeforeTheEraIs
+  [32m✓[0m EraStageTests.StageAnnouncement_FiresOncePerBoundary
+  [32m✓[0m EraStageTests.StageProgress_SurvivesALoad_AndIsNotReplayed
+  [32m✓[0m EraStageTests.StageAnnouncement_IsScopedToItsEra
+  [32m✓[0m EraStageTests.StageWithoutACondition_IsRejectedAtBuildTime
+  [32m✓[0m EraStageTests.StageWithADecayingMetric_IsRejectedAtBuildTime
+  [32m✓[0m EraStageTests.DuplicateStageId_IsRejectedAtBuildTime
+  [32m✓[0m EraStageTests.EraView_CarriesTheStage_AndHidesItWhenThereAreNone
+  [32m✓[0m EraTests.NineLives_BuildsWithNineContiguousEras
+  [32m✓[0m EraTests.NineLives_EveryEraHasAMeaningfulRuleChange
+  [32m✓[0m EraTests.NineLives_CompletionConditionsUseOnlyMonotonicMetrics
+  [32m✓[0m EraTests.MonotonicValidator_RejectsSpendableMetrics
+  [32m✓[0m EraTests.MonotonicValidator_RejectsCps
+  [32m✓[0m EraTests.MonotonicValidator_RejectsBuildingCount
+  [32m✓[0m EraTests.MonotonicValidator_AcceptsEarningsAndCounters
+  [32m✓[0m EraTests.EraValidator_RejectsNonContiguousIndexes
+  [32m✓[0m EraTests.EraValidator_RejectsUnknownInheritBuilding
+  [32m✓[0m EraTests.Gate_IsClosedAtStart_WithReasonAndZeroProgress
+  [32m✓[0m EraTests.Gate_OpensWhenCompletionIsMet
+  [32m✓[0m EraTests.Gate_ProgressIsTheLeastAdvancedRequirement
+  [32m✓[0m EraTests.Advance_FailsWhileGateIsClosed_AndChangesNothing
+  [32m✓[0m EraTests.Advance_MovesToNextEra_AndResetsTheRun
+  [32m✓[0m EraTests.Advance_KeepsAchievementsAndCounters
+  [32m✓[0m EraTests.Advance_GrantsZeroChipsWhenLevelDoesNotRise
+  [32m✓[0m EraTests.Advance_AppliesNextEraModifiers
+  [32m✓[0m EraTests.Advance_AppliesNextEraBalance
+  [32m✓[0m EraTests.Advance_AppliesMetaRewardMultiplier
+  [32m✓[0m EraTests.InheritBuildings_KeepsWhitelistedOnes
+  [32m✓[0m EraTests.InheritBuildingRatio_KeepsAProportion
+  [32m✓[0m EraTests.ResetRun_WithoutInheritance_ClearsEverything
+  [32m✓[0m EraTests.SaveRoundTrip_PreservesEraState
+  [32m✓[0m EraTests.EraView_IsNullForPacksWithoutEras
+  [32m✓[0m EraTests.EraView_TracksCompletionAcrossEras
+  [32m✓[0m EraTests.G4_RobotWalksFromTheFirstEraToTheLast
+  [32m✓[0m EraTests.EraGate_ProgressNeverGoesBackwards
+  [32m✓[0m EraTests.MonotonicGuard_RejectsADecayingCounterInCompletion
+  [32m✓[0m FrameRenderTests.EveryFrameFitsTheViewportExactly
+  [32m✓[0m FrameRenderTests.EveryPanelFitsTheViewportExactly
+  [32m✓[0m FrameRenderTests.HelpOverlayFitsTheViewportExactly
+  [32m✓[0m FrameRenderTests.CompanyPackFitsTheViewportExactly
+  [32m✓[0m FrameRenderTests.TooSmallWindow_ShowsAFittingHint
+  [32m✓[0m FrameRenderTests.ChoicesPanelCountsAsShownOnlyWhenItIsActuallyOnScreen
+  [32m✓[0m FrameRenderTests.FramesAvoidFontFallbackProneGlyphs
+  [32m✓[0m FrameRenderTests.WidthModel_HandlesEscapesWideCharsAndZwj
+  [32m✓[0m FrameRenderTests.RenderNeverThrowsForAnyWindowSize
+  [32m✓[0m FrameRenderTests.RenderNeverThrowsWithAFullGameState
+  [32m✓[0m FrameworkTests.Modifier_UnknownBuildingId_IsRejected
+  [32m✓[0m FrameworkTests.Modifier_UnknownBuffDurationId_IsRejected
+  [32m✓[0m FrameworkTests.Modifier_NonNullFiniteValue_IsRejected
+  [32m✓[0m FrameworkTests.Modifier_TargetThatRejectsId_IsRejected
+  [32m✓[0m FrameworkTests.Scaling_MissingOrUnknownBuildingId_IsRejected
+  [32m✓[0m FrameworkTests.UnlockCycle_IsRejected
+  [32m✓[0m FrameworkTests.UnlockOrphanChain_IsRejected
+  [32m✓[0m FrameworkTests.UnlockReachability_DoesNotFlagAnyWithReachableBranch
+  [32m✓[0m FrameworkTests.UnlockReachability_TreatsCustomConditionAsReachable
+  [32m✓[0m FrameworkTests.UnlockReachability_AcceptsChainedGating
+  [32m✓[0m FrameworkTests.ExistingNekoContent_PassesTheNewValidator
+  [32m✓[0m FrameworkTests.CounterCondition_ReadsCounterAndReportsProgress
+  [32m✓[0m FrameworkTests.CounterCondition_MissingKey_IsRejected
+  [32m✓[0m FrameworkTests.TaggedUpgradesCondition_ReadsTaggedCount
+  [32m✓[0m FrameworkTests.TaggedUpgradesCondition_MissingTag_IsRejected
+  [32m✓[0m FrameworkTests.Modules_ReceiveOnOffline
+  [32m✓[0m FrameworkTests.Modules_ReceiveOnTickBeforeAnyOffline
+  [32m✓[0m GodContentTests.Structure_IsComplete
+  [32m✓[0m GodContentTests.EveryMythChangesARuleOfItsOwn
+  [32m✓[0m GodContentTests.EveryEndingHasItsOwnAchievement
+  [32m✓[0m GodContentTests.LoreRevealsAreUnique
+  [32m✓[0m GodContentTests.Orders_AreContiguousWithinEachStoryline
+  [32m✓[0m GodContentTests.Storylines_ReadInOrderDuringARealPlaythrough
+  [32m✓[0m GodContentTests.EveryStorylineOpensEarlyEnough
+  [32m✓[0m GodContentTests.G5_FirstTenMinutesRevealAtMostThreeEntries
+  [32m✓[0m GodContentTests.Faith_GrowsWithTemplesAndWithTheCrowd
+  [32m✓[0m GodContentTests.Faith_IsMonotonic_AndSurvivesEveryMythSwitch
+  [32m✓[0m GodContentTests.Faith_DrivesProduction_AndNeverOvershootsItsCap
+  [32m✓[0m GodContentTests.Faith_RefreshesProduction_WithoutAnyOtherEvent
+  [32m✓[0m GodContentTests.Faith_OfflineAccruesLikeOnline
+  [32m✓[0m GodContentTests.Viewers_RecordThePeak_SoTheCthulhuGateCannotBeLost
+  [32m✓[0m GodContentTests.NoMythInheritsBuildings_SoEveryLayerRedeclaresItsOwnWorld
+  [32m✓[0m GodContentTests.RobotWalksAllFiveMyths
+  [32m✓[0m GodContentTests.NaturalRunLandsOnThePromiseEnding
+  [32m✓[0m GodContentTests.EveryEndingIsReachableAndExclusive
+  [32m✓[0m GoldenCookieTests.ForcedOutcome_AppliesBuff
+  [32m✓[0m GoldenCookieTests.Luck_MatchesCookieClickerFormula
+  [32m✓[0m GoldenCookieTests.Luck_IsCappedByCps
+  [32m✓[0m GoldenCookieTests.Ruin_StealsBankButNeverGoesNegative
+  [32m✓[0m GoldenCookieTests.ChainOutcome_AppliesBothBuffs
+  [32m✓[0m GoldenCookieTests.RewardUpgrade_ScalesGain
+  [32m✓[0m GoldenCookieTests.GoldenCookie_ExpiresAfterLifetime
+  [32m✓[0m GoldenCookieTests.GoldenCookie_SpawnsAutomatically
+  [32m✓[0m GoldenCookieTests.GoldenCookie_PositionIsNormalized
+  [32m✓[0m GoldenCookieTests.ClickingMissingCookie_Fails
+  [32m✓[0m GoldenCookieTests.WeightedPick_NeverReturnsUnknownOutcome
+  [32m✓[0m GoldenCookieTests.GoldenCookieEvents_ArePublished
+  [32m✓[0m GoldenCookieTests.GoldenCookieViews_ExposeCountdown
+  [32m✓[0m LabContentTests.Structure_IsComplete
+  [32m✓[0m LabContentTests.EveryChoiceIsARealFork
+  [32m✓[0m LabContentTests.EveryStanceCanReachTheEndingThreshold
+  [32m✓[0m LabContentTests.EveryEndingHasItsOwnAchievement
+  [32m✓[0m LabContentTests.EthicsIsProducedOnlyByWatchers
+  [32m✓[0m LabContentTests.RobotWalksAllSevenBatches
+  [32m✓[0m LabEndingTests.CommittedEndingSurvivesTheLastBatchChoice
+  [32m✓[0m LabEndingTests.FallbackEndingStillArrivesForAPlayerWhoCommitsToNothing
+  [32m✓[0m LabEndingTests.NeverAnsweringMeansNoEndingAtAllAndThatIsDeliberate
+  [32m✓[0m LabEndingTests.LastLayerGate_ReportsTheEndingInsteadOfAPromise
+  [32m✓[0m LibraryContentTests.Structure_IsComplete
+  [32m✓[0m LibraryContentTests.LoreRevealsAreUnique
+  [32m✓[0m LibraryContentTests.Orders_AreContiguousWithinEachStoryline
+  [32m✓[0m LibraryContentTests.Storylines_ReadInOrderDuringARealPlaythrough
+  [32m✓[0m LibraryContentTests.EveryStorylineOpensEarlyEnough
+  [32m✓[0m LibraryContentTests.G5_FirstTenMinutesRevealAtMostThreeEntries
+  [32m✓[0m LibraryContentTests.Readership_DecaysExponentiallyTowardTheEquilibrium
+  [32m✓[0m LibraryContentTests.Readership_OfflineUsesTheSameClosedForm
+  [32m✓[0m LibraryContentTests.Readership_ResetsWhenANewBookStarts
+  [32m✓[0m LibraryContentTests.Production_MultiplierFollowsReadership_AndNeverReachesZero
+  [32m✓[0m LibraryContentTests.Readership_RefreshesProduction_WithoutAnyOtherEvent
+  [32m✓[0m LibraryContentTests.RobotWalksAllFiveBooks
+  [32m✓[0m LibraryContentTests.ReadershipAtTheEnd_ExceedsTheEndingThreshold
+  [32m✓[0m LibraryContentTests.EveryEndingIsReachableAndExclusive
+  [32m✓[0m LoreTests.StorylineTotals_MatchActualEntryCounts
+  [32m✓[0m LoreTests.Orders_AreUniqueWithinEachStoryline
+  [32m✓[0m LoreTests.RevealConditions_AreUniqueWithinEachPack
+  [32m✓[0m LoreTests.EveryStoryline_OpensReachablyAndMostOpenEarly
+  [32m✓[0m LoreTests.EraGatedLore_StaysBelowItsEraCompletion
+  [32m✓[0m LoreTests.Era9Rule_UsesLoreCount
+  [32m✓[0m LoreTests.G5_FirstTenMinutesRevealAtMostThreeEntries
+  [32m✓[0m LoreTests.Reveal_FiresOnce_AndPublishesEvent
+  [32m✓[0m LoreTests.LogChannel_GoesToNotifications
+  [32m✓[0m LoreTests.PopupChannel_IsDismissable_AndNotLogged
+  [32m✓[0m LoreTests.PendingLore_AppearsInSnapshot
+  [32m✓[0m LoreTests.NoteChannel_UsesTheSamePendingQueue_AndTheSameSeenSet
+  [32m✓[0m LoreTests.NoteChannel_CarriesItsOwnWireToken_SoTheFrontendNeedNotReadOrdinals
+  [32m✓[0m LoreTests.GoldenCatNote_FiresOnTheFirstSighting_NotOnTheFirstCatch
+  [32m✓[0m LoreTests.NoteChannel_TextIsALeafObject_WithLineBreaks
+  [32m✓[0m LoreTests.Codex_IsNullForPacksWithoutLore
+  [32m✓[0m LoreTests.Codex_ShowsProgressPerStoryline
+  [32m✓[0m LoreTests.Codex_ConcealsLockedEntriesButKeepsTheChecklist
+  [32m✓[0m LoreTests.Codex_RevealsTitleAndBodyOnceUnlocked
+  [32m✓[0m LoreTests.SaveRoundTrip_PreservesLoreAndPopups
+  [32m✓[0m LoreTests.LoreCount_DrivesConditionsAndScaling
+  [32m✓[0m LoreTests.Validator_RejectsStorylineTotalMismatch
+  [32m✓[0m LoreTests.Validator_RejectsDuplicateOrder
+  [32m✓[0m LoreTests.Validator_RejectsUnknownStoryline
+  [32m✓[0m LoreTests.Validator_RejectsNeverReveal
+  [32m✓[0m LoreTests.Validator_RejectsEraTextChannel
+  [32m✓[0m LoreTests.Validator_RejectsUnreachableLore
+  [32m✓[0m LoreTests.Validator_RejectsEmptyStoryline
+  [32m✓[0m LoreTests.RevealingLore_RecomputesProduction
+  [32m✓[0m ModifierTests.AdditivePercents_AddUp
+  [32m✓[0m ModifierTests.MultiplicativeBonuses_Multiply
+  [32m✓[0m ModifierTests.MixedOperations_FollowDocumentedOrder
+  [32m✓[0m ModifierTests.ClickFlat_AppliesBeforeMultiplier
+  [32m✓[0m ModifierTests.Buff_MultipliesProduction_AndExpires
+  [32m✓[0m ModifierTests.Buff_RefreshMode_DoesNotStack
+  [32m✓[0m ModifierTests.Buff_ExtendMode_AddsDuration
+  [32m✓[0m ModifierTests.BuildingSpecificBuff_OnlyAffectsThatBuilding
+  [32m✓[0m ModifierTests.Debuff_ReducesProduction
+  [32m✓[0m ModifierTests.AchievementScaling_MakesMilkUpgradesGrow
+  [32m✓[0m ModifierTests.RepeatableUpgrade_AppliesPerPurchase
+  [32m✓[0m ModifierTests.PriceDiscount_ReducesUnitPrice
+  [32m✓[0m ModifierTests.ModifierSet_AccumulatesIndependentlyPerTarget
+  [32m✓[0m ModifierTests.Scaling_ClampsAtCap
+  [32m✓[0m NineLivesEndingTests.EveryChoiceTriggersDuringARealPlaythrough
+  [32m✓[0m NineLivesEndingTests.EachOfTheFourCommittedEndingsIsReachable
+  [32m✓[0m NineLivesEndingTests.CommittedEndingsAreMutuallyExclusive
+  [32m✓[0m NineLivesEndingTests.NeverAnsweringMeansNoEndingAtAllAndThatIsDeliberate
+  [32m✓[0m NineLivesEndingTests.AvoidingEveryCommitmentYieldsTheFallbackEnding
+  [32m✓[0m NineLivesEndingTests.OptionModifiersTakeEffectImmediately
+  [32m✓[0m NineLivesEndingTests.EveryChoiceIsARealFork
+  [32m✓[0m NineLivesEndingTests.EveryStanceHasEnoughOpportunitiesToReachTheThreshold
+  [32m✓[0m NineLivesEndingTests.EndingAchievementsAreGatedOnTheirEndings
+  [32m✓[0m NineLivesEndingTests.StanceModifiersActuallyChangeProduction
+  [32m✓[0m NumbersTests.Format_BelowMillion_UsesSeparators
+  [32m✓[0m NumbersTests.Format_SmallFractions_KeepDecimals
+  [32m✓[0m NumbersTests.Format_LongScale_Names
+  [32m✓[0m NumbersTests.Format_PowerOfTenBoundaries_DoNotFallThrough
+  [32m✓[0m NumbersTests.Format_Scientific_Fallback_WhenNamesExhausted
+  [32m✓[0m NumbersTests.Format_ShortScale_StartsAtTheKiloTier
+  [32m✓[0m NumbersTests.Format_ShortScale_LeavesSubThousandAlone
+  [32m✓[0m NumbersTests.Format_ShortStyle
+  [32m✓[0m NumbersTests.Format_PlainStyle_UsesSeparators
+  [32m✓[0m NumbersTests.Format_CustomScaleNames_AreHonoured
+  [32m✓[0m NumbersTests.Format_SpecialValues
+  [32m✓[0m NumbersTests.Percent_And_Multiplier
+  [32m✓[0m NumbersTests.Duration_FormatsAcrossRanges
+  [32m✓[0m NumbersTests.Duration_CarriesRoundedSeconds
+  [32m✓[0m NumbersTests.Num_SaturatesInsteadOfOverflowing
+  [32m✓[0m NumbersTests.Num_ClampAndHelpers
+  [32m✓[0m PrestigeTests.EraPacks_PermanentUpgradesAreAffordableWithinOneRun
+  [32m✓[0m PrestigeTests.LevelFormula_MatchesCookieClicker
+  [32m✓[0m PrestigeTests.LevelFormula_IsMonotonic
+  [32m✓[0m PrestigeTests.CookiesForLevel_IsInverseOfLevelFor
+  [32m✓[0m PrestigeTests.Preview_ReportsProgressTowardsNextLevel
+  [32m✓[0m PrestigeTests.Ascend_FailsWithoutLevelGain
+  [32m✓[0m PrestigeTests.Ascend_ResetsRun_ButKeepsPermanentAndAchievements
+  [32m✓[0m PrestigeTests.Ascend_SecondTime_Onwards
+  [32m✓[0m PrestigeTests.HeavenlyUpgrade_SurvivesAscension_And_Applies
+  [32m✓[0m PrestigeTests.ResetRun_KeepsLifetimeCounters
+  [32m✓[0m PricingTests.UnitPrice_GrowsGeometrically
+  [32m✓[0m PricingTests.UnitPrice_AppliesMultiplier
+  [32m✓[0m PricingTests.BulkPrice_EqualsSumOfUnitPrices
+  [32m✓[0m PricingTests.MaxAffordable_IsTightBothWays
+  [32m✓[0m PricingTests.MaxAffordable_HandlesEdgeCases
+  [32m✓[0m PricingTests.SellValue_RefundsLastPurchasedUnits
+  [32m✓[0m PricingTests.SellValue_NeverExceedsOwned
+  [32m✓[0m PricingTests.UpgradePrice_SupportsRepeatables
+  [32m✓[0m PricingTests.UpgradePrice_FixedPriceWhenNoGrowth
+  [32m✓[0m PricingTests.HugeOwnedCounts_DoNotProduceNaN
+  [32m✓[0m ProseToneTests.NarrativeProse_StaysWithinItsRecordedBudget
+  [32m✓[0m ProseToneTests.ToneBudgetTable_CoversExactlyThePacksThatHaveATextFile
+  [32m✓[0m ProseToneTests.ToneBudget_RejectsProseThatSpendsMoreThanTheRecordedValue
+  [32m✓[0m PublicApiTests.PublicApi_MatchesTheCommittedSnapshot
+  [32m✓[0m PublicApiTests.PublicApi_SnapshotRecordsTheCurrentVersion
+  [32m✓[0m PublicApiTests.PublicApi_CoversEveryExportedTypeAndEveryPublicMember
+  [32m✓[0m PublicApiTests.PublicApiGuard_RejectsEveryKindOfBreakingChange
+  [32m✓[0m RandomTests.SameSeed_ProducesSameSequence
+  [32m✓[0m RandomTests.DifferentSeeds_Diverge
+  [32m✓[0m RandomTests.StateRoundTrip_ContinuesSequence
+  [32m✓[0m RandomTests.NextDouble_StaysInRange
+  [32m✓[0m RandomTests.PickWeighted_RespectsWeights
+  [32m✓[0m SaveFileTests.SaveFile_RoundTripsThroughFileStorage
+  [32m✓[0m SaveFileTests.SaveFile_FirstSaveWorksAndHasNoBackup
+  [32m✓[0m SaveFileTests.SaveFile_OverwriteKeepsThePreviousContentAsAVerifiedBackup
+  [32m✓[0m SaveFileTests.SaveFile_BackupRollsForwardOnEverySave
+  [32m✓[0m SaveFileTests.SaveFile_RefusesContentThatCannotBeParsedBack
+  [32m✓[0m SaveFileTests.SaveFile_DoesNotPromoteAnUnloadableSaveToBackup
+  [32m✓[0m SaveFileTests.SaveManager_FailedWriteIsLoudAndLosesNothing
+  [32m✓[0m SaveFileTests.SaveManager_StorageFailureIsReportedNotSwallowed
+  [32m✓[0m SaveFileTests.SaveSerializer_ValidJsonThatIsNotSaveDataCountsAsCorrupt
+  [32m✓[0m SaveTests.SaveLoad_RoundTripsCoreState
+  [32m✓[0m SaveTests.SaveLoad_PreservesPrestigeAndRng
+  [32m✓[0m SaveTests.OfflineProgress_IsCappedAndCredited
+  [32m✓[0m SaveTests.OfflineProgress_IgnoredForShortAbsence
+  [32m✓[0m SaveTests.OfflineProgress_IgnoresExpiredBuffs
+  [32m✓[0m SaveTests.OfflineProgress_CanBeDisabledByOption
+  [32m✓[0m SaveTests.OfflineReport_ReachesTheSnapshotUntilDismissed
+  [32m✓[0m SaveTests.OfflineReport_NotRaisedForShortAbsence
+  [32m✓[0m SaveTests.OfflineReport_ClearedByHardReset
+  [32m✓[0m SaveTests.ShareCode_RoundTripsThroughBase64
+  [32m✓[0m SaveTests.Parse_RejectsCorruptOrFutureSaves
+  [32m✓[0m SaveTests.Parse_ToleratesMissingFields
+  [32m✓[0m SaveTests.Migration_UpgradesLegacySaves
+  [32m✓[0m SaveTests.SaveManager_AutoSavesOnInterval
+  [32m✓[0m SaveTests.SaveManager_SaveLoadDelete
+  [32m✓[0m SaveTests.SaveManager_ReportsLoadFailureWithoutCrashing
+  [32m✓[0m SaveTests.SaveManager_RaisesSavedEvent
+  [32m✓[0m SaveTransferHostTests.WebHost_ExportNamesThePackageAndImportAppliesImmediately
+  [32m✓[0m SaveTransferHostTests.WebHost_BadImportsAreLoudAndLeaveTheSaveFileByteIdentical
+  [32m✓[0m SaveTransferHostTests.WebHost_WithoutASaveRootSaysSoInsteadOfCrashing
+  [32m✓[0m SaveTransferHostTests.Terminal_PromptExportsAFileThatAnotherSessionCanImport
+  [32m✓[0m SaveTransferHostTests.Terminal_KeysWhileThePromptIsOpenOnlyEditThePath
+  [32m✓[0m SaveTransferHostTests.Terminal_ImportFromAForeignPackIsRefusedAndLeavesTheSaveAlone
+  [32m✓[0m SaveTransferHostTests.Terminal_PromptFrameKeepsTheWidthAndHeightInvariants
+  [32m✓[0m SaveTransferHostTests.Terminal_WithoutASaveSaysExportAndImportAreUnavailable
+  [32m✓[0m SaveTransferTests.SaveTransfer_RoundTripsStateExactly
+  [32m✓[0m SaveTransferTests.SaveTransfer_ExportedTextIsSelfDescribing
+  [32m✓[0m SaveTransferTests.SaveTransfer_ReformattingTheEnvelopeDoesNotBreakTheChecksum
+  [32m✓[0m SaveTransferTests.SaveTransfer_EditedTextFailsTheChecksum
+  [32m✓[0m SaveTransferTests.SaveTransfer_RejectsTextThatIsNotAnExport
+  [32m✓[0m SaveTransferTests.SaveTransfer_RejectsIncompleteEnvelope
+  [32m✓[0m SaveTransferTests.SaveTransfer_RejectsNewerVersions
+  [32m✓[0m SaveTransferTests.SaveTransfer_RejectsForeignPack
+  [32m✓[0m SaveTransferTests.SaveTransfer_RejectsUnreadableSaveBody
+  [32m✓[0m SaveTransferTests.SaveTransfer_RejectsEnvelopeThatContradictsItself
+  [32m✓[0m SaveTransferTests.SaveTransfer_RejectsOversizedInput
+  [32m✓[0m SaveTransferTests.SaveTransfer_RejectsNonFiniteNumbers
+  [32m✓[0m SaveTransferTests.SaveTransfer_ReportsUnknownIdsButKeepsThem
+  [32m✓[0m SaveTransferTests.SaveTransfer_ImportedStateSurvivesTheNextAutoSave
+  [32m✓[0m SaveTransferTests.SaveTransfer_SaysSoWhenThePackCheckDidNotRun
+  [32m✓[0m SaveTransferTests.SaveData_DoubleFieldsAreAllCoveredByTheFiniteCheck
+  [32m✓[0m SaveTransferTests.SaveTransfer_WrapRefusesNonSaveInput
+  [32m✓[0m ShareLinkTests.ShareLink_RoundTripsTheExportTextByteForByteAndLeaksNothing
+  [32m✓[0m ShareLinkTests.ShareLink_WrongPasswordAndTamperedCiphertextBothFailLoudly
+  [32m✓[0m ShareLinkTests.ShareLink_HeaderMetadataIsAuthenticated
+  [32m✓[0m ShareLinkTests.ShareLink_IterationFloorAndCeilingAreEnforced
+  [32m✓[0m ShareLinkTests.ShareLink_RejectsOversizedLinksAndPayloads
+  [32m✓[0m ShareLinkTests.ShareLink_ShortPasswordsAreRefusedOrFlagged
+  [32m✓[0m ShareLinkTests.ShareLink_SurvivesLineWrapping
+  [32m✓[0m ShareLinkTests.EraToken_AuthorizesExactlyTheRightDoor
+  [32m✓[0m ShareLinkTests.ShareLink_FitsATypicalSaveAndRefusesAHugeOne
+  [32m✓[0m ShareLinkTests.EraLinkMint_RefusesMissingKeyUnknownPackAndOutOfRangeEras
+  [32m✓[0m ShareLinkTests.EraLinkMint_MintsATokenTheHostGateOpens
+  [32m✓[0m ShareLinkTests.EraLinkMint_ExpiryIsOptionalButMustBePositive
+  [32m✓[0m ShareLinkTests.WebHost_ShareLinkImportsThroughTheSameGate
+  [32m✓[0m ShareLinkTests.WebHost_WrongSharePasswordTouchesNothing
+  [32m✓[0m ShareLinkTests.WebHost_DebugSessionRefusesToShareOrReceive
+  [32m✓[0m SimulationTests.SixHourGreedyRun_IsStableAndProgresses
+  [32m✓[0m SimulationTests.CafeSixHourGreedyRun_IsStableAndProgresses
+  [32m✓[0m SimulationTests.SameSeed_ProducesIdenticalRuns
+  [32m✓[0m SimulationTests.DifferentSeeds_DivergeInRandomContent
+  [32m✓[0m SimulationTests.PermanentUpgrades_MakeSubsequentRunsFaster
+  [32m✓[0m SimulationTests.Modules_ReceiveConfigureAttachAndTick
+  [32m✓[0m SimulationTests.EmptyContent_EngineRunsWithoutCrash
+  [32m✓[0m TerminalHostTests.Auto_AvoidsAlternateScreenOnLegacyWindowsConsole
+  [32m✓[0m TerminalHostTests.ExplicitModes_OverrideAuto
+  [32m✓[0m TerminalHostTests.CliFlags_ParseBothAltScreenModes
+  [32m✓[0m TerminalHostTests.Describe_MentionsHostMarkers
+  [32m✓[0m TerminalLatencyProbeTests.DefaultLauncher_HandsTheHumanProbeARealFile
+  [32m✓[0m TerminalLatencyProbeTests.RobotModes_DoNotClaimToBeHumanData
+  [32m✓[0m TerminalLatencyProbeTests.LatencyLog_CanBeRedirectedAndSwitchedOff
+  [32m✓[0m TerminalLatencyProbeTests.SimulatedRun_WithoutAnExplicitPath_LeavesTheHumanFileAlone
+  [32m✓[0m TerminalLatencyProbeTests.SimulatedRun_WithAnExplicitPath_WritesAnSLine
+  [32m✓[0m TestCountDriftTests.DocumentedCurrentTestCount_MatchesTheRealOne
+  [32m✓[0m ToolingHygieneTests.PowerShellScripts_CarryTheUtf8Bom
+  [32m✓[0m ToolingHygieneTests.UntrackedPowerShellScripts_AreNotScanned
+  [32m✓[0m UnlockInvariantTests.OwnedBuildings_StayUnlockedInEveryPack
+  [32m✓[0m UnlockInvariantTests.OwnedBuildings_StayUnlockedAfterEveryPackRestarts
+  [32m✓[0m VersionTests.Version_IsAtLeastOneZeroZero
+  [32m✓[0m VersionTests.Version_AssemblyMetadataMatchesTheReportedVersion
+  [32m✓[0m VersionTests.Changelog_HasAnEntryForTheCurrentVersion
+  [32m✓[0m VersionTests.Readme_AdvertisesTheCurrentVersion
+  [32m✓[0m ViewTests.Snapshot_ContainsAllContentRows
+  [32m✓[0m ViewTests.Snapshot_FormatsNumbersForDisplay
+  [32m✓[0m ViewTests.Snapshot_ReportsNextMilestone
+  [32m✓[0m ViewTests.Snapshot_MilestoneAdvancesWithOwnership
+  [32m✓[0m ViewTests.Snapshot_BuyMaxReportsAffordableBatch
+  [32m✓[0m ViewTests.Snapshot_BatchModePricesTheWholeBatch
+  [32m✓[0m ViewTests.Snapshot_SellModeReportsRefund
+  [32m✓[0m ViewTests.Snapshot_UpgradeRowsExposeAffordabilityAndEffects
+  [32m✓[0m ViewTests.Snapshot_BuildingSharesSumToOne
+  [32m✓[0m ViewTests.Snapshot_BuffRowsCarryProgress
+  [32m✓[0m ViewTests.Snapshot_AchievementProgressIsQuantified
+  [32m✓[0m ViewTests.Snapshot_PrestigePreviewIsPresent
+  [32m✓[0m ViewTests.Snapshot_UpgradeRowsCarryCurrencySemantics
+  [32m✓[0m ViewTests.UpgradeRows_ReportTheRightWalletForEveryPack
+  [32m✓[0m ViewTests.BuildingRows_ReportTheUnitRateForEveryPack
+  [32m✓[0m ViewTests.PurchaseModeHelpers_BehaveConsistently
+  [32m✓[0m WebBuyModeTests.BuyTenMode_BuysTenAndChargesTheCardPrice
+  [32m✓[0m WebBuyModeTests.BuyMaxMode_BuysAsManyAsTheCardAdvertises
+  [32m✓[0m WebBuyModeTests.ExplicitAmount_WinsOverTheMode
+  [32m✓[0m WebBuyModeTests.SellMode_KeepsBuyingOne
+  [32m✓[0m WebChoiceLatencyTests.Probe_MeasuresSimulatedSecondsFromTriggerToAnswer
+  [32m✓[0m WebChoiceLatencyTests.Probe_RecordsAlreadyPendingChoicesAsUnmeasurable
+  [32m✓[0m WebChoiceLatencyTests.LatencyFile_WritesHeaderOnceAndAppendsSamplesInAFixedFormat
+  [32m✓[0m WebChoiceLatencyTests.Probe_SurvivesAnUnwritableLogFileWithoutLosingTheMeasurement
+  [32m✓[0m WebChoiceLatencyTests.LatencyFile_KeepsForeignContentButStaysSelfDescribing
+  [32m✓[0m WebSnapshotProtocolTests.DeltaMergedIntoSnapshot_EqualsTheFullSnapshot
+  [32m✓[0m WebSnapshotProtocolTests.IdleDelta_IsTiny
+  [32m✓[0m WebSnapshotProtocolTests.FrontendContract_FieldNamesAndTheModeToken
+  [32m✓[0m WebSnapshotProtocolTests.NullPatch_IsAppliedRatherThanSkipped
+  [32m✓[0m WebSnapshotProtocolTests.OfflineReport_ArrivesThenLeavesAsANullPatch
+  [32m✓[0m WebSnapshotProtocolTests.DeltaLeavesUnmentionedFieldsAlone
+  [32m✓[0m WebSnapshotProtocolTests.DeltaSurvivesEraAdvance
+  [32m✓[0m WebSnapshotProtocolTests.AffordabilityFlip_DoesNotResendTheWholeList
+  [32m✓[0m WebSnapshotProtocolTests.DiffDetectsNestedListChanges
+  [32m✓[0m WebSnapshotProtocolTests.QuantizedFields_IgnoreDriftBelowPrecision_ButCatchRealChanges
+  [32m✓[0m WebSnapshotProtocolTests.IdleDelta_StaysSmallInBytes_EvenWhileProgressDrifts
+
+[32m全部通过：599 个用例。[0m
