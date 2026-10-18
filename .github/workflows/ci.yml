@@ -18,7 +18,7 @@
 #   的历史包袱，Linux 上只有 pwsh 可用；两边跑的**是同一份 build.ps1**，差别只在解释器与 OS。
 #   `-SkipWebSmoke` 是刻意的：前端那一层已经有自己的作业，而它的判据与操作系统无关。
 #
-# 四个作业：
+# 五个作业：
 #   build-and-test  引擎侧：tools/build.ps1 -Strict（0 警告 + 599 用例 + 主/Web 两条 sln + 前端冒烟）
 #                   （这个数在 1.9.0 时是 531；S13 的 5 条守卫 → 536；2026-10-04 把
 #                     save-transfer-1.10.0 / tools-s1-s13 / click-power-bridge 三条分支合并后
@@ -44,6 +44,8 @@ name: CI
 on:
   push:
     branches: [main]
+    # release 作业由 tag 触发（形状 v*），本作业之外的三/四个作业则由 push/PR 触发。
+    tags: ['v*']
   pull_request:
   workflow_dispatch:
 
@@ -121,3 +123,55 @@ jobs:
       - name: tools/api-test.ps1
         shell: powershell
         run: .\tools\api-test.ps1
+
+  # 发布：此前四个作业**没有一个跑 tools/pack.ps1，也没有一个上传任何东西**——产物只存在于
+  # 开发者本机。这条作业补的就是那一步，顺序被 §4.1 的硬约束钉死，不能重排：
+  #   pack.ps1 打 zip（内含产物自检：解开到临时目录、起真宿主、探针全绿）
+  #     → **紧接着**算 zip 的 sha256（Compress-Archive 把修改时间写进归档，
+  #       所以哈希只能打包后算，预先是写不死的；tools/pack.ps1:64）
+  #     → tools/release.ps1 生成 feed.json + feed.json.sha256
+  #     → 上传。顺序反了就会发出一份 hash 对不上的清单。
+  #
+  # 为什么 release.ps1 里还要再核对一次 tag 与 Directory.Build.props 的 <Version>：
+  # 版本号只有一处事实来源（那个 props 文件），tag 只是发布动作的锚。两者不等就判死，
+  # 否则会出现"包里是 1.12.1、清单说是 1.13.0"这种下游谁都拦不住的漂移。
+  #
+  # 为什么清单也当成发布资产传上去、而不是 commit 进仓库：
+  # feed.json 里的 size/hash 只有在打完包之后才知道，而它每次重打都会变。让它跟着 release
+  # 走，`releases/latest/download/feed.json` 就是一个稳定的清单地址，客户端也有东西可下
+  # （neko-launcher/contracts/sources.json 的 github 源指的就是这个地址）。
+  release:
+    name: 发布（tag 触发的打包 + 清单 + 上传）
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: windows-latest
+    # 建立 release 与上传资产需要写权限；其余作业只需要读，所以权限只在这条作业里放开。
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: tools/pack.ps1（含产物自检）
+        shell: powershell
+        run: .\tools\pack.ps1
+
+      - name: tools/release.ps1 -Tag ${{ github.ref_name }}（算哈希 + 写清单）
+        shell: powershell
+        run: .\tools\release.ps1 -Tag ${{ github.ref_name }}
+
+      # 上传前把清单打印一遍：job 日志在未登录时读不到（API 403），而发布数据是**公开可读**的
+      # ——让这一版到底发了什么自己说出来（engine-linux 作业用 ::error:: 注解是同一个理由）。
+      - name: 打印清单（发布数据本身就是诊断输出）
+        shell: powershell
+        run: Get-Content .\artifacts\feed.json -Raw
+
+      - name: 上传 zip + 清单
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            artifacts/neko-clicker-*-win-x64.zip
+            artifacts/feed.json
+            artifacts/feed.json.sha256
