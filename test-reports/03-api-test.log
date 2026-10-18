@@ -1,0 +1,168 @@
+=== Web 宿主端到端（api-test） ===
+
+构建 Web 宿主（含全部内容包）
+
+
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:06.13
+
+目标：http://127.0.0.1:60281 ｜ 内容包：cafe ｜ 存档：C:\Users\haoxu\Downloads\NekoHome\neko-clicker\.tmp\api-test\20261017-190144-13696\saves
+
+宿主已就绪，开始打端点。
+
+静态文件（首页 404 是这一层最经典的沉默失败）
+  [ OK ] GET /  — HTTP 200，20441 字节，含 <NekoClicker>: True
+  [ OK ] GET /app.js  — HTTP 200，118808 字节，含 <EventSource>: True
+  [ OK ] GET /app.css  — HTTP 200，64585 字节，含 <--accent>: True
+
+前端面板（挂载点与渲染函数真的送到了浏览器）
+  [ OK ] 首页里有日志面板的挂载点  — 含 <data-panel="log">: True
+  [ OK ] app.js 里有日志渲染函数  — 含 <renderNotifications>: True
+  [ OK ] 首页里有离线收益弹窗的挂载点  — 含 <id="offline">: True
+  [ OK ] app.js 里有离线收益渲染函数  — 含 <renderOffline>: True
+  [ OK ] 首页里有永久线面板的挂载点  — 含 <data-panel="permanent">: True
+  [ OK ] app.js 里有永久线渲染函数  — 含 <renderPermanent>: True
+  [ OK ] app.js 会报告「表态已经展示过」（诊断信号）  — 含 <"choicesShown">: True
+  [ OK ] app.js 会发出 answer（作答才是解除等待的动作）  — 含 <"answer">: True
+
+元信息
+  [ OK ] GET /api/ping 报出的版本 = Directory.Build.props 的版本  — apiVersion=1.12.0，仓库里是 1.12.0
+  [ OK ] GET /api/ping 报出运行时  — runtime=8.0.8（.NET 8.0.8）
+  [ OK ] GET /api/packs 扫到了全部内容包  — 11 个包，含 <cafe>: True
+
+快照
+  [ OK ] 快照顶层字段齐全  — 43 个字段
+  [ OK ] 字段名是 camelCase
+  [ OK ] modeName 是字符串，且在前端认的词表里  — modeName = <buy1>（类型 string）
+  [ OK ] mode 仍是数字（没有改掉老字段的形状）  — mode = <0>
+  [ OK ] 七个档位名都能原样发回去、并被快照回读  — 7 个 token 往返一致（已还原为 buy1）
+  [ OK ] 快照是紧凑 JSON（无缩进换行）  — 61159 字节
+
+升级行的货币语义（永久线面板的依据）
+  [ OK ] 每条升级行都带货币语义字段  — 49 行都齐
+  [ OK ] 货币图标与该行所用的钱包一致  — 普通货币 44 行、转生货币 5 行
+  [ OK ] 永久线全部花转生货币（前端按这个旗子选钱包）  — 永久升级 5 条
+
+建筑专属升级（buildings[].upgradeIds）
+  [ OK ] 每座建筑都带 upgradeIds 字段（可以是空数组）  — 10 座建筑带轨，合计 30 条
+  [ OK ] upgradeIds 里的每个 id 都能在 upgrades[] 里找到  — 30 个 id 全部命中 upgrades[]
+  [ OK ] 建筑专属升级不是空的，也没有一条被两座建筑同时认领  — 10 座建筑 / 30 条，没有一条被两座建筑同时认领
+
+命令（点 40 下，应该真的涨钱）
+  [ OK ] POST /api/command click ×40 全部被接受  — 40 / 40
+  [ OK ] 40 次点击让货币增长  — 0 → 40
+  [ OK ] 至少有一座建筑已解锁  — coffee_machine
+  [ OK ] 超大数量被钳到预算内并回报结果  — 购买 2 个「咖啡机」，花费 32.25。
+  [ OK ] 动作之后快照的 notifications 里有真消息  — 1 条：成就解锁：添置咖啡机
+  [ OK ] 每条通知字段齐全、kind ∈ 0..3、时间戳不超过当前游戏时间  — 1 条；第一条 kind=1（数字枚举，前端按序数上色），timestamp=4.69999999999999
+  [ OK ] 未知命令不崩（ok=false + 一句人话）  — HTTP 200：不认识的命令：不存在的命令
+  [ OK ] POST choicesShown 可用且幂等  — 第一次：这些表态已经记过了。；第二次：这些表态已经记过了。
+  [ OK ] POST answer 对不存在的表态明确失败（ok=false + 一句人话）  — HTTP 200：ok=False；这次表态不成立（可能已经答过，或它不在待答清单里）。
+
+批量档位（×10）真的买 10 个，而且扣的是卡片上那个总价
+  [ OK ] 切到 ×10：命令被接受、快照的档位与整批数量都跟着换了（档位真的到了购买路径上）  — <coffee_machine>：batchAmount=10、单价 19.8375、总价 402.775010547371
+  [ OK ] 点击攒钱之后买得起一次 ×10（下面两条的前提）  — 计划 414 下 / 实点 410 下（每次点击 1.003）：421 ≥ 整批总价 402.775010547371
+  [ OK ] ×10 档位下买一次，owned 涨 10（不是 1）  — owned 2 → 12（Δ 10）；命令回话：购买 10 个「咖啡机」，花费 402.775。
+  [ OK ] ×10 档位下扣的就是卡片上那个总价（不是单价）  — 整批总价 402.775（单价 19.8375）／实付 402.082，容忍 ±2.461
+
+负数（不该静默成功的地方必须明确失败）
+  [ OK ] GET /api/snapshot 未知包 → 404  — HTTP 404
+  [ OK ] GET /api/stream 未知包 → 404  — HTTP 404
+  [ OK ] 没有 NEKO_DEBUG_KEY 时带 epoch → 403（门是关着的）  — HTTP 403：{"ok":false,"debug":true,"message":"调试门未启用：本机没有设置环境变量 NEKO_DEBUG_KEY。"}
+
+SSE（真读流 6 秒）
+  [ OK ] SSE 建流  — HTTP 200，text/event-stream; charset=utf-8
+  [ OK ] 收到帧  — 25 帧 / 6 秒
+  [ OK ] 第一帧是全量  — full
+  [ OK ] 之后以增量为主（最多一帧 30 秒一次的全量对账）  — 增量 24 帧、全量对账 0 帧
+         delta 里出现过的字段：cookiesEarnedAllTime×24、playTimeSeconds×24、cookiesEarnedThisRun×24、cookies×24、cookiesText×24、goldenCookieCountdown×24、achievements×1
+  [ OK ] 增量远小于全量（均值 <10%）  — 全量 62760 字节；增量 均 674 / 中位 256 / 最大 10276 字节（省 99%）
+  [ OK ] seq 单调递增  — 63 → 87
+
+离线收益（真的重启一次宿主：存档 → 改老 → 读档 → 弹窗数据）
+  [ OK ] 存档之前已经有产量（离线补发的前提）  — cookiesPerSecond=1.2
+  [ OK ] POST /api/command save 成功  — HTTP 200：已存档。
+  收尾：结束 neko-clicker-web (PID 28000)
+  收尾：结束 dotnet run (PID 8548)
+  收尾：这次是按记录的 PID 收的——反查有层挂了，逐层如下。
+        反查[抛出] Get-NetTCPConnection：拒绝访问 
+  [ OK ] 存档文件真的落在了临时目录里  — 1 个 .json 在 C:\Users\haoxu\Downloads\NekoHome\neko-clicker\.tmp\api-test\20261017-190144-13696\saves
+  [ OK ] 存档里写着上次保存时刻（能被改老）  — LastSavedAt → 2026-10-17T14:02:12.6848131+08:00
+  [ OK ] 第二段宿主带着那份存档起来了
+  [ OK ] 读档之后快照里出现待播报的离线收益  — 补了 12.96K，时长 3h 00m
+  [ OK ] 离线时长与补发量自洽（5 小时超过上限，应标记被截断）  — 离开 5h、计入 3h、补发 12960、wasCapped=True
+  [ OK ] 没播报之前刷新（再取一次全量）不会让它消失  — 再取一次仍在
+  [ OK ] POST /api/command dismissOffline 成功  — HTTP 200：已收下离线收益。
+  [ OK ] 收下之后快照里不再有它（刷新不会再弹）  — offline 已是 null
+  [ OK ] 重复收下是幂等的（第二个标签页也会发它）  — HTTP 200：没有待播报的离线收益。
+
+存档的导出 / 导入（信封 / 坏输入不动盘 / 好文本收得下）
+  [ OK ] POST /api/command export 带回一份非空文本（走 text 字段，不是 message）  — HTTP 200：1785 字符
+  [ OK ] 导出文本是一封完整的信封（六个关键字段都在）  — 缺 
+  [ OK ] 信封里的包标识 = 本会话的包（跨包闸就是靠它）  — PackId=cafe / 会话=cafe
+  [ OK ] 校验和 = 对 Save 字段算出的 sha256（HTTP 往返没改过那串字节）  — 信封 sha256:6552d09e567389a90acef8201388eac56da2a5219d2d07546cc423fbab9700df / 实算 sha256:6552d09e567389a90acef8201388eac56da2a5219d2d07546cc423fbab9700df
+  [ OK ] 前置条件：那份"被改过"的文本真的与原文不同（否则下面那条什么都没验）  — 改前 1014 字符 / 改后 1014 字符
+  [ OK ] 三种坏输入都被明确拒绝，而且理由说的是那一类（人话 / 别的包 / 校验和）  — 3 / 3
+  [ OK ] 被拒绝的导入一个字节都不许动磁盘上那份能用的存档  — sha256 19BE4D22B1D4 → 19BE4D22B1D4
+  [ OK ] 同一份好文本必须收得下（否则上面三条拒绝什么都证明不了）  — HTTP 200：已导入：内容包「cafe」｜存档格式 1｜框架 1.12.0｜导出于 2026-10-17T11:02:15.8504613+00:00｜当前会话与 cafe.json 都已换成这一份｜已核对包标识（cafe）｜存档里的 id 这个包全都认识。
+  [ OK ] 成功那句话里说得出导入了哪个包  — 已导入：内容包「cafe」｜存档格式 1｜框架 1.12.0｜导出于 2026-10-17T11:02:15.8504613+00:00｜当前会话与 cafe.json 都已换成这一份｜已核对包标识（cafe）｜存档里的 id 这个包全都认识。
+  [ OK ] 导入之后磁盘上的存档 = 信封里那段 Save（逐字节）  — 盘上 1014 字符 / 信封 1014 字符
+
+分享链接（?share=）：真宿主上的生产 / 错密码 / 对密码
+  [ OK ] POST /api/command shareLink 带回一段非空链接（走 text 字段，不是 message）  — HTTP 200：1143 字符
+  [ OK ] 生成的链接里没有密码（密码只走 POST 请求体，URL 里只有密文）  — 链接 1143 字符，不含那串密码
+  [ OK ] 错密码必须被明确拒绝，而且理由指向密码  — HTTP 200：打不开：密码不对，或者这段链接被改过 / 被截断了。（这两件事在密码学上分不开。）请核对密码，或让对方重新发一次链接。
+  [ OK ] 错密码之后会话一个字段都没被碰过（点击总数逐值相同）  — totalClicks 450 → 450
+  [ OK ] 错密码之后磁盘上那份能用的存档逐字节不变  — sha256 6552D09E5673 → 6552D09E5673
+  [ OK ] 同一个密码必须收得下（否则上面那条「拒绝了」什么都证明不了）  — HTTP 200：已解开分享链接（内容包「cafe」、1788 个字符的导出文本）｜已导入：内容包「cafe」｜存档格式 1｜框架 1.12.0｜导出于 2026-10-17T11:02:16.0441805+00:00｜当前会话与 cafe.json 都已换成这一份｜已核对包标识（cafe）｜存档里的 id 这个包全都认识。
+  [ OK ] 成功那句话来自既有的导入路径（说得出现在是哪个包）  — 已解开分享链接（内容包「cafe」、1788 个字符的导出文本）｜已导入：内容包「cafe」｜存档格式 1｜框架 1.12.0｜导出于 2026-10-17T11:02:16.0441805+00:00｜当前会话与 cafe.json 都已换成这一份｜已核对包标识（cafe）｜存档里的 id 这个包全都认识。
+  [ OK ] 对密码的导入真的落了盘（与上面「错密码没动」互为对照）  — sha256 6552D09E5673 → C44280EE18B9
+
+跳层令牌（?k=）：真宿主上真的跳层，而明文的调试门一个字节没变
+  [ OK ] --mint-link 铸出一整行 URL（退出码 0；形状 <base>/?package=<id>&k=<密文>）  — 退出码 0；stdout <http://127.0.0.1:60281/?package=lab&k=TktMMWUAAzRQjHRqZ4zpA9oYcSTreT6h68H3T2fiIqi6GlfDvd0Ca3Jl9Utgbjl6dhks4Rmw3OnhD6l25yTWlsSbLRj4VcWoDCrgAbFyBUFoXX_Fk1-CXjV1mZIuwwhtExYDMyvzAlshq6lGvRX8Q9M49T4mF9xMGR7LKn1YYgWzPSNTcH-piAa_tZmpfvY9M_5aTBwoyfY6>；stderr <已铸一枚跳层令牌：内容包「lab」第 2 层、204 个字符、不过期。>
+  [ OK ] GET /?k=… 真的跳到了第 2 层（200、gate=token、正文报出 from/to）  — HTTP 200：gate=token from=1 to=2 范围=1..7
+  [ OK ] 成功正文：autosave=disabled，且跳过的账恰好三笔（与明文门同一份回报）  — autosave=disabled skipped=era_inheritance,era_history,prestige_settlement
+  [ OK ] 同一枚令牌换到别的包上：403 ForeignPack（正文里两个包名都要在）  — HTTP 403：failure=ForeignPack；正文 <{"ok":false,"gate":"token","package":"neko","failure":"ForeignPack","message":"这段链接是内容包「lab」的，当前会话是「neko」——换一个包打开它（链接上带 ?package=），或者让对方重新生成。"}>
+  [ OK ] 令牌被改过：403，且理由只说得出「打不开」（分不清密码错与被人改过）  — HTTP 403：failure=WrongPasswordOrTampered
+  [ OK ] ?k=not-a-link：403，理由是 NotALink（不是「密码不对」）  — HTTP 403：failure=NotALink
+  [ OK ] epoch 与 k 同时带：400，而且明说「两扇独立的门，一次只能用一扇」  — HTTP 400：这次请求同时带了 epoch 与 k：它们两扇独立的门，一次只能用一扇。
+  [ OK ] 既有明文门不变：没设 NEKO_DEBUG_KEY 时带 epoch 仍是 403「调试门未启用」  — HTTP 403：调试门未启用：本机没有设置环境变量 NEKO_DEBUG_KEY。
+  [ OK ] 跳层之后存档根里没有这个包的存档（跳层只在内存里）  — 存在 C:\Users\haoxu\Downloads\NekoHome\neko-clicker\.tmp\api-test\20261017-190144-13696\saves\lab.json：False｜存档根里的 .json：cafe.json
+  [ OK ] 铸造时层号越界（99）：拒绝铸造，且报出这个包真实的层数  — 退出码 2；stdout <>；stderr <第 99 层越界（内容包「lab」只有 7 层）。合法范围：1..7。>
+  [ OK ] 铸造时包不存在：拒绝铸造，并列出可用的包 id  — 退出码 2；stderr <没有内容包 <no-such-pack>。可用的是：apocalypse、cafe、civ、company、cyber、dream、god、lab、library、neko、ninelives>
+  [ OK ] 没设 NEKO_URL_KEY 时拒绝铸造（绝不产出一段宿主解不开的链接）  — 退出码 2；stdout <>；stderr <铸不出令牌：没有设置环境变量 NEKO_URL_KEY。先临时设一把钥匙（$env:NEKO_URL_KEY = '…'），再重跑这条命令。>
+
+启动器（tools/start.ps1）：复用 / 拒绝 / 绝不起第二个宿主
+  [ OK ] 网页那条路：端口上已有宿主时**复用**它（退出码 0）  — 退出码 0；stdout <=== NekoClicker 启动器 === / 仓库：C:\Users\haoxu\Downloads\NekoHome\neko-clicker / dotnet 8.0.303 /  / 端口 60281 上已经有一个 NekoClicker Web 宿主（PID 9504）——复用它，没有再起第二个。 / 浏览器地址：http://127.0.0.1:60281/ / （-NoBrowser：没有开浏览器）地址：http://127.0.0.1:60281/>；stderr <>
+  [ OK ] 复用认的是**传进来的端口**（不是默认 5273），并报出持有者 PID  — 含 <:60281>: True；含 <PID 9504>: True；stdout <=== NekoClicker 启动器 === / 仓库：C:\Users\haoxu\Downloads\NekoHome\neko-clicker / dotnet 8.0.303 /  / 端口 60281 上已经有一个 NekoClicker Web 宿主（PID 9504）——复用它，没有再起第二个。 / 浏览器地址：http://127.0.0.1:60281/ / （-NoBrowser：没有开浏览器）地址：http://127.0.0.1:60281/>
+  [ OK ] 复用**没有杀掉**持有端口的那个宿主（PID 不变）  — 端口 60281 的监听者：9504 → 9504
+  [ OK ] 复用**没有多起**宿主（本仓库的 neko-clicker-web 进程数不变）  — 1 → 1（PID 9504）
+  [ OK ] 再点一次（幂等）：退出码 0、PID 不变、宿主数量不变  — 退出码 0；PID 9504 → 9504；宿主 1 → 1
+  [ OK ] 终端那条路：网页持着端口时**拒绝**启动（退出码非 0）  — 退出码 1；stdout <=== NekoClicker 启动器 === / 仓库：C:\Users\haoxu\Downloads\NekoHome\neko-clicker / dotnet 8.0.303 /  / 本仓库还有 1 个 Web 宿主在跑（PID 9504 @ 60281），而终端这次写的是默认存档： /   C:\Users\haoxu\Downloads\NekoHome\neko-clicker\saves\cafe.json / 它们的存档根我们看不到（没有接口），而默认情况下两边就是同一份。两个宿主各自按**自己内存里**的状态 / 每 60 秒整份重写一次 ⇒ 后写的那份赢，另一边的进度会被**静默回退**（FileStorage 的原子替换只保证 / 文件不会写坏，不保证两个进程不互相覆盖）。 / 三条出路： /   · 先停掉它们：taskkill /PID <上面那个 PID> /T /F（或 start.cmd stop -Port <端口>）； /   · 让终端用另一份存档：start.cmd play -SaveRoot <目录>（两边进度从此各走各的）； /   · 明确接受互相覆盖：start.cmd play -AllowSharedSave。>；stderr <>
+  [ OK ] 拒绝时点名两个宿主共用的那份存档，并给出出路  — 含 <C:\Users\haoxu\Downloads\NekoHome\neko-clicker\saves\cafe.json>: True；含 -AllowSharedSave: True
+  [ OK ] 拒绝之后那个宿主仍然活着（PID 不变、/api/ping 仍答）  — HTTP 200；PID 9504 → 9504
+  [ OK ] 终端那条路：别的端口上有 Web 宿主、又没给 -SaveRoot 时也拒绝（不再只看一个端口）  — 退出码 1；stdout <=== NekoClicker 启动器 === / 仓库：C:\Users\haoxu\Downloads\NekoHome\neko-clicker / dotnet 8.0.303 /  / 本仓库还有 1 个 Web 宿主在跑（PID 9504 @ 60281），而终端这次写的是默认存档： /   C:\Users\haoxu\Downloads\NekoHome\neko-clicker\saves\cafe.json / 它们的存档根我们看不到（没有接口），而默认情况下两边就是同一份。两个宿主各自按**自己内存里**的状态 / 每 60 秒整份重写一次 ⇒ 后写的那份赢，另一边的进度会被**静默回退**（FileStorage 的原子替换只保证 / 文件不会写坏，不保证两个进程不互相覆盖）。 / 三条出路： /   · 先停掉它们：taskkill /PID <上面那个 PID> /T /F（或 start.cmd stop -Port <端口>）； /   · 让终端用另一份存档：start.cmd play -SaveRoot <目录>（两边进度从此各走各的）； /   · 明确接受互相覆盖：start.cmd play -AllowSharedSave。>
+  [ OK ] 端口被别的程序占着时：点名端口报错退出（不猜、不杀、也不硬起）  — 退出码 1；正文里含端口 <52304>: True；stdout <=== NekoClicker 启动器 === / 仓库：C:\Users\haoxu\Downloads\NekoHome\neko-clicker / dotnet 8.0.303 /  / 端口 52304 被别的程序占着（PID 13696），而它不是一个 NekoClicker Web 宿主 / （GET http://127.0.0.1:52304/api/ping 没有回 "app":"neko-clicker-web" 那一段）。 / 这里刻意不替你动它：先认人，能等就别杀。 / 换一个端口：start.cmd web -Port 5300（或设环境变量 NEKO_PORT）。>
+  [ OK ] 报错那条路上没有多起宿主  — 1 → 1
+  [ OK ] 网页那条路：别的端口上有宿主、又没给 -SaveRoot 时**拒绝**再起一个  — 退出码 1；含 -SaveRoot: True；含 -AllowSharedSave: True；点名持有者 PID 9504: True；stdout <=== NekoClicker 启动器 === / 仓库：C:\Users\haoxu\Downloads\NekoHome\neko-clicker / dotnet 8.0.303 /  / 本仓库还有 1 个 Web 宿主在跑（PID 9504 @ 60281），而这次没给 -SaveRoot。 / 它们和你这次要起的宿主默认写的是同一份存档： /   C:\Users\haoxu\Downloads\NekoHome\neko-clicker\saves\neko.json / 两个宿主每 60 秒各自按**自己内存里**的状态整份重写 ⇒ 后写的赢，另一边的进度会被静默回退。 / 三条出路（给一条就行）： /   · 先停掉它们：taskkill /PID <上面那个 PID> /T /F（或 start.cmd stop -Port <端口>）； /   · 这次换一份存档：start.cmd web -SaveRoot <目录>； /   · 明确接受互相覆盖：start.cmd web -AllowSharedSave。>
+  [ OK ] 拒绝那条路上没有多起宿主（本仓库的 neko-clicker-web 进程数不变）  — 1 → 1
+  [ OK ] 网页那条路：端口空闲时**后台分离启动**成功（退出码 0）  — 退出码 0；stdout <=== NekoClicker 启动器 === / 仓库：C:\Users\haoxu\Downloads\NekoHome\neko-clicker / dotnet 8.0.303 /  / === 启动 Web 宿主（后台）=== / 等它开始服务（最多约 30 秒）…… 启动包装进程 PID 5280 /  / 宿主已就绪：http://127.0.0.1:52306/ / （-NoBrowser：没有开浏览器）地址：http://127.0.0.1:52306/ /  / 停止：taskkill /PID 26820 /T /F（实际在服务的就是它；也可以 start.cmd stop -Port 52306） / 启动包装进程 PID 5280（不用记：宿主走了它会自己退） / 存档：C:\Users\haoxu\Downloads\NekoHome\neko-clicker\.tmp\api-test\20261017-190144-13696\launcher-saves / 日志：C:\Users\haoxu\Downloads\NekoHome\neko-clicker\artifacts\play-52306\host-out.log ｜ C:\Users\haoxu\Downloads\NekoHome\neko-clicker\artifacts\play-52306\host-err.log / 埋点：C:\Users\haoxu\Downloads\NekoHome\neko-clicker\artifacts\play-52306\latency.txt>；stderr <>
+  [ OK ] 分离启动的那个宿主真的在服务（新端口 /api/ping 回话）  — HTTP 200：<{"app":"neko-clicker-web","apiVersion":"1.12.0","assemblyVersion":"1.12.0.0","runtime":"8.0.8","framework":".NET 8.0.8","pushIntervalMs":250,"protocol":"snapshot-envelope-v1"}>
+  [ OK ] -NoBuild 被遵守：这次没有构建（正文里没有任何 MSBuild 痕迹）  — 命中：（无）
+  [ OK ] -SaveRoot 真的传到了宿主（宿主日志里的存档目录 = 那个临时根）  — 日志 <C:\Users\haoxu\Downloads\NekoHome\neko-clicker\artifacts\play-52306\host-out.log> 里含 <C:\Users\haoxu\Downloads\NekoHome\neko-clicker\.tmp\api-test\20261017-190144-13696\launcher-saves>: True
+  [ OK ] 非默认端口的日志与埋点落在 artifacts\play-<端口>\，真人那条 latency.txt 一个字节没动  — play 目录里 latency.txt: True；日志点名它: True；真人 latency.txt <3696|639272347655237035|BE143263D8C79B2B2A2C56D4A5273C171A2158A490C9EF0F84BC1D3370A4332E> → <3696|639272347655237035|BE143263D8C79B2B2A2C56D4A5273C171A2158A490C9EF0F84BC1D3370A4332E>
+  [ OK ] 停止那条命令点名的是**真正在服务**的 PID（不是包装进程）  — 监听 52306 的 PID 26820；正文里有那条命令: True
+  [ OK ] stop 模式：只停这个端口上的宿主（点名它、退出码 0、端口松手）  — 退出码 0；正文含 PID 26820: True；端口松手: True；stdout <=== NekoClicker 启动器 === / 仓库：C:\Users\haoxu\Downloads\NekoHome\neko-clicker / dotnet 8.0.303 / 停止端口 52306 上的宿主：taskkill /PID 26820 /T /F / 已停止。这条是强杀：宿主的 ApplicationStopping 不会跑，最多丢 60 秒的进度。>
+  [ OK ] 未知模式被拒绝，并列出可用模式（不再静默落进终端界面）  — 退出码 1；含 <cafe>: True；列出 web/play/list/stop: True；stdout <=== NekoClicker 启动器 === / 仓库：C:\Users\haoxu\Downloads\NekoHome\neko-clicker / dotnet 8.0.303 /  / 未知模式：<cafe>。可用：web（默认，网页那一侧）/ play（终端界面）/ list（列内容包）/ stop（停掉这个端口上的 Web 宿主）。 / 要选内容包就写在模式后面：start.cmd play lab ｜ start.cmd web company。>
+  [ OK ] 兼容别名 play-web.ps1：转发到同一个入口（复用、点名 PID、指向 start.cmd）  — 退出码 0；含 PID 9504: True；含 :60281: True；含 start.cmd: True；宿主 1 → 1；stdout <（play-web.ps1 是兼容别名：实际执行的是 start.cmd web；以后请直接用 start.cmd。） /  / === NekoClicker 启动器 === / 仓库：C:\Users\haoxu\Downloads\NekoHome\neko-clicker / dotnet 8.0.303 /  / 端口 60281 上已经有一个 NekoClicker Web 宿主（PID 9504）——复用它，没有再起第二个。 / 浏览器地址：http://127.0.0.1:60281/?package=neko / （-NoBrowser：没有开浏览器）地址：http://127.0.0.1:60281/?package=neko>
+  [ OK ] 别名 -StopAll：明确拒绝并指回按端口停（不再按进程名清场）  — 退出码 2（期望 2）；含 -StopAll: True；含 start.cmd: True；stdout <（play-web.ps1 是兼容别名：实际执行的是 start.cmd web；以后请直接用 start.cmd。） /  / -StopAll 已移除：它按进程名杀掉本机所有 neko-clicker-web，其中包括 5273 上真人正在玩的那个。 / 按端口停：play-web.ps1 -Stop -Port <端口>（或 start.cmd stop -Port <端口>）。>
+
+  收尾：结束 neko-clicker-web (PID 9504)
+  收尾：结束 dotnet run (PID 26648)
+  收尾：这次是按记录的 PID 收的——反查有层挂了，逐层如下。
+        反查[抛出] Get-NetTCPConnection：拒绝访问 
+
+检查点覆盖：源码 112 处 ｜ 执行到 112 处 ｜ 通过 112 ｜ 失败 0 ｜ 跳过 0
+全部通过：112 项检查（通过 112 ｜ 失败 0 ｜ 跳过 0）。

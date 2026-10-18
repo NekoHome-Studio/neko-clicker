@@ -1,0 +1,19 @@
+=== 打包 NekoClicker 1.12.1 ===
+  发布 终端宿主 ...
+  发布 Web 宿主 ...
+
+已打出 C:\Users\haoxu\Downloads\NekoHome\neko-clicker\artifacts\neko-clicker-1.12.1-win-x64.zip
+  109 个文件，压缩后 1.9 MB（未压缩 5.7 MB）
+  前提：目标机器需要 .NET 8 运行时（说明书里写了）。
+
+产物自检（解开 zip 到临时目录再跑；判据见 engine/docs/RELEASING.md §6.2）
+  运行时探测：本机有 Microsoft.AspNetCore.App 8.x，不设 DOTNET_ROLL_FORWARD。
+  解开到：C:\Users\haoxu\AppData\Local\Temp\dsh-RCD9ys\neko-clicker-selfcheck-6cac5414\package
+  [判据] demo --help：退出码 0 且输出含 --simulate ｜ [实测] 退出码 ，含 --simulate：True（57 行）
+  stderr（尾部 20 行）：
+  [结论] 产物自检失败——**这个 zip 不要发出去**：C:\Users\haoxu\Downloads\NekoHome\neko-clicker\artifacts\neko-clicker-1.12.1-win-x64.zip
+Exception: C:\Users\haoxu\Downloads\NekoHome\neko-clicker\tools\pack.ps1:184
+Line |
+ 184 |              throw "demo\neko-clicker.exe --help 退出码 $($helpRun.ExitCo …
+     |              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | demo\neko-clicker.exe --help 退出码 （期望 0）。

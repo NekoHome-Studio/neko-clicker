@@ -1,0 +1,23 @@
+
+=== NekoClicker 启动器 ===
+仓库：C:\Users\haoxu\Downloads\NekoHome\neko-clicker
+dotnet 8.0.303
+
+内容包：
+  neko        
+  cafe        
+  ninelines   
+  lab         
+  company     
+  apocalypse  
+  library     
+  god         
+  civ         
+  cyber       
+  dream       
+
+用法：start.cmd              （网页 + 默认内容包）
+      start.cmd web company  （网页 + 公司包）
+      start.cmd play lab     （终端 + 实验室包）
+      start.cmd stop         （停掉 5273 上的 Web 宿主）
+
