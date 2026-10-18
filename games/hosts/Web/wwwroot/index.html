@@ -175,6 +175,24 @@
     </div>
   </div>
 
+  <!-- 换包：**第五张 sheet**，形态与上面四张完全共用（`.sheet-layer` / `.sheet` /
+       `.sheet-head` / `.sheet-close` / `sheet-in` / 点遮罩 / Esc）——这里没有第二套弹窗。
+       入口是页签行末尾的「换包」按钮。清单行由 app.js 启动时从 /api/packs 生成：
+       每行一个真按钮（包名 + 欢迎语），当前包带 `aria-current="true"`。
+       选一个 = 整页跳去 /?package=<id>（包是会话，见 #pack-open 那条注释）。
+       按钮拉不到清单时是隐藏的，所以这张 sheet 永远不会是空的。 -->
+  <div id="pack-sheet" class="sheet-layer hidden">
+    <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="pack-title">
+      <div class="sheet-head">
+        <h2 id="pack-title">换一个内容包</h2>
+        <button id="pack-close" class="sheet-close" type="button" aria-label="收起换包窗口">&times;</button>
+      </div>
+      <!-- 会长的只有这一块：11 个包的行住进 .sheet-body（视口高度上限 + 滚动，
+           与纸条/表态同一套），× 永远留在它外面。 -->
+      <div id="packs" class="sheet-body pack-list" tabindex="-1"></div>
+    </div>
+  </div>
+
   <!-- 收起之后的表态：这是它唯一的入口，因此**只要还有待答就一直在**。
        它只写条数——"看到条数"不等于"看到了谁在问什么、有哪些选项"，而结局只会落定一次，
        所以给引擎的 choicesShown 只由上面那张真的画出选项的 sheet 发出（见 reportChoicesShown）。
@@ -186,7 +204,6 @@
     <div class="status">
       <span id="status-dot" class="dot"></span>
       <span id="status-text">连接中…</span>
-      <a id="switch" href="./">换一个包</a>
     </div>
   </header>
 
@@ -250,6 +267,12 @@
         <button data-tab="codex">图鉴</button>
         <button data-tab="achievements">成就</button>
         <button data-tab="log">日志</button>
+        <!-- 换包（F2）：包是会话，在加载那一刻就绑死了（streamUrl / commandUrl），
+             所以换包 = 整页跳去 /?package=<id>，不是热切换 SSE——那会是第二套状态机。
+             这个按钮只开下面那张 #pack-sheet（第五张 sheet，同一套机械）；
+             清单由 app.js 启动时从 /api/packs 拉来，拉不到就把按钮整个藏起来。
+             状态只有一处：URL。 -->
+        <button id="pack-open" class="ghost hidden" type="button" title="换一个内容包">换包</button>
       </nav>
 
       <div class="panel" data-panel="buildings">

@@ -207,6 +207,38 @@
 > 口径（沿用每一次的判据）：**公开 API 一行没动 → patch**，见
 > [VERSIONING](engine/docs/VERSIONING.md) §2 那张表。
 
+### 换包窗口：页内第一次能换包（2026-10-18，纯前端 + 守卫，F2 结案 ＋ F1 一半）
+
+人玩的时候报「**换不了包**」：`?package=` 只在加载那一刻读一次，页内没有任何入口
+（`/api/packs` 报 11 个包、`app.js` 里出现 0 次），换包要手改 URL。人随后补了一句
+形态：**「换一个包点击之后应该出现一个选择窗口」**——所以这不是下拉，是**第五张 sheet**：
+
+- **入口**：页签行末尾「换包」按钮（真 `<button>`，初始隐藏——`/api/packs` 拉到清单
+  才出现，拉不到绝不摆一个空窗口）。
+- **窗口**：`#pack-sheet` 沿用同一套 sheet 机械（`.sheet-layer` / `.sheet` /
+  `role="dialog" aria-modal` / `.sheet-head` / `.sheet-close` / `.sheet-body`，
+  × 在身体外面、Esc / 点遮罩收起、焦点开窗给第一行、关窗还给入口按钮）——
+  **没有第二套弹窗**。清单行是真按钮（包名 + 欢迎语），当前包 `aria-current="true"`。
+- **选择**：点一行 = 整页跳 `/?package=<id>`。**包是会话**（`streamUrl` / `commandUrl`
+  加载时绑死），热切换 SSE 会是第二套状态机——不做；URL 是唯一状态，不持久化。
+- **F1 的口径那一半顺手关掉**：`buildShareUrl` 在没带 `?package=` 的页上**不写
+  package 参数**（原先写死 `neko`，把链接指去另一个包）；下载文件名同理
+  （`${packageId}-save.json`，没带时 `save.json`）。一句话理由：**没带参数的页在
+  服务端默认包上，不写参数时收件人落在同一个包**——写死任何 id 都是发明第二个包。
+  旧 `#switch`（"换一个包"链接，指向 `./` = 默认包，正是 F1 那次撞墙的形状）删除。
+- **守卫**：`web-smoke` **§35（13 条）**：入口/窗口形状、点行跳整页、Esc/点遮罩、
+  `aria-current` 跟 `packageId`（不重析 URL）、拉不到时入口保持隐藏、
+  `?? "neko"` 绝迹、没带 `?package=` 的分享链接没有 `package=`。总数 **284 → 297**。
+  判别力两针（点行改 `replaceState` ⇒ 红 1 条；`#packs` 摘 `sheet-body` ⇒ 红 1 条；
+  复原后 sha256 逐字节一致）。§28 的 B 组夹具改为带 `?package=neko`（与它自己的
+  neko 快照同包）——原先那条断言的正是被修掉的那个兜底，「没带」的形状另立 §35D。
+- **验证**：`build.ps1 -Strict` **599**（含 smoke）、`web-smoke` **297/297**、
+  `api-test` 在 **pwsh 7 / PowerShell 5.1** 上各 **114/114**；隔离宿主（临时端口 +
+  临时存档根）上 `GET /` 含 `#pack-sheet` / `#pack-open` / `sheet-body pack-list`。
+- ⚠️ **没验到的**：窗口好不好看只有眼睛能判（11 行清单在矮窗口里滚不滚得动、
+  当前包高亮显不显眼、按钮挤在页签行右端顺不顺）——已并入 `OPEN_WORK` 的 **H3**。
+  **F1 的另一半**（默认包该是哪一包）仍等人拍——见 `OPEN_WORK` §0.37.4。
+
 ### 两个「起网页」的入口统一成一个（2026-10-17，工具链 + 守卫）
 
 上游 1.12.1 加了 `tools/play-web.ps1`，这一侧这一周加了 `tools/start.ps1` ＋ `start.cmd`：

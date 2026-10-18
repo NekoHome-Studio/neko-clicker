@@ -970,7 +970,9 @@ function downloadExport() {
     return;
   }
 
-  const name = `${packageId ?? "neko"}-save.json`;
+  // 没带 ?package= 时页面在**服务端的默认包**上（字母序第一个），这里不许再兜一个
+  // 写死的 id（F1：原先兜 "neko"，与服务端那个默认不是同一个包）——URL 是唯一状态。
+  const name = packageId ? `${packageId}-save.json` : "save.json";
   const url = URL.createObjectURL(new Blob([text], { type: "application/json" }));
   const link = document.createElement("a");
   link.href = url;
@@ -1063,7 +1065,11 @@ async function makeShareLink() {
  */
 function buildShareUrl(token) {
   const origin = location.origin ?? "http://127.0.0.1:5273";
-  return `${origin}/?package=${encodeURIComponent(packageId ?? "neko")}&share=${token}`;
+  // F1：没带 ?package= 时**不写 package 参数**——收件人会落到服务端的默认包上，
+  // 与发件人此刻所在的那个是同一个（两边走同一条 `FirstOrDefault()` 规则）。
+  // 任何写死的兜底（原先的 "neko"）都会把链接指到另一个包上。
+  const packageQuery = packageId ? `package=${encodeURIComponent(packageId)}&` : "";
+  return `${origin}/?${packageQuery}share=${token}`;
 }
 
 /** 复制链接。与 `copyExport` 同一条规矩：剪贴板拿不到时**绝不假装成功**。 */
@@ -2659,6 +2665,21 @@ document.addEventListener("keydown", (event) => {
     return;
   }
 
+  // 换包 sheet 开着时：Esc 收起它、空格吃掉——与表态那张同一条规矩
+  //（窗口盖在游戏上面，按空格在背后偷偷点一下猫是谁也没要求过的操作）。
+  // 选中哪一包用回车或点击：那是 BUTTON 自己的激活键，不归全局这一层管。
+  const packLayer = $("#pack-sheet");
+  const packOpen = Boolean(packLayer) && !packLayer.classList.contains("hidden");
+  if (packOpen && event.code === "Escape") {
+    event.preventDefault();
+    closePackSheet();
+    return;
+  }
+  if (packOpen && event.code === "Space") {
+    event.preventDefault();
+    return;
+  }
+
   if (event.code === "Space") {
     // 焦点落在某个控件上时，空格是**那个控件**的激活键（浏览器会替它发一次 click）。
     // 全局这里再发一次，就变成了"按空格展开故事，顺手又点了一下猫"——两件事都不是玩家要的。
@@ -2685,3 +2706,64 @@ if (incomingShare) openIncomingShare();
 
 connect();
 requestAnimationFrame(animate);
+
+// ---------------------------------------------------------------- 换包（F2）
+//
+// 包是**会话**：streamUrl / commandUrl 在加载那一刻就按 ?package= 定死了，
+// 页内没有第二条换包的路——换包 = 整页跳去 /?package=<id>，URL 是唯一状态，
+// 什么都不持久化。清单从 /api/packs 拉（宿主按 id 排序，与服务端的默认规则同源）；
+// 拉不到就把「换包」按钮整个藏起来——那张 sheet 永远不会是空的。
+//
+// 三张机械全部沿用 sheet 那一套（开 / 关 / Esc），没有第二套弹窗：
+// 开 = 摘 hidden + 焦点交给清单第一行；关 = 盖回去 + 焦点还给入口按钮。
+function closePackSheet() {
+  $("#pack-sheet").classList.add("hidden");
+  $("#pack-open").focus();
+}
+
+async function bootPackPicker() {
+  let packs;
+  try {
+    const response = await fetch("/api/packs");
+    packs = await response.json();
+    if (!Array.isArray(packs) || packs.length === 0) throw new Error("包列表是空的");
+  } catch {
+    return; // 拉不到清单：按钮保持 hidden（初始就是），不摆一个空 sheet
+  }
+
+  const list = $("#packs");
+  // 当前是哪一包，只看 packageId 这一处（页面其余部分用的同一个来源，不重析 URL）；
+  // 没带 ?package= 时页面在服务端的默认包上，也就是清单的第一个。
+  const current = packageId ?? packs[0].id;
+  for (const pack of packs) {
+    const row = document.createElement("button");
+    row.type = "button";
+    row.className = "pack-row";
+    if (pack.id === current) row.setAttribute("aria-current", "true");
+    row.append(Object.assign(document.createElement("span"), {
+      className: "pack-name", textContent: pack.name,
+    }));
+    row.append(Object.assign(document.createElement("span"), {
+      className: "pack-welcome", textContent: pack.welcome ?? "",
+    }));
+    row.addEventListener("click", () => {
+      // 包是会话：选了就整页跳走，这里不做"关了再跳"的两步——跳走本身就是离场。
+      location.href = `/?package=${encodeURIComponent(pack.id)}`;
+    });
+    list.append(row);
+  }
+
+  const open = $("#pack-open");
+  open.classList.remove("hidden");
+  open.addEventListener("click", () => {
+    $("#pack-sheet").classList.remove("hidden");
+    list.children[0]?.focus();
+  });
+}
+
+$("#pack-close").addEventListener("click", closePackSheet);
+$("#pack-sheet").addEventListener("click", (event) => {
+  if (event.target.id === "pack-sheet") closePackSheet();
+});
+
+await bootPackPicker();

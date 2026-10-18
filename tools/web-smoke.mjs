@@ -21,8 +21,9 @@
 // 覆盖边界（诚实）: 它证明的是"真的被执行过的路径不抛异常"。没被执行到的分支
 // （`if (!pill) return` 这类防御）只有 node --check 的语法保证。
 //
-// 这个脚本**从 2026-10 起进了 tools/build.ps1**（也进了 CI）：一条 271 条断言
-// （§33「sheet 的身体能滚」那 17 条起；那一轮之前是 254——§29 里那两条「服务端那张表必须
+// 这个脚本**从 2026-10 起进了 tools/build.ps1**（也进了 CI）：一条 297 条断言
+// （§35「换包窗口」那 13 条起；那一轮之前是 284——§34「四台渲染器的空帧写入」的
+// 12 条；再此前是 271 条——§33「sheet 的身体能滚」那 17 条起；那一轮之前是 254——§29 里那两条「服务端那张表必须
 // 从 K 起」＋「两个宿主对同一个数说同一句话」；再此前是 252——§32「焦点在重画之间不许跑掉」；
 // 再此前是 244——§29「刻度名 K/M/B/T」＋
 // §30「大猫那两处标签的字号」＋ §31「还差多少」；再此前是 224 条、§28「分享链接」之前是 208 条、
@@ -334,8 +335,11 @@ const copyAs = (name, source) => {
  *
  * `clipboard`：要不要给一个可用的 `navigator.clipboard`。**两种都要测**：
  * 一种走"复制成功"，另一种走"写不进去"的退路（那时不许假装成功）。
+ *
+ * `packs`：`GET /api/packs` 的那份包清单（§35 换包下拉用）。不传时那个 fetch
+ * 落到 `reply` 那条默认路上（多半不是数组），于是下拉走"藏起整个控件"的那半条路。
  */
-async function loadApp(moduleUrl, { hash = "", search = "", reply = null, clipboard = true } = {}) {
+async function loadApp(moduleUrl, { hash = "", search = "", reply = null, clipboard = true, packs = null } = {}) {
   const doc = makeDom();
   const location = { origin: "http://127.0.0.1:5273", pathname: "/", search, hash };
   const commands = [];
@@ -372,6 +376,10 @@ async function loadApp(moduleUrl, { hash = "", search = "", reply = null, clipbo
   globalThis.performance = { now: () => clock };
   globalThis.requestAnimationFrame = (callback) => { frames.push(callback); return frames.length; };
   globalThis.fetch = async (url, options = {}) => {
+    // 包清单是启动时的一次 GET（换包下拉，§35）：它不是命令，有自己的回答。
+    if (packs !== null && String(url).includes("/api/packs")) {
+      return { ok: true, json: async () => packs };
+    }
     const body = options.body ? JSON.parse(options.body) : null;
     if (body) commands.push(body);
     const answer = reply ? reply(body, commands.length) : null;
@@ -3143,15 +3151,24 @@ section("28. 分享链接：生成 / 复制 / 打开（密码不进链接、不�
 
   // ---- A. 没有 share 参数时：那一行不该出现 ----
   const record = {};
-  const plain = await loadApp(copyAs("app-share-plain.mjs", appSource), { reply: makeReply(record) });
-  await plain.push({ kind: "full", seq: 1, snapshot: snapshot() });
+  const plainNoShare = await loadApp(copyAs("app-share-plain.mjs", appSource), { reply: makeReply(record) });
+  await plainNoShare.push({ kind: "full", seq: 1, snapshot: snapshot() });
 
   check("没带 ?share= 时：打开分享链接那一行是隐藏的，而且**一条命令都没发**", () => {
-    eq(hidden(plain, "share-open"), true, "#share-open 应当隐藏");
-    eq(plain.commands.length, 0, "首帧不该自动发任何命令");
+    eq(hidden(plainNoShare, "share-open"), true, "#share-open 应当隐藏");
+    eq(plainNoShare.commands.length, 0, "首帧不该自动发任何命令");
   });
 
   // ---- B. 生成 ----
+  // 这一台带 ?package=neko（与夹具的快照内容同包）：B 组验"链接带上当前包"。
+  // "没带 ?package= 的那一页"另有自己的形状断言，见 §35 的 F1 用例。
+  // 副本名必须与 A 那台不同：同一 URL 的 import 会被模块缓存，第二台就不会重新求值
+  //（也就不会再连一个新的 EventSource）。
+  const plain = await loadApp(copyAs("app-share-make.mjs", appSource), {
+    search: "?package=neko", reply: makeReply(record),
+  });
+  await plain.push({ kind: "full", seq: 1, snapshot: snapshot() });
+
   fire(el(plain, "save"), "click");
   await flush();
   eq(shown(plain, "save-sheet"), true, "前置条件：存档窗口开着");
@@ -4368,7 +4385,143 @@ section("34. 四台渲染器的空帧写入：0；真变化照常画（codex / a
   });
 }
 
+// 35. 换包窗口（F2）＋ 分享链接的 F1 兜底。
+//
+// 人 2026-10-11 玩的时候撞上的：「换不了包」——`?package=` 只在加载那一刻读一次，
+// 页内没有入口，而 `/api/packs` 有 11 个包、`app.js` 里出现 0 次。同一轮还记下 F1：
+// 分享链接的兜底写死 `neko`，与服务端"不带参数 = 字母序第一个"不是同一个包。
+// 人后来的那句话定了形态：「换一个包点击之后应该出现一个选择窗口」——所以它
+// 不是下拉，是**第五张 sheet**：同一套 .sheet-layer / .sheet / .sheet-head /
+// .sheet-close / .sheet-body（§11/§33 的形状守卫因此同样适用），清单行是真按钮。
+// 这一节守三件事：入口与窗口的**形状**（真按钮、真 sheet、× 在身体外面）、
+// **行为**（点行跳 /?package= 整页、Esc/点遮罩收起、拉不到就藏入口）、
+// 以及兜底**不再发明第二个包**（没带 ?package= 时干脆不写 package 参数）。
+section("35. 换包窗口：第五张 sheet；拉得到就填、点行跳整页；拉不到就藏；兜底不再写死 neko");
+{
+  const PACKS = [
+    { id: "apocalypse", name: "猫娘末世", welcome: "已载入《猫娘末世》。" },
+    { id: "company", name: "猫咖公司", welcome: "已载入《猫咖公司》。" },
+    { id: "neko", name: "猫咖物语", welcome: "已载入《猫咖物语》。" },
+  ];
+
+  // ---- A. 形状：入口是真按钮、窗口沿用同一套 sheet 机械、× 在身体外面 ----
+  check("入口是 #tabs 行里的真按钮（换页签不会把它带走），初始隐藏、等清单到了再出现", () => {
+    const button = /<button id="pack-open"[^>]*>/.exec(html)?.[0] ?? "";
+    if (!button) throw new Error("没有 #pack-open 按钮");
+    if (!/\btype="button"/.test(button)) throw new Error(`#pack-open 不是 type=button：<${button}>`);
+    if (!/\bclass="[^"]*\bhidden\b/.test(button)) {
+      throw new Error(`#pack-open 初始不隐藏：拉不到清单时它必须一直藏着，而不是开一张空窗口：<${button}>`);
+    }
+    const tabs = /<nav class="tabs" id="tabs">([\s\S]*?)<\/nav>/.exec(html)?.[1] ?? "";
+    if (!tabs.includes('id="pack-open"')) {
+      throw new Error("按钮不在 #tabs 那一行里——它必须跟着页签走（换页签不能把它带走）");
+    }
+  });
+  check("#pack-sheet 沿用同一套 sheet 机械（.sheet-layer / role=dialog / aria-modal / sheet-head / sheet-close）", () => {
+    const sheet = /<div id="pack-sheet" class="sheet-layer hidden">[\s\S]*?<div class="sheet" role="dialog" aria-modal="true" aria-labelledby="pack-title"[\s\S]*?class="sheet-head"[\s\S]*?id="pack-close" class="sheet-close"/.exec(html);
+    if (!sheet) {
+      throw new Error("pack-sheet 没有沿用 .sheet-layer / .sheet / role=dialog / .sheet-head / .sheet-close");
+    }
+  });
+  check("清单住进 .sheet-body（§33 同款：行多了滚的是身体，× 永远在它外面）", () => {
+    const sheet = /<div id="pack-sheet"[\s\S]*?<\/div>\s*\n\s*<\/div>/.exec(html)?.[0] ?? "";
+    const body = /<div id="packs" class="sheet-body pack-list"[^>]*>/.exec(html)?.[0] ?? "";
+    if (!body) throw new Error("#packs 没有带 sheet-body：11 个包的行比窗口高时没有自己的滚动容器");
+  });
+  check("app.js 会去拿 /api/packs（此前 0 次：清单没有数据来源）", () => {
+    if (!/fetch\("\/api\/packs"\)/.test(appSource)) throw new Error("app.js 里没有 fetch(\"/api/packs\")");
+  });
+  check("F1：`?? \"neko\"` 那个兜底没有了（写死的包名会把链接/文件名指到另一个包上）", () => {
+    if (/\?\?\s*"neko"/.test(appSource)) throw new Error('还有一个 `?? "neko"` 兜底');
+  });
+
+  // ---- B. 行为：拉到清单 → 按钮出现、行是真按钮、当前包 aria-current、点行跳整页 ----
+  const withPacks = await loadApp(copyAs("app-packs-ok.mjs", appSource), { packs: PACKS });
+  await withPacks.push({ kind: "full", seq: 1, snapshot: snapshot() });
+
+  check("拉到清单：入口按钮出现，每个包一行真按钮（名字 + 欢迎语），共 " + PACKS.length + " 行", () => {
+    eq(hidden(withPacks, "pack-open"), false, "#pack-open 应当出现");
+    const rows = el(withPacks, "packs").children;
+    eq(rows.length, PACKS.length, "行数");
+    for (let i = 0; i < PACKS.length; i++) {
+      eq(rows[i].tagName, "BUTTON", `第 ${i} 行是真按钮`);
+      eq(rows[i].children[0].textContent, PACKS[i].name, `第 ${i} 行的名字`);
+      eq(rows[i].children[1].textContent, PACKS[i].welcome, `第 ${i} 行的欢迎语`);
+    }
+  });
+  check("没带 ?package= 时：aria-current 落在**服务端的默认包**（清单第一个）上——窗口里标出的正是这一局", () => {
+    const rows = el(withPacks, "packs").children;
+    eq(rows[0].getAttribute("aria-current"), "true", "第一个（字母序第一 = 服务端默认）应当 aria-current");
+    eq(rows.filter((r) => r.getAttribute("aria-current") === "true").length, 1, "标 aria-current 的行恰好一条");
+  });
+  check("点「换包」开窗、焦点交给第一行；Esc 收起、焦点还给入口按钮（与另外几张同一套）", () => {
+    fire(el(withPacks, "pack-open"), "click");
+    eq(shown(withPacks, "pack-sheet"), true, "窗口应当打开");
+    eq(el(withPacks, "packs").children[0].focused, 1, "第一行被 focus 的次数");
+    for (const handler of withPacks.doc._listeners.get("keydown") ?? []) {
+      handler({ code: "Escape", target: { tagName: "BODY" }, preventDefault() {} });
+    }
+    eq(hidden(withPacks, "pack-sheet"), true, "Esc 之后窗口应当收起");
+    eq(el(withPacks, "pack-open").focused, 1, "焦点还给入口按钮");
+  });
+  check("点遮罩空白处也收（点在卡片里不关——与另外几张 sheet 同一条规矩）", () => {
+    fire(el(withPacks, "pack-open"), "click");
+    fire(el(withPacks, "pack-sheet"), "click", { target: el(withPacks, "packs") });
+    if (hidden(withPacks, "pack-sheet")) throw new Error("点在清单里不该关掉窗口");
+    fire(el(withPacks, "pack-sheet"), "click", { target: el(withPacks, "pack-sheet") });
+    eq(hidden(withPacks, "pack-sheet"), true, "点遮罩应当收起");
+  });
+  check("点一行跳的是 /?package=<id> 整页（包是会话，没有第二条换包的状态机）", () => {
+    fire(el(withPacks, "pack-open"), "click");
+    fire(el(withPacks, "packs").children[1], "click");
+    eq(withPacks.location.href, "/?package=company", "location.href");
+  });
+
+  // 带 ?package= 的那一页：aria-current 跟着 URL（不重析——app.js 里只 packageId 一处）。
+  const onNeko = await loadApp(copyAs("app-packs-neko.mjs", appSource), {
+    search: "?package=neko", packs: PACKS,
+  });
+  await onNeko.push({ kind: "full", seq: 1, snapshot: snapshot() });
+  check("带了 ?package=neko：aria-current 落在 neko 那一行（从 packageId 来，不从清单猜）", () => {
+    const rows = el(onNeko, "packs").children;
+    eq(rows[2].getAttribute("aria-current"), "true", "neko 那行应当 aria-current");
+    eq(rows[0].getAttribute("aria-current"), null, "默认包不该被标");
+    eq(rows.filter((r) => r.getAttribute("aria-current") === "true").length, 1, "恰好一条");
+  });
+
+  // ---- C. 拉不到清单：入口保持隐藏，而不是开一张空窗口 ----
+  const noPacks = await loadApp(copyAs("app-packs-none.mjs", appSource), {});
+  await noPacks.push({ kind: "full", seq: 1, snapshot: snapshot() });
+  check("拉不到 /api/packs：入口按钮保持隐藏（空窗口比没有窗口更糟——它像坏的）", () => {
+    eq(hidden(noPacks, "pack-open"), true, "#pack-open 应当 hidden");
+  });
+
+  // ---- D. F1 的形状：没带 ?package= 的那一页生成的分享链接**不写 package 参数** ----
+  // 收件人打开它落到服务端默认包上，与发件人此刻在的是**同一个**（同一条 FirstOrDefault
+  // 规则）；写死任何 id 都会把链接指到另一个包上（原先写死的 "neko" 正是 F1 记的那次撞墙）。
+  const NO_PACKAGE_REPLY = (body) => {
+    if (!body) return null;
+    if (body.type === "shareLink") {
+      return { ok: true, message: "已生成。", text: "tok", seq: 1 };
+    }
+    return { ok: true, message: "", seq: 2 };
+  };
+  const bare = await loadApp(copyAs("app-packs-bare.mjs", appSource), { reply: NO_PACKAGE_REPLY });
+  await bare.push({ kind: "full", seq: 1, snapshot: snapshot() });
+  fire(el(bare, "save"), "click");
+  await flush();
+  el(bare, "share-password").value = "pw";
+  fire(el(bare, "share-make"), "click");
+  await flush();
+  check("没带 ?package= 的那一页：链接里**没有 package=**（落点=服务端默认=发件人所在的包）", () => {
+    const link = el(bare, "share-link").value;
+    if (link.includes("package=")) throw new Error(`链接里冒出了 package 参数：<${link}>`);
+    if (!link.includes("share=tok")) throw new Error(`链接里没有令牌：<${link}>`);
+  });
+}
+
 rmSync(scratch, { recursive: true, force: true });
+
 // ---------------------------------------------------------------- 结果
 
 console.log(`\n${checks - failures.length} / ${checks} 条通过`);
