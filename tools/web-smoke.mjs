@@ -148,6 +148,15 @@ class El {
 
   append(...nodes) { for (const node of nodes) { node.parent = this; this.children.push(node); } }
 
+  /**
+   * 插到最前面（`renderNotifications` 的增量追加用它：新日志在上，旧行不许动）。
+   * 真浏览器里这是 `ParentNode.prepend`；桩件里照样保持每个孩子的 `parent`。
+   */
+  prepend(...nodes) {
+    for (const node of nodes) { node.parent = this; }
+    this.children.unshift(...nodes);
+  }
+
   /** 从父节点摘掉（下载用的 <a> 会挂进 body 再摘掉）。 */
   remove() {
     detachFocus(this);
@@ -3017,11 +3026,13 @@ section("27. 批量档位下的「总价」（×10 / ×100 / 买满）");
 
   await batch.push(frame(2, { ...ruins, batchAmount: 10, batchPrice: 7579 }));
 
-  check("×10：写出「总价」而且在数字**前面**，那个数就是整批的总价（7.58K），不是单价 373", () => {
-    eq(priceOf(), "×10 总价 🐟 7.58K", "×10 那一行");
+  check("×10：写出「总价」而且在数字**前面**，那个数就是整批的总价（7.579K），不是单价 373", () => {
+    // 期望串 2026-10-17 换过一次（`7.58K` → `7.579K`）：卡片那一份（`number()`）从
+    // 2026-10-17 起对齐引擎 `Trim(3)`（登记册 D14 的落地），7,579 两侧都是 `7.579K`。
+    eq(priceOf(), "×10 总价 🐟 7.579K", "×10 那一行");
     // 下面三句不是 `eq()` 的重复：它们**不依赖期望串**。有人把这一行的期望串改成旧次序
     // （"改测试而不是改代码"）时 `eq()` 会放行，这几句仍然会红。
-    if (priceOf().indexOf("总价") > priceOf().indexOf("7.58K")) {
+    if (priceOf().indexOf("总价") > priceOf().indexOf("7.579K")) {
       throw new Error(`限定语落在数字后面了（那是第一版、也是"数字 + ×N"那个误读的形态）：<${priceOf()}>`);
     }
     if (priceOf().includes("（")) throw new Error(`括号回来了——\`×N\` 在这里是限定语、不是注解：<${priceOf()}>`);
@@ -3030,14 +3041,16 @@ section("27. 批量档位下的「总价」（×10 / ×100 / 买满）");
 
   await batch.push(frame(3, { ...ruins, batchAmount: 100, batchPrice: 117431205 }));
 
-  check("×100：切档位之后，同一行画出来的数跟着换成整批的总价（117M）", () => {
-    eq(priceOf(), "×100 总价 🐟 117M", "×100 那一行");
+  check("×100：切档位之后，同一行画出来的数跟着换成整批的总价（117.431M）", () => {
+    // `117M` → `117.431M` 与上面那条同一次换（D14：卡片 = 引擎 Trim(3)）。
+    eq(priceOf(), "×100 总价 🐟 117.431M", "×100 那一行");
   });
 
   await batch.push(frame(4, { ...ruins, batchAmount: 37, batchPrice: 3.4e6 }));
 
   check("买满：N 是服务端按钱包算出来的可变数量，所以 `×N` 记号还得留着（页面上别处没有它）", () => {
-    eq(priceOf(), "×37 总价 🐟 3.40M", "买满那一行");
+    // `3.40M` → `3.4M` 同上（Trim(3) 去尾零）。
+    eq(priceOf(), "×37 总价 🐟 3.4M", "买满那一行");
   });
 
   await batch.push(frame(5, { ...ruins, batchAmount: 10, batchPrice: 0.4 }));
@@ -3368,13 +3381,24 @@ section("29. 大数缩写的刻度名：前端那张表就是服务端 NumFormat
   const scale = await loadApp(copyAs("app-scale.mjs", appSource));
   const counters = new Map();
   let seq = 0;
-  for (const value of [7579, 1.2e6, 2.92e9, 4e12, 1000, 2.5e6, 3e9, 999, 0.5]) {
+  for (const value of [7579, 1.2e6, 2.92e9, 4e12, 1000, 2.5e6, 3e9, 999, 0.5, 999999, 123456, 999999.6]) {
     seq++;
     await scale.push({ kind: "full", seq, snapshot: snapshot({ cookies: value, cookiesPerSecond: 0 }) });
     scale.step(0);
     counters.set(value, el(scale, "cookies").textContent);
   }
   const counter = (value) => counters.get(value);
+
+  // 卡片那一份（`number()`）：§29 里它没有自己的读数入口（页面上没有一处直接把它
+  // 画进 `#cookies`），所以从 app.js **原样抽出来**跑——与 §14 的"夹具不是谎话"同一条
+  // 理由：重写一遍就等于第二份真相，抽出来才是真的它（D14 那轮就是这么实测的）。
+  const unitsBlock = /const SCALE_UNITS = \[([\s\S]*?)\];/.exec(appSource)?.[0] ?? "";
+  const trimBlock = /function trimMantissa\(scaled, index, units\) \{[\s\S]*?\n\}/.exec(appSource)?.[0] ?? "";
+  const numberBlock = /function number\(value\) \{[\s\S]*?\n\}/.exec(appSource)?.[0] ?? "";
+  if (!unitsBlock || !trimBlock || !numberBlock) {
+    throw new Error("从 app.js 里抽不出 SCALE_UNITS / trimMantissa / number——抽法该跟着源文件改");
+  }
+  const { number: numberOf } = new Function(`${unitsBlock}\n${trimBlock}\n${numberBlock}\nreturn { number };`)();
 
   check("大计数器：`7.58千` → `7.579K`——数字与单位之间那个空格也去掉了（拉丁缩写连着写）", () => {
     // 精度**一个字没动**：计数器给"10 以下"留 3 位（`7.579K`），卡片上的 `number()` 留 2 位
@@ -3427,6 +3451,56 @@ section("29. 大数缩写的刻度名：前端那张表就是服务端 NumFormat
     if (!expected.includes("K")) {
       throw new Error(`引擎给的期望值是 ${JSON.stringify(expected)}——它没有落在 K 档上，这条跨套件对就不再有意义`);
     }
+  });
+
+  // ---- 2026-10-17 扩展（登记册 D14 的落地）：进位不跨档 + 更宽的尾数 ----
+  //
+  // 1.12.0 那句"同一个数在两边现在是同一个字符串"当时只被证明到**尾数 < 10** 那一档
+  //（上面的 7579）。两条更宽的裂缝（GUI_OPTIMIZATION_PLAN §2 的 P1-1）：
+  //   · 进位：`999999` 前端原是 `1000.0K`（计数器）/ `1000K`（卡片），引擎 `999.999K`
+  //     ——`toFixed` 把 999.999 圆成 1000.0，跨了档还丢了精度；
+  //   · 尾数宽度：`123456` 前端原是 `123.5K` / `123K`，引擎 `123.456K`——
+  //     宽度取舍（≥100 只留 1 位）把真值吃掉了。
+  // 两条现在都从 `NumbersTests` 里读引擎那一侧的钉子来对（与上面 7579 同一条跨套件路）：
+  // 引擎的期望串改一个字、或前端格式器回退一步，这里立刻红。
+  check("跨套件（进位档）：浏览器两侧 `999999` vs 引擎 `FormatShort(999_999)` 的期望值——不再 `1000.0K`/`1000K`", () => {
+    const numbersTests = readFileSync(join(root, "engine", "tests", "NumbersTests.cs"), "utf8");
+    const expected = /Check\.Equal\("([^"]+)",\s*NumFormat\.FormatShort\(999_999\)\)/.exec(numbersTests)?.[1];
+    if (!expected) {
+      throw new Error("`NumbersTests` 里找不到 `FormatShort(999_999)` 的期望值——引擎那一侧的钉子被拆了");
+    }
+    eq(counter(999999), expected, "大计数器 vs 引擎 FormatShort(999_999)");
+    eq(numberOf(999999), expected, "卡片（number()） vs 引擎 FormatShort(999_999)");
+  });
+
+  // 更宽的尾数：引擎 NumbersTests 目前没有 123_456 那条钉子，所以这里用 `Trim(3)`
+  // 的口径把期望值**推导出来会被当成第二份真相**——不行。改为直接读引擎源里
+  // `Trim(mantissa, 3)` + 进位守卫那两行源码（形状在，口径就在），
+  // 并把期望串写死为引擎 `FormatShort(123_456)` 的既有事实 `123.456K`
+  //（`NumFormat.cs` 的 `Trim`：`0.###`，去尾零——123.456 三位全非零，无歧义）。
+  check("跨套件（尾数宽度）：`123456` 两侧都是 `123.456K`——宽度取舍不再吃掉真值", () => {
+    const numFormatCs = readFileSync(join(root, "engine", "core", "Numbers", "NumFormat.cs"), "utf8");
+    if (!/Trim\(mantissa, 3\)/.test(numFormatCs)) {
+      throw new Error("NumFormat.cs 里找不到 `Trim(mantissa, 3)`——引擎那条口径改了，这条期望串要跟着重推");
+    }
+    if (!/mantissa >= 999\.9995/.test(numFormatCs)) {
+      throw new Error("NumFormat.cs 里进位守卫（mantissa >= 999.9995）没了——前端那条 trimMantissa 会单方面进位");
+    }
+    eq(counter(123456), "123.456K", "大计数器");
+    eq(numberOf(123456), "123.456K", "卡片（number()）");
+  });
+
+  // `number()`（卡片那一份）2026-10-17 起整体对齐引擎 `Trim(3)`：它不再有自己
+  // 的 2/1/0 位宽度表，所以对**任何**数它都必须与引擎逐字相同。用夹具上的
+  // `priceText`（价格行真正用的那条路）走一遍：这些数正是 §27 钉过的那几张卡。
+  check("卡片格式器 `number()` 对齐引擎 Trim(3)：尾数去尾零、进位不跨档（§27 的期望串跟着换过）", () => {
+    eq(numberOf(7579), "7.579K", "7,579（原 `7.58K`）");
+    eq(numberOf(3.4e6), "3.4M", "3.4e6（原 `3.40M`）");
+    eq(numberOf(117000000), "117M", "117,000,000（原本就是）");
+    eq(numberOf(117431205), "117.431M", "117,431,205（原 `117M`）");
+    eq(numberOf(999999.6), "1M", "999,999.6：四舍五入进位跨档（引擎 NumbersTests 钉过 `1M`）");
+    eq(numberOf(999), "999", "999（<1000 分支没动）");
+    eq(numberOf(0), "0", "0（<1000 分支没动）");
   });
 }
 
@@ -4007,6 +4081,290 @@ section("33. sheet 的身体：会长的内容有一个带视口高度上限的�
     // 那一句话是由三个节点拼的（桩件里 `textContent` 读不到后代的文字，所以看中间那个 <b>）。
     eq(el(scrollApp, "offline-text").children[1].textContent.includes("2.4 万"), true, "换过之后那段话里带着新的数字");
     eq(offlineWrites(), 1, "两帧里写 #offline-text 的次数（新内容那一次）");
+  });
+}
+
+// 34. 逐帧重建的四台渲染器：空帧零写入、真变化照常画（GUI_OPTIMIZATION_PLAN §1 P0 的验收）。
+//
+// 基线（2026-10-16 实测，真咖啡馆快照：10 建筑 / 49 升级 / 51 图鉴 / 45 成就）：
+// **622 写/空帧**，其中 98.2% 来自四台每帧 `textContent = ""` 重建的渲染器——
+// codex 272 · achievements 227 · notifications 72 · permanent 40，加上三处每帧
+// 直写的计数头。修法是全仓既有的那一套（键复用 + 结构指纹 + setText），与
+// `renderBuildings` / `renderUpgrades`（空帧 0 写的对照组）同一条规矩。
+//
+// 这一节把"每台渲染器空帧写 0 次"守成断言。**写入计数**沿用 §33 那个
+// `countTextWrites` 的思路，但列表是逐行 append 的（不只是 `textContent=`），
+// 所以把桩件的 `textContent` setter 与 `append` / `prepend` / `remove` 一起装上
+// 计数器，再按"事件落在哪个容器的子树里"归账——归账走**写完之后的最终树**
+// （渲染器是先建脱离子树再挂进去的，写的那一瞬间还看不到容器）。
+//
+// 判别力（后半条不许漏，否则守卫会靠"什么都不画"过关）：同内容 ⇒ 0 写；
+// 变了内容 ⇒ 该写的照写——每台渲染器各有一条"变了照写"的正面用例。
+section("34. 四台渲染器的空帧写入：0；真变化照常画（codex / achievements / notifications / permanent）");
+{
+  const churn = await loadApp(copyAs("app-churn.mjs", appSource));
+
+  // ---- 计数器：把桩件 El 的四个写入口都记到事件流里，帧末按容器归账 ----
+  const events = [];
+  let counting = false;
+  const proto = Object.getPrototypeOf(el(churn, "codex"));
+  const textDesc = Object.getOwnPropertyDescriptor(proto, "textContent");
+  const origAppend = proto.append;
+  const origPrepend = proto.prepend;
+  const origRemove = proto.remove;
+
+  Object.defineProperty(proto, "textContent", {
+    configurable: true,
+    get() { return textDesc.get.call(this); },
+    set(value) {
+      if (counting) events.push({ kind: "text", node: this, empty: value === "" || value == null });
+      textDesc.set.call(this, value);
+    },
+  });
+  proto.append = function (...nodes) {
+    if (counting) for (const n of nodes) events.push({ kind: "append", node: this, child: n });
+    return origAppend.call(this, ...nodes);
+  };
+  proto.prepend = function (...nodes) {
+    if (counting) for (const n of nodes) events.push({ kind: "prepend", node: this, child: n });
+    return origPrepend.call(this, ...nodes);
+  };
+  proto.remove = function () {
+    if (counting) events.push({ kind: "remove", node: this.parent ?? this, removed: this });
+    return origRemove.call(this);
+  };
+
+  // 归账表：容器 id → 渲染器名。写完之后沿 parent 链找到它落进了谁的子树。
+  const OWNERS = new Map([
+    ["codex", "renderCodex"], ["codex-count", "renderCodex"],
+    ["achievement-list", "renderAchievements"], ["achievement-count", "renderAchievements"],
+    ["log", "renderNotifications"], ["log-count", "renderNotifications"],
+    ["buildings", "renderBuildings"],
+    ["permanent", "renderPermanent"], ["permanent-badge", "renderPermanent"],
+    ["permanent-count", "renderPermanent"], ["permanent-wallet", "renderPermanent"],
+    ["permanent-hint", "renderPermanent"],
+    ["golden", "renderGoldenCookie"], ["buffs", "renderBuffs"],
+    ["upgrades", "renderUpgrades"], ["upgrade-count", "renderUpgrades"],
+  ]);
+  const ownerOf = (node) => {
+    for (let at = node; at; at = at.parent) {
+      if (OWNERS.has(at.id)) return OWNERS.get(at.id);
+    }
+    return null;
+  };
+
+  const frameWrites = () => {
+    const by = {};
+    for (const e of events) {
+      const owner = ownerOf(e.node) ?? ownerOf(e.child);
+      if (!owner) continue;
+      const row = by[owner] ??= 0;
+      by[owner] = row + 1;
+    }
+    return by;
+  };
+  const writeCount = (...names) => names.reduce((sum, name) => sum + (frameWrites()[name] ?? 0), 0);
+  const resetFrame = () => { events.length = 0; counting = true; };
+  const settleFrame = () => { counting = false; };
+
+  /** 一帧真咖啡馆形状的快照（10 建筑 / 49 升级 / 51 图鉴 / 45 成就 / 10 条日志）。 */
+  const CAFE = snapshot({
+    goldenCookies: [], buffs: [],
+    buildings: Array.from({ length: 10 }, (_, i) => ({
+      id: `b${i}`, isVisible: true, isUnlocked: i < 6, canAfford: i < 3, icon: "🏠", name: `楼${i}`,
+      description: "说明。", owned: i, batchAmount: 1, batchPrice: 100 + i * 250,
+      cpsEach: 4.5, cpsContribution: 90, cpsShare: 0.12,
+      unlockHint: "赚到更多", unlockProgress: 0.3, upgradeIds: [],
+      nextMilestoneAt: 25, nextMilestoneName: "下一档",
+    })),
+    upgrades: [
+      ...Array.from({ length: 44 }, (_, i) => ({
+        id: `u${i}`, isVisible: true, isPermanent: false, isAvailable: i % 2 === 0,
+        isUnlocked: i % 2 === 0, isMaxed: false, canAfford: i % 3 === 0, icon: "🔧", name: `升${i}`,
+        owned: 0, currencyIcon: "🐟", price: 900 + i * 100, effectSummary: "+10%",
+        unlockHint: "有 10 个", unlockProgress: 0.4, maxPurchases: 1,
+      })),
+      ...Array.from({ length: 5 }, (_, i) => ({
+        id: `p${i}`, isVisible: true, isPermanent: true, isAvailable: true, isUnlocked: i < 2,
+        isMaxed: false, canAfford: i === 0, icon: "🍃", name: `永久${i}`, owned: i === 1 ? 1 : 0,
+        currencyIcon: "🍃", price: 4 + i, description: "转生后仍在", unlockHint: "本层进度",
+        unlockProgress: 0.5, maxPurchases: 3,
+      })),
+    ],
+    codex: {
+      totalUnlocked: 20, totalEntries: 51,
+      storylines: Array.from({ length: 3 }, (_, s) => ({
+        id: `line${s}`, icon: "📖", name: `线${s}`, theme: "", unlocked: 7, total: 17, progress: 0.4,
+        entries: Array.from({ length: 17 }, (_, i) => {
+          const unlocked = (s * 17 + i) < 20;
+          return {
+            id: `e${s}-${i}`, unlocked, icon: unlocked ? "📗" : "🔒", title: unlocked ? `读到${i}` : "???",
+            body: unlocked ? "正文。" : "", revealHint: "再买点", progressText: unlocked ? "" : "3/10",
+          };
+        }),
+      })),
+    },
+    achievements: Array.from({ length: 45 }, (_, i) => ({
+      id: `a${i}`, unlocked: i < 9, icon: i < 9 ? "🏆" : "🔒", name: `成就${i}`,
+      description: "说明。", progressText: i < 9 ? "" : "12 / 50",
+    })),
+    notifications: Array.from({ length: 10 }, (_, i) => ({
+      kind: i % 4, icon: "•", message: `事件 ${i}`, timestamp: 3599 - i * 30,
+    })),
+  });
+
+  const full = (seq, overrides) => ({ kind: "full", seq, snapshot: { ...structuredClone(CAFE), ...overrides } });
+
+  // 首帧：全部画出来（这台渲染器的工作量在本帧，不是守卫的对象）。
+  await churn.push(full(1));
+  resetFrame();
+
+  await churn.push(full(2));
+  settleFrame();
+  check("空帧（数据零变化）：四台渲染器 + 计数头合计 **0 次写入**（基线是 622/帧）", () => {
+    const by = frameWrites();
+    const names = Object.keys(by);
+    if (names.length > 0) {
+      throw new Error(`空帧还是有人在写：${names.map((n) => `${n}=${by[n]}`).join(" / ")}——重建器又回来了`);
+    }
+  });
+
+  await churn.push(full(3));
+  settleFrame();
+  check("再来一帧空的也一样（不是只对第一次成立）", () => {
+    eq(writeCount("renderCodex", "renderAchievements", "renderNotifications", "renderPermanent",
+      "renderGoldenCookie", "renderBuffs", "renderBuildings", "renderUpgrades"), 0, "第二帧的写入总数");
+  });
+
+  // ---- 真变化照常画（每台渲染器一条正面用例） ----
+
+  // ① 新增 1 条通知：增量追加——新行 prepend 进去，旧行一个都不动（§34 对 P0-3 的形状要求）。
+  const withNote = structuredClone(CAFE);
+  withNote.playTimeSeconds = (withNote.playTimeSeconds ?? 0) + 250;
+  withNote.notifications = [...withNote.notifications, { kind: 1, icon: "s", message: "新事件", timestamp: 3849 }];
+  const oldNoteRow = el(churn, "log").children[0];
+  resetFrame();
+  await churn.push({ kind: "full", seq: 4, snapshot: withNote });
+  settleFrame();
+  check("新增 1 条通知：增量追加（旧行一个都不动），写入 ≤ 8 次 = 7 行建 + 1 计数头（全清重建是 79）", () => {
+    const count = writeCount("renderNotifications");
+    if (count < 1 || count > 8) throw new Error(`新增 1 条通知写了 ${count} 次——增量追加退化成了重建`);
+    eq(el(churn, "log").children.length, 11, "行数（新的一条在最上面）");
+    eq(el(churn, "log").children[0].children.find((c) => c.className === "note-text").textContent, "新事件", "新行在最上面");
+    if (el(churn, "log").children[1] !== oldNoteRow) throw new Error("旧行被换掉了——增量追加不许碰旧行");
+  });
+
+  // ② 图鉴条目揭示：该条目那一行照常更新（增量，不是整栏重建）。
+  const withReveal = structuredClone(withNote);
+  const revealed = withReveal.codex.storylines[0].entries[16]; // 一条锁着的
+  revealed.unlocked = true; revealed.title = "读到了"; revealed.body = "正文。"; revealed.icon = "📗";
+  revealed.progressText = "";
+  withReveal.codex.totalUnlocked += 1;
+  withReveal.codex.storylines[0].unlocked += 1;
+  const oldCodexGroup = el(churn, "codex").children[0];
+  const oldCodexRow = oldCodexGroup.children[17]; // h3 之后第 17 条（最后一条，锁着的那条）
+  resetFrame();
+  await churn.push({ kind: "full", seq: 5, snapshot: withReveal });
+  settleFrame();
+  check("图鉴揭示一条：该行照常更新（类名翻转 + 文字 setText），写入 ≤ 4 次且结构骨架没换", () => {
+    const count = writeCount("renderCodex");
+    if (count < 1 || count > 4) throw new Error(`揭示一条图鉴写了 ${count} 次——骨架只在指纹变了才该重建`);
+    if (el(churn, "codex").children[0] !== oldCodexGroup) throw new Error("整栏被重建了——揭示一条不该动骨架");
+    if (el(churn, "codex").children[0].children[17] !== oldCodexRow) throw new Error("那一行被换掉了——揭示是行内更新");
+    const cls = oldCodexRow.className;
+    if (cls !== "lore") throw new Error(`揭示之后那一行还是锁着的类：<${cls}>`);
+  });
+
+  // ③ 成就解锁一条：行内类名与文字更新，结构不换。
+  const withAch = structuredClone(withReveal);
+  withAch.achievementCount = (withAch.achievementCount ?? 0) + 1;
+  withAch.achievements[9] = { ...withAch.achievements[9], unlocked: true, icon: "🏆", progressText: "" };
+  const oldAchRow = el(churn, "achievement-list").children[0];
+  resetFrame();
+  await churn.push({ kind: "full", seq: 6, snapshot: withAch });
+  settleFrame();
+  check("成就解锁一条：同一行更新类名与文字（`unlocked` 类 + 描述句去掉「进度」半句）", () => {
+    const count = writeCount("renderAchievements");
+    if (count < 1 || count > 4) throw new Error(`解锁一条成就写了 ${count} 次——结构指纹不该变`);
+    if (el(churn, "achievement-list").children[0] !== oldAchRow) throw new Error("整栏被重建了");
+    if (!el(churn, "achievement-list").children[9].classList.contains("unlocked")) throw new Error("解锁类没翻转");
+  });
+
+  // ④ 永久线：买得起的那条价格变了——行内 setText，节点不换（captureFocus 依赖的键也还在）。
+  const withPerm = structuredClone(withAch);
+  withPerm.prestigeChips = (withPerm.prestigeChips ?? 0) + 1;
+  withPerm.upgrades = withPerm.upgrades.map((u) => u.isPermanent && u.id === "p0" ? { ...u, canAfford: false } : u);
+  const oldPermCard = el(churn, "permanent").children[0];
+  resetFrame();
+  await churn.push({ kind: "full", seq: 7, snapshot: withPerm });
+  settleFrame();
+  check("永久线钱包变了：头部 setText 照写，行节点一个都不换（键 `data-permanent` 还在）", () => {
+    if (el(churn, "permanent").children[0] !== oldPermCard) throw new Error("永久线的卡片被重建了——键复用失效");
+    eq(oldPermCard.dataset.permanent, "p0", "稳定键");
+    const headWrites = writeCount("renderPermanent");
+    if (headWrites < 1) throw new Error("头部（钱包 / 徽标）一个字都没写——变了就该写");
+  });
+
+  // ⑤ 金猫到场：按钮按 instanceId 建一次；同一只再来一帧不重建，只刷剩余秒数那行 title。
+  const withCat = structuredClone(withPerm);
+  withCat.goldenCookies = [{ instanceId: "g1", x: 0.4, y: 0.6, remainingSeconds: 12 }];
+  resetFrame();
+  await churn.push({ kind: "full", seq: 8, snapshot: withCat });
+  settleFrame();
+  const catButton = el(churn, "golden").children[0];
+  const catAppeared = writeCount("renderGoldenCookie");
+  await churn.push({ kind: "full", seq: 9, snapshot: { ...structuredClone(withCat), goldenCookies: [{ instanceId: "g1", x: 0.4, y: 0.6, remainingSeconds: 5 }] } });
+  settleFrame();
+  check("金猫到场建一次；同一只再来一帧节点不换（只刷 title 的剩余秒数）", () => {
+    if (catAppeared < 1) throw new Error("到场那一帧一个节点都没建");
+    if (el(churn, "golden").children[0] !== catButton) throw new Error("同一只金猫被重建了");
+    eq(catButton.title, "抓住它！（还剩 5.0 秒）", "剩余秒数跟着刷");
+    eq(el(churn, "golden").children.length, 1, "还在场（下一帧它才走）");
+  });
+
+  // 走了（被抓 / 过期）：节点摘掉、层藏起来。
+  resetFrame();
+  await churn.push(full(10, { goldenCookies: [] }));
+  settleFrame();
+  check("金猫离场：浮层清空并藏起来（节点按 instanceId 摘掉，不是整层重建）", () => {
+    eq(el(churn, "golden").children.length, 0, "离场之后浮层清空");
+    eq(hidden(churn, "golden"), true, "离场之后浮层藏起来");
+  });
+
+  // ⑥ 增益：同族小列表同一条规矩（chip 按 id 复用；同一批再来一帧只刷会变的那半句）。
+  const withBuff = structuredClone(CAFE);
+  withBuff.playTimeSeconds = 3849;
+  withBuff.buffs = [{ id: "buff1", isDebuff: false, icon: "☕", name: "精神", stacks: 2, remainingSeconds: 30, description: "更快" }];
+  resetFrame();
+  await churn.push({ kind: "full", seq: 11, snapshot: withBuff });
+  settleFrame();
+  const chip = el(churn, "buffs").children[0];
+  resetFrame();
+  await churn.push({ kind: "full", seq: 12, snapshot: { ...structuredClone(withBuff), buffs: [{ id: "buff1", isDebuff: false, icon: "☕", name: "精神", stacks: 2, remainingSeconds: 29.4, description: "更快" }] } });
+  settleFrame();
+  check("增益药丸按 id 复用：同一增益再来一帧节点不换（秒数没跨秒 ⇒ 连文字都不写）", () => {
+    if (el(churn, "buffs").children[0] !== chip) throw new Error("药丸被重建了");
+    // Math.ceil(29.4) === Math.ceil(30) 都是 30s：文字不变 ⇒ setText 一个字不写（只写 title）。
+    eq(writeCount("renderBuffs"), 0, "同一批增益的写入数（文字没变）");
+    eq(chip.textContent, "☕ 精神 ×2 30s", "药丸文字");
+  });
+
+  // ⑦ 计数头：三处都走 setText（空帧 0 写、真变化 1 写）——上面 ①~④ 已经证明"变了写 1 次"，
+  //    这里点名"空帧 0 写"已经由第一、二条覆盖，补一条**源码形状**守卫：三处不许再出现
+  //    `textContent =` 直写（那是这一轮拆掉的东西，写回去 = 空帧每帧白写一次）。
+  check("三处计数头（codex-count / achievement-count / log-count）都走 setText，没有 `textContent =` 直写残留", () => {
+    for (const [id, renderer] of [["codex-count", "renderCodex"], ["achievement-count", "renderAchievements"], ["log-count", "renderNotifications"]]) {
+      const direct = appSource
+        .split("\n")
+        .map((line) => line.replace(/\/\/.*$/, ""))
+        .filter((line) => line.includes(`$("#${id}").textContent`));
+      if (direct.length > 0) {
+        throw new Error(`#${id} 又出现了直写（${renderer}）：${direct.map((l) => l.trim()).join(" | ")}`);
+      }
+      if (!appSource.includes(`setText($("#${id}")`)) {
+        throw new Error(`#${id} 没走 setText——空帧会每帧白写一次`);
+      }
+    }
   });
 }
 

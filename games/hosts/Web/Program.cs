@@ -105,7 +105,13 @@ public static class Program
         });
 
         app.UseDefaultFiles();
-        app.UseStaticFiles();
+        // 静态文件带 ETag / Last-Modified（304 已工作），但没有 Cache-Control 时浏览器会
+        // 走启发式缓存——改完 app.js 刷新可能还是旧的。no-cache 保 ETag 重验：一次 304
+        // 或 200，行为最小变化（GUI_OPTIMIZATION_PLAN §2 P1-2；gzip 属"新依赖"，不做）。
+        app.UseStaticFiles(new StaticFileOptions
+        {
+            OnPrepareResponse = context => context.Context.Response.Headers.CacheControl = "no-cache",
+        });
 
         MapApi(app);
 

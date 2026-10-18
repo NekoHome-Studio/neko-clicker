@@ -297,15 +297,15 @@ function render() {
   const restoreFocus = captureFocus();
 
   document.title = `${state.title} · NekoClicker`;
-  $("#title").textContent = state.title;
-  $("#currency-name").textContent = state.currencyName;
-  $("#click-action").textContent = state.clickActionName;
-  $("#click-icon").textContent = state.currencyIcon;
-  $("#cps").textContent = `${state.cpsText}/s`;
-  $("#per-click").textContent = `每次 +${state.clickPowerText}`;
-  $("#achievements").textContent = `${state.achievementCount} / ${state.achievementTotal}`;
+  setText($("#title"), state.title);
+  setText($("#currency-name"), state.currencyName);
+  setText($("#click-action"), state.clickActionName);
+  setText($("#click-icon"), state.currencyIcon);
+  setText($("#cps"), `${state.cpsText}/s`);
+  setText($("#per-click"), `每次 +${state.clickPowerText}`);
+  setText($("#achievements"), `${state.achievementCount} / ${state.achievementTotal}`);
   $("#status-dot").className = connected ? "dot ok" : "dot bad";
-  $("#status-text").textContent = connected ? "已连接" : "重连中…";
+  setText($("#status-text"), connected ? "已连接" : "重连中…");
 
   renderGoldenCookie();
   renderBuffs();
@@ -1159,89 +1159,176 @@ function setNote(id, text, bad = false) {
   node.classList.toggle("good", !bad && Boolean(text));
 }
 
+/**
+ * 图鉴的 DOM 节点，按条目 id 复用（与 `buildingRows` / `upgradeRows` 同一套做法）。
+ *
+ * 为什么：快照 4 Hz 推帧，而这台渲染器此前**每帧整段重建**（272 写/空帧，占 622 的
+ * 43%——2026-10-16 实测，见 GUI_OPTIMIZATION_PLAN §0）。`#codex` 是 `.list`
+ * （有 `max-height` + 滚动），清空重建正是"内容高度归零的一瞬 `scrollTop` 被夹回 0"
+ * 那个病灶（`renderUpgrades` 与 `OPEN_WORK` §0.27.2 记过两次）。结构与文本分开：
+ * **文本**走 `setText`（只在真的变了才写），**结构**（分组骨架、条目归属）
+ * 只在指纹变了的时候才重建——与 `choicesBodyKey` 同一条规矩。
+ */
+const codexRows = new Map();
+
+/** 上一次画进 `#codex` 的结构骨架（storyline id 与顺序 + 每线条目的 id 与顺序）。 */
+let codexStructureKey = null;
+
 /** 图鉴：按剧情线分组，未读到的显示 ??? 但保留释放条件与进度。 */
 function renderCodex() {
   const host = $("#codex");
   const codex = state.codex;
-  host.textContent = "";
 
   if (!codex) {
-    $("#codex-count").textContent = "";
-    const note = document.createElement("p");
-    note.className = "muted";
-    note.textContent = "这个内容包没有剧情条目。";
-    host.append(note);
+    setText($("#codex-count"), "");
+    const key = "(empty)";
+    if (key !== codexStructureKey) {
+      codexStructureKey = key;
+      codexRows.clear();
+      host.textContent = "";
+      const note = document.createElement("p");
+      note.className = "muted";
+      note.textContent = "这个内容包没有剧情条目。";
+      host.append(note);
+    }
     return;
   }
 
-  $("#codex-count").textContent = `${codex.totalUnlocked} / ${codex.totalEntries}`;
+  setText($("#codex-count"), `${codex.totalUnlocked} / ${codex.totalEntries}`);
 
-  for (const line of codex.storylines) {
-    const group = document.createElement("div");
-    group.className = "storyline";
+  // 指纹 = 会动结构的那些字段：storyline 头的名字/图标与每线条目 id 与顺序。
+  // **计数（line.unlocked）与条目解锁态都不进指纹**——揭示一条只改两处行内文字与类
+  //（setText 路径），线头那条 `n/m` 也走 setText；于是"揭示一条"是增量（≤4 写），
+  // 不是整栏重建（272 写）。
+  const structureKey = JSON.stringify(codex.storylines.map((line) => [
+    line.icon, line.name,
+    line.entries.map((entry) => entry.id),
+  ]));
 
-    const head = document.createElement("h3");
-    head.textContent = `${line.icon} ${line.name}`;
-    const count = document.createElement("span");
-    count.className = "muted";
-    count.textContent = ` ${line.unlocked}/${line.total}`;
-    head.append(count);
-    group.append(head);
+  if (structureKey !== codexStructureKey) {
+    codexStructureKey = structureKey;
+    host.textContent = "";
+    codexRows.clear();
 
-    for (const entry of line.entries) {
-      const row = document.createElement("div");
-      row.className = entry.unlocked ? "lore" : "lore locked";
+    for (const line of codex.storylines) {
+      const group = document.createElement("div");
+      group.className = "storyline";
 
-      const title = document.createElement("b");
-      title.textContent = `${entry.icon} ${entry.title}`;
-      row.append(title);
+      const head = document.createElement("h3");
+      head.textContent = `${line.icon} ${line.name}`;
+      const count = document.createElement("span");
+      count.className = "muted";
+      count.textContent = ` ${line.unlocked}/${line.total}`;
+      head.append(count);
+      group.append(head);
+      codexRows.set(`#${line.id ?? line.name}`, { row: head, title: null, body: count });
 
-      if (entry.unlocked) {
+      for (const entry of line.entries) {
+        const row = document.createElement("div");
+        row.className = entry.unlocked ? "lore" : "lore locked";
+
+        const title = document.createElement("b");
+        title.textContent = `${entry.icon} ${entry.title}`;
+        row.append(title);
+
+        // 未读条目画提示（还差多少）；读到的画正文。解锁翻转只改这一段的
+        // 类与文字（setText 路径），不进结构指纹——见上面 structureKey 那条注释。
         const body = document.createElement("p");
-        body.textContent = entry.body;
+        if (entry.unlocked) {
+          body.textContent = entry.body;
+        } else {
+          body.className = "lore-hint";
+          body.textContent = `🔒 ${entry.revealHint}${entry.progressText ? `（${entry.progressText}）` : ""}`;
+        }
         row.append(body);
-      } else {
-        const hint = document.createElement("p");
-        hint.className = "lore-hint";
-        hint.textContent = `🔒 ${entry.revealHint}${entry.progressText ? `（${entry.progressText}）` : ""}`;
-        row.append(hint);
+
+        group.append(row);
+        codexRows.set(entry.id, { row, title, body });
       }
 
-      group.append(row);
+      host.append(group);
     }
+    return;
+  }
 
-    host.append(group);
+  // 指纹没变：同一批节点只刷文字与类（空帧 0 写；揭示一条 = 那一行 + 线头计数，增量）。
+  for (const line of codex.storylines) {
+    const head = codexRows.get(`#${line.id ?? line.name}`);
+    if (head?.body) setText(head.body, ` ${line.unlocked}/${line.total}`);
+    for (const entry of line.entries) {
+      const node = codexRows.get(entry.id);
+      if (!node) continue;
+      node.row.className = entry.unlocked ? "lore" : "lore locked";
+      setText(node.title, `${entry.icon} ${entry.title}`);
+      if (entry.unlocked) {
+        node.body.className = "";
+        setText(node.body, entry.body);
+      } else {
+        node.body.className = "lore-hint";
+        setText(node.body, `🔒 ${entry.revealHint}${entry.progressText ? `（${entry.progressText}）` : ""}`);
+      }
+    }
   }
 }
+
+/**
+ * 成就行的 DOM 节点，按成就 id 复用（与 `codexRows` 同一套做法与同一条理由：
+ * 此前每帧整段重建，227 写/空帧——见 GUI_OPTIMIZATION_PLAN §0）。
+ */
+const achievementRows = new Map();
+
+/** 上一次画进 `#achievement-list` 的结构骨架（成就 id 与顺序）。 */
+let achievementStructureKey = null;
 
 function renderAchievements() {
   const host = $("#achievement-list");
   const rows = state.achievements ?? [];
-  $("#achievement-count").textContent = `${state.achievementCount} / ${state.achievementTotal}`;
-  host.textContent = "";
+  setText($("#achievement-count"), `${state.achievementCount} / ${state.achievementTotal}`);
 
+  // 指纹 = 成就 id 与顺序（解锁态不进指纹：它只影响行内文字，走 setText）。
+  const structureKey = JSON.stringify(rows.map((achievement) => achievement.id));
+
+  if (structureKey !== achievementStructureKey) {
+    achievementStructureKey = structureKey;
+    host.textContent = "";
+    achievementRows.clear();
+
+    for (const achievement of rows) {
+      const row = document.createElement("div");
+      row.className = achievement.unlocked ? "card ach unlocked" : "card ach";
+
+      const name = document.createElement("span");
+      name.className = "name";
+      name.textContent = `${achievement.icon} ${achievement.name}`;
+      row.append(name);
+
+      // 锁着的成就也写出**还差多少**：`achievements[].progressText` 就是服务端算好的
+      // `12 / 50`（只在"锁着且可量化"时非空，见 `GameViewFactory`），终端也画这一句
+      // （`进度 12 / 50`），而 Web 此前一个字符都没画过——人 2026-10-05 报的那一类
+      // （「只有物资足够才会显现出来真正需要的数量」）。措辞照终端：`进度 12 / 50`；
+      // 数字一个都不在前端算（`progressText` 原样画，不解析、不拼接）。
+      const desc = document.createElement("span");
+      desc.className = "share";
+      desc.textContent = !achievement.unlocked && achievement.progressText
+        ? `${achievement.description} · 进度 ${achievement.progressText}`
+        : achievement.description;
+      row.append(desc);
+
+      host.append(row);
+      achievementRows.set(achievement.id, { row, name, desc });
+    }
+    return;
+  }
+
+  // 指纹没变：同一批节点只刷文字与类（空帧 0 写）。
   for (const achievement of rows) {
-    const row = document.createElement("div");
-    row.className = achievement.unlocked ? "card ach unlocked" : "card ach";
-
-    const name = document.createElement("span");
-    name.className = "name";
-    name.textContent = `${achievement.icon} ${achievement.name}`;
-    row.append(name);
-
-    // 锁着的成就也写出**还差多少**：`achievements[].progressText` 就是服务端算好的
-    // `12 / 50`（只在"锁着且可量化"时非空，见 `GameViewFactory`），终端也画这一句
-    // （`进度 12 / 50`），而 Web 此前一个字符都没画过——人 2026-10-05 报的那一类
-    // （「只有物资足够才会显现出来真正需要的数量」）。措辞照终端：`进度 12 / 50`；
-    // 数字一个都不在前端算（`progressText` 原样画，不解析、不拼接）。
-    const desc = document.createElement("span");
-    desc.className = "share";
-    desc.textContent = !achievement.unlocked && achievement.progressText
+    const node = achievementRows.get(achievement.id);
+    if (!node) continue;
+    node.row.className = achievement.unlocked ? "card ach unlocked" : "card ach";
+    setText(node.name, `${achievement.icon} ${achievement.name}`);
+    setText(node.desc, !achievement.unlocked && achievement.progressText
       ? `${achievement.description} · 进度 ${achievement.progressText}`
-      : achievement.description;
-    row.append(desc);
-
-    host.append(row);
+      : achievement.description);
   }
 }
 
@@ -1260,42 +1347,83 @@ function renderAchievements() {
  */
 const NOTE_KINDS = ["info", "success", "warning", "rare"];
 
+/**
+ * 日志的增量追加状态：`#log` 里已经画到"最新哪一条"（newest id），以及画那一刻的
+ * 总条数（用来算"这一帧比上一帧多了几条"）。
+ *
+ * 服务端按发生顺序 append（旧在前），前端取新在上 ⇒ 新到的永远 prepended。
+ * 指纹 = 最新一条的 id + 总条数：两者都没变 ⇒ 一个节点都不动（空帧 0 写，
+ * 此前是 72 写/空帧，见 GUI_OPTIMIZATION_PLAN §0）。新增 N 条 ⇒ 只 append
+ * 那一帧里新的那 N 行，旧行一个字都不重写。
+ */
+let logNewestKey = null;
+
+/** 画一行日志（新行按 new 在上的次序插到最前面）。 */
+function createNoteRow(item) {
+  const row = document.createElement("div");
+  row.className = `note ${NOTE_KINDS[item.kind] ?? "info"}`;
+
+  const icon = document.createElement("span");
+  icon.className = "note-icon";
+  icon.textContent = item.icon || "•";
+  row.append(icon);
+
+  const text = document.createElement("span");
+  text.className = "note-text";
+  text.textContent = item.message;
+  row.append(text);
+
+  const time = document.createElement("span");
+  time.className = "note-time";
+  time.textContent = relativeGameTime(state.playTimeSeconds - item.timestamp);
+  row.append(time);
+
+  return row;
+}
+
 function renderNotifications() {
   const host = $("#log");
-  const notes = [...(state.notifications ?? [])].reverse();
+  const notes = [...(state.notifications ?? [])].reverse(); // 新在上
+  setText($("#log-count"), notes.length > 0 ? `最近 ${notes.length} 条` : "");
 
-  $("#log-count").textContent = notes.length > 0 ? `最近 ${notes.length} 条` : "";
-  host.textContent = "";
+  // 指纹 = 最新一条 + 总条数（引擎 `MaxNotifications` 截掉尾部时总条数会减）。
+  const newest = notes[0];
+  const key = newest ? `${newest.timestamp}|${newest.message}|${notes.length}` : "(empty)";
 
-  if (notes.length === 0) {
-    const empty = document.createElement("p");
-    empty.className = "muted";
-    empty.textContent = "还没有消息。买东西、解锁成就、抓到金猫都会记在这里。";
-    host.append(empty);
+  if (key === logNewestKey) return; // 同一批，一条没多：一个节点都不动
+
+  // 从空到有 / 从有到空：整段重来（这不是常态路径，只有开局与清空）。
+  if (logNewestKey === null || logNewestKey === "(empty)" || key === "(empty)") {
+    host.textContent = "";
+    if (notes.length === 0) {
+      logNewestKey = key;
+      const empty = document.createElement("p");
+      empty.className = "muted";
+      empty.textContent = "还没有消息。买东西、解锁成就、抓到金猫都会记在这里。";
+      host.append(empty);
+      return;
+    }
+    logNewestKey = key;
+    for (const item of notes) host.append(createNoteRow(item));
     return;
   }
 
+  // 增量：新到的排在 notes 前缀（因为新在上）。找出这一帧新添的那几条，
+  // 只把它们 prepend 进去；旧行（连同它们的滚动位置）一个都不动。
+  const [prevStamp, prevMsg] = logNewestKey.split("|");
+  let fresh = 0;
   for (const item of notes) {
-    const row = document.createElement("div");
-    row.className = `note ${NOTE_KINDS[item.kind] ?? "info"}`;
-
-    const icon = document.createElement("span");
-    icon.className = "note-icon";
-    icon.textContent = item.icon || "•";
-    row.append(icon);
-
-    const text = document.createElement("span");
-    text.className = "note-text";
-    text.textContent = item.message;
-    row.append(text);
-
-    const time = document.createElement("span");
-    time.className = "note-time";
-    time.textContent = relativeGameTime(state.playTimeSeconds - item.timestamp);
-    row.append(time);
-
-    host.append(row);
+    if (`${item.timestamp}` === prevStamp && item.message === prevMsg) break;
+    fresh++;
   }
+
+  logNewestKey = key;
+  const newRows = notes.slice(0, fresh).map(createNoteRow);
+  if (newRows.length > 0) host.prepend(...newRows);
+
+  // 引擎把尾部截短了（MaxNotifications 回卷）：多出来的旧行从尾部摘掉。
+  // 桩件的 prepend 也是 append 语义（push 到 children 前面由下面的 unshift 做）。
+  while (host.children.length > notes.length) host.children.pop();
 }
 
 /** 把"多少游戏秒之前"说成人话。`playTimeSeconds` 只增不减（舍命也不清零），所以差值不会为负。 */
@@ -1389,6 +1517,21 @@ const SCALE_UNITS = [
 ];
 
 /**
+ * 尾数按引擎 `NumFormat.Trim(mantissa, 3)` 的口径：最多 3 位小数、去掉尾零
+ * （`123.456` → `123.456`，`1.2` → `1.2`，`100` → `100`，不是 `100.000`）。
+ * 进位与 `NumFormat.cs:230` 同一条守卫：四舍五入把尾数推到 1000 时**进一档**
+ * （`999.9996K` 的真值是 `1M`，不是 `1000K`——`999999.6` 两侧都必须读成 M 档）。
+ */
+function trimMantissa(scaled, index, units) {
+  let mantissa = Math.round(scaled * 1000) / 1000;
+  if (mantissa >= 1000 && index < units.length - 1) {
+    mantissa /= 1000;
+    index++;
+  }
+  return { text: mantissa.toFixed(3).replace(/\.?0+$/, ""), index };
+}
+
+/**
  * 大数格式化。与服务端 `NumFormat` 同一套刻度名（`SCALE_UNITS`：K / M / B / T / Qa…），
  * 但**不用服务端文本当模板**——那正是上一版跳动的根因：模板只在"数量级没变"时可用，
  * 而数字每跨一个数量级（999 → 1000）就会卡住一拍再跳一下。
@@ -1396,6 +1539,13 @@ const SCALE_UNITS = [
  * 精度按量级递减：观感上"12.34K"和"12.3K"没有区别，但少一位就少一次无意义的重绘。
  * （数字与单位之间**不留空格**：那个空格是给汉字留的，拉丁缩写按惯例连着写，服务端的
  * `FormatShort` 也不带空格。）
+ *
+ * **进位/尾数与引擎同一把尺子（2026-10-17，登记册 D14 的落地）**：尾数先按引擎
+ * `Trim(3)` 求真值（`999.999` 不许被 `toFixed(1)` 圆成 `1000.0`、`123.456` 不许被
+ * `toFixed(2)` 圆成 `123.5`），再按量级补零定宽。定宽只在**不改变真值**时使用
+ * （`1.2M` 补成 `1.200M` 是既有的显示选择，一个字不动）；宽度取舍会吃掉真值的那一档
+ * （尾数 ≥ 100 只留 1 位、≥ 10 只留 2 位）退回 `Trim(3)` 的原文——于是 `999999`
+ * 两侧都是 `999.999K`、`123456` 都是 `123.456K`（§29 的跨套件守卫钉着这两个数）。
  */
 function formatCookies(value) {
   const units = ["", ...SCALE_UNITS];
@@ -1409,58 +1559,96 @@ function formatCookies(value) {
 
   if (index === 0) return Math.floor(value).toLocaleString("zh-CN");
 
-  const digits = scaled < 10 ? 3 : scaled < 100 ? 2 : 1;
-  return `${value < 0 ? "-" : ""}${scaled.toFixed(digits)}${units[index]}`;
+  const truth = trimMantissa(scaled, index, units);
+  // 定宽（显示选择）只在**不改变真值**时使用；宽度取舍吃掉真值的那一档退回 Trim(3) 原文。
+  // 判据在**进位之后**的尾数上做（`999.9996K` 的真值是 1M：定宽按 1 算，给 `1.000M`）。
+  const digits = Number(truth.text) < 10 ? 3 : Number(truth.text) < 100 ? 2 : 1;
+  const padded = Number(truth.text).toFixed(digits);
+  const same = Number(padded) === Number(truth.text);
+  return `${value < 0 ? "-" : ""}${same ? padded : truth.text}${units[truth.index]}`;
 }
+
+/**
+ * 金猫按钮，按 `instanceId` 复用（小列表，同族处理：此前每帧重建）。
+ * 位置（`style.left/top`）只写一次——金猫不动，动的是剩余秒数（`title`，走 setText）。
+ */
+const goldenCatButtons = new Map();
 
 function renderGoldenCookie() {
   const host = $("#golden");
   const live = state.goldenCookies ?? [];
-  host.textContent = "";
-
+  host.classList.toggle("hidden", live.length === 0);
   if (live.length === 0) {
-    host.classList.add("hidden");
+    if (goldenCatButtons.size > 0) { host.textContent = ""; goldenCatButtons.clear(); }
     return;
   }
 
-  host.classList.remove("hidden");
+  const liveIds = new Set();
   for (const cat of live) {
-    const button = document.createElement("button");
-    button.className = "golden-cat";
-    button.textContent = "🐱";
+    liveIds.add(cat.instanceId);
+    let button = goldenCatButtons.get(cat.instanceId);
+    if (!button) {
+      button = document.createElement("button");
+      button.className = "golden-cat";
+      button.textContent = "🐱";
+      // 位置写成 CSS 自己的钳制，而不是 JS 里的一个光秃秃的百分比上限：
+      // 92% / 88% 是**按"金猫很小"推出来的**（0.08 × 视口 > 3.4rem 只在 ≥680px 宽时成立），
+      // 于是在 320px 宽的手机上它会算到 294 + 54 = 349px——右侧 29px 连同它的点击目标一起
+      // 落到视口之外；384px 高的视口里同样会往下掉出去。
+      // `min(92%, calc(100% - var(--golden-cat-size)))` 把这件事交给布局：尺寸与位置来自
+      // 同一个变量（app.css 的 :root），视口多窄、缩放多大都不会出界，JS 一行也不用量。
+      const place = (value, percent) =>
+        `min(${Math.max(2, Math.min(percent, value * 100))}%, calc(100% - var(--golden-cat-size)))`;
+      button.style.left = place(cat.x, 92);
+      button.style.top = place(cat.y, 88);
+      button.addEventListener("click", () => send("grabGolden", { id: cat.instanceId }));
+      host.append(button);
+      goldenCatButtons.set(cat.instanceId, button);
+    }
     button.title = `抓住它！（还剩 ${cat.remainingSeconds.toFixed(1)} 秒）`;
-    // 位置写成 CSS 自己的钳制，而不是 JS 里的一个光秃秃的百分比上限：
-    // 92% / 88% 是**按"金猫很小"推出来的**（0.08 × 视口 > 3.4rem 只在 ≥680px 宽时成立），
-    // 于是在 320px 宽的手机上它会算到 294 + 54 = 349px——右侧 29px 连同它的点击目标一起
-    // 落到视口之外；384px 高的视口里同样会往下掉出去。
-    // `min(92%, calc(100% - var(--golden-cat-size)))` 把这件事交给布局：尺寸与位置来自
-    // 同一个变量（app.css 的 :root），视口多窄、缩放多大都不会出界，JS 一行也不用量。
-    const place = (value, percent) =>
-      `min(${Math.max(2, Math.min(percent, value * 100))}%, calc(100% - var(--golden-cat-size)))`;
-    button.style.left = place(cat.x, 92);
-    button.style.top = place(cat.y, 88);
-    button.addEventListener("click", () => send("grabGolden", { id: cat.instanceId }));
-    host.append(button);
+  }
+
+  // 掉出列表的（被抓走 / 过期）连同节点一起丢掉。
+  for (const [id, button] of [...goldenCatButtons]) {
+    if (liveIds.has(id)) continue;
+    goldenCatButtons.delete(id);
+    button.remove();
   }
 }
+
+/**
+ * 增益药丸，按 `buff.id` 复用（同族小列表）。剩余秒数每帧会变——
+ * 但药丸文字只有 `Math.ceil(remainingSeconds)` 那一截，同一秒内的重复帧不会写。
+ */
+const buffChips = new Map();
 
 function renderBuffs() {
   const host = $("#buffs");
   const buffs = state.buffs ?? [];
-  host.textContent = "";
-
+  host.classList.toggle("hidden", buffs.length === 0);
   if (buffs.length === 0) {
-    host.classList.add("hidden");
+    if (buffChips.size > 0) { host.textContent = ""; buffChips.clear(); }
     return;
   }
 
-  host.classList.remove("hidden");
+  const liveIds = new Set();
   for (const buff of buffs) {
-    const chip = document.createElement("span");
+    liveIds.add(buff.id);
+    let chip = buffChips.get(buff.id);
+    if (!chip) {
+      chip = document.createElement("span");
+      buffChips.set(buff.id, chip);
+      host.append(chip);
+    }
     chip.className = buff.isDebuff ? "chip bad" : "chip good";
-    chip.textContent = `${buff.icon} ${buff.name}${buff.stacks > 1 ? ` ×${buff.stacks}` : ""} ${Math.ceil(buff.remainingSeconds)}s`;
+    setText(chip, `${buff.icon} ${buff.name}${buff.stacks > 1 ? ` ×${buff.stacks}` : ""} ${Math.ceil(buff.remainingSeconds)}s`);
     chip.title = buff.description;
-    host.append(chip);
+  }
+
+  for (const [id, chip] of [...buffChips]) {
+    if (liveIds.has(id)) continue;
+    buffChips.delete(id);
+    chip.remove();
   }
 }
 
@@ -2051,7 +2239,7 @@ function renderUpgrades() {
     .filter((u) => u.isVisible && !u.isPermanent && !owned.has(u.id));
   const available = rows.filter((u) => u.isAvailable);
 
-  $("#upgrade-count").textContent = available.length > 0 ? `${available.length} 项可买` : "暂无可买";
+  setText($("#upgrade-count"), available.length > 0 ? `${available.length} 项可买` : "暂无可买");
 
   // 移走的那批必须**说出去**：静默把 312 条从这一栏拿走，是这个仓库最反对的那种失败形态。
   const moved = (state.upgrades ?? []).filter((u) => owned.has(u.id) && u.isVisible && !u.isPermanent).length;
@@ -2104,6 +2292,15 @@ function renderUpgrades() {
  * 内容包没有这条线时（`isPermanent` 一行都没有），整个标签会被隐藏；留在「永久」标签上时会
  * 自动退回「升级」，免得停在一张空面板上。
  */
+/**
+ * 永久线的行节点，按升级 id 复用（与 `upgradeRows` 同一套；此前每帧重建 36 写/空帧）。
+ * 头部那几行（徽标 / 计数 / 钱包 / 提示）也一并走 `setText`——空帧 0 写。
+ */
+const permanentRows = new Map();
+
+/** 上一次画进 `#permanent` 的结构骨架（永久升级 id 与顺序）。 */
+let permanentStructureKey = null;
+
 function renderPermanent() {
   const rows = (state.upgrades ?? []).filter((u) => u.isPermanent);
   const tab = $("#tab-permanent");
@@ -2111,6 +2308,8 @@ function renderPermanent() {
 
   tab.classList.toggle("hidden", rows.length === 0);
   if (rows.length === 0) {
+    permanentStructureKey = null;
+    permanentRows.clear();
     if (panel && !panel.classList.contains("hidden")) selectTab("upgrades");
     return;
   }
@@ -2121,56 +2320,70 @@ function renderPermanent() {
   const name = state.prestigeCurrencyName ?? "";
 
   const badge = $("#permanent-badge");
-  badge.textContent = affordable;
+  setText(badge, affordable);
   badge.classList.toggle("hidden", affordable === 0);
 
-  $("#permanent-count").textContent = `已买 ${owned} / ${rows.length} 项`;
-  $("#permanent-wallet").textContent = `${icon} ${number(state.prestigeChips ?? 0)} ${name}`;
+  setText($("#permanent-count"), `已买 ${owned} / ${rows.length} 项`);
+  setText($("#permanent-wallet"), `${icon} ${number(state.prestigeChips ?? 0)} ${name}`);
 
   const preview = state.prestige ?? {};
-  $("#permanent-hint").textContent = preview.canAscend
+  setText($("#permanent-hint"), preview.canAscend
     ? `现在舍一命可得 ${icon} ${number(preview.chipsOnAscend ?? 0)} ${name}；这条线上的东西转生之后仍然在。`
     : `这条线上的东西转生之后仍然在。${name}来自「舍一命」`
-      + `${state.era?.progressText ? `——本层进度 ${state.era.progressText}` : "（完成本层主线即可）"}。`;
+      + `${state.era?.progressText ? `——本层进度 ${state.era.progressText}` : "（完成本层主线即可）"}。`);
 
   const host = $("#permanent");
-  // 这一张仍然是每帧重建（行的形状与前一张不同，见上）。它是**可以**保住的：
-  // 每个卡片带一个稳定键 `data-permanent`，重画之后 `captureFocus` 把焦点还给它
-  // （键还在就还是同一条永久升级，不看位置）。复用节点那一版留到有人真的嫌它闪再说。
-  host.textContent = "";
+  // 结构（成员或顺序）真的变了才重建骨架；否则同一批节点只改文字与类
+  // ——与 `renderUpgrades` 逐字同一条规矩。行按升级 id 复用，键写在 `data-permanent` 上
+  //（焦点靠它认"还是那一条"，见 captureFocus）。
+  const structureKey = JSON.stringify(rows.map((row) => row.id));
+  if (structureKey !== permanentStructureKey) {
+    permanentStructureKey = structureKey;
+    host.textContent = "";
+    permanentRows.clear();
 
-  for (const row of rows) {
-    const card = document.createElement("button");
-    card.className = "card compact";
-    card.dataset.permanent = row.id;
-    if (row.isMaxed) card.classList.add("maxed");
-    else if (!row.isUnlocked) card.classList.add("locked");
-    else if (row.canAfford) card.classList.add("affordable");
+    for (const row of rows) {
+      const card = document.createElement("button");
+      card.className = "card compact";
+      card.dataset.permanent = row.id;
 
-    const label = document.createElement("span");
-    label.className = "name";
-    label.textContent = row.isUnlocked ? `${row.icon} ${row.name}` : `🔒 ${row.name}`;
-    if (row.maxPurchases > 1) label.textContent += ` ${row.owned} / ${row.maxPurchases}`;
-    else if (row.owned > 0) label.textContent += " ✔";
-    card.append(label);
+      const label = document.createElement("span");
+      label.className = "name";
+      card.append(label);
 
-    const price = document.createElement("span");
-    price.className = "price";
-    price.textContent = row.isUnlocked ? `${row.currencyIcon} ${number(row.price)}` : percent(row.unlockProgress);
-    card.append(price);
+      const price = document.createElement("span");
+      price.className = "price";
+      card.append(price);
 
-    const note = document.createElement("span");
-    note.className = "effect";
-    note.textContent = row.isUnlocked ? row.description : `${row.unlockHint}（${percent(row.unlockProgress)}）`;
-    card.append(note);
+      const note = document.createElement("span");
+      note.className = "effect";
+      card.append(note);
 
-    if (row.isUnlocked && !row.isMaxed) {
-      card.addEventListener("click", () => send("upgrade", { id: row.id }));
-    } else {
-      card.disabled = true;
+      if (row.isUnlocked && !row.isMaxed) {
+        card.addEventListener("click", () => send("upgrade", { id: row.id }));
+      } else {
+        card.disabled = true;
+      }
+
+      host.append(card);
+      permanentRows.set(row.id, { card, label, price, note });
     }
+  }
 
-    host.append(card);
+  // 行内更新（只写会变的东西；锁着/买着两种形状的差全在文字与类上）。
+  for (const row of rows) {
+    const node = permanentRows.get(row.id);
+    if (!node) continue;
+    node.card.classList.toggle("maxed", Boolean(row.isMaxed));
+    node.card.classList.toggle("locked", !row.isMaxed && !row.isUnlocked);
+    node.card.classList.toggle("affordable", !row.isMaxed && row.isUnlocked && Boolean(row.canAfford));
+    node.card.disabled = !row.isUnlocked || Boolean(row.isMaxed);
+
+    setText(node.label, row.isUnlocked
+      ? `${row.icon} ${row.name}${row.maxPurchases > 1 ? ` ${row.owned} / ${row.maxPurchases}` : row.owned > 0 ? " ✔" : ""}`
+      : `🔒 ${row.name}${row.maxPurchases > 1 ? ` ${row.owned} / ${row.maxPurchases}` : row.owned > 0 ? " ✔" : ""}`);
+    setText(node.price, row.isUnlocked ? `${row.currencyIcon} ${number(row.price)}` : percent(row.unlockProgress));
+    setText(node.note, row.isUnlocked ? row.description : `${row.unlockHint}（${percent(row.unlockProgress)}）`);
   }
 }
 
@@ -2221,7 +2434,15 @@ function renderBatch() {
 
 // ---------------------------------------------------------------- 小工具
 
-/** 数值格式化：前端只做"大数缩写"，刻度名照抄服务端 `NumFormat`（`SCALE_UNITS`，见 §29 的守卫）。 */
+/**
+ * 数值格式化：前端只做"大数缩写"，刻度名照抄服务端 `NumFormat`（`SCALE_UNITS`，见 §29 的守卫）。
+ *
+ * **尾数与引擎 `Trim(3)` 同一把尺子（2026-10-17，登记册 D14）**：最多 3 位小数、
+ * 去掉尾零、进位不跨档（`trimMantissa`）。于是卡片上的数从 `123.5K` / `123K` 变成
+ * `123.456K`、从 `1000K` 变成 `999.999K`——与引擎 `FormatShort` 逐字相同
+ * （§27 的期望串跟着换过：`7.58K` → `7.579K`、`3.40M` → `3.4M`）。
+ * 1000 以下一个字没动（`toFixed(0)`，§29 守着那条正则）。
+ */
 function number(value) {
   if (value === undefined || value === null) return "—";
   if (value < 1000) return value.toFixed(0);
@@ -2232,7 +2453,8 @@ function number(value) {
     scaled /= 1000;
     index++;
   }
-  return `${scaled.toFixed(scaled < 10 ? 2 : scaled < 100 ? 1 : 0)}${units[index]}`;
+  const truth = trimMantissa(Math.abs(scaled), index, units);
+  return `${value < 0 ? "-" : ""}${truth.text}${units[truth.index]}`;
 }
 
 function percent(ratio) {

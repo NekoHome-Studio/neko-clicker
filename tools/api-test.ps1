@@ -157,6 +157,30 @@ function Invoke-Get([string]$Path) {
     }
 }
 
+# 带响应头的 GET（Cache-Control / ETag 那一组守卫要读它）。
+# 刻意单独一个函数而不是给 Invoke-Get 加开关：那份"三处分开写"的调用点覆盖审计
+# （见静态文件那一段的注释）数的是 Check 的行号，改共享函数的形状会把账搅乱。
+function Invoke-GetWithHeaders([string]$Path) {
+    try {
+        $task = $script:Client.GetAsync($Path)
+        $response = $task.GetAwaiter().GetResult()
+        $readTask = $response.Content.ReadAsStringAsync()
+        $headers = @{}
+        foreach ($h in $response.Headers) { $headers[$h.Key] = ($h.Value -join ', ') }
+        foreach ($h in $response.Content.Headers) { $headers[$h.Key] = ($h.Value -join ', ') }
+        return [pscustomobject]@{
+            Ok      = $true
+            Status  = [int]$response.StatusCode
+            Success = $response.IsSuccessStatusCode
+            Body    = $readTask.GetAwaiter().GetResult()
+            Headers = $headers
+        }
+    }
+    catch {
+        return [pscustomobject]@{ Ok = $false; Status = 0; Success = $false; Body = $_.Exception.Message; Headers = @{} }
+    }
+}
+
 function Invoke-PostJson([string]$Path, $Payload) {
     try {
         $json = $Payload | ConvertTo-Json -Compress -Depth 5
@@ -695,6 +719,19 @@ try {
     Check 'GET /' $staticFiles[0].Ok $staticFiles[0].Detail
     Check 'GET /app.js' $staticFiles[1].Ok $staticFiles[1].Detail
     Check 'GET /app.css' $staticFiles[2].Ok $staticFiles[2].Detail
+
+    # 静态文件的缓存头（GUI_OPTIMIZATION_PLAN §2 P1-2，2026-10-17）：
+    # ETag / Last-Modified / 304 本来就在工作，缺的只是 Cache-Control——没有它，浏览器对
+    # app.js 这类无版本号文件走启发式缓存，改完刷新可能还是旧的。no-cache 保 ETag 重验
+    #（一次 304 或 200），行为最小变化。SSE 那条（no-cache, no-store）早就有，这里管静态。
+    $cacheProbe = Invoke-GetWithHeaders '/app.js'
+    $cacheControl = [string]$cacheProbe.Headers['Cache-Control']
+    Check '静态文件带 Cache-Control: no-cache（启发式缓存的出路；ETag 重验仍在）' `
+        ($cacheProbe.Success -and $cacheControl -eq 'no-cache') `
+        "Cache-Control=<$cacheControl>"
+    $etag = [string]$cacheProbe.Headers['ETag']
+    Check 'ETag 仍在（no-cache 只关重验策略，不许顺手把 ETag/304 弄丢）' `
+        ($cacheProbe.Success -and $etag.Length -gt 0) "ETag=<$etag>"
 
     # 前端面板：浏览器拿到的东西里真的有那个挂载点与渲染函数。
     # 判据只能是"送到浏览器的那份文本里有它"——本脚本不跑 JS，"好不好看"没有守卫（STATUS §6）。
