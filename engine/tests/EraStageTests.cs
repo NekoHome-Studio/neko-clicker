@@ -500,3 +500,361 @@ public static class EraStageTests
         return null;
     }
 }
+
+/// <summary>
+/// 「主线长度不变」守卫（第五条硬约束，`games/docs/CREATIVE_PLAN.md` §0）：
+/// 任何候选创意都<b>不许</b>让"从第一层走到结局"变长——而"不许"必须长成可执行的断言，
+/// 不是散文。四条判据与文档 §0 逐字对应：<para>
+/// <list type="number">
+/// <item><b>冻结长度</b>：每包的纪元数 / 最大 Index / 每层完成门槛的指纹，与写死的
+/// 期望表逐字相同 ⇒ 加纪元 / 抬门槛 / 换指标都是红。</item>
+/// <item><b>不加必答</b>：拦结局的机制在 <c>EndingDefinition.Condition</c>
+/// （<c>ChoiceDefinition</c> 没有"是否拦结局"字段——已核实），所以这条 = 冻结
+/// <c>{EndingDefinition.Id, Priority, Condition 指纹}</c>，与第 1 条同表同判。</item>
+/// <item><b>盯死点</b>：`capsule_*` / `second_life_*` / `stages_walked_total`
+/// 三个计数器不许出现在任何条件树里；树源 = 建筑/升级/成就的 <c>Unlock</c> +
+/// <c>EraDefinition.Completion</c> + <c>EndingDefinition.Condition</c>（文档点的四类消费者）。
+/// <c>NumericMetric</c> 里没有阶段数与徽章指标，所以这条只能是条件树扫描，不能写成指标白名单。
+/// 末尾 <c>AtLeast(纪元总数, 40)</c> 防空扫。</item>
+/// <item><b>堵后门</b>：<c>CustomCondition</c> 的谓词不可指纹（<c>Describe</c> 只是作者
+/// 自己写的 <c>Description</c>），是唯一能绕过第 1 条悄悄加门槛的叶子——
+/// 完成/结局条件里不许出现它。</item>
+/// </list>
+/// </para>
+/// <para>
+/// <b>指纹的形式</b>：`Describe()` 全文（结构 + 已登记的计数器/货币显示名，全来自 C# 代码，
+/// <b>不含</b> <c>text.json</c> 散文——语气清扫改的是 text.json，翻不动这张表）
+/// <b>加</b>一棵结构骨架（叶子类型 / 指标 / 阈值 <c>:R</c> / id，无任何显示名）。
+/// 两者各补对方的盲区：只对 <c>Describe</c> 的话，显示名没登记的 id 变化看不出来；
+/// 只对结构的话，"同一棵树、渲染口径变了"（比如 1.12.0 那次 K/M/B/T）看不出来。
+/// </para>
+/// <para>
+/// <b>派生式</b>：枚举走 <see cref="TestGame.AllContentPacks"/>（照 <c>AllEraPacks</c> 的先例）；
+/// 期望表按包名对齐，新包进 <c>AllContentPacks()</c> 而没进期望表 = 红（见
+/// <see cref="GuardTable_CoversExactlyAllContentPacks"/>）。
+/// <c>Neko</c> / <c>Cafe</c> 零纪元：期望行写 0 与空指纹——"没有这一行"是沉默的，"期望 0"是响的。
+/// </para>
+/// </summary>
+public static class MainLineLengthTests
+{
+    /// <summary>一个包的冻结基线。指纹 = `Describe()` 全文 ‖ 结构骨架。</summary>
+    private sealed record Baseline(
+        string Pack,
+        int EraCount,
+        int MaxIndex,
+        string[] Completions,
+        string[] Endings);
+
+    /// <summary>
+    /// 冻结基线（2026-10-20 实测于 <c>26f5979</c>；总量 49 层，9 个纪元包——
+    /// 与 <c>CREATIVE_PLAN</c> §0 写的"11 包中 9 包有纪元、共 49 个"一致）。
+    /// <b>真相只留这一份</b>——文档按它自己的规矩不入期望表，免得两处各说各话。
+    /// </summary>
+    private static readonly Baseline[] Baselines =
+    [
+        new("猫咖物语", 0, 1, [], []),
+        new("#1 咖啡馆", 0, 1, [], []),
+        new("#2 九命", 9, 9,
+        [
+            "本轮累计赚取 100K 小鱼干 ‖ N(CookiesEarnedThisRun=100000,'')",
+            "本轮累计赚取 10M 小鱼干，且 解锁 4 个成就 ‖ All(N(CookiesEarnedThisRun=10000000,''),N(AchievementCount=4,''))",
+            "本轮累计赚取 100M 小鱼干，且 「峰值产量」达到 1M ‖ All(N(CookiesEarnedThisRun=100000000,''),N(Counter=1000000,'peak_cps'))",
+            "本轮累计赚取 200M 小鱼干，且 解锁 10 个成就 ‖ All(N(CookiesEarnedThisRun=200000000,''),N(AchievementCount=10,''))",
+            "本轮累计赚取 300M 小鱼干，且 「峰值产量」达到 100M ‖ All(N(CookiesEarnedThisRun=300000000,''),N(Counter=100000000,'peak_cps'))",
+            "本轮累计赚取 500M 小鱼干，且 解锁 18 个成就 ‖ All(N(CookiesEarnedThisRun=500000000,''),N(AchievementCount=18,''))",
+            "本轮累计赚取 700M 小鱼干，且 「信仰」达到 50K ‖ All(N(CookiesEarnedThisRun=700000000,''),N(Counter=50000,'faith'))",
+            "本轮累计赚取 1B 小鱼干，且 解锁 26 个成就 ‖ All(N(CookiesEarnedThisRun=1000000000,''),N(AchievementCount=26,''))",
+            "本轮累计赚取 1.5B 小鱼干，且 解锁 30 个成就 ‖ All(N(CookiesEarnedThisRun=1500000000,''),N(AchievementCount=30,''))",
+        ],
+        [
+            "end_god|0|进入第 9 纪元，且 「divine」立场权重达到 5 ‖ All(N(Era=9,''),N(StanceWeight=5,'divine'))",
+            "end_human|1|进入第 9 纪元，且 「human」立场权重达到 5 ‖ All(N(Era=9,''),N(StanceWeight=5,'human'))",
+            "end_cat|2|进入第 9 纪元，且 「cat」立场权重达到 5 ‖ All(N(Era=9,''),N(StanceWeight=5,'cat'))",
+            "end_sever|3|进入第 9 纪元，且 「sever」立场权重达到 5 ‖ All(N(Era=9,''),N(StanceWeight=5,'sever'))",
+            "end_blank|100|进入第 9 纪元 ‖ N(Era=9,'')",
+        ]),
+        new("#3 实验室", 7, 7,
+        [
+            "本轮累计赚取 100K 数据 ‖ N(CookiesEarnedThisRun=100000,'')",
+            "本轮累计赚取 10M 数据，且 解锁 4 个成就 ‖ All(N(CookiesEarnedThisRun=10000000,''),N(AchievementCount=4,''))",
+            "本轮累计赚取 100M 数据，且 「峰值产量」达到 1M ‖ All(N(CookiesEarnedThisRun=100000000,''),N(Counter=1000000,'peak_cps'))",
+            "本轮累计赚取 200M 数据，且 解锁 10 个成就 ‖ All(N(CookiesEarnedThisRun=200000000,''),N(AchievementCount=10,''))",
+            "本轮累计赚取 300M 数据，且 「伦理值」达到 200 ‖ All(N(CookiesEarnedThisRun=300000000,''),N(Counter=200,'ethics'))",
+            "本轮累计赚取 500M 数据，且 解锁 16 个成就 ‖ All(N(CookiesEarnedThisRun=500000000,''),N(AchievementCount=16,''))",
+            "本轮累计赚取 1B 数据，且 「伦理值」达到 2K ‖ All(N(CookiesEarnedThisRun=1000000000,''),N(Counter=2000,'ethics'))",
+        ],
+        [
+            "end_utopia|0|进入第 7 纪元，且 本轮累计赚取 1B 数据，且 「伦理值」达到 2K，且 「utopia」立场权重达到 5 ‖ All(All(N(Era=7,''),All(N(CookiesEarnedThisRun=1000000000,''),N(Counter=2000,'ethics'))),N(StanceWeight=5,'utopia'))",
+            "end_revolt|1|进入第 7 纪元，且 本轮累计赚取 1B 数据，且 「伦理值」达到 2K，且 「revolt」立场权重达到 5 ‖ All(All(N(Era=7,''),All(N(CookiesEarnedThisRun=1000000000,''),N(Counter=2000,'ethics'))),N(StanceWeight=5,'revolt'))",
+            "end_coexist|2|进入第 7 纪元，且 本轮累计赚取 1B 数据，且 「伦理值」达到 2K，且 「coexist」立场权重达到 5 ‖ All(All(N(Era=7,''),All(N(CookiesEarnedThisRun=1000000000,''),N(Counter=2000,'ethics'))),N(StanceWeight=5,'coexist'))",
+            "end_delete|3|进入第 7 纪元，且 本轮累计赚取 1B 数据，且 「伦理值」达到 2K，且 「delete」立场权重达到 5 ‖ All(All(N(Era=7,''),All(N(CookiesEarnedThisRun=1000000000,''),N(Counter=2000,'ethics'))),N(StanceWeight=5,'delete'))",
+            "end_open|100|进入第 7 纪元，且 本轮累计赚取 1B 数据，且 「伦理值」达到 2K ‖ All(N(Era=7,''),All(N(CookiesEarnedThisRun=1000000000,''),N(Counter=2000,'ethics')))",
+        ]),
+        new("#10 公司", 3, 3,
+        [
+            "本轮累计赚取 100K 营收 ‖ N(CookiesEarnedThisRun=100000,'')",
+            "本轮累计赚取 100M 营收，且 解锁 6 个成就 ‖ All(N(CookiesEarnedThisRun=100000000,''),N(AchievementCount=6,''))",
+            "本轮累计赚取 500M 营收，且 解锁 12 个成就 ‖ All(N(CookiesEarnedThisRun=500000000,''),N(AchievementCount=12,''))",
+        ],
+        [
+            "end_ipo|0|进入第 3 纪元，且 本轮累计赚取 500M 营收，且 解锁 12 个成就，且 「ipo」立场权重达到 7 ‖ All(All(N(Era=3,''),All(N(CookiesEarnedThisRun=500000000,''),N(AchievementCount=12,''))),N(StanceWeight=7,'ipo'))",
+            "end_union|1|进入第 3 纪元，且 本轮累计赚取 500M 营收，且 解锁 12 个成就，且 「union」立场权重达到 7 ‖ All(All(N(Era=3,''),All(N(CookiesEarnedThisRun=500000000,''),N(AchievementCount=12,''))),N(StanceWeight=7,'union'))",
+            "end_liquidate|2|进入第 3 纪元，且 本轮累计赚取 500M 营收，且 解锁 12 个成就，且 「liquidate」立场权重达到 7 ‖ All(All(N(Era=3,''),All(N(CookiesEarnedThisRun=500000000,''),N(AchievementCount=12,''))),N(StanceWeight=7,'liquidate'))",
+            "end_fade|100|进入第 3 纪元，且 本轮累计赚取 500M 营收，且 解锁 12 个成就 ‖ All(N(Era=3,''),All(N(CookiesEarnedThisRun=500000000,''),N(AchievementCount=12,'')))",
+        ]),
+        new("#6 末世", 5, 5,
+        [
+            "本轮累计赚取 100K 物资 ‖ N(CookiesEarnedThisRun=100000,'')",
+            "本轮累计赚取 20M 物资，且 解锁 4 个成就 ‖ All(N(CookiesEarnedThisRun=20000000,''),N(AchievementCount=4,''))",
+            "本轮累计赚取 400M 物资，且 解锁 10 个成就 ‖ All(N(CookiesEarnedThisRun=400000000,''),N(AchievementCount=10,''))",
+            "本轮累计赚取 8B 物资，且 「峰值产量」达到 50M ‖ All(N(CookiesEarnedThisRun=8000000000,''),N(Counter=50000000,'peak_cps'))",
+            "本轮累计赚取 150B 物资，且 解锁 18 个成就 ‖ All(N(CookiesEarnedThisRun=150000000000,''),N(AchievementCount=18,''))",
+        ],
+        [
+            "end_revive|0|进入第 5 纪元，且 本轮累计赚取 150B 物资，且 解锁 18 个成就，且 「记忆残片」达到 130K，且 读到 30 段记忆 ‖ All(All(N(Era=5,''),All(N(CookiesEarnedThisRun=150000000000,''),N(AchievementCount=18,''))),N(Counter=130000,'memory_shards'),N(LoreCount=30,''))",
+            "end_newhuman|1|进入第 5 纪元，且 本轮累计赚取 150B 物资，且 解锁 18 个成就，且 「记忆残片」达到 130K ‖ All(All(N(Era=5,''),All(N(CookiesEarnedThisRun=150000000000,''),N(AchievementCount=18,''))),N(Counter=130000,'memory_shards'))",
+            "end_quiet|100|进入第 5 纪元，且 本轮累计赚取 150B 物资，且 解锁 18 个成就 ‖ All(N(Era=5,''),All(N(CookiesEarnedThisRun=150000000000,''),N(AchievementCount=18,'')))",
+        ]),
+        new("#9 图书馆", 5, 5,
+        [
+            "本轮累计赚取 100K 页 ‖ N(CookiesEarnedThisRun=100000,'')",
+            "本轮累计赚取 15M 页，且 解锁 4 个成就 ‖ All(N(CookiesEarnedThisRun=15000000,''),N(AchievementCount=4,''))",
+            "本轮累计赚取 300M 页，且 解锁 10 个成就 ‖ All(N(CookiesEarnedThisRun=300000000,''),N(AchievementCount=10,''))",
+            "本轮累计赚取 6B 页，且 「峰值产量」达到 40M ‖ All(N(CookiesEarnedThisRun=6000000000,''),N(Counter=40000000,'peak_cps'))",
+            "本轮累计赚取 100B 页，且 解锁 18 个成就 ‖ All(N(CookiesEarnedThisRun=100000000000,''),N(AchievementCount=18,''))",
+        ],
+        [
+            "end_read_to_the_end|0|进入第 5 纪元，且 本轮累计赚取 100B 页，且 解锁 18 个成就，且 「被阅读度」达到 60K ‖ All(All(N(Era=5,''),All(N(CookiesEarnedThisRun=100000000000,''),N(AchievementCount=18,''))),N(Counter=60000,'readership'))",
+            "end_no_one_reads|100|进入第 5 纪元，且 本轮累计赚取 100B 页，且 解锁 18 个成就 ‖ All(N(Era=5,''),All(N(CookiesEarnedThisRun=100000000000,''),N(AchievementCount=18,'')))",
+        ]),
+        new("#7 神明", 5, 5,
+        [
+            "本轮累计赚取 100K 香火，且 「信仰」达到 60K ‖ All(N(CookiesEarnedThisRun=100000,''),N(Counter=60000,'faith'))",
+            "本轮累计赚取 15M 香火，且 「信仰」达到 300K ‖ All(N(CookiesEarnedThisRun=15000000,''),N(Counter=300000,'faith'))",
+            "本轮累计赚取 300M 香火，且 「信仰」达到 900K ‖ All(N(CookiesEarnedThisRun=300000000,''),N(Counter=900000,'faith'))",
+            "本轮累计赚取 6B 香火，且 「信仰」达到 2.2M ‖ All(N(CookiesEarnedThisRun=6000000000,''),N(Counter=2200000,'faith'))",
+            "本轮累计赚取 100B 香火，且 「直播在线人数」达到 200K ‖ All(N(CookiesEarnedThisRun=100000000000,''),N(Counter=200000,'viewers'))",
+        ],
+        [
+            "end_main_god|0|进入第 5 纪元，且 本轮累计赚取 100B 香火，且 「直播在线人数」达到 200K，且 读到 30 段记忆 ‖ All(All(N(Era=5,''),All(N(CookiesEarnedThisRun=100000000000,''),N(Counter=200000,'viewers'))),N(LoreCount=30,''))",
+            "end_meme|1|进入第 5 纪元，且 本轮累计赚取 100B 香火，且 「直播在线人数」达到 200K，且 读到 9 段记忆 ‖ All(All(N(Era=5,''),All(N(CookiesEarnedThisRun=100000000000,''),N(Counter=200000,'viewers'))),N(LoreCount=9,''))",
+            "end_forgotten|100|进入第 5 纪元，且 本轮累计赚取 100B 香火，且 「直播在线人数」达到 200K ‖ All(N(Era=5,''),All(N(CookiesEarnedThisRun=100000000000,''),N(Counter=200000,'viewers')))",
+        ]),
+        new("#4 文明", 5, 5,
+        [
+            "本轮累计赚取 100K 产能，且 解锁 3 个成就 ‖ All(N(CookiesEarnedThisRun=100000,''),N(AchievementCount=3,''))",
+            "本轮累计赚取 15M 产能，且 解锁 5 个成就，且 「文化」达到 40K ‖ All(N(CookiesEarnedThisRun=15000000,''),N(AchievementCount=5,''),N(Counter=40000,'culture'))",
+            "本轮累计赚取 300M 产能，且 解锁 8 个成就，且 「文化」达到 600K ‖ All(N(CookiesEarnedThisRun=300000000,''),N(AchievementCount=8,''),N(Counter=600000,'culture'))",
+            "本轮累计赚取 6B 产能，且 「文化」达到 800K，且 「峰值产量」达到 40M ‖ All(N(CookiesEarnedThisRun=6000000000,''),N(Counter=800000,'culture'),N(Counter=40000000,'peak_cps'))",
+            "本轮累计赚取 100B 产能，且 「文化」达到 50K，且 解锁 20 个成就 ‖ All(N(CookiesEarnedThisRun=100000000000,''),N(Counter=50000,'culture'),N(AchievementCount=20,''))",
+        ],
+        [
+            "end_interstellar|0|进入第 5 纪元，且 本轮累计赚取 100B 产能，且 「文化」达到 50K，且 解锁 20 个成就，且 「文化」达到 1M ‖ All(All(N(Era=5,''),All(N(CookiesEarnedThisRun=100000000000,''),N(Counter=50000,'culture'),N(AchievementCount=20,''))),N(Counter=1000000,'culture'))",
+            "end_self_destruction|1|进入第 5 纪元，且 本轮累计赚取 100B 产能，且 「文化」达到 50K，且 解锁 20 个成就，且 解锁 40 个成就 ‖ All(All(N(Era=5,''),All(N(CookiesEarnedThisRun=100000000000,''),N(Counter=50000,'culture'),N(AchievementCount=20,''))),N(AchievementCount=40,''))",
+            "end_stagnation|100|进入第 5 纪元，且 本轮累计赚取 100B 产能，且 「文化」达到 50K，且 解锁 20 个成就 ‖ All(N(Era=5,''),All(N(CookiesEarnedThisRun=100000000000,''),N(Counter=50000,'culture'),N(AchievementCount=20,'')))",
+        ]),
+        new("#5 赛博", 5, 5,
+        [
+            "本轮累计赚取 100K 比特，且 「算力」达到 1.2K ‖ All(N(CookiesEarnedThisRun=100000,''),N(Counter=1200,'compute'))",
+            "本轮累计赚取 12M 比特，且 「算力」达到 30K，且 解锁 8 个成就 ‖ All(N(CookiesEarnedThisRun=12000000,''),N(Counter=30000,'compute'),N(AchievementCount=8,''))",
+            "本轮累计赚取 1.5B 比特，且 解锁 14 个成就，且 「算力」达到 42K ‖ All(N(CookiesEarnedThisRun=1500000000,''),N(AchievementCount=14,''),N(Counter=42000,'compute'))",
+            "本轮累计赚取 250B 比特，且 解锁 22 个成就，且 「算力」达到 140K，且 「峰值产量」达到 100M ‖ All(N(CookiesEarnedThisRun=250000000000,''),N(AchievementCount=22,''),N(Counter=140000,'compute'),N(Counter=100000000,'peak_cps'))",
+            "本轮累计赚取 50T 比特，且 解锁 34 个成就，且 「算力」达到 500K ‖ All(N(CookiesEarnedThisRun=50000000000000,''),N(AchievementCount=34,''),N(Counter=500000,'compute'))",
+        ],
+        [
+            "end_owner_echo|0|进入第 5 纪元，且 本轮累计赚取 50T 比特，且 解锁 34 个成就，且 「算力」达到 500K，且 「算力」达到 6M ‖ All(All(N(Era=5,''),All(N(CookiesEarnedThisRun=50000000000000,''),N(AchievementCount=34,''),N(Counter=500000,'compute'))),N(Counter=6000000,'compute'))",
+            "end_guardian_cat|100|进入第 5 纪元，且 本轮累计赚取 50T 比特，且 解锁 34 个成就，且 「算力」达到 500K，且 游玩时长达到 7h 00m ‖ All(All(N(Era=5,''),All(N(CookiesEarnedThisRun=50000000000000,''),N(AchievementCount=34,''),N(Counter=500000,'compute'))),N(PlayTimeSeconds=25200,''))",
+        ]),
+        new("#8 梦境", 5, 5,
+        [
+            "本轮累计赚取 100K 点 ‖ N(CookiesEarnedThisRun=100000,'')",
+            "本轮累计赚取 2.4B 点，且 解锁 4 个成就 ‖ All(N(CookiesEarnedThisRun=2400000000,''),N(AchievementCount=4,''))",
+            "本轮累计赚取 16B 点，且 解锁 10 个成就 ‖ All(N(CookiesEarnedThisRun=16000000000,''),N(AchievementCount=10,''))",
+            "本轮累计赚取 450B 点，且 「峰值产量」达到 40M ‖ All(N(CookiesEarnedThisRun=450000000000,''),N(Counter=40000000,'peak_cps'))",
+            "本轮累计赚取 1T 点，且 游玩时长达到 6h 00m ‖ All(N(CookiesEarnedThisRun=1000000000000,''),N(PlayTimeSeconds=21600,''))",
+        ],
+        [
+            "end_wake_her|0|进入第 5 纪元，且 本轮累计赚取 1T 点，且 游玩时长达到 6h 00m，且 「梦境能量」达到 4.5B ‖ All(All(N(Era=5,''),All(N(CookiesEarnedThisRun=1000000000000,''),N(PlayTimeSeconds=21600,''))),N(Counter=4500000000,'dream_energy'))",
+            "end_stay_forever|100|进入第 5 纪元，且 本轮累计赚取 1T 点，且 游玩时长达到 6h 00m ‖ All(N(Era=5,''),All(N(CookiesEarnedThisRun=1000000000000,''),N(PlayTimeSeconds=21600,'')))",
+        ]),
+    ];
+
+    /// <summary>
+    /// 第 1 / 2 条：纪元数、最大 Index、每层完成门槛与每个结局的指纹，逐字对表。<para>
+    /// 失败消息点名包与<b>第一处对不上的行</b>（期望 ⇒ 实际），因为"哪个包、哪一层、
+    /// 门槛从多少变成多少"是这条守卫唯一有用的输出。
+    /// </para>
+    /// </summary>
+    [Test]
+    public static void FrozenLength_AndGateFingerprints_MatchTheGoldenTable()
+    {
+        foreach ((string name, GameContent content) in TestGame.AllContentPacks())
+        {
+            // 点名而不是 InvalidOperationException：表不同步时这条先红，
+            // 错误消息必须教人去冻结基线，而不是吐 "Sequence contains no matching element"。
+            Baseline? baseline = Baselines.SingleOrDefault(b => b.Pack == name);
+            Check.NotNull(
+                baseline,
+                $"{name} 进了 AllContentPacks() 但 Baselines 里没有它的冻结基线" +
+                "——先跑一遍这条守卫抄下实测值，再把它写进表（派生式进网：新包不许静默漏网）。");
+
+            Check.Equal(
+                baseline.EraCount,
+                content.Eras.Count,
+                $"{name}：纪元数变了（期望 {baseline.EraCount}，实际 {content.Eras.Count}）" +
+                "——加一层纪元 = 主线变长；减层是设计决定，过得了关也要同步这张表与 CREATIVE_PLAN §0。");
+
+            Check.Equal(
+                baseline.MaxIndex,
+                content.MaxEraIndex,
+                $"{name}：最大 Index 变了（期望 {baseline.MaxIndex}，实际 {content.MaxEraIndex}）。");
+
+            CompareList(
+                name,
+                "完成门槛",
+                baseline.Completions,
+                [.. content.Eras.Select(e => Line(e.Completion.Describe(content), Skeleton(e.Completion)))]);
+
+            CompareList(
+                name,
+                "结局",
+                baseline.Endings,
+                [.. content.Endings.Select(e =>
+                    $"{e.Id}|{e.Priority}|{Line(e.Condition.Describe(content), Skeleton(e.Condition))}")]);
+        }
+    }
+
+    /// <summary>
+    /// 派生式进网：期望表必须与 <see cref="TestGame.AllContentPacks"/> 一一对应，一个不多一个不少。<para>
+    /// 新包进了枚举而没进期望表 ⇒ 这条先红（教你去冻结基线），而不是让指纹那两条
+    /// 悄悄变成"只查表里有的包"——那正是 §S10 教训里"硬编码清单"的失效形态。
+    /// </para>
+    /// </summary>
+    [Test]
+    public static void GuardTable_CoversExactlyAllContentPacks()
+    {
+        string[] enumerated =
+        [
+            .. TestGame.AllContentPacks().Select(p => p.Name).OrderBy(n => n, StringComparer.Ordinal),
+        ];
+        string[] frozen =
+        [
+            .. Baselines.Select(b => b.Pack).OrderBy(n => n, StringComparer.Ordinal),
+        ];
+
+        Check.Equal(
+            string.Join("、", enumerated),
+            string.Join("、", frozen),
+            "MainLineLengthTests 的期望表与 AllContentPacks() 的包集合不一致" +
+            "——新包进枚举就要在 Baselines 里冻结基线（跑一遍这条守卫、抄实测值），删包同理。");
+    }
+
+    /// <summary>
+    /// 第 3 / 4 条：三个盯死点计数器不许进任何条件树；完成/结局条件里不许出现 <c>CustomCondition</c>。
+    /// 树源 = 建筑/升级/成就的 <c>Unlock</c> + <c>EraDefinition.Completion</c> +
+    /// <c>EndingDefinition.Condition</c>（文档点的四类消费者）。
+    /// </summary>
+    [Test]
+    public static void ForbiddenCountersAndCustomConditions_NeverAppearInMainLineTrees()
+    {
+        int totalEras = 0;
+
+        foreach ((string name, GameContent content) in TestGame.AllContentPacks())
+        {
+            totalEras += content.Eras.Count;
+
+            foreach (BuildingDefinition building in content.Buildings)
+            foreach (string violation in ScanTree(building.Unlock, $"{name} 建筑「{building.Id}」"))
+                Check.Fail(violation);
+
+            foreach (UpgradeDefinition upgrade in content.Upgrades)
+            foreach (string violation in ScanTree(upgrade.Unlock, $"{name} 升级「{upgrade.Id}」"))
+                Check.Fail(violation);
+
+            foreach (AchievementDefinition achievement in content.Achievements)
+            foreach (string violation in ScanTree(achievement.Unlock, $"{name} 成就「{achievement.Id}」"))
+                Check.Fail(violation);
+
+            foreach (EraDefinition era in content.Eras)
+            foreach (string violation in ScanTree(era.Completion, $"{name} 第 {era.Index} 层「{era.Id}」完成条件"))
+                Check.Fail(violation);
+
+            foreach (EndingDefinition ending in content.Endings)
+            foreach (string violation in ScanTree(ending.Condition, $"{name} 结局「{ending.Id}」"))
+                Check.Fail(violation);
+        }
+
+        // 防空扫（照文档原话）：枚举坏了、一个包都没读到时，上面的循环只是静默全过。
+        Check.AtLeast(
+            totalEras,
+            40,
+            $"11 个包里只数出 {totalEras} 层纪元——枚举坏了，这条扫描是空转的假绿。");
+    }
+
+    // ---------------------------------------------------------------- 辅助
+
+    /// <summary>一行指纹：`Describe()` 全文 ‖ 结构骨架。两个成分各补对方的盲区（见类注释）。</summary>
+    private static string Line(string describe, string skeleton)
+        => $"{describe} ‖ {skeleton}";
+
+    /// <summary>
+    /// 结构骨架：叶子类型 / 指标 / 阈值（<c>:R</c> 往返精度）/ id，<b>不含任何显示名</b>。
+    /// <c>CustomCondition</c> 走不到这里（第 4 条禁了），但仍然兜成 <c>?CustomCondition</c>——
+    /// 让"有人绕过第 4 条"在指纹那一条也留一个可读的痕迹。
+    /// </summary>
+    private static string Skeleton(UnlockCondition condition) => condition switch
+    {
+        NumericCondition n => $"N({n.Metric}={n.Target:R},'{n.Id ?? string.Empty}')",
+        OwnedCondition o => $"O({o.Kind},'{o.Id}')",
+        ConstantCondition k => $"K({k.Value})",
+        AllCondition a => "All(" + string.Join(",", a.Conditions.Select(Skeleton)) + ")",
+        AnyCondition a => "Any(" + string.Join(",", a.Conditions.Select(Skeleton)) + ")",
+        NotCondition n => "Not(" + Skeleton(n.Condition) + ")",
+        _ => "?CustomCondition",
+    };
+
+    /// <summary>
+    /// 对表失败时的点名：定位第一处不一致，报期望与实际。<para>
+    /// 逐字对表（不是集合比较）是因为<b>顺序就是指纹</b>——完成条件换序、结局优先级对调，
+    /// 集合比较看不见，而它们都会改变主线的行为。
+    /// </para>
+    /// </summary>
+    private static void CompareList(string pack, string what, string[] expected, string[] actual)
+    {
+        for (int i = 0; i < Math.Max(expected.Length, actual.Length); i++)
+        {
+            string want = i < expected.Length ? expected[i] : "（新增）";
+            string have = i < actual.Length ? actual[i] : "（消失）";
+
+            Check.Equal(
+                want,
+                have,
+                $"{pack} 的{what}第 {i + 1} 行与冻结基线不一致。" +
+                "加门槛/抬门槛/换指标/加结局/换优先级都会红——如果是有意改主线，" +
+                "先过 CREATIVE_PLAN §0 第五条（主线长度不变是硬约束），再同步这张表。");
+        }
+    }
+
+    /// <summary>扫描一棵条件树：盯死点计数器与 <c>CustomCondition</c>，命中即返回违规描述。</summary>
+    private static IEnumerable<string> ScanTree(UnlockCondition tree, string where)
+    {
+        foreach (UnlockCondition leaf in tree.Flatten())
+        {
+            if (leaf is CustomCondition)
+                yield return
+                    $"{where} 里出现了 CustomCondition——它的谓词不可指纹，是绕过冻结基线的后门" +
+                    "（CREATIVE_PLAN §0 第五条第 4 条）：把门槛写成可组合的条件树再进基线表。";
+
+            if (leaf is NumericCondition { Metric: NumericMetric.Counter, Id: { } id }
+                && (id.StartsWith("capsule_", StringComparison.Ordinal)
+                    || id.StartsWith("second_life_", StringComparison.Ordinal)
+                    || id == "stages_walked_total"))
+            {
+                yield return
+                    $"{where} 引用了盯死点计数器「{id}」" +
+                    "（capsule_* / second_life_* / stages_walked_total 不得出现在任何条件树里" +
+                    "——拿「到期/重来/阶段数」当解锁门直接违反主线不变量）。";
+            }
+        }
+    }
+}
