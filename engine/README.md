@@ -73,9 +73,14 @@ dotnet build NekoClicker.sln     # 或者用仓库根的 .\tools\build.ps1
 
 ## 版本与兼容性
 
-**当前 `1.12.1`。从 `1.0.0` 起，`NekoClicker.Core` 的公开 API 只增不改**，
+**当前 `1.13.0`。从 `1.0.0` 起，`NekoClicker.Core` 的公开 API 只增不改**，
 由 `core/PublicApi.txt`（快照，**嵌进 dll**）加四条守卫强制执行。
-规矩见 [docs/VERSIONING.md](docs/VERSIONING.md)。1.12.1 是 **patch：公开 API 一行没动**——
+规矩见 [docs/VERSIONING.md](docs/VERSIONING.md)。1.13.0 是 **minor——公开 API 仍然一行没动**
+（快照重生成后只差首行 `version=`）：把 `[未发布]` 桶里 2026-10-04 ~ 10-20 攒的 13 节
+一次结清——改动全在宿主／前端／工具链／测试工程／文档，`engine/core` 一个字节没动。
+升 minor 的理由：D18 的"1.12.0 该 minor 还是 major"疑问在结桶时被拍板成
+"往上调不往下调"，细节见 [CHANGELOG](../../CHANGELOG.md) 的 1.13.0。
+上一版 1.12.1 是 **patch：公开 API 一行没动**——
 改的全在工具链与文档（新增 `tools/play-web.ps1`、一次真人 playtest 的收口），
 细节见 [CHANGELOG](../../CHANGELOG.md) 的 1.12.1。
 上一版 1.12.0 是 **minor：公开表面只增

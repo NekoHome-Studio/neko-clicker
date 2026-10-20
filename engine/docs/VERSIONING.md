@@ -5,7 +5,16 @@
 > 一句话版本：**从 1.0.0 起，公开 API 只增不改。** 删改任何公开成员都必须升主版本号，
 > 而且这条规矩不是靠自觉——有测试守着。
 >
-> 当前版本 **1.12.1**：**patch——公开 API 一行没动**（依据下面 §2 那张表）。
+> 当前版本 **1.13.0**：**minor——公开 API 仍然一行没动**（依据下面 §2 那张表）。
+> 这一版把 `[未发布]` 桶里 2026-10-04 ~ 10-20 攒的 **13 节**一次结清，改动全在
+> 宿主／前端／工具链／测试工程／文档里。**公开表面没动的证据是快照本身**：
+> 重生成之后只差首行 `version=`。升 minor 的理由：**D18 那个"1.12.0 该 minor
+> 还是 major"的疑问在 2026-10-20 结桶时被拍板成"往上调不往下调"**——
+> K/M/B/T 那一轮的影响面仍在消化期内，记成 minor 是给下游"这批变更比 patch 重"
+> 的信号，不是给规矩开先例。
+> 细节见 [CHANGELOG](../../CHANGELOG.md) 的 1.13.0。
+>
+> 上一版 **1.12.1**（2026-10-11）：**patch——公开 API 一行没动**（依据下面 §2 那张表）。
 > 这一版改的全在**工具链与文档**里：新增 `tools/play-web.ps1`（本机没有
 > `Microsoft.AspNetCore.App 8.x`，它把 `net8.0` 的 Web 宿主正确地开起来——运行时上滚、
 > 关掉会写挂宿主的 EventLog provider、内容根指向源码目录），外加一次**真人 playtest**
@@ -13,7 +22,7 @@
 > **公开表面没动的证据是快照本身**：重生成之后只差首行 `version=`。
 > 细节见 [CHANGELOG](../../CHANGELOG.md) 的 1.12.1。
 >
-> 上一版 **1.12.0**：**minor——公开表面只增 ＋ 一处已记录的行为变更**（依据下面 §2 那张表）。
+> 上一版 **1.12.0**（2026-10-06）：**minor——公开表面只增 ＋ 一处已记录的行为变更**（依据下面 §2 那张表）。
 > 这一版只做一件事：**把文本都换成 K/M/B/T**。`NumFormat.ShortScaleNames` 补上了千位档
 > （索引 0 从 1e6 挪到 1e3，表首是 `"K"`，21 项），于是 `FormatShort` 在 `1000 ~ 999999`
 > 上的输出从 `1,234` 变成 `1.234K`；长名表与 `FormatLong` 一行没改（也没有宿主再用它），
@@ -25,7 +34,7 @@
 > 仍是 `1`、没有新迁移）。
 > 细节见 [CHANGELOG](../../CHANGELOG.md) 的 1.12.0。
 >
-> 上一版 **1.11.0**：**minor——公开 API 只增不改**（依据下面 §2 那张表）。
+> 上一版 **1.11.0**（2026-10-05）：**minor——公开 API 只增不改**（依据下面 §2 那张表）。
 > 新增 `LoreChannel.Note`（"玩家捡到的一张纸条"这种投放通道）、`LoreView.ChannelName`
 > （通道的线上 token，与 `GameSnapshot.ModeName` 同一个理由：**前端不该解释枚举序数**）、
 > `LoreChannelNames.WireName()`，以及把金猫出现计数的键从字面量提升成公开常量
@@ -116,9 +125,9 @@
 单一事实来源是 **`Directory.Build.props` 里的 `<Version>`**：
 
 ```xml
-<Version>1.12.1</Version>
-<AssemblyVersion>1.12.1.0</AssemblyVersion>
-<FileVersion>1.12.1.0</FileVersion>
+<Version>1.13.0</Version>
+<AssemblyVersion>1.13.0.0</AssemblyVersion>
+<FileVersion>1.13.0.0</FileVersion>
 ```
 
 这个值会同时成为程序集版本、文件版本，以及 `ApiVersion.Current` 报告的版本。
@@ -134,8 +143,8 @@
 ```csharp
 using NekoClicker.Core;
 
-Console.WriteLine(ApiVersion.Current);        // "1.12.1"
-Console.WriteLine(ApiVersion.AssemblyVersion); // 1.12.1.0
+Console.WriteLine(ApiVersion.Current);        // "1.13.0"
+Console.WriteLine(ApiVersion.AssemblyVersion); // 1.13.0.0
 Console.WriteLine(ApiVersion.Major);           // 1
 ```
 
@@ -316,9 +325,9 @@ git tag -a v1.0.0 -m "NekoClicker.Core 1.0.0"
 > [RELEASING](RELEASING.md)。下面是判据清单。
 
 - [ ] `pwsh -File tools/build.ps1 -Strict` 退出码 0，0 警告
-- [ ] 全部用例通过（当前 **602** 个；2026-10-10 实测——这个数现在由 `TestCountDriftTests` 守着：加了用例却没改这一行，闸门会点名报红，见 OPEN_WORK 的 W1）
-- [ ] 若这次动了 Web 宿主或启动器：`pwsh -File tools/api-test.ps1` 全部端到端检查通过（当前 112 项；脚本收尾自己核对"源码几处检查点 / 这次执行到几处"）
-- [ ] 若这次动了 Web 前端：`node tools/web-smoke.mjs` 全绿（当前 **271** 条；S1 起它也在 `-Strict` 里跑。⚠️ 这个数没有机器守卫，以脚本打印的那一行为准）
+- [ ] 全部用例通过（当前 **602** 个；2026-10-20 实测——这个数现在由 `TestCountDriftTests` 守着：加了用例却没改这一行，闸门会点名报红，见 OPEN_WORK 的 W1）
+- [ ] 若这次动了 Web 宿主或启动器：`pwsh -File tools/api-test.ps1` 全部端到端检查通过（当前 114 项；脚本收尾自己核对"源码几处检查点 / 这次执行到几处"）
+- [ ] 若这次动了 Web 前端：`node tools/web-smoke.mjs` 全绿（当前 **297** 条；S1 起它也在 `-Strict` 里跑。⚠️ 这个数没有机器守卫，以脚本打印的那一行为准）
 - [ ] `Directory.Build.props` 的 `Version` / `AssemblyVersion` / `FileVersion` 三处一致
 - [ ] `CHANGELOG.md` 有当前版本的带日期条目，写清了兼容性影响
 - [ ] 若公开 API 有变动：快照已更新，且**确实**是有意为之

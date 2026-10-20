@@ -5,9 +5,18 @@
 + #3《猫娘实验室》+ #10《猫娘公司》+ #6《猫娘末世》+ #9《猫娘图书馆》
 + #7《猫娘神明》+ #4《猫娘文明》+ #5《赛博猫娘》+ #8《猫娘梦境》）和一个可玩的终端 Demo。
 
-**当前版本 `1.12.1`**（`NekoClicker.Core` 的公开 API 版本）。从 `1.0.0` 起
+**当前版本 `1.13.0`**（`NekoClicker.Core` 的公开 API 版本）。从 `1.0.0` 起
 **公开 API 只增不改**，而且有测试守着——见 [版本与兼容性承诺](#版本与兼容性承诺)。
-1.12.1 是 **patch：公开 API 一行没动**——改的全在**工具链与文档**里：新增
+1.13.0 是 **minor——公开 API 仍然一行没动**（快照重生成后只差首行 `version=`）：
+把 `[未发布]` 桶里 2026-10-04 ~ 10-20 攒的 **13 节**一次结清——换包窗口
+（F2：页内第一次能换包）、×10/×100/买满真的买 N 个、sheet 的「身体」滚动、
+GUI 重建器清零（空帧 DOM 写入 622→0）＋ 精度统一（D14）、启动游戏＝启动网页、
+K/M/B/T 与「还差多少」、URL 加密载荷（跳层令牌＋分享链接）、外置存档守卫、
+「主线长度不变」第一次有了可执行守卫（`MainLineLengthTests`，用例 599→602）。
+升 minor 的理由：D18 那个"1.12.0 该 minor 还是 major"的疑问在结桶时被拍板成
+"往上调不往下调"（K/M/B/T 影响面仍在消化期），**不是给规矩开先例**。
+明细见 [CHANGELOG](CHANGELOG.md) 的 1.13.0。
+上一版 1.12.1 是 **patch：公开 API 一行没动**——改的全在**工具链与文档**里：新增
 [tools/play-web.ps1](tools/play-web.ps1)（本机没有 `Microsoft.AspNetCore.App 8.x`，
 它把 `net8.0` 的 Web 宿主正确地开起来：运行时上滚 + 关掉会写挂宿主的 EventLog provider
 + 把内容根指向源码目录），外加一次**真人 playtest** 带来的收口（4 条真人作答延迟样本、
@@ -424,7 +433,7 @@ Console.WriteLine(engine.Save());           // JSON 存档
 
 ## 版本与兼容性承诺
 
-**当前版本 `1.12.1`。从 `1.0.0` 起，`NekoClicker.Core` 的公开 API 只增不改。**
+**当前版本 `1.13.0`。从 `1.0.0` 起，`NekoClicker.Core` 的公开 API 只增不改。**
 
 | 改动 | 升哪一位 |
 |---|---|
@@ -444,8 +453,8 @@ Console.WriteLine(engine.Save());           // JSON 存档
 ```csharp
 using NekoClicker.Core;
 
-Console.WriteLine(ApiVersion.Current);         // "1.12.1"
-Console.WriteLine(ApiVersion.AssemblyVersion);  // 1.12.1.0
+Console.WriteLine(ApiVersion.Current);         // "1.13.0"
+Console.WriteLine(ApiVersion.AssemblyVersion);  // 1.13.0.0
 ```
 
 ### 这条承诺是怎么被守住的
@@ -625,10 +634,13 @@ Console.WriteLine(ApiVersion.AssemblyVersion);  // 1.12.1.0
 （H / D / W 三张表——只有真人能做的、先要人拍一句话的、以及不需要人的机械项）。
 `STATUS.md` 的 §8 是**历史记录**，不再产生待办；**这一轮的收工总结**在
 [HANDOVER_2026-10-11](engine/docs/HANDOVER_2026-10-11.md)（上一轮是
-[HANDOVER_2026-10-05](engine/docs/HANDOVER_2026-10-05.md)）。工作树是 **1.12.1**
-（patch：**公开 API 一行没动**——新增 `tools/play-web.ps1` 让"缺 ASP.NET 8 运行时的机器
-也能把这一局开起来"，外加一次真人 playtest 的收口：4 条真人作答延迟样本、离线收益那半侧
-结论、四条新登记，明细见 [CHANGELOG](CHANGELOG.md) 的 1.12.1）。
+[HANDOVER_2026-10-05](engine/docs/HANDOVER_2026-10-05.md)）。工作树是 **1.13.0**
+（minor：**公开 API 仍然一行没动**——把 `[未发布]` 桶里 2026-10-04 ~ 10-20 攒的 13 节
+一次结清：换包窗口、批量档位真的买 N 个、GUI 重建器清零＋精度统一、「主线长度不变」
+守卫（用例 599→602）等，明细见 [CHANGELOG](CHANGELOG.md) 的 1.13.0）。
+上一版 1.12.1 是 patch（**公开 API 一行没动**——新增 `tools/play-web.ps1` 让"缺 ASP.NET 8
+运行时的机器也能把这一局开起来"，外加一次真人 playtest 的收口：4 条真人作答延迟样本、
+离线收益那半侧结论、四条新登记，明细见 [CHANGELOG](CHANGELOG.md) 的 1.12.1）。
 上一版 1.12.0 是 minor（**把文本都换成 K/M/B/T**——短刻度表补上千位档、两个宿主全部显示点
 改成短刻度、11 个包 294 处被数字钉住的短标签同步；公开表面只增一项，判据见
 [VERSIONING §2.1](engine/docs/VERSIONING.md)，明细见 [CHANGELOG](CHANGELOG.md) 的 1.12.0）。
