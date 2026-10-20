@@ -697,6 +697,8 @@ public static class MainLineLengthTests
                 baseline,
                 $"{name} 进了 AllContentPacks() 但 Baselines 里没有它的冻结基线" +
                 "——先跑一遍这条守卫抄下实测值，再把它写进表（派生式进网：新包不许静默漏网）。");
+            // Check.NotNull 是运行期断言，编译器看不见它保证过非空——下面统一用它之前先判。
+            if (baseline is null) { continue; }
 
             Check.Equal(
                 baseline.EraCount,
