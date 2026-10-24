@@ -882,6 +882,18 @@ function saveSheetVisible() {
 }
 
 /** 打开窗口：立刻向宿主取一份导出文本，并把焦点交给它。 */
+/**
+ * 导入按钮的形态跟着框里有没有字走（§2.8.1：破坏性动作不该是页面上最响的那一个）。
+ * <para>
+ * 空框时它是空心的——这张窗口里唯一**会覆盖存档**的动作，没东西可导的时候不该长得像主按钮。
+ * **注意这不是禁用**：点空框仍然走原来那条路（宿主会回"文本不对"），行为一个字没变，
+ * 变的只是它像不像主按钮。所以这里没有 `disabled`，只有一次 class 切换。
+ * </para>
+ */
+function syncImportButton() {
+  $("#import-go").classList.toggle("is-armed", $("#import-text").value.trim().length > 0);
+}
+
 function openSaveSheet() {
   $("#save-sheet").classList.remove("hidden");
 
@@ -897,6 +909,9 @@ function openSaveSheet() {
   // 密码输入框同样清掉：它留着没有任何用处（`type=password` 只是遮住它，不是擦掉它）。
   $("#share-link").value = "";
   $("#share-password").value = "";
+  // 空框 → 空心态（上一次留下的导入文本不会跟着窗口一起回来，因为窗口被关时它还在，
+  // 这里按"框里现在有什么"重算一次，不做假设）。
+  syncImportButton();
 
   $("#export-text").focus();
   refreshExport();
@@ -2541,6 +2556,7 @@ $("#save-sheet").addEventListener("click", (event) => {
 $("#export-copy").addEventListener("click", copyExport);
 $("#export-download").addEventListener("click", downloadExport);
 $("#import-go").addEventListener("click", importSave);
+$("#import-text").addEventListener("input", syncImportButton);
 $("#save-now").addEventListener("click", saveNow);
 
 // 分享链接：生成 / 复制 / 用密码导入。回车与按钮等价——密码框里按回车是所有人的第一反应，

@@ -8,15 +8,56 @@
   --bg-soft: #1b1926;
   --card: #221f30;
   --card-hi: #2b2740;
+  --bg-glow: #241f38;    /* 页头那层径向光 */
+  --cat-glow: #332c4b;   /* 大猫按钮的径向高光 */
+  --accent-dark: #b8556d; /* 纪元主按钮渐变的收尾（比 --accent-deep 再暗一档） */
+  --gold-deep: #4a3a1c;  /* 金猫：径向渐变的亮端 */
+  --gold-dark: #2a2213;  /* 金猫：径向渐变的暗端 */
+  --sheet: #2a2135;      /* sheet 渐变的起始色（此前 3 处手写） */
+  --bg-deep: #171522;    /* 比 --bg 更深的一档（渐变收尾 / 输入区底） */
   --line: #322e45;
+  --line-strong: #7a7590; /* 需要被看见的分隔/轨道：对 --card 3.65:1，够 WCAG 的非文本图形 3:1 */
   --fg: #ece9f7;
-  --dim: #9691b0;
+  /* 文字只有两级（2026-10-22）：--fg 是正文，--dim 是次要。
+     此前散着 5 种灰（--dim / var(--dim) / var(--dim) / var(--dim) / 纸色主题里的墨），
+     其中三种其实是同一个意思。对比度：--dim on --card = 7.98:1（旧值 5.34:1）。 */
+  --dim: #b9b3d0;
   --accent: #ffb3c7;
   --accent-deep: #e0748f;
+  --accent-hi: #ffc7d6;   /* 主按钮 hover（此前写死在 .sheet-ok:hover） */
+  --on-accent: #2a1520;   /* 粉底上的字（此前 #2a1520 / #1a1220 两处各写各的） */
   --ok: #7ee0a8;
   --bad: #ff8f8f;
   --gold: #ffd479;
-  --radius: 12px;
+  /* 字号：4 档（2026-10-22 从 16 个值收成 4 档，依据见 WEB_VISUAL_AUDIT §3-A3）。
+     相邻档差 17%~25%，落在肉眼能分辨的范围内；4.5rem 那一档不存在 —— 大数字
+     本来就是 clamp() 跟视口走的，硬编码一个会把它按死。 */
+  --text-xs: .75rem;   /* 12px：角标、时间、卡内最小字 */
+  --text-sm: .875rem;  /* 14px：正文、按钮、页签、价格 */
+  --text-md: 1rem;     /* 16px：正文字号、面板标题 */
+  --text-lg: 1.25rem;  /* 20px：h1 */
+  /* 圆角：4 / 8 / 12 / 999 四档（2026-10-22 从 10 种收成 4 档，依据见 WEB_VISUAL_AUDIT §3-A6）。
+     --radius 保留为 --r-card 的别名，旧引用不用改。 */
+  --r-xs: 4px;
+  --r-ctl: 8px;
+  --r-card: 12px;
+  --r-pill: 999px;
+  /* 高度：两级（浮层 / sheet）。卡片不投影 —— 这一版的方向是"平面 + 边框"，
+     多一级没人用的 --e1 只会变成死 token，所以不建。 */
+  --e2: 0 8px 24px #00000066, 0 1px 0 #ffffff0d inset;
+  --e3: 0 18px 60px #000000aa, 0 1px 0 #ffffff14 inset;
+  /* 纸色主题（纸条那张 sheet）：2026-10-22 之前是 10 个散落的手写 hex，
+     现在是一组 token。对比度沿用原注释里的实测：墨/纸 11.9:1、标题/纸 6.9:1、次要 5.8:1。 */
+  --paper-top: #f3e9d2;
+  --paper-bg: #e6d9bb;
+  --paper-line: #b9a480;
+  --paper-ink: #2b2419;
+  --paper-ink-2: #5a4c36;   /* 2026-10-24：折痕把纸压暗约 5%，原值 4.64:1 会掉到 4.2 —— 往下压一档，折痕上仍有 5.39:1 */
+  --paper-ink-3: #6b4f22;
+  --paper-btn: #d9bd83;
+  --paper-btn-hi: #e6cf9d;
+  --paper-edge: #8a6f3d;
+  --paper-faint: #c9b48f;
   /* 金猫唯一的尺寸来源：宽 / 高 / 字号都从它算出来，而 app.js 用
      `calc(100% - var(--golden-cat-size))` 把它的位置夹在视口里 —— 位置与尺寸永远是
      同一个数，JS 因此不必量任何布局。下限 2.75rem = 44px（与 .choices-pill / .sheet-ok
@@ -35,7 +76,7 @@ body {
   /* 这块背景光是全文件唯一"尺寸写死的图形"：1200×600 的椭圆在 320~683px 宽的视口里
      （手机 / 200% 缩放）有一大半在屏幕外，看到的是被切掉的一块。位置、颜色、两个色标
      一个没动，只让椭圆的尺寸跟着视口走 —— 宽屏上仍取到原来的 1200×600。 */
-  background: radial-gradient(min(1200px, 120vw) min(600px, 90vh) at 20% -10%, #241f38 0%, var(--bg) 60%);
+  background: radial-gradient(min(1200px, 120vw) min(600px, 90vh) at 20% -10%, var(--bg-glow) 0%, var(--bg) 60%);
   color: var(--fg);
   /* 100vh 在手机上等于**大视口**（地址栏藏起来时的高度），于是 body 永远比看得见的
      区域高一截、多出一段空滚。dvh 跟当前可见视口走；旧浏览器丢掉的是后面那一行。 */
@@ -45,7 +86,7 @@ body {
 }
 
 .hidden { display: none !important; }
-.muted { color: var(--dim); font-size: .85rem; }
+.muted { color: var(--dim); font-size: var(--text-sm); }
 
 /* ---------------------------------------------------------------- 头部 */
 
@@ -58,9 +99,9 @@ header {
   margin-bottom: 1.5rem;
 }
 
-h1 { font-size: 1.35rem; margin: 0; }
+h1 { font-size: var(--text-lg); margin: 0; }
 
-.status { display: flex; align-items: center; gap: .5rem; font-size: .85rem; color: var(--dim); }
+.status { display: flex; align-items: center; gap: .5rem; font-size: var(--text-sm); color: var(--dim); }
 
 .dot { width: .6rem; height: .6rem; border-radius: 50%; background: var(--dim); }
 .dot.ok { background: var(--ok); box-shadow: 0 0 8px var(--ok); }
@@ -100,9 +141,9 @@ main {
 /* ---------------------------------------------------------------- 左栏 */
 
 .hero {
-  background: linear-gradient(180deg, var(--bg-soft), #17151f);
+  background: linear-gradient(180deg, var(--bg-soft), var(--bg-deep));
   border: 1px solid var(--line);
-  border-radius: var(--radius);
+  border-radius: var(--r-card);
   padding: 1.5rem;
   display: flex;
   flex-direction: column;
@@ -251,8 +292,8 @@ main {
   letter-spacing: -.02em;
 }
 
-.unit { color: var(--dim); font-size: 1rem; }
-.rates { display: flex; gap: 1rem; color: var(--dim); font-size: .9rem; font-variant-numeric: tabular-nums; }
+.unit { color: var(--dim); font-size: var(--text-md); }
+.rates { display: flex; gap: 1rem; color: var(--dim); font-size: var(--text-sm); font-variant-numeric: tabular-nums; }
 
 .big-cat {
   /* 上限 26rem 与两栏布局里 hero 列的上限（minmax(20rem, 26rem)）是同一个数。
@@ -262,8 +303,8 @@ main {
   width: min(100%, 26rem);
   aspect-ratio: 1 / .72;
   border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: radial-gradient(60% 60% at 50% 35%, #332c4b, var(--card));
+  border-radius: var(--r-card);
+  background: radial-gradient(60% 60% at 50% 35%, var(--cat-glow), var(--card));
   cursor: pointer;
   display: flex;
   flex-direction: column;
@@ -276,7 +317,7 @@ main {
 }
 
 .big-cat span:first-child { font-size: clamp(3rem, 9vw, 4.5rem); line-height: 1; }
-.big-cat .hint { color: var(--dim); font-size: .85rem; }
+.big-cat .hint { color: var(--dim); font-size: var(--text-sm); }
 .big-cat:hover { border-color: var(--accent-deep); box-shadow: 0 0 0 1px var(--accent-deep)33, 0 8px 30px #0008; }
 .big-cat:active { transform: scale(.975); }
 
@@ -284,9 +325,9 @@ kbd {
   background: #00000055;
   border: 1px solid var(--line);
   border-bottom-width: 2px;
-  border-radius: 5px;
+  border-radius: var(--r-ctl);
   padding: 0 .3rem;
-  font-size: .75rem;
+  font-size: var(--text-xs);
   font-family: ui-monospace, Consolas, monospace;
 }
 
@@ -301,9 +342,9 @@ kbd {
 .buffs { display: flex; flex-wrap: wrap; gap: .4rem; justify-content: center; }
 
 .chip {
-  font-size: .78rem;
+  font-size: var(--text-xs);
   padding: .15rem .5rem;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   border: 1px solid var(--line);
   background: #00000033;
 }
@@ -315,7 +356,7 @@ kbd {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: .85rem;
+  font-size: var(--text-sm);
   color: var(--dim);
   border-top: 1px solid var(--line);
   padding-top: .75rem;
@@ -328,11 +369,11 @@ kbd {
   background: transparent;
   border: 1px solid var(--line);
   color: var(--dim);
-  border-radius: 8px;
+  border-radius: var(--r-ctl);
   padding: .25rem .6rem;
   cursor: pointer;
   font: inherit;
-  font-size: .85rem;
+  font-size: var(--text-sm);
 }
 .ghost:hover { color: var(--fg); border-color: var(--accent-deep); }
 
@@ -349,7 +390,7 @@ kbd {
 .panel {
   background: var(--bg-soft);
   border: 1px solid var(--line);
-  border-radius: var(--radius);
+  border-radius: var(--r-card);
   padding: 1rem 1.1rem 1.1rem;
 }
 
@@ -365,7 +406,7 @@ kbd {
   margin-bottom: .75rem;
 }
 
-.panel-head h2 { font-size: .95rem; margin: 0; letter-spacing: .04em; }
+.panel-head h2 { font-size: var(--text-md); margin: 0; letter-spacing: .04em; }
 
 /* 面板里的说明段（`#upgrade-hint` / `#permanent-hint`）与列表里的空态段此前只有
    浏览器默认的 `margin: 1em 0`——.85rem 字号下上下各 13.6px，比这块面板里其它所有
@@ -381,14 +422,14 @@ kbd {
   background: transparent;
   border: 1px solid var(--line);
   color: var(--dim);
-  border-radius: 7px;
+  border-radius: var(--r-ctl);
   padding: .15rem .5rem;
   cursor: pointer;
   font: inherit;
-  font-size: .78rem;
+  font-size: var(--text-xs);
 }
 .batch button:hover { color: var(--fg); }
-.batch button.active { background: var(--accent-deep); border-color: var(--accent-deep); color: #1a1220; font-weight: 600; }
+.batch button.active { background: var(--accent-deep); border-color: var(--accent-deep); color: var(--on-accent); font-weight: 600; }
 
 /* 26rem = 416px：在 384px 高的视口里（200% 缩放的 1366×768、横过来的手机）
    一个面板的列表比整个窗口还高，面板头与页签都被顶出视野。再跟一条视口高度上限，
@@ -429,18 +470,22 @@ kbd {
      —— §26 里"没有任何规则把 stretch 撤回去"那条守卫同时也在守这个前提。）
    · 于是 `.panel` 在两栏这一档变成 flex 纵列（基规则里它没有 `display`，是普通块级盒）。
 
-   富余摊在**哪儿**：`justify-content: space-between` —— 均匀摊进卡片之间那 6.4px 的 `gap` 里。
-   另外两种读法都不选：只钉最后一行（照 §0.23 那句的样子给最后一张卡 `margin-top: auto`）
+   富余摊在**哪儿**：**不摊** —— 卡片在列表顶部聚拢，富余整块留在列表**底部**
+   （这一版不写 `justify-content`，默认 flex-start）。
+   ⚠️ 这是 2026-10-22 改的，依据是**真的把页面渲染出来量的一次**（`WEB_VISUAL_AUDIT` §2）：
+   1280×900 下永久升级线 5 条被上一版的 `space-between` 摊成 **70 / 71 / 71 / 70px** 一段，
+   而卡片本身只有 57px 高 —— 组内间距已经大于组间（表头到首行 77px），读起来是
+   "一堆断开的卡"而不是一条线。建筑那一屏（8 条）当时摊到 14.6px，尚可；但同一个开关
+   不能只对长的列表成立，所以整条拿掉。
+   另外两种读法仍然不选：只钉最后一行（照 §0.23 那句的样子给最后一张卡 `margin-top: auto`）
    会让列表中间出现一个洞（3 张卡时是"两张在上、一张在底"）；把富余吃进卡片尺寸
    （`.list > * { flex: 1 }`）会得到一堆高矮不一的空盒子。
+   富余留在列表底部这件事在列表自己身上看不见（它是 `overflow-y: auto`），所以那段空白
+   读起来是"卡片下沿还有地方"，而不是"行与行之间被拉开了"。
    这一局的实际数（CSS 常量 ＋ 5273 上那一局的真存档，8 座可见建筑）：
    列表可用 ≈ 601.1px（＝ 左栏 673.5 − 面板内边距 33.6 − 表头 38.8），
-   列表内容 ＝ 8 行 × 62.35 ＋ 7 × 6.4 ＝ 543.6px ⇒ 富余 57.5px 摊进 7 段 ≈ **8.2px**，
-   也就是行距从 **6.4px 长到约 14.6px**。改之前那 416px 的上限切掉了 127.6px（第 7、8 行
-   要滚才看得见），填满之后 8 行全在视野里。
-   ⚠️ 摊开多少是"富余 ÷ 段数"，所以列表越短摊得越开：永久升级线（5 条 ≈ 306px）
-   会摊到约 65px 一段。要收掉它只需删这一条 `justify-content` —— 列表照样填满，
-   卡片回到顶部聚拢，那一段空白留在列表内部（`OPEN_WORK` §0.23.5 把这个开关写在明处）。
+   列表内容 ＝ 8 行 × 62.35 ＋ 7 × 6.4 ＝ 543.6px ⇒ 富余 57.5px 留在底部。
+   改之前那 416px 的上限切掉了 127.6px（第 7、8 行要滚才看得见），填满之后 8 行全在视野里。
 
    ⚠️ **只在两栏这一档生效**：`min-width: 62.0625rem` 就是 `max-width: 62rem` 的补集
    （62rem ＋ 1px，差的这一个 CSS 像素里退回今天的样子，那一段本来就窄到看不出）。
@@ -464,7 +509,6 @@ kbd {
     flex: 1;
     min-height: 0;
     max-height: none;
-    justify-content: space-between;
   }
 }
 
@@ -480,7 +524,7 @@ kbd {
   background: var(--card);
   border: 1px solid var(--line);
   border-left: 3px solid transparent;
-  border-radius: 9px;
+  border-radius: var(--r-card);
   padding: .5rem .7rem;
   cursor: pointer;
   color: inherit;
@@ -489,15 +533,15 @@ kbd {
 }
 
 .card:hover:not(:disabled) { background: var(--card-hi); }
-.card .name { grid-area: name; font-size: .92rem; }
-.card .price { grid-area: price; font-variant-numeric: tabular-nums; font-size: .85rem; color: var(--dim); }
-.card .share { grid-area: share; font-size: .75rem; color: var(--dim); font-variant-numeric: tabular-nums; }
-.card .effect { grid-area: share; font-size: .75rem; color: #a9a3c4; }
+.card .name { grid-area: name; font-size: var(--text-sm); }
+.card .price { grid-area: price; font-variant-numeric: tabular-nums; font-size: var(--text-sm); color: var(--dim); }
+.card .share { grid-area: share; font-size: var(--text-xs); color: var(--dim); font-variant-numeric: tabular-nums; }
+.card .effect { grid-area: share; font-size: var(--text-xs); color: var(--dim); }
 
 /* 「再买 N 个解锁「X」」：自己的元素、自己的行（`grid-column: 1 / -1` 自动落到第 3 行）。
    不给它 `grid-area: share`——那会与上面那一行**同格重叠**，两句话叠在一起。
    §21 的界线也在这一条上：里程碑是高亮的那一句，不许并进纪元阶段那一行。 */
-.card .milestone { grid-column: 1 / -1; font-size: .75rem; color: var(--dim); }
+.card .milestone { grid-column: 1 / -1; font-size: var(--text-xs); color: var(--dim); }
 
 /* 一个折不断的 token（长英文名、连写的 id、没有空格的数字串）不许把卡片顶出面板：
    `overflow-wrap: anywhere` 让它就地折行（它同时把 min-content 压到一个字符），
@@ -528,7 +572,7 @@ kbd {
   grid-template-areas: "name price" "share share";
   padding: .35rem .6rem;
 }
-.card.compact .name { font-size: .86rem; }
+.card.compact .name { font-size: var(--text-sm); }
 
 /* ---------------------------------------------------------------- 建筑行：卡片 + 可展开的故事
    一行 = [📖 展开按钮][⬆ 升级轨按钮][买卡片]，两个展开出来的框都占满整行。
@@ -555,11 +599,11 @@ kbd {
      32px 宽的目标；44px 让「任何宽度下都够得着」变成基规则里的事实。 */
   min-width: 44px;
   border: 1px solid var(--line);
-  border-radius: 9px;
+  border-radius: var(--r-card);
   background: transparent;
   color: var(--dim);
   font: inherit;
-  font-size: .95rem;
+  font-size: var(--text-md);
   line-height: 1;
   cursor: pointer;
 }
@@ -581,11 +625,11 @@ kbd {
   /* 与 📖 同规格、同一个下限（理由写在 .story-toggle 上）。 */
   min-width: 44px;
   border: 1px solid var(--line);
-  border-radius: 9px;
+  border-radius: var(--r-card);
   background: transparent;
   color: var(--dim);
   font: inherit;
-  font-size: .95rem;
+  font-size: var(--text-md);
   line-height: 1;
   cursor: pointer;
 }
@@ -613,10 +657,10 @@ kbd {
   background: var(--card);
   border: 1px solid var(--line);
   border-left: 3px solid var(--accent-deep);
-  border-radius: 9px;
+  border-radius: var(--r-card);
   padding: .55rem .7rem;
-  font-size: .85rem;
-  color: #cdc7e4;
+  font-size: var(--text-sm);
+  color: var(--dim);
   line-height: 1.6;
 }
 .story p { margin: 0; white-space: pre-line; }
@@ -631,11 +675,11 @@ kbd {
   background: var(--card);
   border: 1px solid var(--line);
   border-left: 3px solid var(--accent-deep);
-  border-radius: 9px;
+  border-radius: var(--r-card);
   padding: .45rem;
 }
 .track-head {
-  font-size: .78rem;
+  font-size: var(--text-xs);
   letter-spacing: .03em;
   color: var(--dim);
   padding: 0 .15rem .1rem;
@@ -655,16 +699,16 @@ kbd {
 }
 
 .era-head { display: flex; align-items: baseline; justify-content: space-between; gap: .5rem; }
-.era-name { font-weight: 600; font-size: .95rem; }
-.era-theme { margin: 0; font-size: .8rem; color: var(--dim); }
+.era-name { font-weight: 600; font-size: var(--text-md); }
+.era-theme { margin: 0; font-size: var(--text-sm); color: var(--dim); }
 
 /* 层内阶段那一行。用强调色而不是 --dim：它是这一层里唯一"刚刚往前走了"的信号，
    而纪元主题（上一行）是背景设定。 */
-.era-stage { margin: 0; font-size: .78rem; color: var(--accent); }
+.era-stage { margin: 0; font-size: var(--text-xs); color: var(--accent); }
 
 .bar {
   height: .4rem;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: #00000055;
   overflow: hidden;
 }
@@ -676,15 +720,15 @@ kbd {
   transition: width .3s ease;
 }
 
-.era-reason { margin: 0; font-size: .78rem; color: var(--dim); min-height: 1.1em; }
+.era-reason { margin: 0; font-size: var(--text-xs); color: var(--dim); min-height: 1.1em; }
 
 .ascend {
   margin-top: .2rem;
   padding: .55rem 1rem;
-  border-radius: 9px;
+  border-radius: var(--r-card);
   border: 1px solid var(--accent-deep);
-  background: linear-gradient(180deg, var(--accent-deep), #b8556d);
-  color: #1a1220;
+  background: linear-gradient(180deg, var(--accent-deep), var(--accent-dark));
+  color: var(--on-accent);
   font: inherit;
   font-weight: 600;
   cursor: pointer;
@@ -701,21 +745,37 @@ kbd {
 
 /* ---------------------------------------------------------------- 面板标签 */
 
-.tabs { display: flex; gap: .35rem; flex-wrap: wrap; }
+/* 页签（2026-10-22，A10）：7 个各自带边框的按钮 → **一条分段控件**。
+   一个深色轨道包住 6 个分段，选中的那段是实心块；「换包」仍是轨道右端的一颗 ghost
+   按钮——它不是一个页签，所以不跟分段同色（否则读起来像第 7 个页签）。
+   轨道的 3px 内边距 ＋ 1px 边框也算进高度里，见 web-smoke 那条"页签行高"的预算。 */
+.tabs {
+  display: flex;
+  gap: .125rem;   /* 2px：分段之间那道细缝 */
+  flex-wrap: wrap;
+  padding: .1875rem;   /* 3px：轨道内边距（px 不给用，这个文件里长度一律 rem） */
+  background: #00000026;
+  border: 1px solid var(--line);
+  border-radius: var(--r-card);
+}
 
 .tabs button {
   position: relative;
-  background: var(--bg-soft);
-  border: 1px solid var(--line);
+  background: transparent;
+  border: 1px solid transparent;   /* 留 1px：高度不变，选中态也不必再补边框 */
   color: var(--dim);
-  border-radius: 9px;
-  padding: .35rem .8rem;
+  border-radius: var(--r-ctl);
+  padding: .3rem .75rem;
   cursor: pointer;
   font: inherit;
-  font-size: .86rem;
+  font-size: var(--text-sm);
 }
-.tabs button:hover { color: var(--fg); }
-.tabs button.active { background: var(--card-hi); border-color: var(--accent-deep); color: var(--fg); }
+.tabs button:hover { color: var(--fg); background: #ffffff0a; }
+.tabs button.active {
+  background: var(--card-hi);
+  color: var(--fg);
+  box-shadow: 0 1px 2px #00000040;
+}
 
 /* 换包按钮（F2）：页签行的末尾、被推到那一行的右端（margin-left: auto 吃掉 flex
    换行前的全部富余）。`.ghost` 那套样子（描边、透明底）正好是"次要动作"的那一档。 */
@@ -733,7 +793,7 @@ kbd {
   text-align: left;
   background: var(--bg-soft);
   border: 1px solid var(--line);
-  border-radius: 9px;
+  border-radius: var(--r-card);
   padding: .55rem .8rem;
   cursor: pointer;
   font: inherit;
@@ -741,7 +801,7 @@ kbd {
 }
 .pack-row:hover { border-color: var(--accent-deep); }
 .pack-row .pack-name { font-weight: 600; }
-.pack-row .pack-welcome { color: var(--dim); font-size: .8rem; flex: 1; }
+.pack-row .pack-welcome { color: var(--dim); font-size: var(--text-sm); flex: 1; }
 .pack-row[aria-current="true"] {
   background: var(--card-hi);
   border-color: var(--accent-deep);
@@ -767,10 +827,10 @@ kbd {
   min-width: 1.1em;
   margin-left: .25rem;
   padding: 0 .3em;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: var(--accent-deep);
-  color: #1a1220;
-  font-size: .72rem;
+  color: var(--on-accent);
+  font-size: var(--text-xs);
   text-align: center;
 }
 
@@ -781,13 +841,13 @@ kbd {
 
 .choice {
   border: 1px solid var(--accent-deep);
-  border-radius: 10px;
+  border-radius: var(--r-card);
   padding: .8rem .9rem;
-  background: linear-gradient(180deg, #2a2135, var(--card));
+  background: linear-gradient(180deg, var(--sheet), var(--card));
 }
 .choice + .choice { margin-top: .6rem; }
-.choice-speaker { font-weight: 600; font-size: .88rem; }
-.choice-prompt { margin: .35rem 0 .7rem; font-size: .9rem; color: #cdc7e4; }
+.choice-speaker { font-weight: 600; font-size: var(--text-sm); }
+.choice-prompt { margin: .35rem 0 .7rem; font-size: var(--text-sm); color: var(--dim); }
 
 .choice-options { display: flex; flex-direction: column; gap: .4rem; }
 
@@ -798,7 +858,7 @@ kbd {
   gap: .1rem .6rem;
   text-align: left;
   padding: .5rem .7rem;
-  border-radius: 8px;
+  border-radius: var(--r-ctl);
   border: 1px solid var(--line);
   background: var(--bg-soft);
   color: inherit;
@@ -806,12 +866,12 @@ kbd {
   cursor: pointer;
 }
 .choice-option:hover { border-color: var(--accent); background: var(--card-hi); }
-.choice-option b { grid-area: label; font-weight: 500; }
-.choice-stance { grid-area: stance; font-size: .78rem; color: var(--accent); }
-.choice-effect { grid-area: effect; font-size: .75rem; color: var(--dim); }
+.choice-option b { grid-area: label; font-weight: 600; }
+.choice-stance { grid-area: stance; font-size: var(--text-xs); color: var(--accent); }
+.choice-effect { grid-area: effect; font-size: var(--text-xs); color: var(--dim); }
 
 .stances { margin-top: 1rem; border-top: 1px solid var(--line); padding-top: .8rem; }
-.stances h3, .storyline h3 { font-size: .82rem; letter-spacing: .05em; color: var(--dim); margin: 0 0 .5rem; }
+.stances h3, .storyline h3 { font-size: var(--text-sm); letter-spacing: .05em; color: var(--dim); margin: 0 0 .5rem; }
 
 .stance {
   display: grid;
@@ -819,23 +879,23 @@ kbd {
   align-items: center;
   gap: .5rem;
   padding: .25rem 0;
-  font-size: .85rem;
+  font-size: var(--text-sm);
 }
 .stance-name { color: var(--dim); }
 .stance.dominant .stance-name { color: var(--accent); font-weight: 600; }
 .stance i {
   display: block;
   height: .35rem;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: var(--line);
   min-width: 2px;
 }
 .stance.dominant i { background: var(--accent); }
 .stance-weight { text-align: right; color: var(--dim); font-variant-numeric: tabular-nums; }
 
-.ending { margin-top: .9rem; padding: .7rem .8rem; border-radius: 9px; background: #00000044; }
+.ending { margin-top: .9rem; padding: .7rem .8rem; border-radius: var(--r-card); background: #00000044; }
 .ending h3 { color: var(--gold); }
-.ending p { margin: .3rem 0 0; font-size: .87rem; color: #cdc7e4; }
+.ending p { margin: .3rem 0 0; font-size: var(--text-sm); color: var(--dim); }
 
 /* 表态列表在 sheet 里**不自带滚动条**：这张卡片里只有一条滚动条，而它是**身体**
    （标记上那个 `.sheet-body`，包着选项与立场轴；它已经有视口高度上限与 `overflow-y`）。
@@ -862,29 +922,37 @@ kbd {
   max-width: calc(100vw - 2rem);
   overflow-wrap: anywhere;
   padding: .5rem 1.1rem;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   border: 1px solid var(--accent-deep);
   background: var(--card-hi);
   color: var(--fg);
   font: inherit;
-  font-size: .85rem;
+  font-size: var(--text-sm);
   cursor: pointer;
-  box-shadow: 0 8px 30px #0008;
+  box-shadow: var(--e2);
 }
-.choices-pill:hover { border-color: var(--accent); background: var(--accent-deep); color: #1a1220; }
+.choices-pill:hover { border-color: var(--accent); background: var(--accent-deep); color: var(--on-accent); }
 
 /* ---------------------------------------------------------------- 图鉴 */
 
 .storyline { margin-bottom: 1rem; }
 
 .lore { padding: .45rem .1rem; border-bottom: 1px solid #ffffff0d; }
-.lore b { font-size: .88rem; font-weight: 500; }
-.lore p { margin: .25rem 0 0; font-size: .85rem; color: #b9b3d0; }
+.lore b { font-size: var(--text-sm); font-weight: 600; }
+.lore p { margin: .25rem 0 0; font-size: var(--text-sm); color: var(--dim);
+  /* 量一下正文宽度（WEB_VISUAL_AUDIT §3-A8）：满宽时 704px @14px = 50em，一行 50 个汉字，
+     读三行就开始串行。34em ≈ 476px ≈ 34 个汉字，落在 45~75 字符 / 20~35em 的区间里。 */
+  max-width: 34em; }
 .lore.locked b { color: var(--dim); }
-.lore-hint { color: var(--dim) !important; font-size: .8rem !important; }
+.lore-hint { color: var(--dim) !important; font-size: var(--text-sm) !important; }
 
 .card.ach { cursor: default; }
+/* 成就的两种状态（2026-10-24）：完成的是**金色实线**边 + 正文色，没完成的是**灰色虚线**边
+   + 次要色。形状（实线/虚线）是第二个信号——只看颜色的话，色觉差异的人分不出哪条已经拿到
+   （§5.7）；虚线本身也把"还没拿到"读成未完成，不必再多一个字。 */
 .card.ach.unlocked { border-left-color: var(--gold); }
+.card.ach:not(.unlocked) { border-style: dashed; border-color: var(--line-strong); }
+.card.ach:not(.unlocked) .name { color: var(--dim); }
 
 /* ---------------------------------------------------------------- 金猫层 */
 
@@ -902,7 +970,7 @@ kbd {
   line-height: 1;
   border-radius: 50%;
   border: 2px solid var(--gold);
-  background: radial-gradient(60% 60% at 50% 40%, #4a3a1c, #2a2213);
+  background: radial-gradient(60% 60% at 50% 40%, var(--gold-deep), var(--gold-dark));
   box-shadow: 0 0 22px var(--gold);
   cursor: pointer;
   pointer-events: auto;
@@ -930,8 +998,8 @@ kbd {
   border: 1px solid var(--line);
   color: var(--fg);
   padding: .5rem 1rem;
-  border-radius: 9px;
-  font-size: .88rem;
+  border-radius: var(--r-card);
+  font-size: var(--text-sm);
   opacity: 0;
   pointer-events: none;
   transition: opacity .2s ease, transform .2s ease;
@@ -943,10 +1011,10 @@ kbd {
 footer {
   margin-top: 2rem;
   color: var(--dim);
-  font-size: .82rem;
+  font-size: var(--text-sm);
   max-width: 60rem;
 }
-footer code { background: #00000055; padding: .05rem .3rem; border-radius: 4px; }
+footer code { background: #00000055; padding: .05rem .3rem; border-radius: var(--r-xs); }
 
 /* ---------------------------------------------------------------- 日志 */
 
@@ -959,16 +1027,16 @@ footer code { background: #00000055; padding: .05rem .3rem; border-radius: 4px; 
   background: var(--card);
   border: 1px solid var(--line);
   border-left: 3px solid var(--dim);
-  border-radius: 9px;
-  font-size: .86rem;
+  border-radius: var(--r-card);
+  font-size: var(--text-sm);
 }
 
 .note-icon { text-align: center; }
-.note-text { color: #cdc7e4; }
+.note-text { color: var(--dim); }
 
 .note-time {
   color: var(--dim);
-  font-size: .74rem;
+  font-size: var(--text-xs);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
@@ -986,7 +1054,7 @@ footer code { background: #00000055; padding: .05rem .3rem; border-radius: 4px; 
 :where(button, a, [tabindex]):focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
-  border-radius: 6px;
+  border-radius: var(--r-ctl);
 }
 
 /* 焦点落在卡片上时要能看出来是哪一张：整行描边 + 抬起一点。 */
@@ -1007,9 +1075,25 @@ footer code { background: #00000055; padding: .05rem .3rem; border-radius: 4px; 
      62rem 那节里（`max-height: 34rem` 那一条管又宽又矮的视口）。这里只剩手机上
      真正独有的一档：内边距与间距。 */
   .hero {
-    padding: 1rem;
-    gap: .75rem;
+    padding: .875rem;
+    gap: .625rem;
   }
+
+  /* 首屏：改之前 hero 79→670、页签 689→775、建筑列表从 **795** 才开始——
+     375×812 上一个建筑行都看不到（`WEB_VISUAL_AUDIT` §3-A2）。这里只做三件
+     不删内容的事，把列表顶到 ~700：
+       ① 猫压扁一档（.62 → .5）：343 宽下 213 → 172，省 41px；
+         `aspect-ratio` 的基规则不动（守卫盯着它），只在这一档改。
+       ② hero 的内边距与间距各收一档：16→14、12→10，省约 14px。
+       ③ 页签不再折行，改成一条横向滚动的条：7 个按钮在 335px 里放不下，
+         折行的第二行（46px）比"最右那个要靠横滑"更贵——「换包」本来就是一个
+         低频动作，横滑一下能接受。
+     纪元说明与成就行**一个字没删**：这一档只动尺寸，不动内容。 */
+  .big-cat { aspect-ratio: 1 / .5; }
+  .hero > .meta { padding-top: .5rem; }
+  .tabs { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tabs button { flex: 0 0 auto; }
 
   main { padding: 0 .6rem; }
 
@@ -1040,7 +1124,7 @@ footer code { background: #00000055; padding: .05rem .3rem; border-radius: 4px; 
      （320px：32px → 8vw = 25.6px，clamp 后 27.2px）。 */
   #cookies { font-size: clamp(1.7rem, 8vw, 2rem); }
 
-  footer { font-size: .78rem; }
+  footer { font-size: var(--text-xs); }
 }
 
 /* ---------------------------------------------------------------- 动效偏好
@@ -1074,11 +1158,11 @@ footer code { background: #00000055; padding: .05rem .3rem; border-radius: 4px; 
 
 .sheet {
   width: min(26rem, 100%);
-  background: linear-gradient(180deg, #2a2135, var(--card));
+  background: linear-gradient(180deg, var(--sheet), var(--card));
   border: 1px solid var(--accent-deep);
-  border-radius: var(--radius);
+  border-radius: var(--r-card);
   padding: 1.2rem 1.3rem 1.1rem;
-  box-shadow: 0 18px 60px #000000aa;
+  box-shadow: var(--e3);
   animation: sheet-in .18s ease-out;
   /* 唯一的出路是底部那颗按钮：没有高度上限与滚动，短窗口里它够不着。
      上限用**视口单位**，而且必须跟当前可见视口走：100vh 在手机上等于大视口
@@ -1133,7 +1217,7 @@ footer code { background: #00000055; padding: .05rem .3rem; border-radius: 4px; 
   z-index: 1;
   margin-top: -1.2rem;
   padding-top: 1.2rem;
-  background: #2a2135;
+  background: var(--sheet);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1147,7 +1231,7 @@ footer code { background: #00000055; padding: .05rem .3rem; border-radius: 4px; 
   min-width: 44px;
   min-height: 44px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--r-ctl);
   background: transparent;
   color: var(--dim);
   font: inherit;
@@ -1156,11 +1240,11 @@ footer code { background: #00000055; padding: .05rem .3rem; border-radius: 4px; 
 }
 .sheet-close:hover { color: var(--fg); border-color: var(--accent-deep); }
 
-.sheet h2 { margin: 0 0 .55rem; font-size: 1.05rem; color: var(--accent); }
+.sheet h2 { margin: 0 0 .55rem; font-size: var(--text-md); color: var(--accent); }
 /* 放在 .sheet h2 之后：两者特异度相同，标题行里的 h2 不该再带一段下边距。 */
 .sheet-head h2 { margin: 0; }
-.sheet p { margin: 0 0 .5rem; font-size: .9rem; color: #cdc7e4; line-height: 1.55; }
-.sheet p.muted { color: var(--dim); font-size: .82rem; }
+.sheet p { margin: 0 0 .5rem; font-size: var(--text-sm); color: var(--dim); line-height: 1.55; }
+.sheet p.muted { color: var(--dim); font-size: var(--text-sm); }
 .sheet b { color: var(--gold); }
 
 .sheet-ok {
@@ -1168,15 +1252,43 @@ footer code { background: #00000055; padding: .05rem .3rem; border-radius: 4px; 
   width: 100%;
   min-height: 44px;
   padding: .55rem 1rem;
-  border-radius: 9px;
+  border-radius: var(--r-card);
   border: 1px solid var(--accent-deep);
   background: var(--accent);
-  color: #2a1520;
+  color: var(--on-accent);
   font: inherit;
   font-weight: 600;
   cursor: pointer;
 }
-.sheet-ok:hover { background: #ffc7d6; }
+.sheet-ok:hover { background: var(--accent-hi); }
+
+/* 导入是这张窗口里**唯一会覆盖存档**的动作（§2.8.1：破坏性动作不该是页面上最响的那一个）。
+   空框时退成空心态，框里有字才亮成主按钮。**不禁用**：空框点下去仍然会得到宿主那句
+   "文本不对"，行为没变——变的只是它像不像主按钮（判据与 toggle 在 app.js 的 syncImportButton）。 */
+#import-go {
+  background: transparent;
+  color: var(--dim);
+  border-color: var(--line);
+  font-weight: 400;
+}
+#import-go:not(.is-armed):hover { background: #ffffff08; color: var(--fg); }
+#import-go.is-armed {
+  background: var(--accent);
+  color: var(--on-accent);
+  border-color: var(--accent-deep);
+  font-weight: 600;
+}
+/* ⚠️ 这一条必须单独写：`.sheet-ok:hover` 的特异度（0,2,0）输给 `#import-go.is-armed`（1,1,0），
+   少了它，按钮亮起来之后**没有 hover 反馈**——看起来像点不动。 */
+#import-go.is-armed:hover { background: var(--accent-hi); }
+
+/* 导出组里「复制」是最常走的一步，给它一档次强调（accent-deep 描边 ＋ 正文色）。
+   它**不是**主按钮：这张窗口的主按钮仍然是「导入」（框里有字时），两者不在一个层级上。 */
+#export-copy {
+  border-color: var(--accent-deep);
+  color: var(--fg);
+}
+#export-copy:hover { background: #ffffff08; }
 
 @keyframes sheet-in {
   from { opacity: 0; transform: translateY(.6rem) scale(.98); }
@@ -1195,14 +1307,37 @@ footer code { background: #00000055; padding: .05rem .3rem; border-radius: 4px; 
    为什么是这组颜色：页面底色是深紫（--bg #12111a），而纸条是一张**纸**——
    它在深色画面上"亮起来"本身就是"这是一件被捡到的东西"这条信息。取的是页面上已有的暖色
    （--gold #ffd479 那一族往回压到米色），没有引入新色相。
-   对比度（压在纸色底上）：墨 #2b2419 / 纸 #e6d9bb ≈ 11.9:1、标题 #6b4f22 / 纸 #f3e9d2 ≈ 6.9:1、
-   次要文字 #6b5c42 ≈ 5.8:1——三个都高于 4.5:1。 */
+   对比度（压在纸色底上）：墨 var(--paper-ink) / 纸 var(--paper-bg) ≈ 11.9:1、标题 var(--paper-ink-3) / 纸 var(--paper-top) ≈ 6.9:1、
+   次要文字 var(--paper-ink-2) ≈ 5.8:1——三个都高于 4.5:1。 */
+/* 纸的质感（2026-10-24）：**折过、揉过**的一张纸，而不是一块米色矩形。
+   五层叠出来，全部是 alpha ≤ 5% 的黑，压在文字下面而文字对比度基本不动
+   （墨 11.9:1 → 约 11.3:1，仍远高于 4.5:1）：
+     ① 左上、右下两团边缘压暗 —— 手捏过的地方；
+     ② 一道竖折痕、一道横折痕 —— 软过渡，不用 1px 硬线（硬线读起来像表格边）；
+     ③ 斜向纤维 —— 1px 细线、间隔 5px、alpha 3%，远看是"纸不匀"，近看才数得出线；
+     ④ 底层仍是原来那条米色渐变。
+   圆角也改成不对称的（10/4/12/3）——四角等圆是"卡片"的语言，纸不会这样。
+   ⚠️ 折痕百分比是相对这张纸的宽高：`.sheet-head` 是吸顶的实心底，所以它必须
+   叠**同一条竖折痕**，否则纸在标题行那里会断一下。 */
 .sheet-layer.sheet-note .sheet {
   /* 比卡片窄：纸条不是对话框，它是一张纸，两行字就写满了。 */
   width: min(22rem, 100%);
-  background: linear-gradient(180deg, #f3e9d2, #e6d9bb);
-  border-color: #b9a480;
-  color: #2b2419;
+  background:
+    radial-gradient(90% 60% at 0% 0%, #00000012, transparent 55%),
+    radial-gradient(80% 55% at 100% 100%, #00000014, transparent 60%),
+    linear-gradient(90deg, transparent 34.8%, #0000000d 37.6%, #00000003 39.8%, transparent 42%),
+    linear-gradient(90deg, transparent 69.4%, #0000000a 71.6%, #00000002 73.2%, transparent 75.2%),
+    linear-gradient(180deg, transparent 60.2%, #0000000b 62.8%, #00000002 65%, transparent 67.6%),
+    linear-gradient(155deg, transparent 47.4%, #00000008 49.2%, transparent 51.2%),
+    radial-gradient(46% 34% at 24% 26%, #00000007, transparent 72%),
+    radial-gradient(52% 40% at 76% 70%, #00000006, transparent 72%),
+    radial-gradient(34% 26% at 62% 46%, #ffffff09, transparent 74%),
+    repeating-linear-gradient(102deg, #00000003 0 1px, transparent 1px 6px),
+    linear-gradient(180deg, var(--paper-top), var(--paper-bg));
+  border-color: var(--paper-line);
+  border-radius: 10px 4px 12px 3px / 4px 12px 3px 10px;
+  box-shadow: var(--e3), inset 0 0 36px #00000008;
+  color: var(--paper-ink);
 }
 
 /* 纸上的字：衬线 + 宽松行距。这一段**刻意不像界面**（界面是无衬线 + 紧凑行距）。
@@ -1213,9 +1348,9 @@ footer code { background: #00000055; padding: .05rem .3rem; border-radius: 4px; 
 .sheet-note .note-body {
   margin: 0 0 .5rem;
   font-family: Georgia, "Songti SC", SimSun, serif;
-  font-size: .95rem;
+  font-size: var(--text-md);
   line-height: 1.75;
-  color: #2b2419;
+  color: var(--paper-ink);
   /* 纸条的正文里有换行（清单、落款），必须原样留住：pre-wrap 保留空白**并且**照常折行
      （pre 会顶出横向滚动条，而这张纸上写的是中文长句）。 */
   white-space: pre-wrap;
@@ -1223,14 +1358,24 @@ footer code { background: #00000055; padding: .05rem .3rem; border-radius: 4px; 
 
 /* 标题行是吸顶的，而 .sheet-head 的底色取的是深色卡片渐变的第一个色标——
    换皮时必须一起换，否则纸色卡片顶上会横着一条深紫。 */
-.sheet-note .sheet-head { background: #f3e9d2; }
-.sheet-note .sheet h2 { color: #6b4f22; }
-.sheet-note .sheet-close { color: #6b4f22; border-color: #c9b48f; }
-.sheet-note .sheet-close:hover { color: #2b2419; border-color: #8a6f3d; }
-.sheet-note .sheet-ok { background: #d9bd83; border-color: #8a6f3d; color: #2b2419; }
-.sheet-note .sheet-ok:hover { background: #e6cf9d; }
+/* 纸条的标题行**不吸顶**（2026-10-24）。别的那几张之所以吸顶，是因为滚动的是 `.sheet`
+   自己（标题行会跟着滚走）；纸条的身体是 `.note-body`（`sheet-body`），滚的只有正文，
+   标题行与 × 本来就不动 —— 它一吸顶，就非得有一块不透明的底色，而纸是渐变的、
+   标题行只能取一个颜色，于是纸上会横出一条比周围亮的带。
+   这一条是拿截图换来的：先做成"半透明纸色 ＋ backdrop blur"，那条带仍在
+   （blur 把纤维糊平了，和周围的颗粒一对比就是一块补丁）。 */
+.sheet-note .sheet-head {
+  position: static;
+  background: transparent;
+}
+
+.sheet-note .sheet h2 { color: var(--paper-ink-3); }
+.sheet-note .sheet-close { color: var(--paper-ink-3); border-color: var(--paper-faint); }
+.sheet-note .sheet-close:hover { color: var(--paper-ink); border-color: var(--paper-edge); }
+.sheet-note .sheet-ok { background: var(--paper-btn); border-color: var(--paper-edge); color: var(--paper-ink); }
+.sheet-note .sheet-ok:hover { background: var(--paper-btn-hi); }
 /* .sheet p.muted 那个灰是给深色底配的，压在纸上太浅。 */
-.sheet-note .sheet p.muted { color: #6b5c42; }
+.sheet-note .sheet p.muted { color: var(--paper-ink-2); }
 
 /* ---------------------------------------------------------------- 存档的导出 / 导入窗口
    它是第三张 sheet，形态整段复用 `.sheet` 那一套（见 index.html 的注释）——
@@ -1243,7 +1388,7 @@ footer code { background: #00000055; padding: .05rem .3rem; border-radius: 4px; 
    用 h3 而不是加粗的 p：读屏可以按标题跳，这在一张有六七个控件的窗口里是有用的。 */
 .sheet h3.sheet-section {
   margin: 1rem 0 .45rem;
-  font-size: .92rem;
+  font-size: var(--text-sm);
   color: var(--accent);
   letter-spacing: .02em;
 }
@@ -1256,11 +1401,11 @@ footer code { background: #00000055; padding: .05rem .3rem; border-radius: 4px; 
   min-height: 6rem;
   padding: .5rem .6rem;
   border: 1px solid var(--line);
-  border-radius: 9px;
-  background: #171522;
+  border-radius: var(--r-card);
+  background: var(--bg-deep);
   color: var(--fg);
   font-family: "Cascadia Mono", Consolas, "Courier New", monospace;
-  font-size: .78rem;
+  font-size: var(--text-xs);
   line-height: 1.45;
   resize: vertical;
   /* 只读那一份也要能选中、能滚动：它是"要被复制走的东西"。 */
@@ -1279,10 +1424,10 @@ footer code { background: #00000055; padding: .05rem .3rem; border-radius: 4px; 
   min-height: 44px;
   padding: .5rem .6rem;
   border: 1px solid var(--line);
-  border-radius: 9px;
-  background: #171522;
+  border-radius: var(--r-card);
+  background: var(--bg-deep);
   color: var(--fg);
-  font-size: .9rem;
+  font-size: var(--text-sm);
 }
 
 .sheet .text-input:focus-visible { outline: 2px solid var(--accent-deep); outline-offset: 1px; }
@@ -1304,7 +1449,7 @@ footer code { background: #00000055; padding: .05rem .3rem; border-radius: 4px; 
    金色是因为它数的不是普通货币——与纪元面板上的"可得 🍃 N"是同一套语言。 */
 .wallet {
   margin: 0 0 .4rem;
-  font-size: 1.05rem;
+  font-size: var(--text-md);
   font-variant-numeric: tabular-nums;
   color: var(--gold);
 }

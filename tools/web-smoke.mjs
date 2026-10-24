@@ -57,6 +57,22 @@ const css = readFileSync(join(wwwroot, "app.css"), "utf8");
 const cssRules = css.replace(/\/\*[\s\S]*?\*\//g, "");
 const appSource = readFileSync(join(wwwroot, "app.js"), "utf8");
 
+// 字号 token（2026-10-22 建立）：CSS 里现在写的是 `font-size: var(--text-*)`，但下面几条
+// 预算类守卫要算像素，所以在这里把 var() 解析回 :root 里那个 rem。**不解析 `clamp()`**：
+// 那几处（大数字、大猫图标）本来就跟视口走，没有单一数值可言。
+const cssTokens = new Map([...cssRules.matchAll(/--([\w-]+)\s*:\s*([^;]+);/g)].map(([, k, v]) => [k, v.trim()]));
+/** 一条规则体里的字号（rem 数值）；`var(--text-*)` 会解析到 :root。读不出返回 NaN。 */
+const fontSizeRem = (rule) => {
+  const viaVar = /font-size:\s*var\(--([\w-]+)\)/.exec(rule);
+  if (viaVar) {
+    const raw = cssTokens.get(viaVar[1]);
+    const m = raw && /^([\d.]+)rem$/.exec(raw);
+    return m ? Number(m[1]) : NaN;
+  }
+  const m = /font-size:\s*([\d.]+)rem/.exec(rule);
+  return m ? Number(m[1]) : NaN;
+};
+
 // ---------------------------------------------------------------- 断言
 
 let checks = 0;
@@ -2193,6 +2209,51 @@ section("24. 存档的导出 / 导入窗口（入口 / 复制 / 下载 / 导入�
     eq(el(save, "export-text").value, ENVELOPE, "文本框仍然是宿主给的那一份");
   });
 
+  // ---- 导入按钮的两态（2026-10-22，§2.8.1：破坏性动作不该是页面上最响的那一个）----
+  // 空框 → 空心；框里有字 → 亮成主按钮。**不是禁用**：点空框仍然发 import，宿主回那句话，
+  // 行为一个字没变（下面那三条坏输入的用例就是证据）。
+  el(save, "import-text").value = "";
+  fire(el(save, "import-text"), "input");
+  check("导入按钮：空框时不是主按钮的形态，而且**没有被禁用**（行为不变）", () => {
+    eq(el(save, "import-go").classList.contains("is-armed"), false, "空框时的 is-armed");
+    eq(el(save, "import-go").disabled, false, "空框时按钮被禁用了——那会改掉「点一下得到宿主那句话」这条行为");
+  });
+
+  el(save, "import-text").value = "好文本";
+  fire(el(save, "import-text"), "input");
+  check("导入按钮：框里有字才亮（一次 input 就够，不必等失焦）", () => {
+    eq(el(save, "import-go").classList.contains("is-armed"), true, "有字时的 is-armed");
+  });
+
+  check("导入按钮的两态确实写在 CSS 里：默认透明，`.is-armed` 才是主按钮色", () => {
+    const base = /#import-go\s*\{([^}]*)\}/.exec(cssRules)?.[1] ?? "";
+    const armed = /#import-go\.is-armed\s*\{([^}]*)\}/.exec(cssRules)?.[1] ?? "";
+    if (!/background:\s*transparent/.test(base)) {
+      throw new Error(`#import-go 的默认态不是透明的（空框时它仍会长得像主按钮）：<${base.trim() || "(没有这条规则)"}>`);
+    }
+    if (!/background:\s*var\(--accent\)/.test(armed)) {
+      throw new Error(`#import-go.is-armed 没有回到主按钮色：<${armed.trim() || "(没有这条规则)"}>`);
+    }
+  });
+
+  // ---- 亮起来之后的 hover / 导出组的「复制」（2026-10-24，查缺补漏）----
+  check("导入按钮亮起来之后**仍然有 hover**（`.sheet-ok:hover` 的 0,2,0 输给 `#import-go.is-armed` 的 1,1,0）", () => {
+    const armedHover = /#import-go\.is-armed:hover\s*\{([^}]*)\}/.exec(cssRules)?.[1] ?? "";
+    if (!/background:\s*var\(--accent-hi\)/.test(armedHover)) {
+      throw new Error("`#import-go` 有 id，`#import-go.is-armed` 会盖掉 `.sheet-ok:hover`：缺这条 hover，按钮亮起来之后看起来像点不动");
+    }
+  });
+
+  check("导出组里「复制」是**次强调**（accent-deep 描边），「下载 .json」仍是 ghost", () => {
+    const copy = /#export-copy\s*\{([^}]*)\}/.exec(cssRules)?.[1] ?? "";
+    if (!/border-color:\s*var\(--accent-deep\)/.test(copy)) {
+      throw new Error(`#export-copy 没有次强调（accent-deep 描边）——导出组里最常走的一步又和「下载」长得一模一样了: <${copy.trim() || "(没有这条规则)"}>`);
+    }
+    if (!/class="ghost"[^>]*>复制/.test(html)) {
+      throw new Error("「复制」不再带 `.ghost` 类：高度/内边距那套会跟着没");
+    }
+  });
+
   // ---- 手动存档那条命令没被删掉，只是换了入口 ----
   fire(el(save, "save-now"), "click");
   await flush();
@@ -2325,13 +2386,80 @@ section("25. 缩放适配：视口单位、相对尺寸、断点（结构性可�
     if (declarations.length < 30) throw new Error(`只数到 ${declarations.length} 处 font-size（期望 ≥30）——这条守卫变得没有内容了`);
   });
 
+  check("每个 token 的值要么是字面量、要么引用**别的**已定义 token（自引用 == 未定义）", () => {
+    // 2026-10-24 查出来的真事故：批量把 hex 换成 `var(--x)` 时，把 `--x:` 自己的定义也换掉了，
+    // 于是 12 个 token 变成 `--x: var(--x)`。浏览器把这种循环当成"未定义"静默丢弃——
+    // 页面不报错，只是那些颜色全部回退成继承值（副文本变亮、纸色主题失效、hover 没反馈）。
+    // 这条守卫钉的就是"别再犯"：引用必须在表里，而且不能指向自己。
+    const root = /:root \{([\s\S]*?)\n\}/.exec(cssRules)?.[1] ?? "";
+    const tokens = new Map([...root.matchAll(/(--[\w-]+):\s*([^;]+);/g)].map(([, k, v]) => [k, v.trim()]));
+    const bad = [];
+    for (const [name, value] of tokens) {
+      for (const ref of [...value.matchAll(/var\((--[\w-]+)\)/g)].map((m) => m[1])) {
+        if (ref === name) bad.push(`${name} 指向自己`);
+        else if (!tokens.has(ref)) bad.push(`${name} 指向未定义的 ${ref}`);
+      }
+    }
+    if (bad.length > 0) {
+      throw new Error(`这些 token 在浏览器里等于未定义（循环或悬空引用）：${bad.join(" / ")}`);
+    }
+    if (tokens.size < 30) throw new Error(`只读到 ${tokens.size} 个 token（期望 ≥30）——这条守卫变得没有内容了`);
+    // 两个被这次事故打中的 token 单独再钉一下：它们的值是颜色，不是引用。
+    for (const [name, re] of [["--dim", /^#[0-9a-fA-F]{6}$/], ["--accent-hi", /^#[0-9a-fA-F]{6}$/]]) {
+      if (!re.test(tokens.get(name) ?? "")) {
+        throw new Error(`${name} 的值不是字面颜色：<${tokens.get(name) ?? "(没有这个 token)"}>`);
+      }
+    }
+  });
+
+  check(":root 之外没有不透明的原色 hex（颜色只能来自 token，外面只放 alpha 叠加层）", () => {
+    // 2026-10-24 收尾：把最后几个一次性渐变停靠点也收进 token 之后，外面剩的 hex 全是
+    // `#00000055` / `#ffffff0d` 这类叠加层 —— 它们本来就该就地写（阴影与描边不谈语义）。
+    // 判据：**不是属性名以 `--` 开头的声明**里，hex 必须是 4 位或 8 位（带 alpha）。
+    const offenders = [];
+    let alphaCount = 0;
+    for (const decl of cssRules.matchAll(/([a-z-]+)\s*:\s*([^;{}]*)/g)) {
+      const [, prop, value] = decl;
+      if (prop.startsWith("--")) continue;   // token 的定义，颜色本来就该在这里
+      for (const hex of value.matchAll(/#([0-9a-fA-F]{3,8})\b/g)) {
+        const digits = hex[1].length;
+        if (digits === 4 || digits === 8) alphaCount += 1;
+        else offenders.push(`${prop}: ${hex[0]}`);
+      }
+    }
+    if (offenders.length > 0) {
+      throw new Error(`这些颜色没走 token（:root 之外只允许带 alpha 的叠加层）：${[...new Set(offenders)].join(" / ")}`);
+    }
+    if (alphaCount < 10) throw new Error(`只数到 ${alphaCount} 个 alpha 叠加层（期望 ≥10）——这条守卫变得没有内容了`);
+  });
+
+  check("字号只有四档 token，外加四类例外（clamp 的大数字 / 大猫图标、calc 的金猫、inherit 的键帽）", () => {
+    // 2026-10-22：16 个散值收成 --text-xs / sm / md / lg 四档。这条守卫钉的是"以后不许再手写一个 rem"。
+    // 例外只有四类，每一类都有它非如此不可的理由：
+    //   · `clamp(...)`：大数字跟视口走（#cookies 那两条）；
+    //   · `calc(var(--golden-cat-size) * .56)`：金猫的图标跟它自己的尺寸走；
+    //   · `inherit`：`.big-cat .hint kbd` 要跟同行的大猫标签同规格。
+    const decls = [...cssRules.matchAll(/font-size\s*:\s*([^;{}]+)/g)]
+      .map((m) => m[1].trim().replace(/\s*!important$/, ""));
+    const onToken = /^var\(--text-(?:xs|sm|md|lg)\)$/;
+    const exceptions = /^(?:inherit|clamp\(|calc\(var\(--golden-cat-size\))/;
+    const bad = [...new Set(decls.filter((v) => !onToken.test(v) && !exceptions.test(v)))];
+    if (bad.length > 0) {
+      throw new Error(`这些 font-size 没走 token（四档：--text-xs 12 / --text-sm 14 / --text-md 16 / --text-lg 20）：${bad.join(" / ")}`);
+    }
+    if (decls.length < 30) throw new Error(`只数到 ${decls.length} 处 font-size（期望 ≥30）——这条守卫变得没有内容了`);
+  });
+
   check("px 只出现在有先例的那批属性上（边框 / 圆角 / 轮廓 / 阴影 / 触屏下限 / 背景光的兜底 / 动画位移）", () => {
     // 这些 px 是**故意的**：1px 的边与 2px 的轮廓是"发丝线"，跟着 rem 放大会变粗；
     // 44px 的触屏下限是**物理尺寸**（CSS px ≈ 1/96 英寸），它不该跟字号一起长大；
     // 12px 的圆角与 8/30px 的阴影是形状与装饰；background 里的 1200px/600px 是 min() 的
     // 兜底上界（这里只允许它出现在 min() 里，见下面单独一条）；transform 是 float 动画。
     const allowed = new Set([
-      "--radius", "background", "border", "border-top", "border-bottom", "border-bottom-width",
+      // 圆角 token（2026-10-22 建的那四档）与旧的别名 --radius：px 在这里是**形状**，
+      // 跟着字号一起放大会让圆角在大字号下变糊。
+      "--r-xs", "--r-ctl", "--r-card", "--r-pill",
+      "background", "border", "border-top", "border-bottom", "border-bottom-width",
       "border-left", "border-radius", "outline", "outline-offset", "box-shadow",
       "min-width", "min-height", "transform",
     ]);
@@ -2429,7 +2557,15 @@ section("25. 缩放适配：视口单位、相对尺寸、断点（结构性可�
     if (!/position:\s*sticky/.test(head) || !/top:\s*0/.test(head)) {
       throw new Error(".sheet-head 不吸顶：.sheet 自己滚动，内容一滚唯一的 × 就滚出去了");
     }
-    if (!/background:\s*#2a2135/.test(head)) throw new Error("吸顶的标题行没有底色：滚动的内容会从它上面穿过去");
+    // 底色必须与 .sheet 渐变**同一个值**（2026-10-22 起两边都是 `var(--sheet)`）：
+    // 写两个常量的话，改其中一个就会在滚动时露出缝，而这条守卫只认字面量就盯不住。
+    const colour = "(var\\(--[\\w-]+\\)|#[0-9a-fA-F]{3,8})";
+    const firstStop = new RegExp("linear-gradient\\([^,]+,\\s*" + colour).exec(blockOf(".sheet"))?.[1] ?? "";
+    const headBg = new RegExp("background:\\s*" + colour).exec(head)?.[1] ?? "";
+    if (!headBg) throw new Error("吸顶的标题行没有底色：滚动的内容会从它上面穿过去");
+    if (headBg !== firstStop) {
+      throw new Error(`吸顶的标题行底色（${headBg}）与 .sheet 渐变的第一个色标（${firstStop}）不是同一个值：滚动的内容会从它上面穿过去`);
+    }
     const sheetPad = Number(/padding:\s*([\d.]+)rem/.exec(blockOf(".sheet"))?.[1]);
     const pull = Number(/margin-top:\s*-([\d.]+)rem/.exec(head)?.[1]);
     const pad = Number(/padding-top:\s*([\d.]+)rem/.exec(head)?.[1]);
@@ -2776,8 +2912,15 @@ section("26. 两栏对齐：左栏大框与右栏卡片的上沿 ＋ 下沿 ＋ 
     const narrow = mediaOf("(max-width: 34rem)");
     if (!narrow) throw new Error("找不到 max-width: 34rem 那一节");
     const narrowHero = heroRulesIn(narrow);
-    if (!narrowHero.some(([, body]) => /gap:\s*\.75rem/.test(body))) {
-      throw new Error("手机那一节不再管 hero 的内边距与间距了——这条守卫的判据没了（它盯的是「那一节只碰这两样」）");
+    // 手机那一节仍然管 hero 的内边距与间距（首屏高度就是从这两样里省的），
+    // 但 2026-10-22 起它同时做两件结构上的事：猫压扁一档、页签改成一条横滑的条
+    // —— 两者都是 A2「首屏露出一行建筑」的组成部分，理由写在 app.css 那一节与
+    // `WEB_VISUAL_AUDIT` §3-A2。所以这里从「只碰这两样」改成「必须碰这两样，外加它们」。
+    const heroInNarrow = narrowHero.filter(([s]) => s === ".hero").map(([, b]) => b).join("\n");
+    for (const [what, re] of [["内边距", /padding\s*:/], ["间距", /gap\s*:/]]) {
+      if (!re.test(heroInNarrow)) {
+        throw new Error(`手机那一节的 .hero 不再写${what}——首屏高度正是从这里省的，删掉它这一档就白写了`);
+      }
     }
     for (const [selector, body] of narrowHero) {
       for (const prop of ["align-self", "margin-top", "justify-content"]) {
@@ -2785,6 +2928,14 @@ section("26. 两栏对齐：左栏大框与右栏卡片的上沿 ＋ 下沿 ＋ 
           throw new Error(`手机那一节的 <${selector}> 写了 ${prop}：窄屏上要做的是内边距与间距（见那一节的注释），主轴那一套留给基规则`);
         }
       }
+    }
+    // A2 的两条结构承诺：**猫压扁**、**页签不折行**。任一被删掉，首屏又回到
+    // 「一个建筑行都看不到」（595 + 86 + 32 = 797 > 812，见 §3-A2 的实测）。
+    if (!/\.big-cat\s*\{[^}]*aspect-ratio/.test(narrow)) {
+      throw new Error("手机那一节不再压扁大猫（aspect-ratio）：猫高 213px 会把建筑列表推出首屏");
+    }
+    if (!/\.tabs\s*\{[^}]*overflow-x\s*:\s*auto/.test(narrow)) {
+      throw new Error("手机那一节的页签不再横滑（overflow-x: auto）：7 个按钮会折成两行，白吃掉 46px 的首屏高度");
     }
   });
 
@@ -2834,18 +2985,92 @@ section("26. 两栏对齐：左栏大框与右栏卡片的上沿 ＋ 下沿 ＋ 
 
   check("量一下这次改动消掉的那条错位：页签行高 ＋ 行间距（数字全部从 CSS 常量算出来）", () => {
     const tab = blockOf(".tabs button");
-    const fontSize = Number(/font-size:\s*([\d.]+)rem/.exec(tab)?.[1]);
+    const fontSize = fontSizeRem(tab);
     const padding = Number(/padding:\s*([\d.]+)rem/.exec(tab)?.[1]);
     const lineHeight = Number(/line-height:\s*([\d.]+)/.exec(blockOf("body"))?.[1]);
     const rowGap = Number(/row-gap:\s*([\d.]+)rem/.exec(blockOf("main"))?.[1]);
     for (const [what, value] of [["页签字号", fontSize], ["页签内边距", padding], ["body 行高", lineHeight], ["行间距", rowGap]]) {
       if (!Number.isFinite(value)) throw new Error(`读不出${what}——这条预算的前提变了`);
     }
-    const tabHeight = fontSize * REM * lineHeight + 2 * padding * REM + 2; // ＋上下各 1px 边框
+    // A10（2026-10-22）之后页签是一整条轨道包着分段：行高 = 按钮（字高×行高 ＋ 上下内边距
+    // ＋ 上下 1px 透明边框）＋ 轨道自己的上下内边距与 1px 边框。两样都从 CSS 里读，别写死。
+    // ⚠️ `.tabs` 在本文件里出现两次（`grid-area` 一条、分段控件一条），`blockOf` 只取第一条，
+    // 所以这里把所有同名规则拼起来读。
+    const strip = [...cssRules.matchAll(/\.tabs \{([\s\S]*?)\}/g)].map((m) => m[1]).join("\n");
+    const stripPad = Number(/padding:\s*([\d.]+)rem/.exec(strip)?.[1]);
+    const stripBorder = Number(/border:\s*([\d.]+)px/.exec(strip)?.[1]);
+    if (!Number.isFinite(stripPad) || !Number.isFinite(stripBorder)) {
+      throw new Error("读不出页签轨道的内边距或边框——这条预算的前提变了");
+    }
+    const tabHeight = fontSize * REM * lineHeight + 2 * padding * REM + 2 + 2 * stripPad * REM + 2 * stripBorder;
     const offset = tabHeight + rowGap * REM;
     if (offset < 40) throw new Error(`算出来的错位只有 ${offset.toFixed(1)}px——这条守卫的前提变了`);
     if (!/\.hero \{ grid-area: 2 \/ 1; \}/.test(cssRules)) {
       throw new Error(`左栏大框的上沿比右栏那张卡片高 ${offset.toFixed(1)}px（页签 ${tabHeight.toFixed(1)} ＋ 行间距 ${(rowGap * REM).toFixed(1)}）`);
+    }
+  });
+
+  // 页签的形态（2026-10-22，A10）：6 个各自带边框的按钮 → 一条分段控件。
+  // 这条钉的是"形状"，不是像素：轨道有边框与底色、分段默认透明、选中那段才实心。
+  // 退回"每个按钮自己带边框底色"的样子，这条就红。
+  check("页签是一条分段控件：轨道有边框/底色，分段默认透明，只有选中那段是实心块", () => {
+    const strip = [...cssRules.matchAll(/\.tabs \{([\s\S]*?)\}/g)].map((m) => m[1]).join("\n");
+    for (const [what, re] of [
+      ["边框", /border:\s*1px solid var\(--line\)/],
+      ["底色", /background:\s*#[0-9a-fA-F]{6,8}/],
+      ["内边距", /padding:\s*[\d.]+rem/],
+    ]) {
+      if (!re.test(strip)) throw new Error(`页签轨道没有${what}——它就不是一条分段控件，而是 7 个散按钮: <${strip.trim()}>`);
+    }
+    const button = blockOf(".tabs button");
+    if (!/border:\s*1px solid transparent/.test(button)) {
+      throw new Error(`分段按钮不再用透明边框（高度会跟着变，选中态也得再补一条）: <${button.trim()}>`);
+    }
+    if (/background:\s*var\(--bg-soft\)|background:\s*var\(--card\)/.test(button)) {
+      throw new Error(`分段按钮又各自带底色了——那就是退回「每个按钮一张小卡」的样子: <${button.trim()}>`);
+    }
+    const active = /\.tabs button\.active \{([^}]*)\}/.exec(cssRules)?.[1] ?? "";
+    if (!/background:\s*var\(--card-hi\)/.test(active)) {
+      throw new Error(`选中那段不是实心块（.tabs button.active 少了 card-hi 底色）: <${active.trim() || "(没有这条规则)"}>`);
+    }
+  });
+
+  // 成就的两种状态（2026-10-24）：只靠"左边那条边是不是金色"的话，色觉差异的人分不出
+  // 哪条已经拿到（§5.7）。所以形状也参与：完成的实线 + 金边，没完成的**虚线** + 次要色。
+  check("成就的完成/未完成有两个信号：形状（实线 vs 虚线）＋ 文字层级", () => {
+    const unlocked = /\.card\.ach\.unlocked \{([^}]*)\}/.exec(cssRules)?.[1] ?? "";
+    const locked = /\.card\.ach:not\(\.unlocked\) \{([^}]*)\}/.exec(cssRules)?.[1] ?? "";
+    const dim = /\.card\.ach:not\(\.unlocked\) \.name \{([^}]*)\}/.exec(cssRules)?.[1] ?? "";
+    if (!/border-left-color:\s*var\(--gold\)/.test(unlocked)) {
+      throw new Error(`已完成的成就没有金色左边: <${unlocked.trim() || "(没有这条规则)"}>`);
+    }
+    if (!/border-style:\s*dashed/.test(locked)) {
+      throw new Error("未完成的成就只剩颜色差别了——加一条虚线边框，形状就是第二个信号");
+    }
+    if (!/color:\s*var\(--dim\)/.test(dim)) {
+      throw new Error("未完成的成就名字没有降一档（应当用 --dim）：光有虚线的话，扫读时仍然分不出轻重");
+    }
+  });
+
+  // 纸条的纸纹（2026-10-24）：一张**折过、揉过**的纸，而不是一块米色矩形。
+  // 这条钉两件事：叠了足够多的层（折痕 / 纤维 / 边缘压暗 / 凹痕），以及标题行不吸顶——
+  // 后者是拿截图换来的：标题行一吸顶就必须有不透明底色，而纸是渐变的，纸上会横出一条亮带。
+  check("纸条是折过的纸：多层背景（≥6 层渐变）＋ 不对称圆角，标题行不吸顶", () => {
+    const note = /\.sheet-layer\.sheet-note \.sheet \{([\s\S]*?)\}/.exec(cssRules)?.[1] ?? "";
+    if (!note) throw new Error("找不到 `.sheet-layer.sheet-note .sheet` 那条规则");
+    const layers = (note.match(/gradient\(/g) ?? []).length;
+    if (layers < 6) {
+      throw new Error(`纸条的背景只有 ${layers} 层渐变——折痕/纤维/压痕凑不齐，会退回"一块米色矩形": <${note.trim()}>`);
+    }
+    if (!/repeating-linear-gradient\(/.test(note)) {
+      throw new Error("纸条没有纤维层（repeating-linear-gradient）：远看是纯色，近看才发现没有纸的颗粒");
+    }
+    if (!/border-radius:\s*10px 4px 12px 3px/.test(note)) {
+      throw new Error("纸的圆角又变成四角等圆了——那是卡片的语言，纸不会这样");
+    }
+    const head = /\.sheet-note \.sheet-head \{([\s\S]*?)\}/.exec(cssRules)?.[1] ?? "";
+    if (!/position:\s*static/.test(head) || !/background:\s*transparent/.test(head)) {
+      throw new Error(`纸条的标题行又吸顶了（或又有底色）：纸上会横出一条比周围亮的带 —— 正文自己滚，标题行本来就不动: <${head.trim() || "(没有这条规则)"}>`);
     }
   });
 
@@ -2888,12 +3113,18 @@ section("26. 两栏对齐：左栏大框与右栏卡片的上沿 ＋ 下沿 ＋ 
       ["flex: 1（长得满）", /flex:\s*1\b/],
       ["min-height: 0（缩得回 ⇒ 内容多时在列表内部滚动，而不是把卡片顶高）", /min-height:\s*0\b/],
       ["max-height: none（把那条 416px 的硬上限让开）", /max-height:\s*none\b/],
-      ["justify-content: space-between（富余摊进卡片之间的间隙）", /justify-content:\s*space-between\b/],
     ]) {
       if (!pattern.test(list)) throw new Error(`两栏那一档里 .panel > .list 少了 ${what}：<${list.trim() || "(没有这条规则)"}>`);
     }
+    // 富余**不摊**（2026-10-22 真渲染之后拍的）：上一版用 `justify-content: space-between`
+    // 把富余摊进卡片间隙，列表越短摊得越开——永久线 5 条实测 **70 / 71 / 71 / 70px** 一段，
+    // 而卡片本身才 57px，组内间距大于组间，读起来是一堆断开的卡（现场见 `WEB_VISUAL_AUDIT` §2）。
+    // 这是**反向**断言：谁把它写回去，这条就红。
+    if (/justify-content\s*:\s*space-between/.test(list)) {
+      throw new Error(`两栏那一档里 .panel > .list 又写回了 justify-content: space-between：富余会被摊进卡片之间，列表越短摊得越开（永久线 5 条实测 70px/段，卡片才 57px）。富余应当整块留在列表底部：<${list.trim()}>`);
+    }
     if (!/gap:\s*\.4rem/.test(blockOf(".list"))) {
-      throw new Error(".list 的最小间距（gap: .4rem）没了：space-between 只该在它**之上**再加富余，不该替掉它");
+      throw new Error(".list 的最小间距（gap: .4rem）没了：卡片之间至少要有这一档，富余（如果有）另算");
     }
   });
 
@@ -2962,8 +3193,8 @@ section("26. 两栏对齐：左栏大框与右栏卡片的上沿 ＋ 下沿 ＋ 
       .filter(([, s]) => s.trim() === selector).map(([, , rule]) => rule).join("\n");
     const cardPadding = Number(/padding:\s*([\d.]+)rem/.exec(blockOf(".card"))?.[1]); // .5rem 上下
     const cardRowGap = Number(/gap:\s*([\d.]+)rem/.exec(blockOf(".card"))?.[1]);     // .1rem 行间距
-    const nameSize = Number(/font-size:\s*([\d.]+)rem/.exec(rulesOf(".card .name"))?.[1]);
-    const shareSize = Number(/font-size:\s*([\d.]+)rem/.exec(rulesOf(".card .share"))?.[1]);
+    const nameSize = fontSizeRem(rulesOf(".card .name"));
+    const shareSize = fontSizeRem(rulesOf(".card .share"));
     const lineHeight = Number(/line-height:\s*([\d.]+)/.exec(blockOf("body"))?.[1]);
     const listGap = Number(/gap:\s*([\d.]+)rem/.exec(blockOf(".list"))?.[1]);
     for (const [what, value] of [["卡片上下内边距", cardPadding], ["卡片行间距", cardRowGap], ["名字字号", nameSize],
@@ -3548,8 +3779,8 @@ section("30. 大猫上那两处标签的字号（「翻找」/「空格」）");
   });
 
   check("`kbd` 在大猫那一行里跟着 `.hint` 走：字号与字体族都 inherit（两个标签同一规格）", () => {
-    const hintSize = /font-size:\s*([\d.]+)rem/.exec(hintBlock)?.[1];
-    if (hintSize === undefined) throw new Error("`.big-cat .hint` 没有 rem 字号——这一行的规格没了");
+    const hintSize = fontSizeRem(hintBlock);
+    if (!Number.isFinite(hintSize)) throw new Error("`.big-cat .hint` 的字号读不出（既不是 rem 也不是已知的 --text-* token）——这一行的规格没了");
     if (scopedBlock === "") {
       throw new Error("没有 `.big-cat .hint kbd` 这条作用域规则：全局 `kbd` 的 .75rem 又压在这一行上了");
     }
