@@ -23,7 +23,7 @@
 
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
-$webDir = Join-Path $root 'games\hosts\Web'
+$webDir = Join-Path $root 'games/hosts/Web'
 $webSln = Join-Path $webDir 'NekoClicker.Web.sln'
 $url = 'http://127.0.0.1:5273'
 

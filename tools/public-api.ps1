@@ -17,18 +17,18 @@
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
 
-$testDll = Join-Path $root 'engine\tests\bin\Debug\net8.0\NekoClicker.Core.Tests.dll'
-$target = Join-Path $root 'engine\core\PublicApi.txt'
+$testDll = Join-Path $root 'engine/tests/bin/Debug/net8.0/NekoClicker.Core.Tests.dll'
+$target = Join-Path $root 'engine/core/PublicApi.txt'
 
 if (-not (Test-Path $testDll)) {
     Write-Host '先构建一次（快照由测试程序集打印）：' -ForegroundColor Yellow
-    & "$PSScriptRoot\dnet.ps1" build "$root\NekoClicker.sln" -v q --nologo
+    & "$PSScriptRoot/dnet.ps1" build "$root/NekoClicker.sln" -v q --nologo
     if ($LASTEXITCODE -ne 0) { Write-Host '构建失败。' -ForegroundColor Red; exit $LASTEXITCODE }
 }
 
 # 用 cmd 的 > 重定向而不是 PowerShell 的：PowerShell 5.1 的 Set-Content 在无 BOM 时会
 # 按控制台代码页写入，中文头部会被写坏（本仓库已经在这上面栽过一次）。
-$lines = & "$PSScriptRoot\dnet.ps1" exec $testDll --public-api
+$lines = & "$PSScriptRoot/dnet.ps1" exec $testDll --public-api
 if ($LASTEXITCODE -ne 0) { Write-Host '生成失败（--public-api 退出码非 0）。' -ForegroundColor Red; exit $LASTEXITCODE }
 
 $tmp = "$target.tmp"

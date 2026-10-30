@@ -38,11 +38,25 @@ param(
 $ErrorActionPreference = 'Stop'
 
 $root = Split-Path -Parent $PSScriptRoot
-$exe = Join-Path $root 'games\hosts\Web\bin\Debug\net8.0\neko-clicker-web.exe'
+# sha256（**刻意不用 `Get-FileHash`**，W18）：那个 cmdlet 在 Windows PowerShell 5.1 上
+# 不总是存在（实测一个干净的 `powershell -NoProfile` 会话里就是 CommandNotFound），
+# 而它会**直接终止整个脚本**。SHA256 是 BCL，两个解释器上逐字节一致；返回大小写与
+# `Get-FileHash` 的 `.Hash` 同形（大写十六进制），读不到文件时返回 `$null`。
+function Get-FileSha256([string]$Path) {
+    try {
+        $bytes = [System.IO.File]::ReadAllBytes($Path)
+        $sha = [System.Security.Cryptography.SHA256]::Create()
+        try { $digest = $sha.ComputeHash($bytes) } finally { $sha.Dispose() }
+        return ((($digest | ForEach-Object { $_.ToString('x2') }) -join '').ToUpperInvariant())
+    }
+    catch { return $null }
+}
+
+$exe = Join-Path $root 'games/hosts/Web/bin/Debug/net8.0/neko-clicker-web.exe'
 # 开发构建的 bin 里没有 wwwroot，ASP.NET 会退回用**当前目录**当 ContentRoot（Program.cs:58-60）；
 # Web 项目目录才是那个有 wwwroot 的地方，所以工作目录是它。
-$webDir = Join-Path $root 'games\hosts\Web'
-$fixture = if ($Output.Length -gt 0) { [System.IO.Path]::GetFullPath($Output) } else { Join-Path $root 'tools\fixtures\web-snapshot.json' }
+$webDir = Join-Path $root 'games/hosts/Web'
+$fixture = if ($Output.Length -gt 0) { [System.IO.Path]::GetFullPath($Output) } else { Join-Path $root 'tools/fixtures/web-snapshot.json' }
 
 if (-not (Test-Path $exe)) { throw "宿主没构建：$exe（先跑 tools\build.ps1）" }
 
@@ -63,7 +77,7 @@ New-Item -ItemType Directory -Force -Path $saveRoot | Out-Null
 
 $hadFixture = Test-Path $fixture
 $beforeBytes = if ($hadFixture) { (Get-Item $fixture).Length } else { 0 }
-$beforeHash = if ($hadFixture) { (Get-FileHash $fixture -Algorithm SHA256).Hash } else { '(原本不存在)' }
+$beforeHash = if ($hadFixture) { (Get-FileSha256 $fixture) } else { '(原本不存在)' }
 
 Write-Host ''
 Write-Host '=== 抓夹具 ===' -ForegroundColor Cyan
@@ -122,7 +136,7 @@ try {
 
     [System.IO.File]::WriteAllBytes($fixture, $bytes)
 
-    $hash = (Get-FileHash $fixture -Algorithm SHA256).Hash
+    $hash = (Get-FileSha256 $fixture)
     $changed = (-not $hadFixture) -or ($hash -ne $beforeHash)
 
     Write-Host ''

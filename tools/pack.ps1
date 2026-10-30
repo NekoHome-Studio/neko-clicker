@@ -47,17 +47,17 @@ New-Item -ItemType Directory -Force -Path (Join-Path $stage 'demo'), (Join-Path 
 
 function Publish-Host([string]$project, [string]$target, [string]$label) {
     Write-Host "  发布 $label ..." -ForegroundColor DarkGray
-    & "$PSScriptRoot\dnet.ps1" publish (Join-Path $root $project) -c Release -o $target -v q --nologo
+    & "$PSScriptRoot/dnet.ps1" publish (Join-Path $root $project) -c Release -o $target -v q --nologo
     if ($LASTEXITCODE -ne 0) { throw "$label 发布失败（退出码 $LASTEXITCODE）。" }
 }
 
-Publish-Host 'games\hosts\Demo.Cli\NekoClicker.Demo.Cli.csproj' (Join-Path $stage 'demo') '终端宿主'
-Publish-Host 'games\hosts\Web\NekoClicker.Web.csproj' (Join-Path $stage 'web') 'Web 宿主'
+Publish-Host 'games/hosts/Demo.Cli/NekoClicker.Demo.Cli.csproj' (Join-Path $stage 'demo') '终端宿主'
+Publish-Host 'games/hosts/Web/NekoClicker.Web.csproj' (Join-Path $stage 'web') 'Web 宿主'
 
 # 说明书直接拷贝仓库里的那份，而不是在脚本里写字符串：
 # 中文经过"脚本字面量 -> PowerShell 解析 -> 文件"这条路出过一次事故（把 ROADMAP 写坏了 298 行）。
 # 拷贝一个已有的 md 不经过那些层。
-$readme = Join-Path $root 'engine\docs\PACK_README.md'
+$readme = Join-Path $root 'engine/docs/PACK_README.md'
 if (-not (Test-Path $readme)) { throw "找不到说明书：$readme" }
 Copy-Item $readme (Join-Path $stage '说明.md') -Force
 
@@ -172,7 +172,7 @@ else {
         Expand-Archive -Path $zip -DestinationPath $checkRoot -Force
 
         # ---- ① 终端宿主的帮助文本：退出码 0，且输出里含 --simulate。
-        $demoExe = Join-Path $checkRoot 'demo\neko-clicker.exe'
+        $demoExe = Join-Path $checkRoot 'demo/neko-clicker.exe'
         if (-not (Test-Path $demoExe)) { throw "解出来的包里没有 demo\neko-clicker.exe——zip 布局与说明书不符。" }
 
         $helpRun = Invoke-ArtifactProcess -Exe $demoExe -Arguments @('--help') -WorkingDirectory $checkRoot -Tag 'demo-help'
@@ -216,7 +216,7 @@ else {
         }
         if ($port -le 0) { throw '连续 20 个高位随机端口都探测到被占用——本机端口环境异常，自检没法公平地跑。' }
 
-        $webExe = Join-Path $checkRoot 'web\neko-clicker-web.exe'
+        $webExe = Join-Path $checkRoot 'web/neko-clicker-web.exe'
         if (-not (Test-Path $webExe)) { throw "解出来的包里没有 web\neko-clicker-web.exe——zip 布局与说明书不符。" }
         $webSaveRoot = Join-Path $selfCheckRoot 'saves'
         $webLatencyLog = Join-Path $selfCheckRoot 'latency.txt'

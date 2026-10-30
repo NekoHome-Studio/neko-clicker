@@ -40,6 +40,16 @@ $root = Split-Path -Parent $PSScriptRoot
 $artifacts = Join-Path $root 'artifacts'
 $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
 
+# sha256（**刻意不用 `Get-FileHash`**，W18）：见 tools/capture-fixture.ps1 的同名函数——
+# 那个 cmdlet 在 Windows PowerShell 5.1 上不总是存在，而 release.ps1 正是手工工具，
+# 谁在 5.1 上跑它，就会在算 zip 哈希那一句直接终止。返回大写十六进制。
+function Get-FileSha256([string]$Path) {
+    $bytes = [System.IO.File]::ReadAllBytes($Path)
+    $sha = [System.Security.Cryptography.SHA256]::Create()
+    try { $digest = $sha.ComputeHash($bytes) } finally { $sha.Dispose() }
+    return ((($digest | ForEach-Object { $_.ToString('x2') }) -join '').ToUpperInvariant())
+}
+
 # versionCode：单调整数，客户端**只比大小**（P5）。换算照 docs/PROTOTYPE_PLAN.md §10 第 1 条
 # ——v1.12.0 -> 11200，所以 patch 位就是它自己（1.12.1 -> 11201）。
 function ConvertTo-VersionCode([string]$v) {
@@ -66,7 +76,7 @@ $zipPath = Join-Path $artifacts $zipName
 if (-not (Test-Path $zipPath)) { throw "找不到 $zipPath；先跑 tools/pack.ps1。" }
 
 # 这两项说的是**压缩包文件本身**，不是解包后的内容（§4.1 第 ④ 条）。
-$sha = (Get-FileHash -Path $zipPath -Algorithm SHA256).Hash.ToLowerInvariant()
+$sha = (Get-FileSha256 $zipPath).ToLowerInvariant()
 $size = (Get-Item $zipPath).Length
 
 # 绝对 URL，与 feed.sample.json 的形状一致（schema 要求 urls 的每一项是完整 uri）。
@@ -112,7 +122,7 @@ $feedPath = Join-Path $artifacts 'feed.json'
 # 边上文件：客户端顺序是**先验哈希、通过之后才解析 JSON**（contracts/feed.schema.json 头部）。
 # 内容是纯十六进制，不换行——骨架侧的 Sidecar.Verify 按空白切开取第一段，两种写法都认。
 $shaPath = "$feedPath.sha256"
-[System.IO.File]::WriteAllText($shaPath, (Get-FileHash -Path $feedPath -Algorithm SHA256).Hash.ToLowerInvariant(), $utf8NoBom)
+[System.IO.File]::WriteAllText($shaPath, (Get-FileSha256 $feedPath).ToLowerInvariant(), $utf8NoBom)
 
 # ---------------------------------------------------------------- 自检
 # 为什么必须自检、而不是"写完就完事"：§4.1 的第二条硬约束——layout 里的路径是**按解包后的
@@ -129,7 +139,7 @@ foreach ($declared in @('web/neko-clicker-web.exe', 'demo/neko-clicker.exe')) {
     if ($names -notcontains $declared) { $problems += "清单声明的 layout 在 zip 里不存在：$declared" }
 }
 if ((Get-Item $zipPath).Length -ne $size) { $problems += "zip 的字节数在算完哈希之后变了（$size -> $((Get-Item $zipPath).Length)）" }
-if ([System.IO.File]::ReadAllText($shaPath).Trim() -ne (Get-FileHash -Path $feedPath -Algorithm SHA256).Hash.ToLowerInvariant()) {
+if ([System.IO.File]::ReadAllText($shaPath).Trim() -ne (Get-FileSha256 $feedPath).ToLowerInvariant()) {
     $problems += "feed.json.sha256 与 feed.json 的实际哈希不符（边上文件写错了）"
 }
 if ($problems.Count -gt 0) { throw "清单自检失败：`n  - " + ($problems -join "`n  - ") }

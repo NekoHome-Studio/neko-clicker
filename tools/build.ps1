@@ -21,7 +21,7 @@ $strict = $args -contains '-Strict'
 $forward = @($args | Where-Object { $_ -ne '-Strict' -and $_ -ne '-SkipWebSmoke' })
 
 # 路径一律用 Join-Path / 正斜杠拼：PowerShell 的**提供程序**在 Linux 上会把 `\` 当分隔符
-# 归一化掉（所以 `& "$PSScriptRoot\dnet.ps1"` 那种调用在 Linux 上照样能跑），
+# 归一化掉（所以 `& "$PSScriptRoot/dnet.ps1"` 那种调用在 Linux 上照样能跑），
 # 但**传给原生进程的参数不会被归一化**——`dotnet exec <带反斜杠的 dll 路径>` 在 Linux 上
 # 报的是 "The application to execute does not exist"。这是 2026-10-05 加 Linux 作业（W7）时
 # 逮到的：Linux 上编译全过（0 警告 0 错误 ×2），红的只有下面这一行传出去的路径。
@@ -113,7 +113,7 @@ Write-Host '=== 构建 ===' -ForegroundColor Cyan
 if (-not $strict) {
     Write-Host '（快速档：只编改动过的项目。提交前请跑一次 -Strict——全量重编才暴露得出被增量掩盖的警告）' -ForegroundColor DarkGray
 }
-& "$PSScriptRoot\dnet.ps1" build @buildArgs
+& "$PSScriptRoot/dnet.ps1" build @buildArgs
 if ($LASTEXITCODE -ne 0) {
     # 注意：-warnaserror 会把警告报成 **error**，所以失败时的摘要常是
     # "0 Warning(s) / N Error(s)"——别看警告计数，看退出码与上面的 error 行。
@@ -133,7 +133,7 @@ $webSln = Join-Path $root 'games/hosts/Web/NekoClicker.Web.sln'
 if (Test-Path $webSln) {
     Write-Host ''
     Write-Host '=== 构建 Web 宿主（独立 sln）===' -ForegroundColor Cyan
-    & "$PSScriptRoot\dnet.ps1" build $webSln -v q --nologo -warnaserror
+    & "$PSScriptRoot/dnet.ps1" build $webSln -v q --nologo -warnaserror
     if ($LASTEXITCODE -ne 0) {
         $code = $LASTEXITCODE
         Write-Host 'Web 宿主构建失败。它有自己的 sln，主 sln 编不到它——这正是这一步存在的理由。' -ForegroundColor Red
@@ -172,7 +172,7 @@ else {
         Write-Host '显式加 -SkipWebSmoke —— 跳过是有人打出来的决定，不是默认行为。' -ForegroundColor Yellow
         exit 1
     }
-    & node "$PSScriptRoot\web-smoke.mjs"
+    & node "$PSScriptRoot/web-smoke.mjs"
     if ($LASTEXITCODE -ne 0) {
         Write-Host '前端冒烟失败：wwwroot 那一层有回归（上面每一条 ✘ 就是原因）。' -ForegroundColor Red
         Write-Host '它不碰引擎——红了说明页面这一侧坏了，而不是 C# 那侧。' -ForegroundColor Red
@@ -183,5 +183,5 @@ else {
 Write-Host ''
 Write-Host '=== 测试 ===' -ForegroundColor Cyan
 $testDll = Join-Path $root 'engine/tests/bin/Debug/net8.0/NekoClicker.Core.Tests.dll'
-& "$PSScriptRoot\dnet.ps1" exec $testDll @forward
+& "$PSScriptRoot/dnet.ps1" exec $testDll @forward
 exit $LASTEXITCODE

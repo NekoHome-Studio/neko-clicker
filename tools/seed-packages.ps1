@@ -210,7 +210,7 @@ if (-not $Version) {
 # ---------------------------------------------------------------- 播种
 
 $sources = @()
-if ($env:USERPROFILE) { $sources += (Join-Path $env:USERPROFILE '.nuget\packages') }
+if ($env:USERPROFILE) { $sources += (Join-Path $env:USERPROFILE '.nuget/packages') }
 if ($env:NUGET_PACKAGES) { $sources += $env:NUGET_PACKAGES }
 $sources = @($sources | Where-Object { $_ -and (Test-Path $_) } | Select-Object -Unique)
 

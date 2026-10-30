@@ -386,7 +386,7 @@ if ($modeName -eq 'web') {
     }
 
     # ---- ③.5 -NoBuild 时产物必须先存在：否则失败形态是 30 秒超时，而不是一句话 ----
-    $webDll = Join-Path $root 'games\hosts\Web\bin\Debug\net8.0\neko-clicker-web.dll'
+    $webDll = Join-Path $root 'games/hosts/Web/bin/Debug/net8.0/neko-clicker-web.dll'
     if ($NoBuild -and -not (Test-Path $webDll)) {
         Fail ("-NoBuild：没有找到已构建的 Web 宿主（$webDll）。`n" +
               "先构建一次（去掉 -NoBuild 再跑），或手工：pwsh -File tools\dnet.ps1 build games/hosts/Web/NekoClicker.Web.sln")
@@ -398,10 +398,10 @@ if ($modeName -eq 'web') {
         Say '=== 构建 ==='
         Clear-StaleHosts
 
-        & "$PSScriptRoot\dnet.ps1" build "$root\NekoClicker.sln" -v q --nologo -warnaserror
+        & "$PSScriptRoot/dnet.ps1" build "$root/NekoClicker.sln" -v q --nologo -warnaserror
         if ($LASTEXITCODE -ne 0) { Fail '构建失败（上面红色的 error 行就是原因）。' }
 
-        & "$PSScriptRoot\dnet.ps1" build "$root\games\hosts\Web\NekoClicker.Web.sln" -v q --nologo -warnaserror
+        & "$PSScriptRoot/dnet.ps1" build "$root/games/hosts/Web/NekoClicker.Web.sln" -v q --nologo -warnaserror
         if ($LASTEXITCODE -ne 0) { Fail 'Web 宿主构建失败（上面红色的 error 行就是原因）。' }
     }
 
@@ -414,7 +414,7 @@ if ($modeName -eq 'web') {
     #     但把它写死就不必依赖"dotnet run 的行为"。
     $env:DOTNET_ROLL_FORWARD = 'Major'
     $env:Logging__EventLog__LogLevel__Default = 'None'
-    $env:ASPNETCORE_CONTENTROOT = Join-Path $root 'games\hosts\Web'
+    $env:ASPNETCORE_CONTENTROOT = Join-Path $root 'games/hosts/Web'
 
     # 日志与埋点**按端口分开**（沿用上游 play-web.ps1 的规矩）：
     #   · 5273 是真人那条线：日志 artifacts\host-*.log、埋点 artifacts\latency.txt 一个字节都不挪；
@@ -528,13 +528,13 @@ Write-Host '=== 启动终端界面 ===' -ForegroundColor Cyan
 Say '操作：Tab 切面板｜数字键买建筑｜Enter 购买｜A 舍命/转生｜? 帮助｜Q 退出'
 Write-Host ''
 
-$dll = Join-Path $root 'games\hosts\Demo.Cli\bin\Debug\net8.0\neko-clicker.dll'
+$dll = Join-Path $root 'games/hosts/Demo.Cli/bin/Debug/net8.0/neko-clicker.dll'
 
 if (-not $NoBuild) {
     Write-Host '=== 构建 ===' -ForegroundColor Cyan
     Clear-StaleHosts
 
-    & "$PSScriptRoot\dnet.ps1" build "$root\NekoClicker.sln" -v q --nologo -warnaserror
+    & "$PSScriptRoot/dnet.ps1" build "$root/NekoClicker.sln" -v q --nologo -warnaserror
     if ($LASTEXITCODE -ne 0) { Fail '构建失败（上面红色的 error 行就是原因）。' }
 }
 

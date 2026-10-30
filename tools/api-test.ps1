@@ -85,7 +85,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
-$webDir = Join-Path $root 'games\hosts\Web'
+$webDir = Join-Path $root 'games/hosts/Web'
 $webSln = Join-Path $webDir 'NekoClicker.Web.sln'
 
 # ---------------------------------------------------------------- 环境重定向
@@ -643,14 +643,23 @@ if (-not $NoBuild) {
 }
 
 # ---- 运行时的可用性：缺 8.x ASP.NET Core 时显式退化，而不是让宿主抛一段英文
+#
+# F4：这一段**不止打印**。它把"本机缺什么运行时"记成两个变量，下面 `/api/ping` 那一节
+# 用一条 Check 判定"这件事是被显式处理过的"——不是"沉默地靠运气起来"。
+# 判据为什么可以等于"有 8.x 或显式上滚"：这台机器装没装 8.x 不是被测对象的性质；
+# 被测对象能起来、而且**靠什么起来是登记过的**，才是。反过来说，将来某处忘了设那个变量
+# 而机器又确实缺 8.x，宿主根本起不来——那时这条 Check 连同"宿主就绪"那条会一起红，
+# 而红字里有一句人话，不是一段 'You must install .NET'。
 $runtimeLines = @(& dotnet --list-runtimes 2>$null)
-if (-not ($runtimeLines | Where-Object { $_ -like 'Microsoft.AspNetCore.App 8.*' })) {
+$hasAspNet8 = [bool]($runtimeLines | Where-Object { $_ -like 'Microsoft.AspNetCore.App 8.*' })
+if (-not $hasAspNet8) {
     $env:DOTNET_ROLL_FORWARD = 'Major'
     Write-Host ''
     Write-Host '注意：本机没有 Microsoft.AspNetCore.App 8.x（宿主声明的是 net8.0）。' -ForegroundColor DarkYellow
     Write-Host '      已设 DOTNET_ROLL_FORWARD=Major 让它上滚到更高的运行时运行——' -ForegroundColor DarkYellow
     Write-Host '      这是环境适配，被测行为会因此打一点折扣（装了 8.x 的机器不受影响）。' -ForegroundColor DarkYellow
 }
+$runtimeAdapted = $hasAspNet8 -or ($env:DOTNET_ROLL_FORWARD -eq 'Major')
 
 # ---- 端口与临时目录
 if ($Port -le 0) {
@@ -668,7 +677,7 @@ if (Test-PortBusy -Port $Port) {
 }
 
 $stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
-$workDir = Join-Path $root ".tmp\api-test\$stamp-$PID"
+$workDir = Join-Path $root ".tmp/api-test/$stamp-$PID"
 $saveRoot = Join-Path $workDir 'saves'
 $outLog = Join-Path $workDir 'host.out.log'
 $errLog = Join-Path $workDir 'host.err.log'
@@ -783,6 +792,14 @@ try {
         "apiVersion=$($ping.apiVersion)，仓库里是 $expectedVersion"
     Check 'GET /api/ping 报出运行时' ([bool]($ping -and $ping.runtime)) `
         "runtime=$($ping.runtime)（$($ping.framework)）"
+
+    # F4：本机运行时的可用性必须是被**显式**处理过的，不是"沉默地靠运气"。
+    # 两台机器上这条都应该绿：装了 8.x 的（$hasAspNet8）与靠 DOTNET_ROLL_FORWARD 上滚的。
+    # 它会红的形态是"有人删掉了那段探测，而机器恰好缺 8.x"——那时宿主多半也起不来，
+    # 但这条 Check 把原因说在名字里，而不是留一段英文的 'You must install .NET'。
+    Check 'F4：本机运行时的可用性被显式处理（有 ASP.NET 8.x，或已设 DOTNET_ROLL_FORWARD 上滚）' `
+        ([bool]$runtimeAdapted) `
+        "有 8.x: $hasAspNet8；DOTNET_ROLL_FORWARD <$env:DOTNET_ROLL_FORWARD>；宿主自报 runtime=$($ping.runtime)"
 
     $packsResponse = Invoke-Get '/api/packs'
     # 注意：必须先落到变量再 @()。PowerShell 5.1 的 ConvertFrom-Json 解析顶层数组时是
@@ -1939,7 +1956,7 @@ try {
     # ---- ⑧ 兼容别名 play-web.ps1：走的是**同一条路**（复用、不重起、指向 start.cmd）----
     # 别名留着的唯一理由是人还记着这个命令；它自己不再有第二套行为（1.12.1 那版会先杀掉
     # 端口上的宿主再重起，还会按进程名 -StopAll 清场 —— 那两件都不再继承）。
-    $alias = Invoke-Launcher -Script 'tools\play-web.ps1' -LauncherArgs @('-Port', "$Port", '-NoBrowser')
+    $alias = Invoke-Launcher -Script 'tools/play-web.ps1' -LauncherArgs @('-Port', "$Port", '-NoBrowser')
     $aliasText = ($alias.Output -split "`r?`n") -join ' / '
     $aliasHosts = @(Get-RepoWebHost -Root $root)
     Check '兼容别名 play-web.ps1：转发到同一个入口（复用、点名 PID、指向 start.cmd）' `
@@ -1949,7 +1966,7 @@ try {
     # ---- ⑨ 别名的 -StopAll：**明确拒绝**（按进程名清场会带走真人那个 5273 宿主）----
     # 这条不是"兼容性测试"而是安全网：旧脚本的 -StopAll 会杀掉本机所有 neko-clicker-web，
     # 统一后它必须响亮地失败，而不是静默地什么都不做、也不是偷偷照着旧行为清场。
-    $stopAll = Invoke-Launcher -Script 'tools\play-web.ps1' -LauncherArgs @('-StopAll')
+    $stopAll = Invoke-Launcher -Script 'tools/play-web.ps1' -LauncherArgs @('-StopAll')
     $stopAllText = ($stopAll.Output -split "`r?`n") -join ' / '
     Check '别名 -StopAll：明确拒绝并指回按端口停（不再按进程名清场）' `
         ($stopAll.ExitCode -eq 2 -and $stopAll.Output.Contains('-StopAll') -and $stopAll.Output.Contains('start.cmd')) `

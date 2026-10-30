@@ -27,8 +27,8 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
-$source = Join-Path $root "engine\content\$Pack\Lore.cs"
-$target = Join-Path $root "engine\content\$Pack\text.json"
+$source = Join-Path $root "engine/content/$Pack/Lore.cs"
+$target = Join-Path $root "engine/content/$Pack/text.json"
 
 if (-not (Test-Path $source)) { throw "no such file: $source" }
 $text = [System.IO.File]::ReadAllText($source)
