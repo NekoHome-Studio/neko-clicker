@@ -225,6 +225,55 @@ minor 是给下游"这批变更比 patch 重"的信号，**不是给规矩开先
 
 ## [未发布]
 
+### 机械表清仓：W16 + W18 + W20 + F3/F4（2026-10-30，工具链 + 内容 + 文档槽位）
+
+**这一轮只做《下一步：唯一权威清单》里不需要人拍板的那几条**，没有动任何公开 API
+（`engine/core` 与 `PublicApi.txt` 全程未碰），也没有动需要 👤 决定的那 14 条。
+
+**`tools/*.ps1` 的路径字面量（W16）**：`pack` / `public-api` / `play` / `start` 之外
+还有五处同类，一共 **11 个脚本 / 38 处**换成 `Join-Path` / 正斜杠。判据是
+"**会不会被交给原生进程**"——`& node "$PSScriptRoot\web-smoke.mjs"`、
+`dotnet exec <带反斜杠的 dll>`、`dotnet run --project <路径>` 在 Linux 上报的是
+`does not exist`（编译全过、跑不起来），而纯 PowerShell 内部调用本来由提供程序归一化。
+两类一起改了。改完 14 个脚本全部 `Parser::ParseFile` 0 错，BOM 与 CRLF 逐字节保住。
+
+**`Get-FileHash` 清干净（W18）**：`capture-fixture.ps1` 那 2 处之外，`release.ps1`
+还有 **3 处**（`:69` / `:115` / `:132`，当时没点名）——而它是发布脚本：在
+Windows PowerShell 5.1 上，那一行会让整个脚本**当场终止**。两个文件各加一份
+`Get-FileSha256`（BCL SHA256，仍返回大写十六进制，因此 `ToLowerInvariant()`
+与既有文案一个字都不用改）。
+
+**末世（Apocalypse）散文清扫（W20）**：`17 / 5 / 3 → 1 / 0 / 0`。
+改的是**落点**，不是长度：把"点题"的引语与格言反转换成一件东西 / 一个动作
+（厨房挂钩上三只杯子与一个没擦掉的圆印、油桶补满后画的一道、图纸边被划掉的三次燃料计算）。
+唯一留下的那 1 处是**记录**类——`lore.her_10` 抽屉标签上那三个字——与文明 / 神明 / 实验室
+留下的三处同一档，符合 `CONTENT_AUTHORING` §12.4.2(b) 的豁免。
+`text.json` 是手工排版的（storyline 是单行内联对象），所以按 **value 原文**替换、
+没有重新序列化：整份文件的 diff 恰好是 **23 行**。`ProseToneTests.Budgets` 与
+`CONTENT_AUTHORING` §12.4.8 的清扫表两处同步记账（那张表是棘轮：往下走必须记账）。
+
+**运行时机器守卫（F4）**：`api-test.ps1` 那段"本机缺 ASP.NET 8.x 就设
+`DOTNET_ROLL_FORWARD=Major`"的探测**从打印升成一条 Check**——
+`F4：本机运行时的可用性被显式处理（有 ASP.NET 8.x，或已设 DOTNET_ROLL_FORWARD 上滚）`。
+它红的形态是"有人删掉了那段探测、而机器恰好缺 8.x"，那时红字是一句人话，
+不是 `You must install .NET`。`api-test` **114 → 115 项**。
+
+**F3 销账（不是新做的）**：`play-web.ps1` 与 `start.cmd` 的环境口径已由 1.13.0 的启动器
+统一完成——`play-web.ps1` 现在只是一层转发，三个环境变量全在 `start.ps1:415-417`。
+
+**W21 / D14 补销**：两者 2026-10-19 已由 §0.36 结案（三处逐帧重建改成按 id 复用、
+前端精度与引擎对齐），`OPEN_WORK` 顶部表当时漏改，本轮核对后补上。
+
+**判别力**：把末世那行预算改回 `17, 5, 3` ⇒ `ProseToneTests` 恰红一条，逐项报
+`Apocalypse.EndQuote：实测 1，表里记着 17（**变好了**，把表改成 1）`，三项全中点名；
+复原后绿。
+
+**验证**：`tools/build.ps1 -Strict` **0 警告**、`web-smoke` **308 / 308**、
+引擎 **602 / 602**；`tools/api-test.ps1 -NoBuild` **115 / 115**（源码 115 处检查点
+全部执行到，失败 0、跳过 0）。
+
+**版本**：**patch，停在 `[未发布]` 桶，不升** —— `engine/core` 与公开 API 一个字节没动。
+
 ### 前端：真渲染审计之后的一轮（2026-10-24，`refactoring-ui` 规则号逐条对照）
 
 **这一轮第一次把页面真的渲染出来看**，而不是读 CSS 推。方法是 Edge 无头 + CDP
