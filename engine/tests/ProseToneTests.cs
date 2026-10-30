@@ -56,16 +56,17 @@ public static class ProseToneTests
     private sealed record Budget(string Pack, int EndQuote, int NegPivot, int Significance);
 
     /// <summary>
-    /// 实测（2026-10-05）。<b>已清扫</b>：公司（试点）与 §12.4.8 顺序里的七个包
-    /// （文明 / 神明 / 图书馆 / 赛博 / 实验室 / 梦境 / 九命）。还留着现状的只有两行：
-    /// <b>末世</b>（清扫那一轮它在被另一个改动改同一个文件，刻意跳过，见 §12.4.8 的清扫记录）
-    /// 与 <b>咖啡馆</b>（1.9%，全仓范本，不动）。每扫完一个包就把那一行改小。
+    /// 实测。<b>已清扫</b>：公司（试点）、§12.4.8 顺序里的七个包
+    /// （文明 / 神明 / 图书馆 / 赛博 / 实验室 / 梦境 / 九命），以及 <b>末世</b>
+    /// （2026-10-30：17 / 5 / 3 → <b>1 / 0 / 0</b>，见 §12.4.8 的清扫记录）。
+    /// 还留着现状的只有 <b>咖啡馆</b> 一行（1.9%，全仓范本，不动）。
+    /// 末世留下的那一条是"记录"类：抽屉标签上那三个字——与文明 / 神明 / 实验室留下的三处同一档。
     /// <c>Neko</c> 没有叙事分区，所以三项都是 0——
     /// 但仍然要占一行（"漏登记"必须是红的，见 <see cref="ToneBudgetTable_CoversExactlyThePacksThatHaveAnAtextFile"/>）。
     /// </summary>
     private static readonly Budget[] Budgets =
     [
-        new("Apocalypse", 17, 5, 3),
+        new("Apocalypse", 1, 0, 0),
         new("Cafe", 0, 1, 0),
         new("Civ", 1, 0, 0),
         new("Company", 1, 0, 0),
