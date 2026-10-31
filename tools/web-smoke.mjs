@@ -1206,7 +1206,7 @@ section("13. 建筑：卡片买、📖 看故事（两个手势互不触发）")
 // 抓之前先 POST 几十次 click 让通知日志非空、按响应体**原始字节**落盘，并打印字节数 /
 // sha256 / mode / era / 通知条数。落盘前它还会拒绝几种"看着像快照但是坏的"结果
 // （buildings 空、notifications 空、`mode` 是字符串——最后这条正是下面那条线上故障的形态）。
-// 它现在是**按公司包**抓的（`?package=company`，61,642 字节）——公司是第一个声明阶段
+// 它现在是**按公司包**抓的（`?package=company`，61,759 字节）——公司是第一个声明阶段
 // （`era.stageIndex` / `stageCount` / `stageName` / `stageNextName` / `stageProgress` /
 // `stageProgressText`）的包，所以这份夹具同时是那六个字段"真的在线上"的判据。
 // 它以前是按末世包抓的：那次切换是为了让新字段有**真实取值**可比，而不是一个空数组。
@@ -1979,12 +1979,17 @@ section("23. 快照里的每个字段都要有人决定过（画了，或写明�
     "upgrades[].category": "前端用服务端算好的 upgradeIds 挂建筑升级，不解析 category",
     "upgrades[].tier": "终端用它排序分区；Web 的升级面板不分区（未决定）",
     // ---- 其他记录
-    // ⚠️ 两个**这条守卫看不见**的字段（名字撞车，见上面那条边界说明）：
+    // ⚠️ 三个**这条守卫看不见**的字段（名字撞车，见上面那条边界说明）：
     //   · `achievements[].progressText`：**2026-10-05 起真的画了**（锁着的成就写成
     //     「… · 进度 12 / 50」，见 §31），可它一直"看起来像被读过"——`era.progressText`
     //     命中了同一条 `.字段名` 正则；
     //   · `achievements[].progress`（比率那一份）：**没画**，同样被 `era.progress` 挡住。
-    // 这两个都写不进下面这张表：`referenced()` 认为它们已经被引用，第二条守卫会判"过期的借口"。
+    //   · `codex.storylines[].entries[].channelName`：**没画**（图鉴不显示频道），但
+    //     `pendingLore[].channelName`（纸条的判据，app.js 真在读）命中了同一条正则——
+    //     2026-10-31 重抓夹具（W19）时它才第一次以**非空数组里的字段**出现在夹具里
+    //     （此前 entries[] 上只有序数 `channel`，`channelName` 是 1.11.0 加的，而
+    //     `pendingLore[]` 一直是空数组盲区，撞车看不出来）。
+    // 这三个都写不进下面这张表：`referenced()` 认为它们已经被引用，第二条守卫会判"过期的借口"。
     // 想真守住这一族，得先把"按记录类型认引用"这件事做出来——那是一件独立的结构改动。
     "achievements[].category": "成就列表面板不分组（未决定）",
     "prestige.currentLevel": "前端只有 canAscend / chipsOnAscend 与 era.progressText 有落点（未决定）",
