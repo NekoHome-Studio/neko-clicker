@@ -1206,7 +1206,7 @@ section("13. 建筑：卡片买、📖 看故事（两个手势互不触发）")
 // 抓之前先 POST 几十次 click 让通知日志非空、按响应体**原始字节**落盘，并打印字节数 /
 // sha256 / mode / era / 通知条数。落盘前它还会拒绝几种"看着像快照但是坏的"结果
 // （buildings 空、notifications 空、`mode` 是字符串——最后这条正是下面那条线上故障的形态）。
-// 它现在是**按公司包**抓的（`?package=company`，60,859 字节）——公司是第一个声明阶段
+// 它现在是**按公司包**抓的（`?package=company`，61,642 字节）——公司是第一个声明阶段
 // （`era.stageIndex` / `stageCount` / `stageName` / `stageNextName` / `stageProgress` /
 // `stageProgressText`）的包，所以这份夹具同时是那六个字段"真的在线上"的判据。
 // 它以前是按末世包抓的：那次切换是为了让新字段有**真实取值**可比，而不是一个空数组。
