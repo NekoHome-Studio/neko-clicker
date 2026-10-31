@@ -896,6 +896,13 @@ check(".sheet-layer 仍留着 overflow-y", () => {
   const block = /\.sheet-layer \{([\s\S]*?)\}/.exec(css)?.[1] ?? "";
   if (!block.includes("overflow-y: auto")) throw new Error("没有 overflow-y");
 });
+check(".sheet-layer 断开滚动链（overscroll-behavior: contain）——sheet 开着时背后的页不许被带跑", () => {
+  const block = /\.sheet-layer \{([\s\S]*?)\}/.exec(css)?.[1] ?? "";
+  if (!block.includes("overscroll-behavior: contain"))
+    throw new Error("遮罩层没有断开滚动链：指针打在 sheet 的不可滚部件（标题行 / 间距带）上时，"
+      + "滚会按浏览器默认规则一路链到背后的页面——遮罩是半透明的，页面在后面跳看得见"
+      + "（2026-10-31 真渲染在 400% 缩放那一档实测到，见 WEB_VISUAL_AUDIT §9）。");
+});
 check("@keyframes sheet-in 还在（复用而不是新造动画）", () => /@keyframes sheet-in/.test(css));
 
 // 建筑那一行的形状：两个独立控件（📖 故事 / ⬆ 升级轨）、卡片在右、两个框都跨整行。

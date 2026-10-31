@@ -1154,6 +1154,12 @@ footer code { background: #00000055; padding: .05rem .3rem; border-radius: var(-
   background: #0b0a12cc;
   /* Keep the layer scrollable so a tall sheet cannot push the only close button off-screen. */
   overflow-y: auto;
+  /* 2026-10-31（真渲染第二轮）：滚动链到这一层就断。sheet 自己的滚动容器
+     （.sheet / .sheet-body）会消费指针手势，但打在**不可滚**部件（标题行、间距带）上的
+     滚会按浏览器默认规则一路链到背后的页面——遮罩是半透明的（#0b0a12cc），
+     页面在遮罩后面跳是看得见的。contain 只断「链向祖先」，不挡这一层自己滚：
+     上面那条"tall sheet 够得着关按钮"的保险原样保留。 */
+  overscroll-behavior: contain;
 }
 
 .sheet {
