@@ -225,6 +225,26 @@ minor 是给下游"这批变更比 patch 重"的信号，**不是给规矩开先
 
 ## [未发布]
 
+### 测试：夹具新鲜度守卫——引擎此刻的线上形状必须逐路径跟上仓库夹具（2026-10-31，引擎测试 ＋ 11 处槽位）
+
+W19 重抓夹具（§0.42）时看见的根因在这里机制化：**夹具对引擎漂移没有任何守卫**——
+web-smoke §14/§23 手里只有夹具，引擎侧长出新字段（1.11.0 的 `channelName`）或新内容行
+（1.10.1 的 `shareholder_paws`）时它们不会红，夹具就这样静默过期了三周。
+
+新守卫 `FixtureFreshnessTests.Fixture_StillMatchesWhatTheEngineSerializesToday`：
+拿**引擎此刻**用线上协议（`SnapshotProtocol.Serialize`，共享源码编进测试项目）序列化出的
+公司包新会话快照，对仓库里的 `tools/fixtures/web-snapshot.json` 逐路径比对。口径与
+web-smoke §14 相同——形状不比值、null 放过、数组走 `[0]`；**内容数组两边都非空时钉条数**，
+会话性数组（通知 / 增益 / 金猫 / 纸条 / 表态）不钉。对不上就红，红字只给一个出路：
+重抓（`tools/capture-fixture.ps1`）＋ 跑 web-smoke。
+
+**判别力（两针，破坏 → 抄红字 → 复原 → sha256 一致）**：删夹具的 codex `channelName`
+⇒ 恰红 1 处（点名到路径）；删夹具一条升级 ⇒ 恰红 1 处（`条数对不上（夹具 46 / 引擎 47）`）。
+
+**收尾**：用例 **603 → 604**，`TestCountDriftTests` 的 11 处文档槽位全部同步。
+`engine/core` 与 `PublicApi.txt` 没动。**验证**：`-Strict` 0 Warning、引擎 604/604、
+web-smoke 309/309；`api-test -NoBuild` 115/115。
+
 ### 界面：sheet 遮罩层断开滚动链（2026-10-31，纯前端一行 ＋ 一条守卫）
 
 真渲染第二轮（`WEB_VISUAL_AUDIT` §9：8 个视口 × `Input.synthesizeScrollGesture` 合成手势）
