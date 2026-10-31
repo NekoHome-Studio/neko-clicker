@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using NekoClicker.Content.Neko;
 using NekoClicker.Core.Content;
 using NekoClicker.Core.Views;
@@ -313,5 +314,53 @@ public static class ContentTests
         Check.Contains(
             GameViewFactory.Summarize(content.UpgradeById["kitten_helpers"].Modifiers, content),
             "所有建筑产量");
+    }
+
+    /// <summary>
+    /// 升级效果摘要不许把<b>内部 id</b> 印在脸上，也不许把<b>非零成长</b>说成 0。<para>
+    /// <b>为什么需要这条守卫</b>：2026-10-30 第一次把页面真的渲染出来看，两个缺陷只有眼睛能发现——
+    /// ① <c>每个「ruins」 +2%（上限 100）</c>：<c>Scaling.Describe</c> 的 <c>BuildingCount</c> 分支
+    /// 直接用了 <c>Id</c>，而同一个文件的 <c>CustomCounter</c> 分支早就查了显示名；
+    /// 横扫 11 个包共 <b>6 条</b>（末世 / 文明 / 赛博 / 咖啡馆）。
+    /// ② <c>点击收益 +0%；每座建筑 +0.5%</c>：基准值为 0 时仍把" +0%"画出来，
+    /// 读起来像"这条升级什么也不做"；其中还有 4 条的成长值（0.002%~0.003%/单位）
+    /// 被两位小数四舍五入成 <c>+0%</c>，也就是<b>这条升级的收益在界面上完全不可见</b>。
+    /// </para>
+    /// <para>
+    /// 判据只用两条可数的形状：摘要里出现 <c>「&lt;ASCII 小写/下划线&gt;」</c>（那就是个 id），
+    /// 或出现 <c>+0%</c>。横扫全部内容包、全部升级（含永久线），派生式——新包自动进网。
+    /// </para>
+    /// </summary>
+    [Test]
+    public static void UpgradeEffectSummaries_NeverLeakRawIdsOrShowZeroPercent()
+    {
+        var problems = new List<string>();
+
+        foreach ((string name, GameContent content) in TestGame.AllContentPacks())
+        {
+            foreach (UpgradeDefinition upgrade in content.Upgrades)
+            {
+                string summary = GameViewFactory.Summarize(upgrade.Modifiers, content);
+                if (summary.Length == 0) continue;
+
+                if (summary.Contains("+0%", StringComparison.Ordinal))
+                {
+                    problems.Add($"{name} / {upgrade.Id}：摘要里出现了 +0%（非零成长被舍成 0）：<{summary}>");
+                }
+
+                foreach (Match m in Regex.Matches(summary, @"「([^」]*)」"))
+                {
+                    string inner = m.Groups[1].Value;
+                    // 显示名是中文（或至少含非 ASCII 的字符）；纯 ASCII 的那一段几乎必然是内部 id。
+                    if (inner.Length > 0 && inner.All(c => c < 128))
+                    {
+                        problems.Add($"{name} / {upgrade.Id}：摘要里漏出了内部 id「{inner}」：<{summary}>");
+                    }
+                }
+            }
+        }
+
+        Check.Equal(0, problems.Count,
+            "升级效果摘要里有内部 id 或被舍成 0 的成长值：\n  - " + string.Join("\n  - ", problems));
     }
 }

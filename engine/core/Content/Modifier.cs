@@ -115,7 +115,11 @@ public sealed record Scaling(
     {
         string unit = Source switch
         {
-            ScalingSource.BuildingCount => $"每个「{Id}」",
+            // 建筑 id → 显示名（`ruins` →「废墟」）。与下面 CustomCounter 那条同一条理由：
+            // 玩家侧渲染一律要传 content，不传就回退成键本身（诊断输出不需要好看）。
+            // 此前这一行直接用了 Id——4 个包的 6 条升级因此把内部 id 印在脸上
+            // （实测：`每个「ruins」 +2%（上限 100）`），是"看着像能玩"的那类缺陷。
+            ScalingSource.BuildingCount => $"每个「{content?.FindBuilding(Id ?? string.Empty)?.Name ?? Id}」",
             ScalingSource.TotalBuildings => "每座建筑",
             ScalingSource.AchievementCount => "每个成就",
             ScalingSource.PrestigeLevel => "每级转生",
@@ -131,11 +135,28 @@ public sealed record Scaling(
             _ => "每单位",
         };
 
-        string per = Source is ScalingSource.CookiesEarnedThisRun or ScalingSource.CookiesEarnedAllTime
-            ? NumFormat.Format(PerUnit, NumberStyle.Short)
-            : NumFormat.Percent(PerUnit, 2);
-
         string suffix = double.IsPositiveInfinity(Cap) ? string.Empty : $"（上限 {NumFormat.Format(Cap, NumberStyle.Short)}）";
+
+        // PerUnit 为 0 时**不说 " +0%"**：那是"这条成长现在还不给东西"，
+        // 而 "+0%" 读起来像"这条升级什么也不做"（实测四个包共 28 条）。
+        // 只留下单位与上限——上限仍然要说，它是玩家判断"值不值得喂"的唯一线索。
+        if (PerUnit == 0) return $"{unit}{suffix}";
+
+        // 极小但非零的成长值不许显示成 "+0%"：0.001%/单位 在两位小数下就是 "0%"，
+        // 玩家读到的是"这条升级什么也不做"（实测 4 条：算力 / 文化 / 记忆残片那几条长线）。
+        // 逐档加精度，直到那个数真的看得见；再加一句"起量很小"没有必要——上限那半句已经是判据。
+        string per;
+        if (Source is ScalingSource.CookiesEarnedThisRun or ScalingSource.CookiesEarnedAllTime)
+        {
+            per = NumFormat.Format(PerUnit, NumberStyle.Short);
+        }
+        else
+        {
+            per = NumFormat.Percent(PerUnit, 2);
+            for (int decimals = 3; decimals <= 6 && per == "0%"; decimals++)
+                per = NumFormat.Percent(PerUnit, decimals);
+        }
+
         return $"{unit} +{per}{suffix}";
     }
 }
@@ -162,6 +183,16 @@ public sealed record Modifier(
     public string Describe(GameContent? content = null)
     {
         string target = Target.Describe(content);
+
+        // 基准值是 0 且带成长时，**基准那半句不画**：它一个字的信息都没有，
+        // 而"X +0%；每个 Y +0.5%"读起来像"这条升级什么也不做"。
+        // 实测四个包共 28 条（`点击收益 +0%；每座建筑 +0.5%（上限 120）` 这种）。
+        // 于是这里只说成长那半句：`点击收益：每座建筑 +0.5%（上限 120）`。
+        if (Value == 0 && Scaling is not null && Operation is ModifierOperation.AdditivePercent or ModifierOperation.Flat)
+        {
+            return $"{target}：{Scaling.Describe(content)}";
+        }
+
         string body = Operation switch
         {
             ModifierOperation.Flat => $"{target} +{NumFormat.Format(Value, NumberStyle.Short)}",
