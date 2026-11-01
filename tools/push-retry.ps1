@@ -12,6 +12,10 @@
     powershell -NoProfile -File tools\push-retry.ps1 -DeadlineMinutes 60 -DelaySeconds 20
 
   退出码：0 = 服务器侧已与本地一致；1 = 到期或次数用尽仍未成功（日志里留着每次的失败原文）。
+
+  2026-11-01 加的第二跳：origin（github.com:22）会整段时间超时，而 ssh.github.com:443
+  同一天实测一次过（OPEN_WORK §0.46.5）。所以每次尝试轮换端点（-Endpoints），
+  服务器侧核对也先问刚推的那条、连不上再问另一条——哪条通走哪条，不再是单点。
   日志：artifacts\push-retry.log（artifacts 已被 .gitignore 忽略）。
 #>
 [CmdletBinding()]
@@ -19,7 +23,9 @@ param(
   [int]$MaxAttempts     = 400,   # 最多尝试多少次
   [int]$TimeoutSeconds  = 100,   # 单次 git 调用的超时（连接卡住时靠它掐断）
   [int]$DelaySeconds    = 30,    # 两次尝试之间的间隔
-  [int]$DeadlineMinutes = 480    # 总时限；到点就停，不会无限跑
+  [int]$DeadlineMinutes = 480,   # 总时限；到点就停，不会无限跑
+  # 端点轮换：origin 是 github.com:22；ssh.github.com:443 是 2026-11-01 实测可用的备用跳（§0.46.5）。
+  [string[]]$Endpoints = @('origin', 'ssh://git@ssh.github.com:443/NekoHome-Studio/neko-clicker.git')
 )
 
 $ErrorActionPreference = 'Continue'
@@ -63,7 +69,8 @@ function Get-LastErrorLine([string]$Text) {
 }
 
 function Get-RemoteMain {
-  $r = Invoke-Git -GitArgs @('ls-remote', 'origin', 'refs/heads/main')
+  param([string]$Endpoint = 'origin')
+  $r = Invoke-Git -GitArgs @('ls-remote', $Endpoint, 'refs/heads/main')
   if ($r.Code -ne 0) { return $null }
   $m = [regex]::Match($r.Out, '([0-9a-f]{40})')
   if ($m.Success) { return $m.Groups[1].Value }
@@ -71,7 +78,8 @@ function Get-RemoteMain {
 }
 
 function Get-RemoteTagNames {
-  $r = Invoke-Git -GitArgs @('ls-remote', '--tags', 'origin')
+  param([string]$Endpoint = 'origin')
+  $r = Invoke-Git -GitArgs @('ls-remote', '--tags', $Endpoint)
   if ($r.Code -ne 0) { return $null }
   $names = @()
   foreach ($line in ($r.Out -split "`r?`n")) {
@@ -85,7 +93,7 @@ function Get-RemoteTagNames {
 $localHead = (& git -C $root rev-parse HEAD).Trim()
 $localShort = $localHead.Substring(0, 7)
 $localTags = @(& git -C $root tag)
-$pendingCommits = @(& git -C $root rev-list --count 'origin/main..HEAD')
+$pendingCommits = [int](& git -C $root rev-list --count 'origin/main..HEAD')
 Write-Log ("开始：本地 HEAD={0}  待推提交={1}  本地 tag={2} 个" -f $localShort, $pendingCommits, $localTags.Count)
 Write-Log ("参数：最多 {0} 次 · 单次超时 {1}s · 间隔 {2}s · 时限 {3} 分钟" -f $MaxAttempts, $TimeoutSeconds, $DelaySeconds, $DeadlineMinutes)
 if ($pendingCommits -eq 0 -and $localTags.Count -eq 0) { Write-Log '没有待推的东西。'; exit 0 }
@@ -94,10 +102,11 @@ $deadline = (Get-Date).AddMinutes($DeadlineMinutes)
 $attempt = 0
 while ($attempt -lt $MaxAttempts -and (Get-Date) -lt $deadline) {
   $attempt++
-  Write-Log ("—— 第 {0} 次尝试 ——" -f $attempt)
+  $endpoint = $Endpoints[($attempt - 1) % $Endpoints.Count]
+  Write-Log ("—— 第 {0} 次尝试（{1}）——" -f $attempt, $endpoint)
 
   # 1) main
-  $p = Invoke-Git -GitArgs @('push', 'origin', 'main')
+  $p = Invoke-Git -GitArgs @('push', $endpoint, 'main')
   if ($p.Code -eq 0) {
     Write-Log ('  push main：' + (Get-LastErrorLine $p.Out))
   } else {
@@ -111,7 +120,7 @@ while ($attempt -lt $MaxAttempts -and (Get-Date) -lt $deadline) {
   } else {
     $missing = @($localTags | Where-Object { $remoteTags -notcontains $_ })
     if ($missing.Count -gt 0) {
-      $t = Invoke-Git -GitArgs (@('push', 'origin') + $missing)
+      $t = Invoke-Git -GitArgs (@('push', $endpoint) + $missing)
       if ($t.Code -eq 0) {
         Write-Log ("  推 tag：{0} —— {1}" -f ($missing -join ' '), (Get-LastErrorLine $t.Out))
       } else {
@@ -124,9 +133,15 @@ while ($attempt -lt $MaxAttempts -and (Get-Date) -lt $deadline) {
 
   # 3) 唯一证据：问服务器
   Start-Sleep -Seconds 2
-  $remoteMain = Get-RemoteMain
+  # 核对先问刚推的那条；它连不上（本机网络对某个端点会整段断）就问另一条——
+  # "推成功但核对不上"比"核对失败"更冤，两条都读不到才认输。
+  $remoteMain = Get-RemoteMain -Endpoint $endpoint
+  if ($null -eq $remoteMain) {
+    $other = $Endpoints | Where-Object { $_ -ne $endpoint } | Select-Object -First 1
+    if ($other) { $remoteMain = Get-RemoteMain -Endpoint $other }
+  }
   if ($null -ne $remoteMain -and $remoteMain -eq $localHead) {
-    $rt = Get-RemoteTagNames
+    $rt = Get-RemoteTagNames -Endpoint $endpoint
     $stillMissing = @()
     if ($null -ne $rt) { $stillMissing = @($localTags | Where-Object { $rt -notcontains $_ }) }
     if ($stillMissing.Count -eq 0) {

@@ -37,12 +37,17 @@
 #      **3 处调用点从来没执行过**（`if ($clickError)` 的一个面、`if ($laterDeltas…)` 的 `else` 里
 #      两处），同时 **1 处**写在 `foreach` 里跑了 3 次，一多一少正好相抵。计数对不上只是症状，
 #      "某条检查悄悄没跑"才是病——所以现在由机器来数，不靠这一行注释。
-#      当前是 **112 处**调用点（65 → 85 是令牌门与分享链接那一段加的 20 处，见 ⑥；
+#      当前是 **115 处**调用点（65 → 85 是令牌门与分享链接那一段加的 20 处，见 ⑥；
 #      85 → 101 是启动器那一段加的 16 处，见 ⑦；
 #      101 → 105 是「批量档位真的买 N 个」那一段加的 4 处——人 2026-10-10 报的
 #      「×10 之后点一下只能买一个」此前一条判据都没有；
 #      105 → 112 是「把两个起网页的入口统一成一个」加的 7 处：`stop` 模式、跨端口拒绝、
-#      按端口分开的日志/埋点、停止命令点名的 PID、以及别名 `tools/play-web.ps1` 的三条，见 ⑦）。
+#      按端口分开的日志/埋点、停止命令点名的 PID、以及别名 `tools/play-web.ps1` 的三条，见 ⑦；
+#      112 → 115 是 2026-10-30 F4 那轮把运行时探测升成 Check 加的 3 处，见 `OPEN_WORK` §0.40）。
+#      ⑤ 的另一半（2026-11-01）：**文档槽位自审**——本脚本「当前 N 项」的数字也活在文档里
+#      （`VERSIONING` §5 与 `STATUS` §4），F4 那轮 114 → 115 时只同步了 VERSIONING，STATUS 的
+#      112 就这样又活成了陈旧数字（`OPEN_WORK` §0.47）。收尾在覆盖审计之后把这两处也数一遍：
+#      锚点刻意不含数字，0 次或多次命中、数值不等，都退出码 1（web-smoke.mjs 结尾那条的同款）。
 #   ⑥ **URL 上那两段加密载荷也在这条真链路上验**（`SHARE_LINK_PLAN` §11 的"第二刀"）：
 #      铸一枚跳层令牌 → 打真 URL → 断正文形状与四种拒绝、并复核明文门一个字节没变；
 #      生成的分享链接 → 错密码（**磁盘与会话一个字节都不许动**）→ 对密码。
@@ -2003,6 +2008,32 @@ if ($script:Failed -eq 0 -and $unreached.Count -eq 0) {
     # 别人以为这份脚本只有 51 项（"源码 52 处 / 运行 51 项"那个坑的另一半就在这里）。
     $total = $script:Passed + $script:Failed + $script:Skipped
     Write-Host "全部通过：$total 项检查（通过 $($script:Passed) ｜ 失败 0 ｜ 跳过 $($script:Skipped)）。" -ForegroundColor Green
+
+    # ⑤ 的另一半：文档槽位自审（web-smoke.mjs 结尾那条的同款，2026-11-01）。锚点刻意
+    # 不含数字（W1 规矩）：文档改版导致 0 次或多次命中、或数值与源码检查点数不等，都红。
+    $docSlots = @(
+        @{ File = 'engine/docs/VERSIONING.md'; What = '§5 发布判据清单'; Pattern = '全部端到端检查通过（当前 (\d+) 项' },
+        @{ File = 'STATUS.md'; What = '§4 验证基线'; Pattern = '\*\*(\d+) 项端到端检查全通过\*\*' }
+    )
+    $staleSlots = @()
+    foreach ($slot in $docSlots) {
+        $text = Get-Content (Join-Path $root ($slot.File -replace '/', '\')) -Raw -Encoding UTF8
+        $hits = [regex]::Matches($text, $slot.Pattern)
+        if ($hits.Count -ne 1) {
+            $staleSlots += ('{0}（{1}）：锚点命中 {2} 次——文档改版了，把这条自审里的锚点跟着改' -f $slot.File, $slot.What, $hits.Count)
+            continue
+        }
+        $documented = [int]$hits[0].Groups[1].Value
+        if ($documented -ne $coverage.Sites) {
+            $staleSlots += ('{0}（{1}）：写着 {2}，源码检查点是 {3}——改了脚本就同步这一处' -f $slot.File, $slot.What, $documented, $coverage.Sites)
+        }
+    }
+    if ($staleSlots.Count -gt 0) {
+        Write-Host "文档槽位与检查点数对不上（自审红，与断言无关——断言在上面已全绿）：" -ForegroundColor Red
+        foreach ($line in $staleSlots) { Write-Host "    · $line" -ForegroundColor Red }
+        exit 1
+    }
+
     if (-not $KeepSave) { Remove-Item -Recurse -Force $workDir -ErrorAction SilentlyContinue }
     exit 0
 }
