@@ -4774,4 +4774,47 @@ if (failures.length > 0) {
   process.exit(1);
 }
 console.log("OK");
+
+// ---------------------------------------------------------------- ⑤ 自审：文档槽位（api-test ⑤ 的同一条思路）
+//
+// STATUS §4 记过的那个缺口：引擎用例数有 TestCountDriftTests 守着，而**这条冒烟套件的
+// 条数没有机器守卫**——VERSIONING 的发布清单写着 297、STATUS §4 写着 271 的那段日子里，
+// 套件已经长到 309，没有任何东西红过。运行时真值只在 node 这边（C# 侧拿不到，除非
+// 让引擎测试去跑 node），所以守卫住在这里：上面打印的那个总数，必须与下面登记的
+// 每一处文档槽位**逐字相等**。
+//
+// 两条规矩（照抄 TestCountDriftTests 的 W1）：锚点**刻意不含数字本身**——文档改版
+// 导致锚点 0 次命中（被改写）或多次命中（锚点太松），都算红；往新文档里引用这个数时，
+// 把那一处登记进 DOC_SLOTS，否则它不受守卫。
+const DOC_SLOTS = [
+  {
+    file: "engine/docs/VERSIONING.md",
+    what: "§5 发布判据清单",
+    pattern: /全绿（当前 \*\*(\d+)\*\* 条/g,
+  },
+  {
+    file: "STATUS.md",
+    what: "§4 验证基线",
+    pattern: /\*\*(\d+) 条全绿\*\*/g,
+  },
+];
+
+const staleSlots = [];
+for (const slot of DOC_SLOTS) {
+  const text = readFileSync(join(root, ...slot.file.split("/")), "utf8");
+  const hits = [...text.matchAll(slot.pattern)];
+  if (hits.length !== 1) {
+    staleSlots.push(`${slot.file}（${slot.what}）：锚点命中 ${hits.length} 次——文档改版了，把这条自审里的锚点跟着改`);
+    continue;
+  }
+  const documented = Number(hits[0][1]);
+  if (documented !== checks) {
+    staleSlots.push(`${slot.file}（${slot.what}）：写着 ${documented}，运行时是 ${checks}——改了冒烟套件就同步这一处`);
+  }
+}
+if (staleSlots.length > 0) {
+  console.error("\n文档槽位与冒烟条数对不上（这是自审红，不是断言红——断言在上面已经全绿）：");
+  for (const line of staleSlots) console.error(`  · ${line}`);
+  process.exit(1);
+}
 process.exit(0);
