@@ -36,8 +36,15 @@
 > 这句原先写的是"收工总结的单一入口"，而它当时就已经追不上 §0.29~§0.33 了）。
 > **那之后的每一次收工总结就是本文的 §0.2x / §0.3x**——最新的一条是 **§0.46**（2026-11-01 三个状态的真渲染实拍）。
 >
-> **✅ 已推（2026-10-05 复核，上一版这里写的是"待推"）**：`main` = **`c467baf`** = `origin/main`
-> （工作树干净）；tag `v1.5.0`…`v1.10.1` **都在远端**（`v1.10.1` → `d6a3bbc`）；
+> **✅ 已推（2026-11-01 复核，完整哈希以这条为准）**：`main` = **`d93e675b4edc4364799833cd386c023b6feb488f`** = `origin/main`
+> （`git log origin/main..main` 为空；本次推送走的是 **`ssh.github.com:443`**——`github.com:22`
+> 的 SSH 连续 10 次以上 100 秒超时，443 那条备用端点一次过，见 §0.46.5）；
+> CI [run #62](https://github.com/NekoHome-Studio/neko-clicker/actions/runs/41311525269)
+> （`d93e675`）**四个作业全部 success**（构建 / 冒烟 / 端到端 / Linux；发布作业 skipped——tag 未动）。
+> 这次推送还包含一次**协作撞车的合并**：远端在 10-31 有同题的独立 W19 重抓
+> （`594d204` / `2b269bd`，suan-11），rebase 取更晚的夹具并补互相承认（§0.42.5）。
+> **2026-10-05 的旧核对**（`c467baf`，两个作业）保留作历史：
+> tag `v1.5.0`…`v1.10.1` **都在远端**（`v1.10.1` → `d6a3bbc`）；
 > 最近一次 CI（[run #37](https://github.com/NekoHome-Studio/neko-clicker/actions/runs/37208489336)，`c467baf`）**两个作业 success**。
 > 核对方式：`git log origin/main..main`（空）、`git branch -vv`，
 > 以及 `api.github.com` 的 `repos/.../tags` 与 `actions/runs`（见 `STATUS` §7 第 11 条）。
@@ -3174,6 +3181,24 @@ git ls-remote origin refs/heads/main   # 必须与 git rev-parse HEAD 的**完�
 
 `tools/build.ps1 -Strict`：EXIT=0、**0 Warning**、引擎 **604 / 604**、web-smoke **309 / 309**；
 `tools/api-test.ps1 -NoBuild`：**115 / 115**。公开 API 没动。
+
+### 0.46.5 推送（2026-11-01，人工放行）：443 备用端点一次过，途中撞车一次
+
+- **撞车**：远端 `main` 在 10-31 前进到 `2b269bd`——同题的独立 W19 重抓（`594d204` /
+  `2b269bd`，suan-11）。`git push` 因此被拒（non-fast-forward）；rebase 到远端之上
+  （冲突四处全取更晚的夹具——其后四轮的基线压在它上），补互相承认
+  （§0.42.5 ＋ `CHANGELOG` 合并补记，`d93e675`）。
+- **网络**：`tools/push-retry.ps1` 对 `github.com:22` 连续 **10 次以上** 100 秒超时
+  （`exit 124`，日志在 `artifacts/push-retry.log`）——而两条 SSH 通路的认证测试都是
+  瞬间过的。最终走显式 URL **`ssh://git@ssh.github.com:443/...`** 一次过：
+  `2b269bd..d93e675 main -> main`，`ls-remote` 服务器侧核对
+  `main = d93e675b4edc4364799833cd386c023b6feb488f` = 本地。
+  §7 第 10 条的"备用端点"清单由此多一条实测：`ssh.github.com:443` 在 22 超时的时候
+  **仍然可用**，值得在重试脚本里加为第二跳（本轮没改脚本，登记于此）。
+- **CI**：[run #62](https://github.com/NekoHome-Studio/neko-clicker/actions/runs/41311525269)
+  （`d93e675`）**四个作业全部 success**（构建 / 冒烟 / 端到端 / Linux；发布 skipped）。
+- rebase 后全量基线复跑：`-Strict` 0 Warning、引擎 **604/604**、web-smoke **309/309**、
+  `api-test` **115/115**。
 
 ## 0.45 冒烟条数自审 ＋ 夹具比对工具（2026-10-31，工具链）
 
