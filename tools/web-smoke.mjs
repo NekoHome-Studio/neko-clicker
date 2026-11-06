@@ -22,7 +22,7 @@
 // （`if (!pill) return` 这类防御）只有 node --check 的语法保证。
 //
 // 这个脚本**从 2026-10 起进了 tools/build.ps1**（也进了 CI）：一条 297 条断言
-// （§35「换包窗口」那 13 条起；那一轮之前是 284——§34「四台渲染器的空帧写入」的
+// （§36「按钮按下反馈」的 5 条起；那一轮之前是 309——§35「换包窗口」的 13 条；那一轮之前是 284——§34「四台渲染器的空帧写入」的
 // 12 条；再此前是 271 条——§33「sheet 的身体能滚」那 17 条起；那一轮之前是 254——§29 里那两条「服务端那张表必须
 // 从 K 起」＋「两个宿主对同一个数说同一句话」；再此前是 252——§32「焦点在重画之间不许跑掉」；
 // 再此前是 244——§29「刻度名 K/M/B/T」＋
@@ -4720,6 +4720,107 @@ section("35. 换包窗口：第五张 sheet；拉得到就填、点行跳整页�
     eq(withPacks.location.href, "/?package=company", "location.href");
   });
 
+  // ---- E. 滑入滑出（§38 的形状部分）----
+  // 这一段的判据是**结构性**的：这里没有布局引擎，跑不了逐帧。真渲染下的实测记在 §38 的注释里。
+  check("换包窗口是唯一有进出方向的 sheet：从下方浮起（translateY 起始 > 0，落位为 0）", () => {
+    // 其余四张 sheet 都是"叠在当前页面上的临时面板"，没有方向可言，只保留 sheet-in 那一记小起浮。
+    // 换包不一样：它装的是"整页要换到哪一局去"，而换包动作本身就是整页跳走 —— 所以它有方向。
+    const hiddenSheet = /#pack-sheet \.sheet \{([\s\S]*?)\}/.exec(cssRules)?.[1] ?? "";
+    if (!hiddenSheet) throw new Error("没有 #pack-sheet .sheet 这条规则（滑入滑出就没了）");
+    if (!/transform:\s*translateY\([^)]+\)/.test(hiddenSheet)) {
+      throw new Error(`换包卡片没有起始位移：<${hiddenSheet.trim()}> —— 它必须从下方浮起，而不是淡出来`);
+    }
+    if (!/opacity:\s*0/.test(hiddenSheet)) throw new Error("换包卡片没有起始透明度（只剩位移，像一张硬纸片）");
+    // 落位必须显式写出来（`#pack-sheet:not(.hidden) .sheet`），而不是靠"删掉 transform"——
+    // 后者在 transition 里没有终点可插值。
+    if (!/#pack-sheet:not\(\.hidden\) \.sheet \{[\s\S]*?transform:\s*none/.test(cssRules)) {
+      throw new Error("没有 `#pack-sheet:not(.hidden) .sheet { transform: none }`：起点有、终点没有，过渡不会跑");
+    }
+    // 走的是**过渡**而不是动画：只有过渡才能双向跑，浮起与沉下才是同一套参数的镜像。
+    if (/animation:\s*sheet-in/.test(hiddenSheet) === false && !/animation:\s*none/.test(hiddenSheet)) {
+      throw new Error("换包卡片既没有关掉 sheet-in、也没说明为什么 —— 两者会打架");
+    }
+  });
+
+  check("关闭时 hidden 仍是**同步**生效（不许为了动画把隐藏推迟到 animationend）", () => {
+    // 这是这一版最要紧的一条约束。把它推迟到动画结束会弄红 §35 里六处"点完立刻读 hidden"
+    // 的断言，而那些断言守的是"窗口真的关上了"——那比动画重要。
+    // 做法是让 .hidden 只管 visibility（带延迟）+ pointer-events，display 永远是 grid。
+    const layer = /#pack-sheet \{([\s\S]*?)\}/.exec(cssRules)?.[1] ?? "";
+    if (!/display:\s*grid\s*!important/.test(layer)) {
+      throw new Error("换包那一层没有把 display 钉成 grid：`.hidden { display: none !important }` 会立刻把它抹掉，退出动画根本跑不起来");
+    }
+    const hiddenRule = /#pack-sheet\.hidden \{([\s\S]*?)\}/.exec(cssRules)?.[1] ?? "";
+    if (!/visibility:\s*hidden/.test(hiddenRule)) throw new Error("#pack-sheet.hidden 没有用 visibility 落地");
+    if (!/pointer-events:\s*none/.test(hiddenRule)) throw new Error("#pack-sheet.hidden 没有 pointer-events: none：关掉之后它还挡着游戏");
+    // 延迟必须与下沉时长对齐（这里 0.34s）：早落地会把动画切断，晚落地会盖着游戏。
+    if (!/visibility\s+0s\s+linear\s+\.34s/.test(hiddenRule)) {
+      throw new Error(`visibility 的延迟与下沉时长（.34s）对不上：<${hiddenRule.trim()}> —— 早落地切动画、晚落地挡游戏`);
+    }
+    // 同步语义的证据：JS 侧不许出现"等 animationend 再加 hidden"那种写法。
+    if (/animationend[\s\S]{0,80}classList\.add\("hidden"\)/.test(appSource)) {
+      throw new Error("app.js 里出现了「等 animationend 再加 hidden」：hidden 必须同步生效（§35 的六处断言靠它）");
+    }
+  });
+
+  check("reduce 档仍然看得见方向，但明显更短（不是 0 帧的摆设）", () => {
+    // 实测（真 Chrome）：.01s 只有 0~1 帧，等于没做；.12s 有 6 帧，看得出从下方上来。
+    // 这个文件里有**两节** prefers-reduced-motion（按下反馈那节、sheet 与换包那节）。
+    // 换包那条写在第二节里，所以这里要扫**全部** occurrence，把每一节都按括号配对截出来。
+    const marker = "@media (prefers-reduced-motion: reduce) {";
+    let reduce = "";
+    let from = 0;
+    while (true) {
+      const start = cssRules.indexOf(marker, from);
+      if (start < 0) break;
+      let depth = 0, end = start;
+      for (let i = start + marker.length - 1; i < cssRules.length; i++) {
+        if (cssRules[i] === "{") depth++;
+        else if (cssRules[i] === "}" && --depth === 0) { end = i; break; }
+      }
+      reduce += cssRules.slice(start, end + 1) + "\n";
+      from = end + 1;
+    }
+    if (reduce === "") throw new Error("找不到 reduced-motion 那一节");
+    if (!/transition-duration:\s*\.12s,\s*\.12s/.test(reduce)) {
+      throw new Error("reduced-motion 里换包那一层没有自己的更短时长（缺 transition-duration: .12s, .12s）");
+    }
+    // reduce 档里也要保持"进场比出场长"（.16 > .12，长 33%）。
+    if (!/#pack-sheet:not\(\.hidden\) \.sheet \{ transition-duration: \.16s, \.16s; \}/.test(reduce)) {
+      throw new Error("reduced-motion 里进场的时长没有比出场长（缺 .16s 那一档）");
+    }
+    if (/#pack-sheet\.hidden \{[\s\S]*?transition-delay:\s*0s,\s*\.12s/.test(reduce) === false) {
+      throw new Error("reduced-motion 里 visibility 的延迟没有跟着缩短到 .12s（会对不上缩短后的下沉时长）");
+    }
+    // 反过来钉一下：不许把它压成 0（那等于对 reduce 用户"这段动画不存在"，
+    // 而它是"我点了一下、这层从哪儿来"的确认，属于操作反馈不是装饰）。
+    if (/transition-duration:\s*\.01s/.test(reduce)) {
+      throw new Error("reduce 档被压到 .01s：实测只有 0~1 帧，方向看不出来，等于没做");
+    }
+  });
+
+  check("进场比出场长 30~50%（motion-design 技能的规则：用户在意见到的东西）", () => {
+    // 规则原文：Entrances run 30-50% longer than exits, because users care about what appears.
+    // ⚠️ 这一条是 2026-11-06 按 LottieFiles/motion-design 技能审计出来的真违规：
+    // 前一版为了"进出必须是同一套参数的镜像"把两边写成同一条 .34s，读起来对称，
+    // 但实际观感是出场偏拖——关窗口时多留那 100ms 只会让人觉得卡。
+    const enter = /#pack-sheet:not\(\.hidden\) \.sheet \{([\s\S]*?)\}/.exec(cssRules)?.[1] ?? "";
+    const exit = /#pack-sheet \.sheet \{([\s\S]*?)\}/.exec(cssRules)?.[1] ?? "";
+    if (!enter || !exit) throw new Error("找不到换包卡片的进/出两条规则");
+    const enterSec = Number(/(?:transform|opacity)\s+([\d.]+)s/.exec(enter)?.[1] ?? "");
+    const exitSec = Number(/(?:transform|opacity)\s+([\d.]+)s/.exec(exit)?.[1] ?? "");
+    if (!Number.isFinite(enterSec) || !Number.isFinite(exitSec)) {
+      throw new Error(`读不出进/出时长：进=<${enterSec}> 出=<<${exitSec}>`);
+    }
+    if (!(enterSec > exitSec)) {
+      throw new Error(`进场 ${enterSec}s 不比出场 ${exitSec}s 长：规则要求进场长 30~50%（用户在意见到的东西）`);
+    }
+    const ratio = enterSec / exitSec;
+    if (ratio < 1.25 || ratio > 1.55) {
+      throw new Error(`进场/出场 = ${ratio.toFixed(2)}，不在 1.25~1.55（技能给的区间是 30~50% 长的下沿，这里放宽一点余量）`);
+    }
+  });
+
   // 带 ?package= 的那一页：aria-current 跟着 URL（不重析——app.js 里只 packageId 一处）。
   const onNeko = await loadApp(copyAs("app-packs-neko.mjs", appSource), {
     search: "?package=neko", packs: PACKS,
@@ -4760,6 +4861,391 @@ section("35. 换包窗口：第五张 sheet；拉得到就填、点行跳整页�
     const link = el(bare, "share-link").value;
     if (link.includes("package=")) throw new Error(`链接里冒出了 package 参数：<${link}>`);
     if (!link.includes("share=tok")) throw new Error(`链接里没有令牌：<${link}>`);
+  });
+}
+
+// ---------------------------------------------------------------- §36 按钮按下反馈（.36）
+section("36. 按钮按下的反馈：一条全局规则统一缩放，按下时不许把居中的按钮拉走");
+{
+  const blockOf = (selector) =>
+    new RegExp(selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + " \\{([\\s\\S]*?)\\}").exec(cssRules)?.[1] ?? "";
+
+  check(":root 里有 --press-scale 这一个 token（幅度只有一个出处，不许每个按钮各写一个数）", () => {
+    const value = /--press-scale:\s*([^;]+);/.exec(cssRules.slice(0, cssRules.indexOf("font-family")))?.[1]?.trim() ?? "";
+    if (!/^\.[0-9]+$/.test(value)) throw new Error(`--press-scale 读出来是 <${value || "(没有这个 token)"}>（期望一个 .0~.99 的系数）`);
+  });
+
+  check("按下的反馈是一条全局规则：:active 时缩放，且排除 :disabled 与买不了的卡片", () => {
+    // 三件事缺一不可：接手势的元素都在名单里、:disabled 不缩放、成就卡（`.card.ach`，
+    // `cursor: default` 的死块）也不缩放——只靠 .card 会把它们一起带上。
+    const press = /button:active:not\(:disabled\),[\s\S]*?\.pack-row:active \{([\s\S]*?)\}/.exec(cssRules);
+    if (!press) throw new Error("找不到那条全局 :active 规则（三行的选择器名单）");
+    if (!/scale:\s*var\(--press-scale\)/.test(press[1])) {
+      throw new Error(`按下时不缩放，或者没走 --press-scale：<${press[1].trim()}>`);
+    }
+    if (!press[0].includes(".card:active:not(:disabled):not(.ach)")) {
+      throw new Error("卡片那条没有把成就卡排除：`.card.ach` 是 `cursor: default` 的死块，按它不该有反应");
+    }
+  });
+
+  check("缩放走独立的 scale 属性，不写进 transform（否则居中件会被拉走）", () => {
+    // 这条守的是一次**实测过的**事故：把 scale 合成进 `.choices-pill:active` 的
+    // `transform: translateX(-50%) scale(...)`，在真 Chrome 里按下时药丸从 left=606 跳到
+    // 625（右跳半个宽度）——translateX 的百分比以元素自身宽度为参照，缩放的坐标系先被
+    // 算了一遍。改用独立的 `scale:` 之后，平移与缩放互不干扰，药丸一行都不用改。
+    const actives = [...cssRules.matchAll(/([^{}]+:active[^{}]*)\{([^}]*)\}/g)]
+      .map(([, sel, body]) => ({ sel: sel.trim(), body }));
+    // 例外只有一处，而且它必须真的有旋转：`.big-cat` 的猫头（`span:first-child`）本来就是
+    // 靠一条 transform 画"歪一下"的（scale + rotate 同一个矩阵），它自己不居中、也不是
+    // 被 .choices-pill 那类 translateX(-50%) 托着的件。凡是**居中件**（基规则里有
+    // translateX(-50%) 或者 position: fixed + left: 50%）一律不许这么写。
+    const centred = new Set(
+      [...cssRules.matchAll(/([^{}]+)\{([^}]*)\}/g)]
+        .filter(([, , body]) => /translateX\(-50%\)/.test(body))
+        .map(([, selector]) => selector.split(",").map((s) => s.trim()).filter(Boolean))
+        .flat()
+        // 只要它们的 :active 派生选择器，不要基规则本身（基规则里那条 translateX 正是要被保护的东西）
+        .map((selector) => `${selector}:active`),
+    );
+    const offenders = actives
+      .filter(({ body }) => /transform:\s*[^;]*scale\(/.test(body))
+      .filter(({ sel }) => !sel.includes(".big-cat"))
+      .filter(({ sel }) => centred.has(sel) || sel.includes(".choices-pill") || sel.includes(".toast"));
+    if (offenders.length > 0) {
+      throw new Error(`这些居中件的 :active 把 scale 写进了 transform（translateX 的百分比会先被缩放的坐标系算一遍，按下瞬间就跳位）：${offenders.map((o) => o.sel).join(" / ")}`);
+    }
+    // 大猫那条例外：它必须真的带着 rotate（否则"例外"两个字就没内容了）。
+    if (!/\.big-cat:active span:first-child \{[\s\S]*?rotate\(/.test(cssRules)) {
+      throw new Error("大猫猫头那条 :active 不再用 rotate 了——那它就不该待在这条例外的名单上");
+    }
+    // 正面证据也要有：药丸的居中靠 auto 外边距（`inset-inline: 0` + `margin-inline: auto`），
+    // 而不是 translateX(-50%)。这一条不是风格选择：`transform` 先于独立的 `scale` 应用，
+    // 百分比 translate 按缩小前的宽度算、整块又以原中心缩一次 —— 实测按下横移 2.8px。
+    const pill = blockOf(".choices-pill");
+    if (/transform:\s*translateX\(-50%\)/.test(pill)) {
+      throw new Error("药丸又改回 translateX(-50%) 居中了：它会与按下缩放打架（横移半个缩放量），用 inset-inline/margin-inline: auto");
+    }
+    if (!/inset-inline:\s*0/.test(pill) || !/margin-inline:\s*auto/.test(pill)) {
+      throw new Error(`药丸的居中不再是 auto 外边距：<${pill.trim().split("\n").slice(0, 6).join(" | ")}>`);
+    }
+  });
+
+  check("自己的 transition 那几处都追加了 scale（简写会盖掉它们原有的底色 / 亮度过渡）", () => {
+    // `.big-cat` / `.card` / `.ascend` 自己写了 transition，全局那条用 :where() 让它们赢，
+    // 于是"按下有反馈"这件事必须写进它们自己那条里，否则那几个按钮干脆不动。
+    for (const selector of [".big-cat", ".card", ".ascend"]) {
+      const transition = /transition:\s*([^;]+);/.exec(blockOf(selector))?.[1] ?? "";
+      if (!/(?:scale|all)\b/.test(transition)) {
+        throw new Error(`${selector} 的 transition 里没有 scale：<${transition.trim() || "(没有 transition)"}>`);
+      }
+    }
+  });
+
+  check("弹性是**两段不同曲线**：松手带过冲、按下不带（一条 transition 做不到这件事）", () => {
+    // ⚠️ 这一条是 2026-11-02 第二次返工的原因：只验"按下 = ×.9x"证明不了弹性 —— 曲线换成
+    // ease 一样能过。真 Chrome 逐帧采样显示，只用一条 .34s 的带弹曲线时，按下那一段自己
+    // 就会先过冲再沉底（指数 2.4 在进场方向上也生效），而松手那段过冲峰值只有 1.0035
+    // （.96 幅度下 0.35%），肉眼看不见 —— 于是"并没有弹性缩放"。
+    //
+    // 判据是**结构性**的（这里没有布局引擎，跑不了逐帧）：基规则那条给松手、必须带过冲
+    // （cubic-bezier 第二控制点的 y > 1）；`:active` 那条给按下、必须不带过冲（y ≤ 1）
+    // 且时长更短。任何一条缺失，按下或松手就会退回同一条曲线，弹性要么看不见要么像按空。
+    // ⚠️ 过冲看的是**两个 y 控制点里较大的那个**，不是只看 y2。`cubic-bezier(.2, 2.4, .45, 1)`
+    // 的过冲来自 y1 = 2.4（第一控制点被拉得很高），而 y2 是 1 —— 这里第一版只取 y2，
+    // 于是把最该通过的那条曲线判成"不带过冲"，守卫自己先红了。
+    const over = (timing) => {
+      const m = /cubic-bezier\(\s*[\d.-]+\s*,\s*([\d.-]+)\s*,\s*[\d.-]+\s*,\s*([\d.-]+)\s*\)/.exec(timing);
+      return m ? Math.max(Number(m[1]), Number(m[2])) : null;
+    };
+    const base = /:where\(button, \.card, \.pack-row\)\s*\{([^}]*)\}/.exec(cssRules)?.[1] ?? "";
+    const baseTiming = /transition:\s*scale\s+([\d.]+s\s+cubic-bezier\([^)]*\))/.exec(base)?.[1] ?? "";
+    if (!baseTiming) throw new Error("找不到全局基规则那条 transition: scale <时长> <曲线>（松手那一段就靠它）");
+    const baseOver = over(baseTiming);
+    if (!baseOver || baseOver <= 1) {
+      throw new Error(`松手那一段的曲线不带过冲：<${baseTiming}> —— 松手只会单调回到 1，看起来是"缩了一下又复原"，不是弹回来`);
+    }
+    const pressed = /button:active:not\(:disabled\),[\s\S]*?\.pack-row:active \{([\s\S]*?)\}/.exec(cssRules)?.[1] ?? "";
+    const pressTiming = /transition:\s*scale\s+([\d.]+s\s+cubic-bezier\([^)]*\))/.exec(pressed)?.[1] ?? "";
+    if (!pressTiming) {
+      throw new Error("按下那一段没有自己的曲线（缺 transition: scale …）：它会走基规则那条带弹的，按下瞬间先过冲再沉底，像按空了");
+    }
+    const pressOver = over(pressTiming);
+    if (!pressOver || pressOver > 1) {
+      throw new Error(`按下那一段的曲线带过冲：<${pressTiming}> —— 压下去的那一下不该回头，弹性只该发生在松手`);
+    }
+    const baseMs = Number.parseFloat(baseTiming);
+    const pressMs = Number.parseFloat(pressTiming);
+    if (!(pressMs < baseMs)) {
+      throw new Error(`按下 ${pressMs}s 不比松手 ${baseMs}s 短：按下要立刻沉底，弹的是松手那一段`);
+    }
+    // 幅度：过冲能不能被看见，取决于 baseOver[1] × 按下后的缺口。
+    // 逐帧实测（真 Chrome）：.92 幅度 + 2.4 的过冲系数 ⇒ 松手峰值 1.032（3.2%，看得见）；
+    // .96 幅度 + 1.56 ⇒ 1.0035（0.35%，看不见）。所以幅度不许回到 .96 以上。
+    const scaleValue = Number.parseFloat(/--press-scale:\s*([^;]+);/.exec(blockOf(":root"))?.[1] ?? "");
+    if (!Number.isFinite(scaleValue) || scaleValue > 0.94) {
+      throw new Error(`--press-scale = ${scaleValue}：幅度大于 .94 时（配合这条过冲系数）峰值只有 1% 上下，肉眼看不出弹性（.96 实测只有 0.35%）`);
+    }
+  });
+
+  check("按下反馈不受 reduced-motion 影响（--press-scale 在那节里**不许**被改成 1）", () => {
+    // ⚠️ 这条原先写的是相反的断言（"关掉动效的人不缩放"），而那正是 2026-11-02 那次
+    // "按下去没有弹性"的病灶：Windows 关掉任务栏动画后 Chrome 就报 reduce，于是
+    // --press-scale 归 1、这台机器上按下完全不缩——功能等于没做，而这条守卫还把它当正确行为。
+    //
+    // 按下反馈与"页面自己动的动画"不是一回事：它只在手指按住那一瞬发生、由用户发起、
+    // 幅度 4%，是**操作确认**而不是装饰，不引起前庭反应。真正会晃人的（金猫浮动、药丸脉冲、
+    // sheet 入场）仍然由那一节压掉——所以这里验的是"这一节存在且仍在压动画"，
+    // 而不是"它把按下也关了"。
+    const reduce = /@media \(prefers-reduced-motion: reduce\) \{([\s\S]*?)\n\}/.exec(cssRules)?.[1] ?? "";
+    if (reduce === "") throw new Error("找不到 reduced-motion 那一节（页面自己动的动画就没被压掉）");
+    if (/--press-scale\s*:\s*1/.test(reduce)) {
+      throw new Error("reduced-motion 那一节又把 --press-scale 归 1 了：系统报 reduce 的机器上按下去完全不会缩（这正是 2026-11-02 那次「并没有弹性缩放」的病灶）");
+    }
+    if (/--press-scale\s*:\s*1/.test(cssRules)) {
+      throw new Error("全表任何地方都不许把 --press-scale 设成 1：那等于把按下反馈整个删掉");
+    }
+    // 那一节的职责仍在：页面自己动的动画必须被压掉（金猫浮动 / 药丸脉冲 / sheet 入场）。
+    if (!/animation-duration:\s*\.001ms\s*!important/.test(reduce)) {
+      throw new Error("reduced-motion 那一节不再压页面自己的动画了（金猫浮动、药丸脉冲会照晃）");
+    }
+    // 大猫那个"猫头跟着歪"是位移+旋转，属于这一节要压的那一类，保留。
+    if (!/\.big-cat:active span:first-child\s*\{[^}]*transform:\s*none/.test(cssRules)) {
+      throw new Error("大猫的猫头在 reduced-motion 里还会歪（缺 .big-cat:active span:first-child { transform: none }）");
+    }
+  });
+}
+
+// ---------------------------------------------------------------- §37 音效
+section("37. 音效：合成而不是加载文件；跟着结果走；默认开、可关、关掉真安静");
+{
+  check("音效是 Web Audio 现场合成，不加载任何音频文件（没有 <audio>、没有 .mp3/.ogg/.wav 引用）", () => {
+    // 与 §25 那条"不许栅格图形"同一条思路：挂机游戏每秒会被点好几次，采样音在这里
+    // 只换来"多一个要发布的文件、多一条要缓存的东西"。这条守卫钉住"合成"这个决定本身：
+    // 谁哪天塞进一个 <audio> 或 fight.mp3，这里就红。
+    if (/<audio\b/i.test(html)) throw new Error("index.html 里出现了 <audio>：音效是合成的，不该有播放器元素");
+    const mediaRef = /(?:src|url)\s*[=(]\s*["']?[^"')\s]*\.(?:mp3|ogg|wav|m4a|aac|flac)\b/i.exec(html + appSource + cssRules);
+    if (mediaRef) throw new Error(`出现了音频文件引用：<${mediaRef[0]}> —— 音效用 Web Audio 合成，不发布音频文件`);
+    if (!/AudioContext|webkitAudioContext/.test(appSource)) throw new Error("app.js 里没有 AudioContext：音效没有发声的通道");
+  });
+
+  check("AudioContext 懒建、且在播放前 resume（加载时就 new 会被自动播放策略静默吞掉）", () => {
+    // 浏览器自动播放策略：非用户手势里创建的上下文是 suspended，声音被静默丢弃。
+    // 这是**最难查**的一类失败（不报错、不出声），所以懒建 + 每次播放前 resume 这两件事都要钉。
+    const ensure = /function ensureAudio\(\)[\s\S]*?\n\}/.exec(appSource)?.[0] ?? "";
+    if (!ensure) throw new Error("找不到 ensureAudio()：音频上下文的创建没有收敛到一处");
+    if (!/if \(SOUND\.context\) return SOUND\.context/.test(ensure)) {
+      throw new Error("ensureAudio 不是懒建的（没有先查已有上下文），会产生多个 AudioContext");
+    }
+    // 必须是 globalThis 而不是 window：这支脚本要在无头 DOM 桩里真跑一遍。
+    if (!/globalThis/.test(ensure)) throw new Error("ensureAudio 用了 window 而不是 globalThis：无头桩里没有 window，整页会在第一次发声时抛 ReferenceError");
+    if (!/ctx\.state === "suspended"/.test(appSource) || !/ctx\.resume\(\)/.test(appSource)) {
+      throw new Error("播放前没有 resume：切走再回来（或首次手势之前）的声音会被静默吞掉");
+    }
+  });
+
+  check("同类音有节流，但**点猫那一类不许被挡**（连点每一下都要响）", () => {
+    if (!/SOUND\.lastAt\[kind\]/.test(appSource)) throw new Error("tone() 里没有按 kind 记时间戳：连点会把振荡器堆满");
+    if (!/SOUND\.gap/.test(appSource)) throw new Error("没有 SOUND.gap 这个间隔上限");
+    const gap = Number(/gap:\s*(\d+)/.exec(appSource)?.[1] ?? "");
+    if (!Number.isFinite(gap) || gap < 10 || gap > 120) {
+      throw new Error(`SOUND.gap = ${gap}：太小挡不住连点、太大会把正常的点击也吃掉（10~120ms 之间）`);
+    }
+    // ⚠️ 点猫必须走一个**明显更小**的间隔。这一条是实测出来的：一开始所有音都吃 25ms，
+    // 快速连点 20 下只出了 1 个音——而点猫正是这个游戏最核心的动作（一秒十几下），
+    // 一半以上的点击是哑的，手感直接废掉。
+    // 取 playClick 整个函数体（按函数边界截，不按第一个 `}`——`setTimeout` 里就有 `}`）。
+    const clickFn = /function playClick\(\)[\s\S]*?\n\}/.exec(appSource)?.[0] ?? "";
+    if (!clickFn) throw new Error("找不到 playClick()");
+    const clickLine = clickFn.split("\n").find((line) => line.includes('tone("click"')) ?? "";
+    if (!/gap:\s*(\d+)/.test(clickLine)) {
+      throw new Error("playClick 没有给自己的 tone 传更小的 gap：它会吃全局 25ms，快速连点时一半的点击是哑的");
+    }
+    const clickGap = Number(/gap:\s*(\d+)/.exec(clickLine)?.[1] ?? "");
+    if (!(clickGap < gap)) throw new Error(`点猫的 gap=${clickGap} 不比全局 ${gap} 小：等于没放宽`);
+    // 8ms 低于 120Hz 屏的帧间隔（8.33ms），所以"每一次点击都能放行"。
+    if (clickGap > 10) throw new Error(`点猫的 gap=${clickGap}：8ms 是这一版取的数（低于 120Hz 的帧间隔 8.33ms，每次点击都放行）`);
+  });
+
+  check("声音挂在**结果**上（send 的成功/失败），不是挂在每个调用点上", () => {
+    // 这是"点了没成也响一声成功音"的唯一防线：接线在 send 里只写一次，
+    // 就不会出现某个按钮忘了接线（或接了成功音却没判 ok）。
+    if (!/soundFor\(type, Boolean\(result\.ok\)\)/.test(appSource)) {
+      throw new Error("send() 没有把命令结果交给 soundFor：声音就不是跟着结果走的");
+    }
+    if (!/function soundFor\(type, ok\)/.test(appSource)) throw new Error("没有 soundFor 这张表");
+    // 被拒那一声只该给"玩家以为会成"的那几条命令。
+    const deny = /if \(!ok\) \{[\s\S]*?\n  \}/.exec(appSource)?.[0] ?? "";
+    if (!/playDeny\(\)/.test(deny)) throw new Error("被拒的时候不出声：失败与成功听起来一样");
+  });
+
+  check("音效开关：真按钮、aria-pressed 与图标同源、偏好存在 localStorage 且读不到时按「开」", () => {
+    if (!/<button id="sound-toggle"/.test(html)) throw new Error("index.html 里没有 #sound-toggle 这颗开关");
+    if (!/aria-label="音效"/.test(html)) throw new Error("#sound-toggle 上没有 aria-label");
+    // 图标与 aria-pressed 必须由同一处写（写两份总有一天会不一致）。
+    if (!/setAttribute\("aria-pressed"/.test(appSource)) throw new Error("没有写 aria-pressed：读屏用户不知道现在是开还是关");
+    if (!/renderSoundButton\(\)/.test(appSource)) throw new Error("没有 renderSoundButton()");
+    if (!/localStorage\.getItem\("neko-clicker\.sound"\)/.test(appSource)) throw new Error("偏好没有存在 localStorage（刷新之后开关会跳回去）");
+    // 读不出 localStorage（隐私模式 / 被禁）时必须按"开"，而不是抛异常或静默变成关。
+    const load = /function loadSoundPreference\(\)[\s\S]*?\n\}/.exec(appSource)?.[0] ?? "";
+    if (!load) throw new Error("找不到 loadSoundPreference()");
+    if (!/catch\s*\{[\s\S]*?return true/.test(load)) {
+      throw new Error("loadSoundPreference 在 catch 里没有 return true：隐私模式下音效会变成默认关，而它只是偏好不是数据");
+    }
+  });
+
+  check("关掉之后真的不发声（tone() 第一行就查开关，而不是查在半路）", () => {
+    const tone = /function tone\(kind,[\s\S]*?\n\}/.exec(appSource)?.[0] ?? "";
+    if (!tone) throw new Error("找不到 tone()");
+    const first = tone.split("\n").slice(1, 4).join("\n");
+    if (!/if \(!SOUND\.enabled\) return;/.test(first)) {
+      throw new Error(`tone() 开头没有拦 SOUND.enabled：关掉开关之后仍会建振荡器（白白吵一下）——开头三行是：${first.replace(/\n/g, " ")}`);
+    }
+  });
+
+  check("音效不受 prefers-reduced-motion 管辖（那是视觉偏好，与声音无关）", () => {
+    // 与 §36 那条同一条思路：reduced-motion 管的是"页面自己动的动画"。声音有它自己的开关，
+    // 把两者混在一起会让"我只想关声音"或"我只想少动画"其中一个失效。
+    const reduce = /@media \(prefers-reduced-motion: reduce\) \{([\s\S]*?)\n\}/.exec(cssRules)?.[1] ?? "";
+    if (/sound|audio|mute/i.test(reduce)) throw new Error("reduced-motion 那一节里掺进了音效规则：声音该由那颗开关管，不该由视觉偏好管");
+    // ⚠️ 只查**真的读了这个媒体查询**的代码：app.js 里有一大段注释解释"音效为什么不受它管"，
+    // 直接在这份源码上搜 `prefers-reduced-motion` 会命中那段注释（守卫自己先红了一次）。
+    // 真正的读法是 matchMedia(...) —— 注释里不会调用它。
+    if (/matchMedia\s*\(\s*["'`]\(prefers-reduced-motion/.test(appSource)) {
+      throw new Error("app.js 用 matchMedia 读 prefers-reduced-motion 去管声音了：视觉偏好与声音开关必须分开");
+    }
+  });
+}
+
+// ---------------------------------------------------------------- §38 三处反馈动画
+section("38. 三处反馈动画：点猫飘字 / 换页签淡入 / 新日志滑入");
+{
+  check("点猫飘字：节点挂在猫之外的定位层里、不吃点击、带 +N、动画结束会自己消失", () => {
+    // 为什么不是"塞进按钮里"：真 `<button>` 里多一个纯装饰子块会破坏 `.big-cat .hint`
+    // 那一行的结构（§30 用 `</span></button>` 界定它），而且按钮内部本来就不该有装饰层。
+    if (!/<div id="click-float-layer"/.test(html)) throw new Error("index.html 里没有 #click-float-layer");
+    const hero = /<section class="hero">([\s\S]*?)<\/section>/.exec(html)?.[1] ?? "";
+    if (!hero.includes('id="click-float-layer"')) throw new Error("飘字层不在 hero 里（它要跟着猫走，hero 是它的定位基准）");
+    // 层必须是 aria-hidden 且不吃点击：不然读屏会念一堆 "+N"，连点时还会挡住手指。
+    if (!/id="click-float-layer"[^>]*aria-hidden="true"/.test(html)) throw new Error("飘字层没有 aria-hidden（读屏会把每次点击念一遍）");
+    const layerRule = /\.click-float-layer \{([\s\S]*?)\}/.exec(cssRules)?.[1] ?? "";
+    if (!/pointer-events:\s*none/.test(layerRule)) throw new Error("飘字层吃点击：连点时会挡住自己");
+    if (!/position:\s*absolute/.test(layerRule)) throw new Error("飘字层不是绝对定位（它会占掉 hero 的一行）");
+    // ⚠️ 层不许写死 top/left/width/height：这些由 JS 按猫的**实测**位置写。
+    // 写死任何一个数都会在"纪元面板出现/消失、hero 被拉伸、窄屏重排"时与猫脱节。
+    for (const prop of ["top", "left", "width", "height", "inset"]) {
+      if (new RegExp(`\\b${prop}:`).test(layerRule)) {
+        throw new Error(`飘字层写死了 ${prop}：位置/尺寸必须由 JS 按猫的实测位置写（见 floatClickGain）`);
+      }
+    }
+    const floatRule = /\.click-float \{([\s\S]*?)\}/.exec(cssRules)?.[1] ?? "";
+    if (!/animation:\s*click-float-up/.test(floatRule)) throw new Error(".click-float 没有 click-float-up 动画");
+    // 节点必须自己消失：DOM 里攒空节点（一秒十几下、攒十分钟）是这一类特效的典型漏洞。
+    const fn = /function floatClickGain\([\s\S]*?\n\}/.exec(appSource)?.[0] ?? "";
+    if (!fn) throw new Error("找不到 floatClickGain()");
+    if (!/node\.remove\(\)/.test(fn)) throw new Error("飘字节点不会自己消失：DOM 里会攒下成千上万个空 span");
+    if (!/animationend/.test(fn)) throw new Error("飘字没有在动画结束时清理（只靠定时器会让 reduce 档留着它们）");
+    // 数值必须来自服务端格式化好的 clickPowerText（前端不做乘号）。
+    if (!/state\?\.clickPowerText/.test(fn)) throw new Error("飘字的数值不来自 clickPowerText（前端自己算会造出第二份真相）");
+    // 尺寸要用 offsetWidth 而不是 getBoundingClientRect：click 是在 mouseup 之后派发的，
+    // 那一刻猫还按着 scale(.92)，包围盒比真实尺寸小 8%，层会跟着缩（实测过一次）。
+    if (!/offsetWidth/.test(fn)) throw new Error("飘字层用了渲染尺寸而不是 offsetWidth：按下的 scale 会让它比猫小 8%");
+  });
+
+  check("换页签：可见面板淡入（.panel:not(.hidden) 挂着 panel-fade，起点 opacity 0）", () => {
+    const rule = /\.panel:not\(\.hidden\) \{([\s\S]*?)\}/.exec(cssRules)?.[1] ?? "";
+    if (!rule) throw new Error("没有 `.panel:not(.hidden)` 这条规则：换页签仍是硬切");
+    if (!/animation:\s*panel-fade/.test(rule)) throw new Error("面板没挂 panel-fade");
+    // ⚠️ 必须写在 `:not(.hidden)` 上：`.hidden` 是 display:none，动画根本不会跑；
+    // 而重新显示时浏览器会重新求值 animation，于是每次切回来都放一次——这正是想要的。
+    const keyframes = /@keyframes panel-fade \{([\s\S]*?)\}/.exec(cssRules)?.[1] ?? "";
+    if (!/from\s*\{[^}]*opacity:\s*0/.test(keyframes)) throw new Error("panel-fade 的起点不是 opacity 0（那就不叫淡入）");
+    // 位移要小：面板本身能有 26rem 高，位移一大就成了"整块在跳"。
+    const shift = /translateY\(([\d.]+)rem\)/.exec(keyframes)?.[1];
+    if (!shift || Number(shift) > 0.4) throw new Error(`panel-fade 的位移是 ${shift}rem：面板很高，位移超过 .4rem 会像整块在跳`);
+    // 整段重建/清空时**不许**让一堆行一起飞进来（那像故障）——fresh 只给增量分支。
+    const fn = /function renderNotifications\([\s\S]*?\n\}/.exec(appSource)?.[0] ?? "";
+    if (!fn) throw new Error("找不到 renderNotifications()");
+    const fullRebuild = fn.slice(0, fn.indexOf("增量："));
+    if (/createNoteRow\([^)]*true\)/.test(fullRebuild)) {
+      throw new Error("整段重建也传了 fresh：开局/清空时所有行会一起飞进来");
+    }
+    if (!/createNoteRow\(item, true\)/.test(fn)) throw new Error("增量分支没有给新行传 fresh：新到的日志不会滑入");
+  });
+}
+
+// ---------------------------------------------------------------- §39 成就解锁的闪光
+section("39. 成就解锁闪一下：只闪「刚翻过来的那一条」");
+{
+  const ACH = (a1, a2, a3) => snapshot({ achievementCount: (a1 ? 1 : 0) + (a2 ? 1 : 0) + (a3 ? 1 : 0), achievementTotal: 3, achievements: [
+    { id: "a1", name: "第一条", icon: "🥇", description: "说明一", unlocked: a1, progressText: a1 ? "" : "0 / 1" },
+    { id: "a2", name: "第二条", icon: "🥈", description: "说明二", unlocked: a2, progressText: a2 ? "" : "3 / 10" },
+    { id: "a3", name: "第三条", icon: "🥉", description: "说明三", unlocked: a3, progressText: a3 ? "" : "1 / 5" },
+  ] });
+
+  const flash = await loadApp(copyAs("app-ach-flash.mjs", appSource));
+  await flash.push({ kind: "full", seq: 1, snapshot: ACH(true, false, false) });
+  const rows = () => el(flash, "achievement-list").children;
+  const flashing = () => rows().filter((r) => r.classList.contains("just-unlocked"));
+
+  check("首帧：已解锁的那条**不许**闪（它不是刚刚拿到的）", () => {
+    eq(flashing().length, 0, "首帧闪的行数");
+  });
+
+  // 把 a2 翻成已解锁：只有它该闪。
+  await flash.push({ kind: "full", seq: 2, snapshot: ACH(true, true, false) });
+  check("恰好那一条翻转的带 just-unlocked（别的不带）", () => {
+    eq(flashing().length, 1, "闪光行数");
+    const only = flashing()[0];
+    if (!only.children[0].textContent.includes("第二条")) {
+      throw new Error(`闪错了行：<${only.children[0].textContent}>`);
+    }
+    // 闪光不该把状态类挤掉（金实线那条边要还在）。
+    if (!only.classList.contains("unlocked")) throw new Error("闪光那一行没有 unlocked 类");
+  });
+
+  // 再推一帧，没有新的解锁：不许重新闪（否则每次重画都会闪一遍）。
+  await flash.push({ kind: "full", seq: 3, snapshot: ACH(true, true, false) });
+  check("重复帧（没有新解锁）之后不再闪", () => {
+    eq(flashing().length, 0, "重复帧之后仍在闪的行数");
+  });
+
+  check("CSS 那一侧：闪光用 box-shadow（不改布局、不盖金边），且终点淡回透明", () => {
+    const rule = /\.card\.ach\.just-unlocked \{([\s\S]*?)\}/.exec(cssRules)?.[1] ?? "";
+    if (!rule) throw new Error("没有 .card.ach.just-unlocked 这条规则");
+    if (!/animation:\s*ach-unlock/.test(rule)) throw new Error("闪光没挂 ach-unlock 动画");
+    const frames = /@keyframes ach-unlock \{([\s\S]*?)\n\}/.exec(cssRules)?.[1] ?? "";
+    if (!frames) throw new Error("没有 ach-unlock 关键帧");
+    if (!/box-shadow/.test(frames)) throw new Error("闪光没用 box-shadow：outline/border 会改布局或盖掉金边");
+    // 终点必须回到"没有额外光"，否则闪完会永久发光。
+    if (!/#ffd47900/.test(frames.trim().split("\n").pop() ?? "")) {
+      throw new Error("闪光终点没有淡回透明 —— 闪完会永久亮着");
+    }
+  });
+
+  check("判据是「上一帧没解锁、这一帧解锁了」；闪光类写进整串重写里（不是事后加）", () => {
+    const fn = /function renderAchievements\([\s\S]*?\n\}/.exec(appSource)?.[0] ?? "";
+    if (!fn) throw new Error("找不到 renderAchievements()");
+    if (!/unlockedOnce\.get\(achievement\.id\)/.test(fn)) {
+      throw new Error("没有用「上一帧是否已解锁」当判据：每次重画都会把已解锁的行闪一遍");
+    }
+    // ⚠️ 这一条改过一次判据，原因是一次**实测**：`className = …` 是整串重写，而服务端 4 Hz
+    // 推帧，`classList.add` 事后加的那个类会在 250ms 后被下一次重写冲掉——闪光要跑 1.1s，
+    // 实测 30 帧里 0 帧带光环，光根本没亮。所以类必须拼进那串赋值里。
+    const rewrite = /node\.row\.className = [^;]*just-unlocked/.exec(fn)?.[0] ?? "";
+    if (!rewrite) {
+      throw new Error("just-unlocked 没有写进 className 那一串赋值里：4 Hz 重写会在 250ms 后把它冲掉（闪光要跑 1.1s）");
+    }
+    if (/classList\.add\("just-unlocked"\)/.test(fn)) {
+      throw new Error("仍在事后 classList.add：下一次重画就把它冲掉了");
+    }
+    // 摘掉时要核对 animationName（animationend 会冒泡，面板的 panel-fade 也会落在这里）。
+    if (!/animationName !== "ach-unlock"/.test(fn)) {
+      throw new Error("摘类时没核对 animationName：面板淡入的 animationend 会把光提前掐掉");
+    }
+    // 结构重建那条分支也要登记已解锁的，否则重建的下一帧会把所有已解锁行一起闪。
+    if (!/if \(achievement\.unlocked\) unlockedOnce\.set\(achievement\.id, true\)/.test(fn)) {
+      throw new Error("结构重建时没有登记已解锁的那批：重建的下一帧会把它们全闪一遍");
+    }
   });
 }
 

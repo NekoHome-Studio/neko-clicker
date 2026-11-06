@@ -185,12 +185,42 @@ async function send(type, extra = {}, options = {}) {
     });
     const result = await response.json();
     if (!result.ok && result.message && !options.quiet) toast(result.message, true);
+    // 音效挂在**结果**上而不是挂在每个调用点上：一处接住所有命令，
+    // 也就不会出现"这个按钮忘了接线"那种漏（清单见 soundFor）。
+    soundFor(type, Boolean(result.ok));
     return result;
   } catch (error) {
     // 连不上宿主是**另一件事**，与"这条命令被拒绝"不同，所以它照样弹提示条：
     // 存档窗口那三条也只是"不重复弹自己那一句"，不是"什么都不说"。
     toast(`连不上宿主：${error.message}`, true);
     return { ok: false };
+  }
+}
+
+/**
+ * 哪条命令配哪个音。**表在声音的定义后面**（那些函数是函数声明，会被提升；
+ * 这张表在模块顶层执行时它们已经就位）。
+ *
+ * `ok === false` 一律是"被拒"那一声（钱不够、锁着、校验失败）：失败的声音必须与成功的
+ * 不一样，否则"点了没成"就只能靠看提示条。存档 / 导入 / 导入分享那三条**不出声**：
+ * 它们的结果由窗口里那一行文字负责说（见 importSave），再加两声只会吵。
+ */
+function soundFor(type, ok) {
+  if (!ok) {
+    // 被拒：只对"玩家以为会成"的那几条命令出声。showChoices / dismissLore 之类
+    // 是前端记账，失败也不该响。
+    if (type === "click" || type === "buy" || type === "upgrade" || type === "ascend" || type === "grabGolden") {
+      playDeny();
+    }
+    return;
+  }
+  switch (type) {
+    case "click":       playClick(); break;
+    case "buy":         playBuy(); break;
+    case "upgrade":     playBuy(); break;
+    case "grabGolden":  playChime(); break;
+    case "ascend":      playChime(); break;
+    default: break;   // 其余（存档 / 导入 / 表态 / 换档位）不出声，理由见上面的注释
   }
 }
 
@@ -629,8 +659,10 @@ function renderChoicesPill(count, visible) {
 
   if (appearing) {
     // 冒出来那一下强调一次：它出现只可能是因为玩家刚把 sheet 收起。
+    // 1300ms = 动画总长（.6s × 2 次，见 app.css 的 choices-pop）多留一点余量。
+    // 原先写的是 2600ms，对应的是 1.1s × 2 那一版；动画缩短之后那个数只是在白等。
     pill.classList.add("urgent");
-    setTimeout(() => pill.classList.remove("urgent"), 2600);
+    setTimeout(() => pill.classList.remove("urgent"), 1300);
   }
 }
 
@@ -1301,6 +1333,15 @@ const achievementRows = new Map();
 /** 上一次画进 `#achievement-list` 的结构骨架（成就 id 与顺序）。 */
 let achievementStructureKey = null;
 
+/**
+ * 已经**闪过**的那批成就 id（2026-11-06）。判据是"上一帧还没解锁、这一帧解锁了"，
+ * 所以必须记住"哪些已经算过"；否则每次重画都会把已解锁的行闪一遍。
+ *
+ * 为什么不用 `row.classList.contains("unlocked")` 当判据：`className` 每帧整串重写，
+ * 那一瞬间的类名是**这一帧的**结果，不是上一帧的输入——拿结果当判据永远读不到翻转。
+ */
+const unlockedOnce = new Map();
+
 function renderAchievements() {
   const host = $("#achievement-list");
   const rows = state.achievements ?? [];
@@ -1337,6 +1378,9 @@ function renderAchievements() {
 
       host.append(row);
       achievementRows.set(achievement.id, { row, name, desc });
+      // 结构重建时也要把"已经算过"的那批记下来：否则重建的下一帧会把**所有**已解锁的行
+      // 都当成"刚拿到的"闪一遍。
+      if (achievement.unlocked) unlockedOnce.set(achievement.id, true);
     }
     return;
   }
@@ -1345,7 +1389,36 @@ function renderAchievements() {
   for (const achievement of rows) {
     const node = achievementRows.get(achievement.id);
     if (!node) continue;
-    node.row.className = achievement.unlocked ? "card ach unlocked" : "card ach";
+
+    // 刚拿到的那一条闪一下（2026-11-06）。判据是"上一帧还没解锁、这一帧解锁了"——
+    // 不是 `achievement.unlocked` 本身：那样每次重画都会把已解锁的行全都闪一遍。
+    //
+    // ⚠️ `className = …` 是**整串重写**（它本来就这么写，§34 也用它数写入次数），
+    // 所以 `just-unlocked` 必须写进这一串里，而不是事后 `classList.add` ——
+    // 事后加的话，只要服务端再推一帧（4 Hz，250ms 一次），下一次重写就把它冲掉，
+    // 而闪光要跑 1.1s：实测 30 帧里 0 帧带光环，光根本没亮。
+    const wasUnlocked = unlockedOnce.get(achievement.id) === true;
+    const flashing = achievement.unlocked && !wasUnlocked;
+    node.row.className = achievement.unlocked
+      ? `card ach unlocked${flashing ? " just-unlocked" : ""}`
+      : "card ach";
+
+    if (flashing) {
+      unlockedOnce.set(achievement.id, true);
+      // 摘掉只在**这一条**动画结束时发生。`animationend` 会冒泡，节点上可能还有别的动画
+      // （例如面板刚切过来时 `.panel` 的 panel-fade）——那些结束事件也会落到这里，
+      // 于是一进来就把类摘掉。所以必须核对 `event.animationName`。
+      //
+      // 摘掉之后**不需要**再担心重写：`flashing` 为 false 的那些帧本来就不带这个类。
+      const clear = (e) => {
+        if (e && e.animationName && e.animationName !== "ach-unlock") return;
+        node.row.classList.remove("just-unlocked");
+        node.row.removeEventListener("animationend", clear);
+      };
+      node.row.addEventListener("animationend", clear);
+      setTimeout(clear, 1400);   // 兜底：动画没跑起来时也要摘
+    }
+
     setText(node.name, `${achievement.icon} ${achievement.name}`);
     setText(node.desc, !achievement.unlocked && achievement.progressText
       ? `${achievement.description} · 进度 ${achievement.progressText}`
@@ -1380,9 +1453,11 @@ const NOTE_KINDS = ["info", "success", "warning", "rare"];
 let logNewestKey = null;
 
 /** 画一行日志（新行按 new 在上的次序插到最前面）。 */
-function createNoteRow(item) {
+function createNoteRow(item, fresh = false) {
   const row = document.createElement("div");
-  row.className = `note ${NOTE_KINDS[item.kind] ?? "info"}`;
+  // `fresh` 的那一条多一个类，CSS 里那条 .note.fresh 让它从上方落位（见 app.css）。
+  // **只有新到的**才带它：整段重建（开局 / 清空）时 10 条一起飞进来会像故障。
+  row.className = `note ${NOTE_KINDS[item.kind] ?? "info"}${fresh ? " fresh" : ""}`;
 
   const icon = document.createElement("span");
   icon.className = "note-icon";
@@ -1439,7 +1514,7 @@ function renderNotifications() {
   }
 
   logNewestKey = key;
-  const newRows = notes.slice(0, fresh).map(createNoteRow);
+  const newRows = notes.slice(0, fresh).map((item) => createNoteRow(item, true));
   if (newRows.length > 0) host.prepend(...newRows);
 
   // 引擎把尾部截短了（MaxNotifications 回卷）：多出来的旧行从尾部摘掉。
@@ -1814,6 +1889,8 @@ function createBuildingRow(building) {
   card.dataset.building = building.id;
   card.addEventListener("click", () => {
     if (card.disabled) return; // 锁着的行不发货（真 DOM 里 disabled 的按钮本来就点不动）
+    // 买得起才响"买入"那一声；买不起时由 send 的失败分支响"被拒"那一声（见 send）。
+    // 声音跟着**结果**走，不跟着手势走：点了没成也响一记成功音，等于骗人。
     send("buy", { id: building.id });
   });
 
@@ -2533,6 +2610,168 @@ function setText(node, text) {
   if (node.textContent !== value) node.textContent = value;
 }
 
+/**
+ * 音效。**合成，不加载任何音频文件**。
+ *
+ * 为什么不用 mp3/ogg：这个仓库有一条形状守卫（web-smoke §25）不许页面出现
+ * `<img>` / `<canvas>` / `background-image: url(...)` 这一类外部栅格资源，音频虽不在
+ * 那条断言的射程里，理由却是同一个——挂机游戏每秒会被点好几次，几 KB 的采样音在这里
+ * 只有"多一个要发布的文件、多一条要缓存的东西"这两种成本。用 Web Audio 现场合成，
+ * 一个字节不用发布，音量/音高还能跟着游戏状态走（见 playClick 的 pitch）。
+ *
+ * 三条硬约束：
+ *   1. **AudioContext 必须在用户手势里创建/恢复**。浏览器自动播放策略下，在加载时就 new
+ *      出来的上下文处于 suspended，声音会被静默吞掉——而"静默吞掉"正是最难查的那种失败。
+ *      所以这里懒建，且每次播放前 `resume()`（用户可能中途切走过）。
+ *   2. **不能因为敲得快就堆满振荡器**。每次只发一个极短的音，并且在 `lastAt` 上做节流：
+ *      同一类音 25ms 内只响一次（人耳分辨不出更密的，而连点 20 下会同时挂 20 个节点）。
+ *   3. **默认开、可关**。挂机游戏的声音是"锦上添花"，不是必需品：右上角有一颗开关，
+ *      选择存在 localStorage（**只有这一个 UI 偏好**，与存档无关——存档的唯一真相在引擎里，
+ *      见 renderOffline 那段注释）。读不出 localStorage（隐私模式 / 被禁）时按"开"处理，
+ *      因为它只是偏好，不是数据。
+ *
+ * ⚠️ 音效**不受** prefers-reduced-motion 影响：那是视觉前庭的偏好，与声音无关
+ * （要静音的人关的是系统音量或这颗开关）。反过来也成立——关掉声音不影响按下缩放。
+ */
+const SOUND = {
+  enabled: true,
+  context: null,
+  lastAt: Object.create(null),
+  /** 同类音的最小间隔（ms）。连点 20 下时，振荡器数量被这个数封顶。 */
+  gap: 25,
+};
+
+/** 读偏好。localStorage 在隐私模式 / 文件协议下会抛，所以整段包在 try 里。 */
+function loadSoundPreference() {
+  try {
+    return localStorage.getItem("neko-clicker.sound") !== "off";
+  } catch {
+    return true;   // 读不到就当"开"：这是偏好不是数据，不该因为读不到就改变默认
+  }
+}
+
+function saveSoundPreference(enabled) {
+  try {
+    localStorage.setItem("neko-clicker.sound", enabled ? "on" : "off");
+  } catch {
+    // 存不下就算了：这一次会话里开关照常生效（SOUND.enabled 是内存里的真相）。
+  }
+}
+
+/** 懒建上下文。返回 null 表示这台环境没有 Web Audio（老浏览器 / 被策略禁用）。 */
+function ensureAudio() {
+  if (SOUND.context) return SOUND.context;
+  // 用 globalThis 而不是 window：这支脚本要在无头 DOM 桩里真跑一遍（web-smoke），
+  // 那里只有 globalThis、没有 window。`window` 会让整页在没 DOM 的环境里抛 ReferenceError
+  // ——而这正是 §36 那次"切页签"红掉的原因（一次 selectTab 就把音效模块拽起来了）。
+  const scope = globalThis;
+  const Ctor = scope.AudioContext ?? scope.webkitAudioContext;
+  if (!Ctor) return null;
+  try {
+    SOUND.context = new Ctor();
+  } catch {
+    return null;
+  }
+  return SOUND.context;
+}
+
+/**
+ * 放一个音。`kind` 只用于节流分类；`spec` 描述这一个音的包络与音高。
+ *
+ * 包络很短（attack 2ms / 指数衰减）：挂机游戏的音效是**反馈**，不是音乐——拖长的音
+ * 会在连点时叠成一片糊。所有节点都进 `stop()` 自动回收，不手动 disconnect（规范里
+ * 停掉的源节点会被 GC 回收，手动断反而容易在声音尾部把它掐掉）。
+ *
+ * 节流分两档（`gap` 参数）：
+ *   · **点猫走 8ms**。它是这个游戏最核心的动作，玩家会一秒点十几下，而每一"哒"都必须
+ *     响——如果按 25ms 挡，快速连点时一半以上的点击是哑的，手感直接废掉。
+ *     8ms 低于 120Hz 显示器的帧间隔，等于"每次点击都放行"；而同类的振荡器最多叠
+ *     1/0.008 = 125 个（每个只活 50ms，实际同屏不超过 6 个）——这个量 Web Audio 毫无压力。
+ *   · **其余走 25ms**。买 / 换页签 / 金猫那些是低频动作，25ms 只在真正的手抖双击时生效。
+ */
+function tone(kind, { freq, gain = 0.05, duration = 0.06, type = "sine", sweep = 0, detune = 0, gap = SOUND.gap }) {
+  if (!SOUND.enabled) return;
+  const now = performance.now();
+  if (now - (SOUND.lastAt[kind] ?? -Infinity) < gap) return;   // 节流：同一类音不许叠
+  SOUND.lastAt[kind] = now;
+
+  const ctx = ensureAudio();
+  if (!ctx) return;
+  // 用户可能中途切走再回来（上下文被挂起）：每次播放前恢复，失败就安静地放弃这一次。
+  if (ctx.state === "suspended") ctx.resume().catch(() => {});
+
+  const at = ctx.currentTime;
+  const osc = ctx.createOscillator();
+  const amp = ctx.createGain();
+  osc.type = type;
+  osc.frequency.setValueAtTime(freq, at);
+  if (sweep) osc.frequency.exponentialRampToValueAtTime(Math.max(20, freq + sweep), at + duration);
+  if (detune) osc.detune.setValueAtTime(detune, at);
+
+  // 音量包络：2ms 起音、指数衰减到 0。用 linear 起音是为了不"咔"一声（指数起音会）。
+  amp.gain.setValueAtTime(0, at);
+  amp.gain.linearRampToValueAtTime(gain, at + 0.002);
+  amp.gain.exponentialRampToValueAtTime(0.0001, at + duration);
+
+  osc.connect(amp).connect(ctx.destination);
+  osc.start(at);
+  osc.stop(at + duration + 0.01);
+}
+
+/** 点猫：音高跟着连击往上爬（每一下升一档，停下 400ms 后归零）。 */
+let clickPitchStep = 0;
+let clickPitchResetTimer = null;
+function playClick() {
+  clickPitchStep = (clickPitchStep + 1) % 12;
+  clearTimeout(clickPitchResetTimer);
+  clickPitchResetTimer = setTimeout(() => { clickPitchStep = 0; }, 400);
+  // 440Hz 起、每个半音按十二平均律升 1/12 个八度 —— 连点时听得出"越点越亮"。
+  // gap 8ms：点猫是这个游戏最核心的动作，每一次都该响（理由见 tone 的注释）。
+  tone("click", { freq: 440 * Math.pow(2, clickPitchStep / 12), gain: 0.04, duration: 0.05, sweep: 60, gap: 8 });
+}
+
+/** 买东西：一记短促上扬（成功感）。 */
+function playBuy() {
+  tone("buy", { freq: 520, gain: 0.05, duration: 0.09, type: "triangle", sweep: 180 });
+}
+
+/** 买不起 / 命令被拒：低而闷的一记（不刺耳，但听得出"没成"）。 */
+function playDeny() {
+  tone("deny", { freq: 180, gain: 0.05, duration: 0.12, type: "sawtooth", sweep: -60 });
+}
+
+/** 抓金猫 / 完成一件大事：两段叠在一起的小铃铛。 */
+function playChime() {
+  tone("chime1", { freq: 880, gain: 0.05, duration: 0.16, type: "sine", sweep: 120 });
+  tone("chime2", { freq: 1320, gain: 0.035, duration: 0.2, type: "sine", sweep: 80, detune: 40 });
+}
+
+/** 换页签 / 展开面板：极轻的一下，只是让手指知道"点到了"。 */
+function playTick() {
+  tone("tick", { freq: 660, gain: 0.025, duration: 0.03, type: "square" });
+}
+
+/** 开关那颗按钮本身也要给反馈——但**关掉的那一下**也得响一次，否则用户不知道自己点中了。 */
+function toggleSound() {
+  SOUND.enabled = !SOUND.enabled;
+  saveSoundPreference(SOUND.enabled);
+  renderSoundButton();
+  if (SOUND.enabled) playTick();   // 只有"开"的时候响；关的时候静音就是最好的反馈
+}
+
+function renderSoundButton() {
+  const button = $("#sound-toggle");
+  if (!button) return;
+  // 图标与 aria-pressed 说的是同一件事（与 .story-toggle 用 aria-expanded 是同一条规矩）：
+  // 只看图标的话，读屏用户不知道现在是开还是关。
+  button.textContent = SOUND.enabled ? "🔊" : "🔇";
+  button.setAttribute("aria-pressed", SOUND.enabled ? "true" : "false");
+  button.title = SOUND.enabled ? "音效：开（点击关闭）" : "音效：关（点击打开）";
+  button.setAttribute("aria-label", button.title);
+}
+
+SOUND.enabled = loadSoundPreference();
+
 let toastTimer = null;
 function toast(message, bad = false) {
   const host = $("#toast");
@@ -2544,8 +2783,78 @@ function toast(message, bad = false) {
 
 // ---------------------------------------------------------------- 事件
 
-$("#big-cat").addEventListener("click", () => send("click"));
+/**
+ * 点猫时飘一个 `+N`（2026-11-03）。落在**按下的那个位置**，不是猫的正中：
+ * 连点时手指在猫身上游走，固定位置飘出来的字会与手指位置脱节。
+ *
+ * 数值来自服务端已经格式化好的 `clickPowerText`（与 `#per-click` 那一行同源）——
+ * 前端一个乘号都不做，否则"这一下值多少"会有两份真相。
+ *
+ * 节点动画结束就 `remove()`：一秒点十几下、攒十分钟就是几千个空 div。
+ * `event.clientX/clientY` 在键盘触发（空格）时是 0/0，那时退回猫的正中——
+ * 否则键盘玩家的飘字会永远贴在视口左上角。
+ */
+function floatClickGain(event) {
+  const layer = $("#click-float-layer");
+  const cat = $("#big-cat");
+  const hero = cat?.parentElement;
+  const text = state?.clickPowerText;
+  if (!layer || !cat || !hero || !text) return;
+
+  const catBox = cat.getBoundingClientRect?.();
+  const heroBox = hero.getBoundingClientRect?.();
+  if (!catBox || !heroBox) return;
+
+  // 定位层每次点击都跟着猫**当下的**位置走（不写死在 CSS 里）：hero 会因为纪元面板出现/
+  // 消失而变高、会吸顶、窄屏会重排——写死任何一个数都会在某一种布局下与猫脱节。
+  // 它相对 hero 定位（hero 是 position: sticky，本身就是定位元素）。
+  //
+  // ⚠️ 用 `offsetWidth/offsetHeight`（**布局尺寸**）而不是 `getBoundingClientRect`（渲染尺寸）：
+  // click 事件是在 mouseup 之后派发的，那一刻猫正按着 `scale(.92)`，包围盒比真实尺寸小 8%，
+  // 于是层会跟着缩——松手后猫恢复原大，层却停在缩小后的尺寸上，飘字就与猫错位了。
+  // offsetWidth 不受 transform 影响，永远是那颗按钮的布局尺寸。
+  const laidOut = { width: cat.offsetWidth, height: cat.offsetHeight };
+  // 位置同理：按下的 `scale(.92)` 以**中心**为原点，包围盒的 left/top 各内缩约 4%，
+  // 于是用中心点反推真实左上角（中心不随缩放移动，这是 scale 的 transform-origin 默认值）。
+  const cx = (catBox.left + catBox.right) / 2;
+  const cy = (catBox.top + catBox.bottom) / 2;
+  layer.style.left = `${cx - laidOut.width / 2 - heroBox.left}px`;
+  layer.style.top = `${cy - laidOut.height / 2 - heroBox.top}px`;
+  layer.style.width = `${laidOut.width}px`;
+  layer.style.height = `${laidOut.height}px`;
+
+  const node = document.createElement("span");
+  node.className = "click-float";
+  node.textContent = `+${text}`;
+
+  // 相对猫的坐标（层已与猫同位同尺寸，所以直接用点击位置减猫的**未缩放**左上角）。
+  // 未缩放的左上角 = 中心 − 布局尺寸/2（与上面同一个换算）。
+  const realLeft = cx - laidOut.width / 2;
+  const realTop = cy - laidOut.height / 2;
+  // 键盘触发（空格）时 clientX/clientY 是 0，退回猫的正中——否则键盘玩家的飘字会永远
+  // 贴在视口左上角。
+  const inside = event && event.clientX && event.clientY
+    ? { x: event.clientX - realLeft, y: event.clientY - realTop }
+    : { x: laidOut.width / 2, y: laidOut.height * 0.4 };
+  node.style.left = `${inside.x}px`;
+  node.style.top = `${inside.y}px`;
+  layer.append(node);
+
+  // 动画结束自己走；万一动画没跑（reduce 下被压到 .001ms 也照样会触发动画结束事件），
+  // 还有一条定时兜底——不能让空节点留在 DOM 里。
+  const drop = () => node.remove();
+  node.addEventListener("animationend", drop);
+  setTimeout(drop, 900);
+}
+
+$("#big-cat").addEventListener("click", (event) => {
+  floatClickGain(event);
+  send("click");
+});
 $("#ascend").addEventListener("click", () => send("ascend"));
+// 音效开关：点它第一下同时完成两件事——建上下文（用户手势里，见 SOUND 那段注释）、
+// 以及把状态翻过来。关掉时**不出声**（静音就是最好的反馈），打开时响一记确认。
+$("#sound-toggle").addEventListener("click", toggleSound);
 
 // 存档窗口：入口按钮**不再直接发 save**（那是旧行为），它开窗口；手动存档挪进窗口里。
 $("#save").addEventListener("click", openSaveSheet);
@@ -2612,6 +2921,10 @@ function selectTab(name) {
     panel.classList.toggle("hidden", panel.dataset.panel !== name);
   }
   if (location.hash !== `#tab=${name}`) history.replaceState(null, "", `#tab=${name}`);
+  // 换页签：极轻的一记。它是**本地动作**（不发给宿主、没有失败可能），所以音直接挂在
+  // 这里而不是挂在 send 上。写在 replaceState 之后是因为 launch / 老书签纠正也会调到这里，
+  // 那些路径同样该响——玩家点了页签，不管最后落在哪一页，都该听到"点到了"。
+  playTick();
 }
 
 // 页面从后台回到前台：那几秒里 sheet 是看不见的，此刻才真的被玩家看到。
@@ -2707,6 +3020,9 @@ document.addEventListener("keydown", (event) => {
     if (tag === "BUTTON" || tag === "A" || tag === "TEXTAREA" || tag === "SELECT") return;
 
     event.preventDefault();
+    // 空格与点猫是**同一个动作**的两条入口，反馈必须一致（飘字也是）。
+    // 键盘事件没有 clientX/clientY（或为 0），floatClickGain 会退回猫的正中。
+    floatClickGain(event);
     send("click");
   }
 });
@@ -2719,6 +3035,10 @@ if (initialTab) selectTab(initialTab);
 // URL 上带了分享链接就把"输入密码"那一行摆出来（见 openIncomingShare）：
 // 收件人打开链接之后该做的第一件事就是这个，不必先自己找到「存档」按钮。
 if (incomingShare) openIncomingShare();
+
+// 音效开关的形状由偏好决定（🔊/🔇 + aria-pressed）。写在这里而不是写进 HTML：
+// 图标和"实际状态"必须同源，写成两份的话总有一次会不一致。
+renderSoundButton();
 
 connect();
 requestAnimationFrame(animate);

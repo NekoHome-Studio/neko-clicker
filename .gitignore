@@ -29,3 +29,12 @@ neko-clicker-crash.log
 web/node_modules/
 web/.vite/
 node_modules/
+
+# AI 助手的技能包（`npx skills add` 装进来的，2026-11-06）
+# 它们是**工具产物**，不是这个游戏的一部分：三个目录（.agents / .claude / agent）里是
+# 同一份 skill 的复制与软链，内容来自上游仓库（这里装的是 LottieFiles/motion-design-skill，MIT）。
+# 谁本地装谁用；签进版本库只会让仓库多出几百 KB 与一条与游戏无关的依赖。
+.agents/
+.claude/
+agent/
+skills-lock.json

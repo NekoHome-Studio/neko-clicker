@@ -65,6 +65,12 @@
      12vmin 在 ≥453px 宽的视口上就取到上限，所以桌面与手机横屏都是原来那只金猫；
      只有更窄的屏（≤453px）才把它收小，免得它占掉半个视野。 */
   --golden-cat-size: clamp(2.75rem, 12vmin, 3.4rem);
+   /* 按钮按下的缩小幅度（见下面「按下去有反应」一节）。
+     4% 太小了：逐帧实测，按下缩到 0.96 之后，回弹曲线过冲只到 1.0035 —— 0.35% 的
+     过冲在 12px 高的字旁边等于看不见，读起来就是"缩一下又复原"，没有弹性。
+     8% 是这一版的实际取值：与下面那条 .16s 的时长一起，让"凹陷 → 回弹过冲"两段
+     各自有足够位移可辨（过冲峰值随之到 1.007 上下，再配合 .16s 才看得出弹）。 */
+  --press-scale: .92;
   font-family: "Segoe UI", "Microsoft YaHei UI", system-ui, sans-serif;
 }
 
@@ -311,15 +317,64 @@ main {
   align-items: center;
   justify-content: center;
   gap: .4rem;
-  transition: transform .06s ease, box-shadow .2s ease, border-color .2s ease;
+  /* 飘字（`.click-float`）以这只猫为定位基准，见下面「点击飘字」一节。 */
+  position: relative;
+  transition: scale .34s cubic-bezier(.2, 2.4, .45, 1), box-shadow .2s ease, border-color .2s ease;
   color: inherit;
   font: inherit;
 }
 
-.big-cat span:first-child { font-size: clamp(3rem, 9vw, 4.5rem); line-height: 1; }
+.big-cat span:first-child { font-size: clamp(3rem, 9vw, 4.5rem); line-height: 1; transition: transform .12s cubic-bezier(.34, 1.56, .64, 1); }
 .big-cat .hint { color: var(--dim); font-size: var(--text-sm); }
 .big-cat:hover { border-color: var(--accent-deep); box-shadow: 0 0 0 1px var(--accent-deep)33, 0 8px 30px #0008; }
-.big-cat:active { transform: scale(.975); }
+.big-cat:active span:first-child { transform: scale(1.12) rotate(-6deg); }
+/* 按下这一段的曲线：`.big-cat` 与 `.card` 都自己写了 transition（特异度压过下面那条全局
+   `:active`），所以"快、不带过冲"这句必须在它们自己的规则里再说一次，否则按下会走
+   基规则那条 .34s 带弹的曲线——指头压下去先回弹一下，像按空了。 */
+.big-cat:active, .card:active:not(:disabled):not(.ach), .ascend:active:not(:disabled) {
+  transition: scale .09s cubic-bezier(.2, .7, .3, 1);
+}
+
+/* ---------------------------------------------------------------- 点击飘字
+   点猫时从按下的那个位置飘出一个 `+N`，往上浮并淡出（2026-11-03）。
+   此前这个游戏的点击反馈只有三样：数字在变、猫头歪一下、一声"哒"。
+   而"这一下值多少"是玩家最想确认的事——它只写在 `#per-click` 那一行里，点击本身不回答。
+
+   几个必须成立的条件：
+     · **不吃点击**：`pointer-events: none`，否则连点时会被自己飘出来的字挡住；
+     · **不参与布局**：两个都是 `position: absolute`。`#click-float-layer` 铺在猫上面
+       （与猫同宽同高，`inset: 0` 相对 hero），飘字相对**这一层**定位，于是 JS 只写
+       "相对猫的坐标"，落点永远跟着猫走（hero 吸顶 / 窄屏重排都不会错位）；
+     · **一次点击一个节点，自己消失**：动画结束就 `remove()`（见 app.js 的 floatClickGain），
+       不在 DOM 里攒垃圾——一秒点十几下，攒十分钟就是几千个空节点；
+     · 颜色用 `--ok`（绿）：它是"赚到了"的信号，与可买卡片的绿边是同一套语义。 */
+/* 定位层不参与排布，位置由 JS 按猫的**实测**位置写（见 app.js 的 floatClickGain）：
+   这里不给任何 top/left —— 写死任何一个数都会在"纪元面板出现/消失、hero 被拉伸、
+   窄屏重排"时与猫脱节。JS 每次点击量一次 getBoundingClientRect，永远是当下的真位置。 */
+.click-float-layer {
+  position: absolute;
+  pointer-events: none;
+  overflow: hidden;   /* 飘到猫框之外的部分直接裁掉，而不是压在下面那行说明上 */
+  border-radius: var(--r-card);
+}
+
+.click-float {
+  position: absolute;
+  font-size: var(--text-md);
+  font-weight: 700;
+  color: var(--ok);
+  /* 阴影是"形状与装饰"，与 --e2/--e3 同属一类（§25 的 px 白名单里没有 text-shadow，
+     这里用 rem 表达：0 的纵向偏移不需要单位，模糊半径跟着字号走）。 */
+  text-shadow: 0 .05rem .35rem #000000cc;
+  white-space: nowrap;
+  animation: click-float-up .7s ease-out forwards;
+}
+
+@keyframes click-float-up {
+  from { opacity: 1; transform: translate(-50%, 0) scale(.9); }
+  30%  { opacity: 1; transform: translate(-50%, -.9rem) scale(1.08); }
+  to   { opacity: 0; transform: translate(-50%, -2.2rem) scale(1); }
+}
 
 kbd {
   background: #00000055;
@@ -392,6 +447,23 @@ kbd {
   border: 1px solid var(--line);
   border-radius: var(--r-card);
   padding: 1rem 1.1rem 1.1rem;
+}
+
+/* 换页签时那一层淡入（2026-11-03）。页签切换此前是**硬切**：旧面板 display:none、
+   新面板 display:block，同一个 tick 里完成，眼睛看到的是"整块右栏闪了一下换了内容"。
+   这里只加一小段上浮 + 淡入，方向感很轻（不是从旁边滑进来），因为换页签不是"翻页"，
+   而是在同一块区域里换一份清单。
+
+   ⚠️ 只写在 `:not(.hidden)` 上：`.hidden` 是 display:none，动画根本不会跑；
+   而重新显示时浏览器会重新求值 `animation`，于是每次切回来都会放一次——这正好是想要的。
+   起点位移取 .2rem：面板本身很高（26rem 的列表），位移一大就成了"整块在跳"。 */
+.panel:not(.hidden) {
+  animation: panel-fade .2s ease-out both;
+}
+
+@keyframes panel-fade {
+  from { opacity: 0; transform: translateY(.2rem); }
+  to   { opacity: 1; transform: none; }
 }
 
 .panel-head {
@@ -529,7 +601,7 @@ kbd {
   cursor: pointer;
   color: inherit;
   font: inherit;
-  transition: background .15s ease, border-color .15s ease;
+  transition: background .15s ease, border-color .15s ease, scale .34s cubic-bezier(.2, 2.4, .45, 1);
 }
 
 .card:hover:not(:disabled) { background: var(--card-hi); }
@@ -732,7 +804,7 @@ kbd {
   font: inherit;
   font-weight: 600;
   cursor: pointer;
-  transition: filter .15s ease;
+  transition: filter .15s ease, scale .34s cubic-bezier(.2, 2.4, .45, 1);
 }
 .ascend:hover:not(:disabled) { filter: brightness(1.1); }
 .ascend:disabled {
@@ -810,16 +882,24 @@ kbd {
 /* 「表态」不再是页签（它是自己冒出来的那张 sheet，见文件末尾的「表态」一节）。
    所以这里只剩下"收起之后那个药丸冒出来时必须被看见"这一条：一圈扩散的光环，
    JS 加完类之后自己摘掉，好让它下次还能重放。
-   系统里关掉动效的人失去的是这圈动画，边框与文字颜色照旧——提示不依赖动画。 */
+   系统里关掉动效的人失去的是这圈动画，边框与文字颜色照旧——提示不依赖动画。
+
+   ⚠️ 2026-11-06 按 motion-design 技能改了两处（原来 1.1s × 2 = 2.2s，总时长翻出它的
+   "戏剧性揭示"上限，而且只有 `box-shadow` 这一层）：
+     · **周期缩到 .6s × 2 = 1.2s**：技能要求总 stagger 与重复强调都别拖过一秒级；
+       而药丸一直是留在屏幕上的，玩家不需要靠 2.2 秒来发现它。
+     · **补一层极轻的位移**（技能规则：重要状态变化不许只用 opacity / 单通道）：
+       那一档 2px 的抬升让"它冒出来了"读得出来，而不只是外圈亮一下。 */
 .choices-pill.urgent {
   border-color: var(--accent);
   color: var(--fg);
-  animation: choices-pop 1.1s ease-out 2;
+  animation: choices-pop .6s ease-out 2;
 }
 @keyframes choices-pop {
-  0%   { box-shadow: 0 0 0 0 #ffb3c780; }
-  70%  { box-shadow: 0 0 0 .55rem #ffb3c700; }
-  100% { box-shadow: 0 0 0 0 #ffb3c700; }
+  0%   { box-shadow: 0 0 0 0 #ffb3c780; translate: 0 0; }
+  30%  { box-shadow: 0 0 0 .55rem #ffb3c700; translate: 0 -.12rem; }
+  70%  { box-shadow: 0 0 0 0 #ffb3c700; translate: 0 0; }
+  100% { box-shadow: 0 0 0 0 #ffb3c700; translate: 0 0; }
 }
 
 .badge {
@@ -909,16 +989,21 @@ kbd {
    只是一个"还有事要答"的入口，所以不挡任何东西、也永远不自己消失。 */
 .choices-pill {
   position: fixed;
-  left: 50%;
+  /* 居中靠 auto 外边距，不靠 translateX(-50%)。这不是审美问题：`transform` 先于
+     `scale`（独立属性）应用，于是 translateX 的百分比按**缩小前**的宽度算，整块再以
+     原中心缩一次 —— 实测按下时药丸横移 2.8px（140px 宽 × 4% / 2），松开再弹回去，
+     看着就是"这颗按钮在抖"。auto 外边距与两者都无关，缩多少都还在正中。见 §36 的守卫。 */
+  inset-inline: 0;
+  margin-inline: auto;
+  width: fit-content;
   bottom: 1rem;
-  transform: translateX(-50%);
   z-index: 55;
   display: flex;
   align-items: center;
   gap: .4rem;
   min-height: 44px; /* 触屏目标下限，与窄屏那节的 .tabs button 同一个理由 */
-  /* 条数多了文本会变长，而它是 fixed + translateX(-50%)：没有上限时
-     320px 宽里它会从两侧同时溢出（居中元素溢出时两头都出界）。 */
+  /* 条数多了文本会变长：没有上限时 320px 宽里它会从两侧同时溢出
+     （居中元素溢出时两头都出界）。 */
   max-width: calc(100vw - 2rem);
   overflow-wrap: anywhere;
   padding: .5rem 1.1rem;
@@ -953,6 +1038,25 @@ kbd {
 .card.ach.unlocked { border-left-color: var(--gold); }
 .card.ach:not(.unlocked) { border-style: dashed; border-color: var(--line-strong); }
 .card.ach:not(.unlocked) .name { color: var(--dim); }
+
+/* 刚拿到的那一条闪一下（2026-11-06）。成就栏此前只有"边框从灰虚线变成金实线"这一个信号，
+   而那是在一整列 45 条里、玩家往往正看着别的页签 —— 拿到手这件事根本没被**看见**。
+   这道光只放一次：`just-unlocked` 由 app.js 在类名翻转的那一刻加上，动画跑完自己摘。
+
+   ⚠️ 用 `box-shadow` 而不是 `outline` / `border`：后两者会改变布局或盖掉那条金边，
+   而 box-shadow 是纯绘制、不参与排版。
+   金色取 `--gold`：与"已拿到"的边同源。
+   ⚠️ 这一条**不受** prefers-reduced-motion 关掉：它是"你刚刚拿到了东西"的确认，
+   与按下缩放（§36）、换包滑入（§38）是同一类判断，不是页面自己在动。 */
+.card.ach.just-unlocked {
+  animation: ach-unlock 1.1s ease-out;
+}
+
+@keyframes ach-unlock {
+  0%   { box-shadow: 0 0 0 0 var(--gold), 0 0 0 0 #ffd47900; background: var(--card); }
+  22%  { box-shadow: 0 0 0 2px var(--gold), 0 0 1.4rem #ffd47988; background: #ffd47914; }
+  100% { box-shadow: 0 0 0 2px #ffd47900, 0 0 1.4rem #ffd47900; background: var(--card); }
+}
 
 /* ---------------------------------------------------------------- 金猫层 */
 
@@ -1046,6 +1150,20 @@ footer code { background: #00000055; padding: .05rem .3rem; border-radius: var(-
 .note.warning { border-left-color: var(--bad); }
 .note.rare { border-left-color: var(--gold); }
 
+/* 新到的那一条日志滑进来（2026-11-03）。它们是由 `renderNotifications` 用 prepend
+   塞到**最上面**的，而列表其余行一个都不动（§34 守着那个"旧行不动"）——所以这条动画
+   只能是"从上方一点点落位"，不能整块重绘。
+   ⚠️ 长度取 .22s 而不是更慢：日志一秒可能来好几条（买东西会连着记），慢了就会看到
+   一串排队入场。这里要的是"注意到它出现了"，不是"看它表演"。 */
+.note.fresh {
+  animation: note-drop .22s ease-out both;
+}
+
+@keyframes note-drop {
+  from { opacity: 0; transform: translateY(-.35rem); }
+  to   { opacity: 1; transform: none; }
+}
+
 /* ---------------------------------------------------------------- 键盘焦点
    这个页面是可以用键盘玩的：`app.js` 绑了 keydown，大猫按钮上还印着「空格」。
    但全文件此前**一处 :focus 都没有**（只有 :hover），于是键盘玩家按 Tab 走一圈，
@@ -1127,11 +1245,56 @@ footer code { background: #00000055; padding: .05rem .3rem; border-radius: var(-
   footer { font-size: var(--text-xs); }
 }
 
+/* ---------------------------------------------------------------- 按下去有反应
+   这个页面此前只有大猫按钮在 :active 上有反馈（写死的 scale .975），其余按钮
+   —— 页签 / 批量档位 / 📖 ⬆ / × / 收下 / 导入导出 / 药丸 / 金猫 —— 按下去什么都不发生。
+   对一个每秒要被按好几次的挂机游戏，那 100ms 的沉默就是"点了没点着"的来源。
+
+   一条全局规则，不是给每个按钮抄一遍：
+     · 幅度统一取 --press-scale（见 :root）；`:disabled` 的按钮与买不了的卡片不缩放
+       （它们本来就不接手势），成就卡（`.card.ach`，`cursor: default` 的死块）也不算；
+     · 缩放走独立的 `scale:` 属性，**不碰 transform**。这不只是洁癖：`transform` 先于
+       独立的 `scale` 应用，于是百分比 translate 按**缩小前**的宽度算、整块又以原中心缩
+       一次 —— 药丸（140px 宽，缩 4%）实测按下横移 2.8px，松开再弹回去，看着像在抖。
+       用 `scale` 之后平移与缩放互不干扰（药丸的居中同时也从 translateX(-50%) 换成了
+       auto 外边距，两条一起才彻底解耦）。
+     · 代价是：老浏览器（Safari < 14.1）不认 `scale:`，那里的按钮不会缩 —— 颜色与焦点框照旧。
+
+   ⚠️ 按下缩放**不受** prefers-reduced-motion 影响（2026-11-02 修正）。此前这里写的是
+   "关掉动效的人把 --press-scale 设回 1"，实测的后果是：Windows 关掉任务栏动画之后
+   Chrome 就报 `reduce`，于是这台机器上按下**完全不缩**——功能等于没做。
+   按下反馈与"页面自动动的动画"不是一回事：它只在手指按住的那一瞬发生、由用户自己发起、
+   幅度 4%，不引起前庭反应，是**操作确认**而不是装饰。真正会晃人的那几样（金猫浮动、
+   药丸脉冲、sheet 入场）仍然由下面「动效偏好」那一节压掉，那一条一个字没动。 */
+/* 两段不同的曲线 —— 这是"有弹性"与"只是缩小"的分界线：
+     · **按下**（进 :active）：`.09s cubic-bezier(.2, .7, .3, 1)` —— 快、单调、不回头，
+       手指压下去就该立刻沉底；这时候弹一下反而像按空了。
+     · **松手**（离开 :active，回到基规则那条）：`.34s cubic-bezier(.2, 2.4, .45, 1)` ——
+       时长是按下三倍多，过冲系数 2.4 让它真的冲过 1 再落回，那一段才是"弹"。
+   一条 transition 做不到这件事：transition 只在**目标值变化**时才跑，两条规则各换一个
+   timing-function，按下走前者、松手走后者（写在 :active 里的那条只管"进场"）。
+   `:where(button, .card, .pack-row)` 用零特异度是有意为之：`.card` / `.ascend` / `.big-cat`
+   自己写了 `transition`，它们那条必须照旧赢（否则这条简写会把底色、亮度过渡一起换掉），
+   所以那三处各自把这两段追加进自己那条里；其余按钮由这一条兜住。 */
+:where(button, .card, .pack-row) {
+  transition: scale .34s cubic-bezier(.2, 2.4, .45, 1);
+}
+
+button:active:not(:disabled),
+.card:active:not(:disabled):not(.ach),
+.pack-row:active {
+  scale: var(--press-scale);
+  /* 按下这一段的曲线（快、无过冲）。松手时不带这句，于是退回基规则那条带弹的。 */
+  transition: scale .09s cubic-bezier(.2, .7, .3, 1);
+}
+
 /* ---------------------------------------------------------------- 动效偏好
    页面有 6 处 transition/animation，此前无条件常开：系统里关掉动效的人照样被晃。
-   只关"位移与缩放"这类会引起不适的，保留颜色变化（它不引起前庭反应）。 */
+   只关"位移与缩放"这类会引起不适的，保留颜色变化（它不引起前庭反应）。
+   ⚠️ 按下反馈**不**在这里关闭（理由见上面「按下去有反应」那段末）——这里压的是
+   页面自己动起来的那几样：金猫浮动、药丸脉冲、sheet 入场。 */
 @media (prefers-reduced-motion: reduce) {
-  .big-cat:active { transform: none; }
+  .big-cat:active span:first-child { transform: none; }
   .toast { transition: opacity .15s linear; transform: translate(-50%, 0); }
   * { animation-duration: .001ms !important; animation-iteration-count: 1 !important; }
 }
@@ -1301,8 +1464,80 @@ footer code { background: #00000055; padding: .05rem .3rem; border-radius: var(-
   to { opacity: 1; transform: none; }
 }
 
+/* ---------------------------------------------------------------- 换包窗口：从下方浮起 / 沉下去
+   这是唯一一张**有进出方向**的 sheet。理由它自己有：包里装的是"整页要换到哪一局去"，
+   而换包的动作本身就是"整页跳走"——所以它从下方浮起来（像一张被抽出来的清单），
+   关掉时沉回去，读起来与"这一层要离场"一致。其余四张 sheet 保持 sheet-in 那一记小起浮
+   （它们都是在当前页面上叠加的临时面板，没有方向可言）。
+
+   ⚠️ 这里**没有**用"加 closing 类 → 等 animationend → 再加 hidden"那套。原因不是懒：
+   `.hidden` 的语义在整个套件里是**同步**的（web-smoke 里有六处断言在点击后立刻读
+   `classList.contains("hidden")`，见 §35），把隐藏推迟到动画结束会把这六条全部弄红，
+   而它们守的是"窗口真的关上了"这件事——那比动画重要得多。
+   所以：`hidden` 照旧同步生效，退出动画靠 `visibility` 的**延迟过渡**完成——
+      · 加 `hidden` 的那一瞬，卡片立刻开始往下沉（transform/opacity 是过渡，不是动画）；
+      · 但 `display` 依旧是 grid、元素仍在渲染，所以过渡跑得动；
+      · `visibility: hidden` 带 .34s 延迟才落地，落地那一刻动画刚好结束；
+      · 期间 `pointer-events: none`，底下的游戏已经立刻恢复可点。
+   于是"关得快"与"看得见它沉下去"两件事同时成立，一行 JS 都不需要。 */
+#pack-sheet {
+  /* 覆盖 `.hidden { display: none !important }`（id 选择器压过类选择器，两边都 !important
+     时比特异度）。这一层因此**永远**是 grid：它只在 visibility 上进出。 */
+  display: grid !important;
+  background: #0b0a12cc;
+  transition: background .3s ease, visibility 0s linear 0s;
+}
+
+#pack-sheet.hidden {
+  visibility: hidden;
+  pointer-events: none;
+  background: transparent;
+  /* 延迟 = 下沉那一段的时长：卡片沉到底之后这一层才真的消失。 */
+  transition: background .3s ease, visibility 0s linear .34s;
+}
+
+/* 卡片本身走**过渡**（不是 sheet-in 那记动画）：只有过渡才能双向跑。
+
+   ⚠️ 进出**不再等长**（2026-11-06，按 LottieFiles motion-design 技能的规则改）：
+   那条规则是「Entrances run 30-50% longer than exits, because users care about what appears」
+   （用户在意"出现的东西"，所以进场要比出场留得住）。前一版为了"两段必须是同一套参数的镜像"
+   把两边写成一条 .34s，读起来对称，但实际观感是**出场偏拖**——关掉一个窗口时多留 100ms
+   只会让人觉得卡。
+
+   现在两条分开写：
+     · 进场 `.44s`（比出场长 29%，落在 30-50% 区间的下沿）；
+     · 出场 `.34s`（决定 visibility 的 .34s 延迟仍与它对齐，见下面 `.hidden` 那条）。
+   曲线仍是同一族（`.2,.9,.3,1` 的 ease-out），所以"从下方浮起/沉下去"的方向感一致。 */
+#pack-sheet .sheet {
+  animation: none;
+  transform: translateY(1.6rem) scale(.96);
+  opacity: 0;
+  /* 出场：短的那一档（`.hidden` 时的目标值由这条给节奏）。 */
+  transition:
+    transform .34s cubic-bezier(.2, .9, .3, 1),
+    opacity .34s ease-out;
+}
+
+#pack-sheet:not(.hidden) .sheet {
+  transform: none;
+  opacity: 1;
+  /* 进场：比出场长，而淡入与位移同长 —— 进场时"从下方浮上来"是主戏，
+     不该像出场那样先淡完再走完（前一版 .22s 淡入配 .34s 位移就有点脱节）。 */
+  transition:
+    transform .44s cubic-bezier(.2, .9, .3, 1),
+    opacity .44s ease-out;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .sheet { animation: none; }
+  /* 换包这一层**保留**方向感，但压到很短。它是操作反馈，不是装饰 ——
+     与按下缩放（§36）同一条判断：reduce 关的是"页面自己动起来的动画"，
+     而"我点了一下、这一层从哪儿来"属于确认。实测 .01s 只有 0~1 帧，等于没做；
+     这里进场 .16s / 出场 .12s，仍在 60fps 下各约 7~10 帧，看得出方向又不拖。
+     进出比也保持"进场更长"（.16 比 .12 长 33%）。 */
+  #pack-sheet .sheet { transition-duration: .12s, .12s; }
+  #pack-sheet:not(.hidden) .sheet { transition-duration: .16s, .16s; }
+  #pack-sheet.hidden { transition-delay: 0s, .12s; }
 }
 
 /* ---------------------------------------------------------------- 纸条（sheet-note）
