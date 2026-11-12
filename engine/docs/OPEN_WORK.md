@@ -3222,6 +3222,25 @@ git ls-remote origin refs/heads/main   # 必须与 git rev-parse HEAD 的**完�
 web-smoke **333 / 333**；`tools/api-test.ps1`：**115 / 115**（真宿主 `/api/packs` 与
 `--mint-link` 的可用包列表现在只报 `ninelines`）。公开 API 没动、存档格式没动。
 
+### 0.50.6 同一轮把 `[未发布]` 桶结成了 **1.13.1**（patch）
+
+D16 落地之后顺手把桶结了：桶里两节（动画轮 ＋ D16）按 `VERSIONING` §2 都是 patch 级，
+`RELEASING` §1 的 ①~⑨ 全走了一遍——
+
+- ③ 版本三处一起改成 `1.13.1`；④ `CHANGELOG` 新增 `## [1.13.1] - 2026-11-12`；
+- ⑤ **先构建再生成快照**（这一步先红在 `PublicApiTests.PublicApi_SnapshotRecordsTheCurrentVersion`
+  上——正是它该做的事）；重生成后 `PublicApi.txt` 的 `--numstat` 是 **`1 1`**，只差首行
+  `version=`，公开表面一行没动；
+- ⑥ 扫"当前版本"字样：`README` / `engine/README` / `STATUS` / `VERSIONING` / 本节一起跟上，
+  带日期的历史记录一律不动（`git grep 1.13.0` 剩下的命中逐条确认过都是历史）；
+- ⑦ `-Strict` **607 / 607** ＋ 冒烟 **333 / 333** ＋ 11 处槽位一致、0 Warning；
+  ⑧ `api-test` **115 / 115**（真宿主自报 `apiVersion 1.13.1`）；
+- ⑨ `pack.ps1` 自检通过：`artifacts/neko-clicker-1.13.1-win-x64.zip`（109 个文件 / 1.9 MB），
+  两个 exe 真跑、`/api/ping` 的版本对得上、静态资源全 200。
+
+**⑩⑪ 没做**（打 tag / 推送 / 看 CI）——那是人工放行的两步，按仓库约定留着。
+于是 `1.11.0`~`1.13.1` 都只活在 `main` 上，已发布的最新 tag 仍是 `v1.10.2`。
+
 ## 0.48 README 槽位入守卫 ＋ 表态 sheet 实拍：五张 sheet 全家福（2026-11-01）
 
 ### 0.48.1 又一处漏网的现行时数字，读数小审计
