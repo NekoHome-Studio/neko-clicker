@@ -5,14 +5,12 @@
 > 一句话版本：**从 1.0.0 起，公开 API 只增不改。** 删改任何公开成员都必须升主版本号，
 > 而且这条规矩不是靠自觉——有测试守着。
 >
-> 当前版本 **1.13.0**：**minor——公开 API 仍然一行没动**（依据下面 §2 那张表）。
-> 这一版把 `[未发布]` 桶里 2026-10-04 ~ 10-20 攒的 **13 节**一次结清，改动全在
-> 宿主／前端／工具链／测试工程／文档里。**公开表面没动的证据是快照本身**：
-> 重生成之后只差首行 `version=`。升 minor 的理由：**D18 那个"1.12.0 该 minor
-> 还是 major"的疑问在 2026-10-20 结桶时被拍板成"往上调不往下调"**——
-> K/M/B/T 那一轮的影响面仍在消化期内，记成 minor 是给下游"这批变更比 patch 重"
-> 的信号，不是给规矩开先例。
-> 细节见 [CHANGELOG](../../CHANGELOG.md) 的 1.13.0。
+> 当前版本 **1.13.1**：**patch——公开 API 一行没动、存档格式一个字没改**（依据下面 §2 那张表）。
+> 这一版把 `[未发布]` 桶里攒的两节结清：前端界面反馈动画（`wwwroot` 三个文件 ＋ 冒烟套件
+> 309→333）与 D16 的包 id 统一（`NineLivesContent.PackageId` ＋ `PackageCatalog` 声明优先，
+> 新增 3 条守卫、用例 604→607）。两处都在**内容包 / 宿主**侧。**公开表面没动的证据是快照本身**：
+> 重生成之后只差首行 `version=`。
+> 细节见 [CHANGELOG](../../CHANGELOG.md) 的 1.13.1。
 >
 > 上一版 **1.12.1**（2026-10-11）：**patch——公开 API 一行没动**（依据下面 §2 那张表）。
 > 这一版改的全在**工具链与文档**里：新增 `tools/play-web.ps1`（本机没有
@@ -125,9 +123,9 @@
 单一事实来源是 **`Directory.Build.props` 里的 `<Version>`**：
 
 ```xml
-<Version>1.13.0</Version>
-<AssemblyVersion>1.13.0.0</AssemblyVersion>
-<FileVersion>1.13.0.0</FileVersion>
+<Version>1.13.1</Version>
+<AssemblyVersion>1.13.1.0</AssemblyVersion>
+<FileVersion>1.13.1.0</FileVersion>
 ```
 
 这个值会同时成为程序集版本、文件版本，以及 `ApiVersion.Current` 报告的版本。
@@ -143,8 +141,8 @@
 ```csharp
 using NekoClicker.Core;
 
-Console.WriteLine(ApiVersion.Current);        // "1.13.0"
-Console.WriteLine(ApiVersion.AssemblyVersion); // 1.13.0.0
+Console.WriteLine(ApiVersion.Current);        // "1.13.1"
+Console.WriteLine(ApiVersion.AssemblyVersion); // 1.13.1.0
 Console.WriteLine(ApiVersion.Major);           // 1
 ```
 

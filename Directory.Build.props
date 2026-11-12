@@ -68,16 +68,23 @@
     在结桶时被人拍成"往上调不往下调"——K/M/B/T 那一轮的影响面
     （`ShortScaleNames` 起点 1e6→1e3）仍在消化期内，本桶把它记成
     minor 是给下游一个"这批变更比 patch 重"的信号，不是给规矩开先例。
+
+    **1.13.1 是一格 patch（2026-11-12）**：公开 API 仍然一行没动（`PublicApi.txt`
+    重生成之后只差首行 `version=`），存档格式一个字没改（`SaveSerializer.CurrentVersion`
+    仍是 `1`）。桶里两节：界面反馈动画（`wwwroot` 三个文件 ＋ 一条冒烟套件）与 D16 的
+    包 id 统一（`NineLivesContent.PackageId` ＋ `PackageCatalog` 声明优先——两处都在
+    **内容包 / 宿主**侧，`NekoClicker.Core` 一个字节没动）。按 §2 那张表：公开 API 没动
+    ⇒ patch。
   -->
   <PropertyGroup>
-    <Version>1.13.0</Version>
+    <Version>1.13.1</Version>
     <!--
       程序集版本 = 完整语义版本（而不是只取 major）。
       消费者可能把 NekoClicker.Core.dll 直接拷进宿主目录（Unity / Mono 场景），
       同目录覆盖升级时，只取 major 会让 1.1.0 和 1.0.0 的文件版本号无法区分。
     -->
-    <AssemblyVersion>1.13.0.0</AssemblyVersion>
-    <FileVersion>1.13.0.0</FileVersion>
+    <AssemblyVersion>1.13.1.0</AssemblyVersion>
+    <FileVersion>1.13.1.0</FileVersion>
     <Product>NekoClicker</Product>
   </PropertyGroup>
 

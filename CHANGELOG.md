@@ -223,7 +223,19 @@ minor 是给下游"这批变更比 patch 重"的信号，**不是给规矩开先
 
 ---
 
-## [未发布]
+## [1.13.1] - 2026-11-12
+
+**patch：公开 API 一行没动，存档格式一个字没改。** 这一版把 `[未发布]` 桶里攒的两节结清，
+两节都落在**宿主 / 前端 / 内容包 / 工具链**侧——`NekoClicker.Core` 一个字节没动，
+`PublicApi.txt` 重生成之后只差首行 `version=`，`SaveSerializer.CurrentVersion` 仍是 `1`（零迁移）。
+
+**为什么是 patch**：按 [VERSIONING](engine/docs/VERSIONING.md) §2 那张表，
+"公开 API 一行没动（内容数值、文案、修 bug）⇒ patch"。桶里没有一处碰到
+`NekoClicker.Core` 的公开表面。
+
+两节分别是：**界面反馈动画**（按下 / 音效 / 飘字 / 滑入 / 成就闪光，`wwwroot` 三个文件
+＋ `web-smoke` 309 → 333）与 **D16 的包 id 统一**（`NineLivesContent.PackageId`
+＋ `PackageCatalog` 声明优先，新增 3 条守卫、用例 604 → 607）。它们的完整记录就在下面。
 
 ### 修复：两个宿主对同一个包用两个 id——统一成 `ninelines`（D16 结案，2026-11-12）
 
