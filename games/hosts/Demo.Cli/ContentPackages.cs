@@ -81,7 +81,7 @@ internal static class ContentPackages
             ],
             ReportTip: "提示：幸福感只涨不花，它由整间店的规模驱动，并会解锁「常客名单」等关键升级。"),
         new ContentPackage(
-            Id: "ninelines",
+            Id: NineLivesContent.PackageId, // D16：与 Web 目录共用内容包自声明的那个 id（ninelines）
             Name: NineLivesContent.GameTitle,
             Build: NineLivesContent.Build,
             Welcome: "欢迎来到九命轮回！先按空格摸头，攒够 15 条小鱼干就能买下第一个纸箱。"

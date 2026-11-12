@@ -23,12 +23,17 @@ public sealed record WebPackage(string Id, string Name, Func<GameContent> Build,
 /// </para>
 /// <para>
 /// 发现规则：输出目录里每个 <c>NekoClicker.Content.*.dll</c>，找出公开静态类上的
-/// <c>public static GameContent Build()</c> 方法。id 由程序集名推出
-/// （<c>NekoClicker.Content.NineLives</c> → <c>ninelives</c>）。
+/// <c>public static GameContent Build()</c> 方法。id **优先取 Build 类型声明的
+/// <c>public const string PackageId</c>**（内容包自己说"我叫什么"），没声明才从
+/// 程序集名推导（<c>NekoClicker.Content.Cafe</c> → <c>cafe</c>）。
+/// 声明优先是 D16 的教训：程序集名与文档习惯可能不一致（《九命轮回》的程序集是
+/// <c>NineLives</c>、id 却是 <c>ninelines</c>），推导兜底会悄悄造出第二个 id、第二份存档。
 /// </para>
 /// </summary>
 public static class PackageCatalog
 {
+    /// <summary>内容包在 Build 类型上声明自己 id 时用的成员名。</summary>
+    public const string DeclaredIdMember = "PackageId";
     private static readonly Lazy<IReadOnlyList<WebPackage>> Cached = new(Discover);
 
     /// <summary>全部可玩的内容包，按 id 排序。</summary>
@@ -49,7 +54,8 @@ public static class PackageCatalog
                 MethodInfo? build = type.GetMethod("Build", BindingFlags.Public | BindingFlags.Static, Type.EmptyTypes);
                 if (build is null || !typeof(GameContent).IsAssignableFrom(build.ReturnType)) continue;
 
-                string id = DeriveId(path);
+                string derived = DeriveId(path);
+                string id = DeclaredId(type) ?? derived;
                 string title = ReadTitle(build) ?? id;
 
                 packages.Add(new WebPackage(
@@ -79,7 +85,24 @@ public static class PackageCatalog
         foreach (Type type in types) yield return type;
     }
 
-    /// <summary>从程序集名推出 URL 里的 id：<c>NekoClicker.Content.NineLives</c> → <c>ninelives</c>。</summary>
+    /// <summary>
+    /// Build 类型自己声明的 id（<c>public const string PackageId</c>）；没声明返回 <c>null</c>，
+    /// 目录退回程序集名推导。声明必须是纯字面量常量——反射只认这一种形状，
+    /// "声明的 id 由运行时算出来"这种写法会被静默当没声明（推导兜底），这是有意的：
+    /// id 必须是内容包的静态事实，不能依赖启动顺序。
+    /// </summary>
+    private static string? DeclaredId(Type type)
+    {
+        FieldInfo? field = type.GetField(DeclaredIdMember, BindingFlags.Public | BindingFlags.Static);
+        if (field is { IsLiteral: true } && field.FieldType == typeof(string))
+        {
+            return field.GetRawConstantValue() as string;
+        }
+
+        return null;
+    }
+
+    /// <summary>从程序集名推出兜底 id：<c>NekoClicker.Content.Cafe</c> → <c>cafe</c>。</summary>
     private static string DeriveId(string assemblyPath)
     {
         string name = Path.GetFileNameWithoutExtension(assemblyPath);

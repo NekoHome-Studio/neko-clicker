@@ -9,7 +9,7 @@
 #     · 增量推送的派生字段没处理干净 → 每帧 28KB，而"变化字段数 ≤ 4"的用例照样绿。
 #   所以这一层的判据只能是**真的通**：起宿主、发请求、读 SSE 流、看着它回话。
 #
-# 与单元测试的分工：`tools/build.ps1 -Strict` 守引擎（604 个用例 + 公开 API 快照），
+# 与单元测试的分工：`tools/build.ps1 -Strict` 守引擎（607 个用例 + 公开 API 快照），
 # 本脚本守"宿主 + 浏览器协议 + 启动器"那一段。CI 里两条都跑（.github/workflows/ci.yml）。
 #
 # 七条刻意为之的行为（都不是默认就该有的，是踩出来的）：
@@ -1634,7 +1634,12 @@ try {
     Write-Section '跳层令牌（?k=）：真宿主上真的跳层，而明文的调试门一个字节没变'
 
     # 令牌是为**有分层转生**的包铸的：被测包自己不一定有层（cafe / neko 就没有）。
-    $tokenPack = if ($Package -ceq 'lab') { 'ninelives' } else { 'lab' }
+    # 这一段原先写的是 `if ($Package -ceq 'lab') { 'ninelives' } else { 'lab' }`——
+    # 它同时混着两件事：① 选一个**有层**的包（lab / ninelines 都有）；② 当年 Web 宿主的
+    # 九命包叫 ninelives（程序集名推导的产物）。D16 拍板统一之后 ② 不存在了：
+    # 九命轮回在 Web 上也叫 ninelines，于是这段只需要管 ①。
+    # 判据仍然是"这个包得有层"，所以照旧按被测包是不是 lab 二选一，只是名字换成真的那个。
+    $tokenPack = if ($Package -ceq 'lab') { 'ninelines' } else { 'lab' }
     $minted = Invoke-MintLink @('--mint-link', '--package', $tokenPack, '--era', '2', '--base-url', $baseUrl)
     $mintPrefix = "$baseUrl/?package=$tokenPack&k="
     $mintOk = ($minted.ExitCode -eq 0) -and $minted.Url.StartsWith($mintPrefix, [StringComparison]::Ordinal)

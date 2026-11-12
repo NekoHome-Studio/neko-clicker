@@ -14,6 +14,16 @@ public static class NineLivesContent
     /// <summary>游戏标题。</summary>
     public const string GameTitle = "九命轮回";
 
+    /// <summary>
+    /// 这个包在**两个宿主**里的统一 id（D16 拍板：统一，不再各自推导）。<para>
+    /// 程序集名是 <c>NineLives</c>（两个词），按宿主"从程序集名推 id"的旧规则会得到
+    /// <c>ninelives</c>，而终端注册表与全部文档写的是 <c>ninelines</c>——同一个包因此
+    /// 有过两个 id、两份存档（见 <c>OPEN_WORK</c> 的 D16）。现在包自己把它说清楚，
+    /// 宿主的目录声明优先、推导只做兜底；这条公开常量让"id 是内容的事实"有了单一出处。
+    /// </para>
+    /// </summary>
+    public const string PackageId = "ninelines";
+
     /// <summary>构建内容定义。</summary>
     public static GameContent Build()
     {

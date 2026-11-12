@@ -225,6 +225,61 @@ minor 是给下游"这批变更比 patch 重"的信号，**不是给规矩开先
 
 ## [未发布]
 
+### 修复：两个宿主对同一个包用两个 id——统一成 `ninelines`（D16 结案，2026-11-12）
+
+**这一条是 D16 的落地**：同一个内容包《九命轮回》在两个宿主里有过两个 id——
+终端注册表写死 `ninelines`，Web 目录从程序集名 `NineLives` 推导出 `ninelives`。
+后果不是"名字不好看"，是**两份存档、两个世界**：`start.cmd web ninelines` 404、
+`saves/ninelines.json`（终端，3718B）与 `saves/ninelives.json`（Web，835B）各自独立、
+跨宿主导出/导入被"别的包"闸拦住。
+
+**版本**：**patch，停在 `[未发布]` 桶，不升**——`engine/core` 一个字节没动
+（`PackageId` 声明在**内容包**里，`PublicApi.txt` 与它无关），**存档格式一个字没改**
+（`SaveSerializer.CurrentVersion` 仍是 `1`，零迁移）。
+
+#### 修法：id 由**内容包自己声明**，宿主不再靠猜
+
+- **`NineLivesContent.PackageId = "ninelines"`**（新增公开常量，内容包侧）。
+  取的是**磁盘上真正有进度的那个名字**：终端注册表、全部文档、以及
+  `saves/ninelines.json` 里那 39 个成就都叫它 `ninelines`——统一到它**零数据搬迁**。
+- **`PackageCatalog` 声明优先、推导兜底**：新增 `DeclaredId(type)` 读 Build 类型上的
+  `public const string PackageId`（只认 `IsLiteral` 的纯字面量——id 必须是内容包的静态事实，
+  不能依赖启动顺序），没声明才退回原来的程序集名推导。
+  于是**"加一个新内容包不改宿主"那条设计没有让掉**：不声明就照旧推导。
+- **终端注册表**从 `Id: "ninelines"` 改成 `Id: NineLivesContent.PackageId`——
+  两边的单一出处变成同一个常量，不再是两份手抄。
+- **`tools/api-test.ps1` 的令牌节**去掉 `ninelives` 那条时代产物：那段本来混着两件事
+  （"选一个有层的包" ＋ "Web 的九命叫 ninelives"），现在只剩前者，二选一（lab / ninelines）
+  的判据原样保留——被测包是 `lab` 时**跨包用例仍然需要一个不同的、有层的包**。
+
+#### 守卫（3 条，`PackIdAgreementTests`）
+
+- `HostCatalogs_RegisterTheSameIdSet`——两套目录的 id 集合必须逐项相等；
+- `EveryPackIsFindableByTheSameIdOnBothHosts`——每个包在对面宿主都能按**同一个 id** 找到
+  （集合相等不等于查找路径没分叉，所以分开写）；
+- `NineLives_PackageId_IsTheCanonicalNinelines`——声明必须逐字是 `ninelines`。
+  这条**故意写死字面量**而不引用常量：否则有人把声明和守卫一起改掉，守卫就跟着走了。
+  改它等于改全部玩家的存档名，那是一次显式迁移决定。
+
+**判别力（两次真注入，都实测过）**：
+① 把声明改回 `"ninelives"` ⇒ 第三条精准变红（另两条仍绿——它们比的是**两边是否一致**，
+而那时两边真的一致了）；② 把目录改回 `id = derived`（忽略声明）⇒ 前两条同时变红，
+报告原文就是 D16 的形状：`期望 <…,ninelines>，实际 <…,ninelives>`。
+两针都已还原并复验。
+
+#### 孤儿存档（**没动**）
+
+`saves/ninelives.json`（835B，0 钱 / 0 成就，2026-10-06 建）与它的 `.bak` 是旧 Web 命名的
+残留。**刻意不删不改**：`saves/` 是真人数据（且整个目录在 `.gitignore` 里、0 个跟踪文件），
+仓库规矩是探针与自动化一个字节都不碰它。它的内容是一局空开局，留着也无害——
+真要清理请**人工**确认后删掉这两个文件。
+
+#### 验证
+
+`tools/build.ps1 -Strict`：EXIT=0、**0 Warning**、引擎 **607 / 607**（604 → 607，新增 3 条守卫）、
+web-smoke **333 / 333**；`tools/api-test.ps1`：**115 / 115**（真宿主 `/api/packs` 现在报的是
+`ninelines`，`--mint-link` 的可用包列表里也只剩它）。
+
 ### 前端：NekoClicker 的界面反馈动画——按下、音效、飘字、滑入、成就闪光（2026-11-02 ~ 11-06）
 
 **这一节讲的是我们自己的 NekoClicker（`games/hosts/Web/wwwroot`）里那套界面动效**，
