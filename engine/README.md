@@ -73,17 +73,20 @@ dotnet build NekoClicker.sln     # 或者用仓库根的 .\tools\build.ps1
 
 ## 版本与兼容性
 
-**当前 `1.13.1`。从 `1.0.0` 起，`NekoClicker.Core` 的公开 API 只增不改**，
+**当前 `1.13.2`。从 `1.0.0` 起，`NekoClicker.Core` 的公开 API 只增不改**，
 由 `core/PublicApi.txt`（快照，**嵌进 dll**）加四条守卫强制执行。
-规矩见 [docs/VERSIONING.md](docs/VERSIONING.md)。1.13.1 是 **patch——公开 API 一行没动、
-存档格式一个字没改**（快照重生成后只差首行 `version=`）：把 `[未发布]` 桶里攒的两节结清——
+规矩见 [docs/VERSIONING.md](docs/VERSIONING.md)。1.13.2 是 **patch——公开 API 一行没动、
+存档格式一个字没改**（快照重生成后只差首行 `version=`）：把 `[未发布]` 桶里攒的五节一次结清
+——创意池档 C/D 第一波：**C1 猫娘电台**（第 12 个内容包：收听率＋"点击是干扰"，用例 616→619）、
+**D3 新包脚手架**（`tools/new-pack.ps1`）、**D4 观战链接**（＋修 D15）、**D2 数值实验室**、
+**D1 回放带地基**。全部在**内容包 / 宿主 / 工具链 / 测试**侧，`engine/core` 一个字节没动。
+上一版 1.13.1 是 **patch**（公开 API 仍然一行没动）：把 `[未发布]` 桶里攒的两节结清——
 前端界面反馈动画（`wwwroot` 三个文件 ＋ 冒烟套件 309→333）与 D16 的包 id 统一
 （`NineLivesContent.PackageId` ＋ `PackageCatalog` 声明优先，新增 3 条守卫、用例 604→607）。
-两处都在**内容包 / 宿主**侧，`engine/core` 一个字节没动。
 上一版 1.13.0 是 **minor**（公开 API 仍然一行没动）：把 2026-10-04 ~ 10-20 攒的 13 节一次结清
 ——改动全在宿主／前端／工具链／测试工程／文档。升 minor 的理由：D18 的"1.12.0 该 minor
 还是 major"疑问在结桶时被拍板成"往上调不往下调"。
-明细见 [CHANGELOG](../../CHANGELOG.md) 的 1.13.1 与 1.13.0。
+明细见 [CHANGELOG](../../CHANGELOG.md) 的 1.13.2。
 上一版 1.12.1 是 **patch：公开 API 一行没动**——
 改的全在工具链与文档（新增 `tools/play-web.ps1`、一次真人 playtest 的收口），
 细节见 [CHANGELOG](../../CHANGELOG.md) 的 1.12.1。

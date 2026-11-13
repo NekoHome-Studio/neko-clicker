@@ -75,16 +75,22 @@
     包 id 统一（`NineLivesContent.PackageId` ＋ `PackageCatalog` 声明优先——两处都在
     **内容包 / 宿主**侧，`NekoClicker.Core` 一个字节没动）。按 §2 那张表：公开 API 没动
     ⇒ patch。
+
+    **1.13.2 是一格 patch（2026-11-13）**：公开 API 仍然一行没动（`PublicApi.txt`
+    重生成之后只差首行 `version=`），存档格式一个字没改。桶里五节，创意池档 C/D 的
+    第一波：D1 回放带地基、D2 数值实验室、D4 观战链接（＋修 D15）、**C1 猫娘电台**
+    （第 12 个内容包：点击是干扰）、D3 新包脚手架——全部落在**内容包 / 工具链 / 测试 /
+    文档**侧，`NekoClicker.Core` 一个字节没动。按 §2 那张表 ⇒ patch。
   -->
   <PropertyGroup>
-    <Version>1.13.1</Version>
+    <Version>1.13.2</Version>
     <!--
       程序集版本 = 完整语义版本（而不是只取 major）。
       消费者可能把 NekoClicker.Core.dll 直接拷进宿主目录（Unity / Mono 场景），
       同目录覆盖升级时，只取 major 会让 1.1.0 和 1.0.0 的文件版本号无法区分。
     -->
-    <AssemblyVersion>1.13.1.0</AssemblyVersion>
-    <FileVersion>1.13.1.0</FileVersion>
+    <AssemblyVersion>1.13.2.0</AssemblyVersion>
+    <FileVersion>1.13.2.0</FileVersion>
     <Product>NekoClicker</Product>
   </PropertyGroup>
 

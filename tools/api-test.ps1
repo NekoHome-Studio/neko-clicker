@@ -2081,7 +2081,7 @@ if ($script:Failed -eq 0 -and $unreached.Count -eq 0) {
     $docSlots = @(
         @{ File = 'engine/docs/VERSIONING.md'; What = '§5 发布判据清单'; Pattern = '全部端到端检查通过（当前 (\d+) 项' },
         @{ File = 'STATUS.md'; What = '§4 验证基线'; Pattern = '\*\*(\d+) 项端到端检查全通过\*\*' },
-        @{ File = 'README.md'; What = 'README 端到端清单'; Pattern = '批量档位真的买 N 个\*\*，(\d+) 项检查' }
+        @{ File = 'README.md'; What = 'README 环境说明'; Pattern = '（含 SSE），\*\*(\d+) 项检查\*\*' }
     )
     $staleSlots = @()
     foreach ($slot in $docSlots) {
