@@ -5,6 +5,7 @@ using NekoClicker.Content.Cafe;
 using NekoClicker.Content.Civ;
 using NekoClicker.Content.Cyber;
 using NekoClicker.Content.Dream;
+using NekoClicker.Content.Radio;
 using NekoClicker.Content.God;
 using NekoClicker.Content.Library;
 using NekoClicker.Content.Company;
@@ -28,6 +29,7 @@ public static class TestGame
     private static readonly Lazy<GameContent> CivContentCache = new(CivContent.Build);
     private static readonly Lazy<GameContent> CyberContentCache = new(CyberContent.Build);
     private static readonly Lazy<GameContent> DreamContentCache = new(DreamContent.Build);
+    private static readonly Lazy<GameContent> RadioContentCache = new(RadioContent.Build);
 
     /// <summary>示例内容包（不可变，可安全共享）。</summary>
     public static GameContent NekoContent => NekoContentCache.Value;
@@ -126,6 +128,9 @@ public static class TestGame
 
     /// <summary>内容包 #8《猫娘梦境》（五层梦 + 梦境能量 + 两个结局；不可变，可安全共享）。</summary>
     public static GameContent Dream => DreamContentCache.Value;
+
+    /// <summary>内容包 C1《猫娘电台》（收听率 + 点击是干扰，一层 MVP；不可变，可安全共享）。</summary>
+    public static GameContent Radio => RadioContentCache.Value;
 
     /// <summary>创建《猫娘梦境》的引擎。</summary>
     public static GameEngine CreateDream(out ManualClock clock, ulong seed = 12345, bool grantOffline = true)
@@ -236,6 +241,7 @@ public static class TestGame
         ("#4 文明", Civ),
         ("#5 赛博", Cyber),
         ("#8 梦境", Dream),
+        ("C1 电台", Radio),
     ];
 
     /// <summary>

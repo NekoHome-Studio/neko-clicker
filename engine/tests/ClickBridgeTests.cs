@@ -48,6 +48,7 @@ public static class ClickBridgeTests
         ("#4 文明", "hands_of_the_people", "stone_knife", 6e9),
         ("#5 赛博", "swarm_pointer", "autocomplete", 2_000_000_000),
         ("#8 梦境", "shared_dreaming", "half_asleep", 8e10),
+        ("C1 电台", "signal_hands", "steady_hand", 5_000_000),
     ];
 
     /// <summary>

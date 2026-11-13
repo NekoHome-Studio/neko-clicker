@@ -62,6 +62,7 @@ public static class ContentTextFileTests
         ("Civ", () => TestGame.Civ),
         ("Cyber", () => TestGame.Cyber),
         ("Dream", () => TestGame.Dream),
+        ("Radio", () => TestGame.Radio),
     ];
 
     /// <summary>
@@ -84,6 +85,7 @@ public static class ContentTextFileTests
         ("Library", 9),
         ("Neko", 10),
         ("NineLives", 12),
+        ("Radio", 9),
     ];
 
     /// <summary>
@@ -109,6 +111,7 @@ public static class ContentTextFileTests
         ("Library", 5),
         ("Neko", 0),
         ("NineLives", 9),
+        ("Radio", 2),
     ];
 
     /// <summary>
@@ -132,6 +135,7 @@ public static class ContentTextFileTests
         ("Library", 2),
         ("Neko", 0),
         ("NineLives", 5),
+        ("Radio", 2),
     ];
 
     /// <summary>每个包应当有几条立场。<b>只有三个包有道德轴</b>，其余八个写 0。</summary>
@@ -148,6 +152,7 @@ public static class ContentTextFileTests
         ("Library", 0),
         ("Neko", 0),
         ("NineLives", 4),
+        ("Radio", 0),
     ];
 
     /// <summary>每个包应当有几次表态。<b>只有三个包有表态</b>，其余八个写 0。</summary>
@@ -164,6 +169,7 @@ public static class ContentTextFileTests
         ("Library", 0),
         ("Neko", 0),
         ("NineLives", 6),
+        ("Radio", 0),
     ];
 
     /// <summary>
@@ -186,6 +192,7 @@ public static class ContentTextFileTests
         ("Library", 66),
         ("Neko", 66),
         ("NineLives", 68),
+        ("Radio", 61),
     ];
 
     /// <summary>
@@ -212,6 +219,7 @@ public static class ContentTextFileTests
         ("Library", 8),
         ("Neko", 6),
         ("NineLives", 8),
+        ("Radio", 8),
     ];
 
     /// <summary>
@@ -234,6 +242,7 @@ public static class ContentTextFileTests
         ("Library", 48),
         ("Neko", 50),
         ("NineLives", 56),
+        ("Radio", 36),
     ];
 
     /// <summary>每个包应当有几条金猫结果（<c>GoldenCookieOutcome</c>）。理由同 <see cref="ExpectedBuffs"/>。</summary>
@@ -250,6 +259,7 @@ public static class ContentTextFileTests
         ("Library", 10),
         ("Neko", 10),
         ("NineLives", 10),
+        ("Radio", 10),
     ];
 
     /// <summary>

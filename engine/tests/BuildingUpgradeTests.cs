@@ -133,10 +133,10 @@ public static class BuildingUpgradeTests
         }
 
         Check.Equal(0, problems.Count, string.Join("；", problems));
-        Check.Equal(545, totalUpgrades, "升级总数（2026-10-03 实测 534 条 → 点击桥 +11，见 OPEN_WORK §0.16）");
-        Check.Equal(312, categorized, "其中属于某座建筑的（2026-10-03 实测 312 条）");
-        Check.Equal(104, buildingsWithTrack, "有升级轨的建筑数（真值是 104 座全都有）");
-        Check.Equal(104, buildings, "建筑总数");
+        Check.Equal(581, totalUpgrades, "升级总数（2026-10-03 实测 534 条 → 点击桥 +11 → C1 电台 +36，见 OPEN_WORK §0.16）");
+        Check.Equal(339, categorized, "其中属于某座建筑的（2026-10-03 实测 312 条 → C1 电台 +27）");
+        Check.Equal(113, buildingsWithTrack, "有升级轨的建筑数（真值是 113 座全都有）");
+        Check.Equal(113, buildings, "建筑总数");
     }
 
     /// <summary>没有升级的建筑必须回答"没有"，而不是抛异常或返回 null。</summary>
@@ -291,8 +291,8 @@ public static class BuildingUpgradeTests
         }
 
         Check.Equal(0, problems.Count, string.Join("；", problems));
-        Check.Equal(104, buildings, "建筑数（快照侧）");
-        Check.Equal(104, withTrack, "快照里带轨的建筑数（104 座全都有）");
+        Check.Equal(113, buildings, "建筑数（快照侧）");
+        Check.Equal(113, withTrack, "快照里带轨的建筑数（113 座全都有）");
     }
 
     /// <summary>线上形状：<c>buildings[].upgradeIds</c> 是字符串数组（前端按它取行）。</summary>

@@ -4,6 +4,7 @@ using NekoClicker.Content.Cafe;
 using NekoClicker.Content.Civ;
 using NekoClicker.Content.Cyber;
 using NekoClicker.Content.Dream;
+using NekoClicker.Content.Radio;
 using NekoClicker.Content.God;
 using NekoClicker.Content.Library;
 using NekoClicker.Content.Company;
@@ -288,6 +289,27 @@ internal static class ContentPackages
             ReportTip: "提示：梦境能量是「越睡越浓」的一条曲线（10,000 → ×3、80,000 → ×17 封顶），"
                      + "所以往下睡一层不是清零而是加码。想拿「叫醒梦者」，"
                      + "最后一层里得攒够把她拉出来的力气。"),
+        new ContentPackage(
+            Id: "radio",
+            Name: RadioContent.GameTitle,
+            Build: RadioContent.Build,
+            Welcome: "欢迎来到猫娘电台！先按空格播音，攒够 15 点信号就能买下第一支麦克风。"
+                   + "但记住：这个包点击是干扰——管住手，把节目排好。",
+            PrestigeActionName: "开新频段",
+            PrestigeHint: "开新频段：这一频段停播，新的频段开始，按历史累计换取「频段执照」；"
+                        + "本频段主线未完成时按钮会置灰。收听率会跟着停播清零。",
+            GoldenCookieName: "听众来电",
+            HelpTips:
+            [
+                "    · 这个包点击是干扰：点击会打断播音、掉收听率，而点击基值极小——乱点是亏本的。",
+                "    · 「收听率」是核心：只有播音类建筑养得起它，它会衰减、点击会掉、开新频段清零。",
+                "    · 收听率 2 万时全局 ×1.0，6 万时 ×2.0 封顶——没人听时只有 ×0.5，但不会归零到死锁。",
+                "    · 「听众来电」不全是好事：爆款、黄金档很香，但信号干扰、骚扰电话也很真实。",
+                "    · 每座建筑的强化升级需要持有到 1 / 10 / 25 个才会出现。",
+                "    · 两个结局只差一件事：停播的时候，收听率够不够高（还有没有人在听）。",
+            ],
+            ReportTip: "提示：这个包点击是干扰，管住手别点。收听率由播音类建筑养着，"
+                     + "它掉了产量就掉。想拿「被听到最后」，停播时收听率得够高。"),
     ];
 
     /// <summary>默认内容包（未显式指定 <c>--package</c> 时使用）。</summary>

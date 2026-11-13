@@ -677,6 +677,15 @@ public static class MainLineLengthTests
             "end_wake_her|0|进入第 5 纪元，且 本轮累计赚取 1T 点，且 游玩时长达到 6h 00m，且 「梦境能量」达到 4.5B ‖ All(All(N(Era=5,''),All(N(CookiesEarnedThisRun=1000000000000,''),N(PlayTimeSeconds=21600,''))),N(Counter=4500000000,'dream_energy'))",
             "end_stay_forever|100|进入第 5 纪元，且 本轮累计赚取 1T 点，且 游玩时长达到 6h 00m ‖ All(N(Era=5,''),All(N(CookiesEarnedThisRun=1000000000000,''),N(PlayTimeSeconds=21600,'')))",
         ]),
+        new("C1 电台", 2, 2,
+        [
+            "本轮累计赚取 1B 信号 ‖ N(CookiesEarnedThisRun=1000000000,'')",
+            "本轮累计赚取 1B 信号 ‖ N(CookiesEarnedThisRun=1000000000,'')",
+        ],
+        [
+            "end_heard_to_the_end|0|进入第 2 纪元，且 本轮累计赚取 1B 信号，且 「收听率」达到 60K ‖ All(All(N(Era=2,''),N(CookiesEarnedThisRun=1000000000,'')),N(Counter=60000,'listenership'))",
+            "end_static|100|进入第 2 纪元，且 本轮累计赚取 1B 信号 ‖ All(N(Era=2,''),N(CookiesEarnedThisRun=1000000000,''))",
+        ]),
     ];
 
     /// <summary>

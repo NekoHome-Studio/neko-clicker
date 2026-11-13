@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>NekoClicker.Content.Radio</RootNamespace>
+    <AssemblyName>NekoClicker.Content.Radio</AssemblyName>
+    <!--
+      内容包 C1：猫娘电台（创意池档 C"改变怎么玩"的首条，一层 MVP）。
+      它是"换包即换游戏"的第一份实物证据：别的包点击是生产线，这个包点击是干扰。
+      核心零改动——反转靠模块订阅 ClickedEvent ＋ 数值配方（点击基值压到极小），
+      收听率走已有的 Scaling(CustomCounter) 接缝，不是给引擎加特判。
+    -->
+    <Description>内容包 C1：猫娘电台的全部数值与文案（收听率模块 + 点击是干扰 + 一层 MVP）。</Description>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\core\NekoClicker.Core.csproj" />
+  </ItemGroup>
+
+</Project>

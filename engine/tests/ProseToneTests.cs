@@ -77,6 +77,7 @@ public static class ProseToneTests
         new("Library", 0, 0, 0),
         new("Neko", 0, 0, 0),
         new("NineLives", 0, 0, 0),
+        new("Radio", 0, 0, 0),
     ];
 
     /// <summary>
@@ -91,7 +92,7 @@ public static class ProseToneTests
         string root = RepoRoot();
 
         // 假绿防线：一个包都读不到，说明是这条用例自己走错了路径，而不是"大家都合规"。
-        Check.Equal(11, Budgets.Length, "上限表被削短了——那不是这条用例该做的事。");
+        Check.Equal(12, Budgets.Length, "上限表被削短了——那不是这条用例该做的事。");
 
         int total = 0;
         List<string> over = [];

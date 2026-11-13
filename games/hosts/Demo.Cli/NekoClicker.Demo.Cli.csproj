@@ -44,6 +44,7 @@
     <ProjectReference Include="..\..\..\engine\content\Civ\NekoClicker.Content.Civ.csproj" />
     <ProjectReference Include="..\..\..\engine\content\Cyber\NekoClicker.Content.Cyber.csproj" />
     <ProjectReference Include="..\..\..\engine\content\Dream\NekoClicker.Content.Dream.csproj" />
+    <ProjectReference Include="..\..\..\engine\content\Radio\NekoClicker.Content.Radio.csproj" />
   </ItemGroup>
 
 </Project>
