@@ -113,6 +113,26 @@ h1 { font-size: var(--text-lg); margin: 0; }
 .dot.ok { background: var(--ok); box-shadow: 0 0 8px var(--ok); }
 .dot.bad { background: var(--bad); }
 
+/* ---------------------------------------------------------------- 观战（D4）
+   观战是整页的一种**模式**，不是弹窗：密码门是一条 inline 横幅（.spectate-bar），
+   打开成功后收起，留下 header 里"观战 · 只读"的状态位。样式全部走既有 token，
+   不引入新色值（与"硬编码色值 → var(--token)"那条规矩同源）。 */
+.spectate-bar {
+  border: 1px solid var(--accent-deep);
+  background: var(--card);
+  border-radius: .75rem;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.5rem;
+}
+.spectate-title { margin: 0 0 .75rem; font-weight: 600; color: var(--accent); }
+.spectate-bar .sheet-row { margin-bottom: .5rem; }
+
+/* 只读模式：收起只属于活会话的入口（存档 / 换包）。命令侧的硬保证在 app.js 的
+   send() no-op——这里只是别把"能操作"的假象画出来。大猫等按钮留着：它们是这一局
+   风景的一部分，点下去只会得到一句"观战模式：只读"（而不是静默没反应）。 */
+body.spectating #save,
+body.spectating #pack-open { display: none; }
+
 /* ---------------------------------------------------------------- 主布局 */
 
 main {

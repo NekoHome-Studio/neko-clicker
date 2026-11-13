@@ -9,7 +9,7 @@
 #     · 增量推送的派生字段没处理干净 → 每帧 28KB，而"变化字段数 ≤ 4"的用例照样绿。
 #   所以这一层的判据只能是**真的通**：起宿主、发请求、读 SSE 流、看着它回话。
 #
-# 与单元测试的分工：`tools/build.ps1 -Strict` 守引擎（607 个用例 + 公开 API 快照），
+# 与单元测试的分工：`tools/build.ps1 -Strict` 守引擎（613 个用例 + 公开 API 快照），
 # 本脚本守"宿主 + 浏览器协议 + 启动器"那一段。CI 里两条都跑（.github/workflows/ci.yml）。
 #
 # 七条刻意为之的行为（都不是默认就该有的，是踩出来的）：
@@ -1625,6 +1625,68 @@ try {
         ($shareGuardSkip.Length -gt 0 -or ($shareHashAfterGood.Length -gt 0 -and $shareHashAfterGood -cne $shareHashBefore)) `
         "sha256 $(if ($shareHashBefore) { $shareHashBefore.Substring(0, 12) } else { '—' }) → $(if ($shareHashAfterGood) { $shareHashAfterGood.Substring(0, 12) } else { '—' })" `
         $shareGuardSkip
+
+    # ------------------------------------------------------------ 观战（?spectate=）＋ 只读快照（?readonly=1）
+    # D4（观战明信片）与 D15（只读快照）的端到端那一半。C# 那一半由 SpectateTests 钉着
+    # （原语不建会话 / 不写盘 / 错密码 / 跨包）；这里验的是真 HTTP：只读端点真的回快照、
+    # 真的不落盘、错密码 / 跨包真的被拒、观战与跳层两扇门真的互斥。
+    # 与分享段同一条道理，排在令牌段**之前**：令牌段会把被测包跳成调试会话（不产链接）。
+    Write-Section '观战（?spectate=）＋ 只读快照（?readonly=1）：只读、不落盘、错密码/跨包拒绝、门互斥'
+
+    # ---- readonly=1（D15）：回一份快照，但一个字节都不写盘 ----
+    $roGuardSkip = if (-not $savePath -or -not (Test-Path $savePath)) { '没有存档文件可保护，无从判定' } else { '' }
+    $roHashBefore = if ($roGuardSkip.Length -eq 0) { (Get-FileSha256 $savePath) } else { '' }
+    $roSnap = Invoke-Get "/api/snapshot?package=$Package&readonly=1"
+    $roBody = Convert-FromJsonSafe $roSnap.Body
+    $roOk = $roSnap.Success -and ($null -ne $roBody) -and ($null -ne $roBody.cookies)
+    Check 'GET /api/snapshot?readonly=1 回一份合法快照（D15 的那条只读路真的通）' $roOk `
+        "HTTP $($roSnap.Status)：$(if ($null -ne $roBody) { 'cookies=' + $roBody.cookies } else { '—' })"
+
+    $roHashAfter = if ($roGuardSkip.Length -eq 0 -and (Test-Path $savePath)) { (Get-FileSha256 $savePath) } else { '' }
+    Check 'readonly=1 之后磁盘上那份存档逐字节不变（拿快照当探针不再带起存档）' `
+        ($roGuardSkip.Length -gt 0 -or ($roHashBefore.Length -gt 0 -and $roHashBefore -ceq $roHashAfter)) `
+        "sha256 $(if ($roHashBefore) { $roHashBefore.Substring(0, 12) } else { '—' }) → $(if ($roHashAfter) { $roHashAfter.Substring(0, 12) } else { '—' })" `
+        $roGuardSkip
+
+    # ---- 观战（D4）：对密码打开一段分享令牌，回冻结快照，不落盘 ----
+    # 复用分享段铸好的那段令牌（同一种密文：share 打开是导入，spectate 打开是只读）。
+    $specGuardSkip = if (-not $savePath -or -not (Test-Path $savePath)) { '没有存档文件可保护，无从判定' } else { '' }
+    $specHashBefore = if ($specGuardSkip.Length -eq 0) { (Get-FileSha256 $savePath) } else { '' }
+    $specCommand = Invoke-PostJson "/api/spectate?package=$Package" @{ token = $shareLink; password = $sharePassword }
+    $specResult = Convert-FromJsonSafe $specCommand.Body
+    $specOk = $specCommand.Success -and ($null -ne $specResult) -and $specResult.ok -eq $true -and $specResult.readOnly -eq $true -and ($null -ne $specResult.snapshot)
+    Check 'POST /api/spectate 对密码回一份只读快照（ok + readOnly + snapshot 三样齐全）' $specOk `
+        "HTTP $($specCommand.Status)：$(if ($null -ne $specResult) { 'readOnly=' + $specResult.readOnly } else { '—' })"
+
+    Check '观战快照里有发件人那一局的内容（title 字段在，不是空壳）' `
+        ($specOk -and ($null -ne $specResult.snapshot.title)) `
+        $(if ($specOk) { 'title=' + $specResult.snapshot.title } else { '观战没成功' })
+
+    $specHashAfter = if ($specGuardSkip.Length -eq 0 -and (Test-Path $savePath)) { (Get-FileSha256 $savePath) } else { '' }
+    Check '观战之后磁盘上那份存档逐字节不变（只读明信片不写盘）' `
+        ($specGuardSkip.Length -gt 0 -or ($specHashBefore.Length -gt 0 -and $specHashBefore -ceq $specHashAfter)) `
+        "sha256 $(if ($specHashBefore) { $specHashBefore.Substring(0, 12) } else { '—' }) → $(if ($specHashAfter) { $specHashAfter.Substring(0, 12) } else { '—' })" `
+        $specGuardSkip
+
+    # ---- 错密码：明确拒绝 ----
+    $specWrong = Invoke-PostJson "/api/spectate?package=$Package" @{ token = $shareLink; password = 'not-the-spectate-password' }
+    $specWrongResult = Convert-FromJsonSafe $specWrong.Body
+    Check '观战错密码被明确拒绝（ok=false）' `
+        ($specWrong.Success -and ($null -ne $specWrongResult) -and $specWrongResult.ok -eq $false) `
+        "HTTP $($specWrong.Status)：$(if ($null -ne $specWrongResult) { [string]$specWrongResult.message } else { '—' })"
+
+    # ---- 跨包：别的包的令牌在本包打不开（归属闸，复用九道闸的意义就在这） ----
+    $specCross = Invoke-PostJson "/api/spectate?package=$otherPack" @{ token = $shareLink; password = $sharePassword }
+    $specCrossResult = Convert-FromJsonSafe $specCross.Body
+    Check '观战跨包被归属闸拒绝（令牌是被测包的，换个包 ok=false）' `
+        ($specCross.Success -and ($null -ne $specCrossResult) -and $specCrossResult.ok -eq $false) `
+        "HTTP $($specCross.Status)：$(if ($null -ne $specCrossResult) { [string]$specCrossResult.message } else { '—' })"
+
+    # ---- 门互斥：spectate 与 epoch 同时带 → 400（不挑一个执行） ----
+    $specGate = Invoke-Get "/?package=$Package&spectate=whatever&epoch=1"
+    Check '观战与跳层两扇门互斥（spectate+epoch 同时带 → 400）' `
+        ($specGate.Status -eq 400) `
+        "HTTP $($specGate.Status)"
 
     # ------------------------------------------------------------ 跳层令牌（?k=）
     # 明文门之外的**第二扇门**（SHARE_LINK_PLAN §4）。这一段验的是真 HTTP：铸一枚令牌 → 打真 URL

@@ -167,6 +167,16 @@
       <div class="sheet-row">
         <button id="share-copy" class="ghost" type="button">复制链接</button>
       </div>
+
+      <!-- 观战链接（D4）：**同一段令牌**，换成 ?spectate= 打开就是只读明信片——
+           对方能看这一局，但不能操作、也不会动到自己或对方的存档（不建会话、不写盘）。
+           铸造端不需要第二套加密：makeShareLink 生成令牌时把这两条链接一起填好。 -->
+      <p class="muted">也可以只给别人<b>看</b>：下面这条观战链接打开后是只读的，对方不能操作、不动存档。</p>
+      <textarea id="spectate-link" class="save-text" readonly rows="3" spellcheck="false"
+                aria-label="观战链接（只读，可整份复制）"></textarea>
+      <div class="sheet-row">
+        <button id="spectate-copy" class="ghost" type="button">复制观战链接</button>
+      </div>
       <p id="share-note" class="muted" role="status"></p>
 
       <h3 class="sheet-section">存档文件</h3>
@@ -206,6 +216,20 @@
       <span id="status-text">连接中…</span>
     </div>
   </header>
+
+  <!-- 观战密码门（D4）：URL 带 ?spectate=… 时由 openSpectate 显出来，是收件人第一件要做的事。
+       与分享那一行同一条约定：**不自动尝试任何密码**（那不是口令校验，那是解密）。
+       区别在于观战打开后是**只读**的——不建会话、不写盘、send() 一律 no-op（见 submitSpectate）。
+       它是一条 inline 横幅而不是 sheet：观战不是"弹窗"，是整页的一种模式，没有第二套弹窗机械。 -->
+  <div id="spectate-bar" class="spectate-bar hidden" role="region" aria-label="观战密码门">
+    <p class="spectate-title">👁 观战一张只读明信片</p>
+    <div class="sheet-row">
+      <input id="spectate-password" class="text-input" type="password" autocomplete="off"
+             placeholder="输入对方给的密码" aria-label="打开这张观战明信片的密码">
+      <button id="spectate-go" class="sheet-ok" type="button">打开观战</button>
+    </div>
+    <p id="spectate-note" class="muted" role="status"></p>
+  </div>
 
   <main>
     <!-- 左栏：大数字 + 点击 + 纪元推进 -->

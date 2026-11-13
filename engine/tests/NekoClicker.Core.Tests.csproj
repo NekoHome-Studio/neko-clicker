@@ -64,6 +64,14 @@
     <Compile Include="..\..\games\hosts\Web\PackageCatalog.cs" Link="Web\PackageCatalog.cs" />
 
     <!--
+      只读一瞥（Spectate）也走共享源码：它是 D4 观战 / D15 只读快照的原语，
+      "快照而不建会话、一个字节不写盘"这条性质必须能被 C# 用例直接盯着
+      （SpectateTests），而不是只靠真起宿主的 api-test。它只用 BCL + Core +
+      上面已共享的 ShareLinkCodec / SnapshotProtocol，不碰 ASP.NET，所以编得进来。
+    -->
+    <Compile Include="..\..\games\hosts\Web\Spectate.cs" Link="Web\Spectate.cs" />
+
+    <!--
       URL 上那段加密载荷的编解码（ShareLink）同样走共享源码：它是**宿主侧**的代码
       （PBKDF2 / AES-GCM / gzip，全是 BCL），所以公开 API 快照一个字节都不动
       ——但它必须有 C# 级用例，否则"密码错时磁盘一个字节没动"这类断言只能靠真起宿主来验。

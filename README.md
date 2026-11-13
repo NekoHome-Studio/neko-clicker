@@ -121,7 +121,7 @@ K/M/B/T 与「还差多少」、URL 加密载荷（跳层令牌＋分享链接�
 > 代价是画面右侧与底部各有一格空白——这是换「拖横向不崩」付出的代价。
 
 ```powershell
-# 构建 + 跑测试（607 个用例，零依赖迷你运行器）
+# 构建 + 跑测试（613 个用例，零依赖迷你运行器）
 .\tools\build.ps1
 
 # 逐条计时：打印最慢的一批与分档占比（想知道"什么变慢了"就用它）
@@ -229,7 +229,7 @@ engine/content/Cyber/   内容包 #5《赛博猫娘》（五层数字层，迁�
 engine/content/Dream/   内容包 #8《猫娘梦境》（五层梦，越睡越浓的梦境能量）
 games/hosts/Demo.Cli/        终端 UI 适配层（ANSI 全屏 + 键盘 + 无头模式 + --package）
 games/hosts/Web/         Web 前端宿主（本地 HTTP + wwwroot，浏览器里可玩）
-engine/tests/    607 个测试 + 自研迷你测试运行器（含架构不变量与全程可达测试）
+engine/tests/    613 个测试 + 自研迷你测试运行器（含架构不变量与全程可达测试）
 engine/docs/ARCHITECTURE.md             架构与设计决策
 engine/docs/CONTENT_AUTHORING.md        如何写内容（数值节奏、校验规则、常见坑）
 engine/docs/VERSIONING.md               版本与兼容性承诺：什么改动升哪一位、公开 API 快照怎么用
@@ -245,6 +245,7 @@ tools/build.ps1                  一键构建 + 测试
 tools/play.ps1                   构建并运行终端 Demo（参数转发给程序）
 tools/web.ps1                    构建 / 运行 Web 宿主（自带单项目 sln，见「环境说明」）
 tools/api-test.ps1               端到端回归：起真宿主、打一遍全部端点（含 SSE），收尾时自己清进程
+tools/balance-lab.ps1            数值实验室（D2 基线测量）：机器人横扫各包，聚合"到层时长"对比表，--no-save 不碰真人存档
 tools/dnet.ps1                   在受限环境里运行 dotnet CLI 的包装脚本
 tools/public-api.ps1             重新生成公开 API 快照（有意改动 API 后的最后一步）
 tools/seed-packages.ps1          把全局 NuGet 缓存里的 net8.0 targeting pack 播种进仓库（离线构建）
@@ -270,7 +271,7 @@ tools/seed-packages.ps1          把全局 NuGet 缓存里的 net8.0 targeting p
 > 见下一节），见 [WEB_DEBUG_GATE_PLAN](engine/docs/WEB_DEBUG_GATE_PLAN.md)。它刻意不挂进
 > `NekoClicker.sln`——见 [环境说明](#环境说明为什么有-toolsdnetps1)。
 
-### 加密链接：跳层令牌（`?k=`）与分享链接（`?share=`）
+### 加密链接：跳层令牌（`?k=`）、分享链接（`?share=`）与观战链接（`?spectate=`）
 
 URL 上可以带两段**加密载荷**。令牌门用**新环境变量 `NEKO_URL_KEY`**——它与明文调试门的
 `NEKO_DEBUG_KEY` **各是各的一把，互不授权**（设了一把不等于开了另一把）。注意**铸链接的那个
@@ -317,6 +318,13 @@ http://127.0.0.1:5273/?package=cafe&share=<密文>
   URL 里不再有**可复用**的钥匙（泄漏的只是一次针对某个包某一层的跳转，而且可以设过期），以及范围
   与有效期**锁在密文里、改不动**。密码保护的链接**可以被离线暴力枚举**（PBKDF2 只是让每次猜测变慢）；
   **不做一次性令牌**。
+
+**③ 观战链接（`?spectate=`）**：与分享链接是**同一段密文**，但打开它是**只读**的——对方能看这一局，
+却不能操作，也不动到自己或对方的存档（不建会话、不写盘、命令一律 no-op）。「存档」窗口生成分享链接时
+会一并填好这条观战链接。打开同样要输密码；成功后地址栏里的 `spectate` 被抹掉、失败时保留。
+`share` 与 `spectate` 同时带会被明确拒绝（一次只开一扇门）；`spectate` 与 `epoch`/`k` 同时带是 **400**。
+这就是 D4 观战明信片，它顺带修了 D15：`GET /api/snapshot?package=X&readonly=1` 是一条**真正只读**的
+快照路（不建会话、不写盘，"拿快照当探针会静默带起进度"从此有守卫钉着）。详见 `OPEN_WORK` §0.51。
 
 > **终端宿主不做链接**：那里没有地址栏，一条 1~2 KB 的 base64 没法让人敲进去——这是有意为之，
 > 继续走「导出到文件 → `I` 导入」那条路。设计、线格式与失败分类见
@@ -516,7 +524,7 @@ Console.WriteLine(ApiVersion.AssemblyVersion);  // 1.13.1.0
 一条命令就是全仓库的验收：
 
 ```powershell
-.\tools\build.ps1 -Strict   # 引擎 + 内容 + 607 条用例 + Web 宿主 + 前端冒烟（0 警告）
+.\tools\build.ps1 -Strict   # 引擎 + 内容 + 613 条用例 + Web 宿主 + 前端冒烟（0 警告）
 .\tools\web.ps1   build -Strict   # 只编 Web 宿主时用它
 .\tools\api-test.ps1        # 再把宿主真起起来，打一遍端点（含 SSE 流）
 ```
@@ -538,7 +546,7 @@ Console.WriteLine(ApiVersion.AssemblyVersion);  // 1.13.1.0
   `tools/build.ps1 -Strict` 打印的那一行——见 [OPEN_WORK](engine/docs/OPEN_WORK.md) 的 W1）。
 - **端到端回归与 CI 已落地**：`tools/api-test.ps1` 起真宿主打一遍全部端点（静态文件 / 前端面板 /
   元信息 / 快照 / 命令 / 通知 / 负数 / SSE 流 / **离线收益** / **永久线货币语义** /
-  **建筑专属升级** / **存档的导出与导入** / **跳层令牌与分享链接** / **批量档位真的买 N 个**，115 项检查——最后一段会带同一份存档
+  **建筑专属升级** / **存档的导出与导入** / **跳层令牌与分享链接** / **观战与只读快照** / **批量档位真的买 N 个**，123 项检查——最后一段会带同一份存档
   **再起一次宿主**，验"读档补发 → 没播报之前刷新不消失 → 收下之后消失"），自带临时存档目录、
   缺省把调试门关着、收尾按端口反查并清掉
   `dotnet run` 的子进程；`.github/workflows/ci.yml` 在每次 push / PR 上跑 `tools/build.ps1 -Strict`

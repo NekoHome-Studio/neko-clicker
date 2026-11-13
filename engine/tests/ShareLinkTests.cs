@@ -94,9 +94,10 @@ public static class ShareLinkTests
         Check.Contains(wrong.Message, "密码不对", "消息里要说清可能是密码错。");
         Check.Contains(wrong.Message, "改过", "消息里也要说清可能是链接被改过——这两件事分不开。");
 
-        // 翻一个**密文**里的字节（头之后的第一个字节）。
+        // 翻一个**密文**里的字节（头之后的第一个字节）。用 MutateFlip 而不是设成 0x00：
+        // 密文是随机的，设成定值在那个字节本来就是 0x00 时是空操作，守卫会假红（见 MutateFlip 注释）。
         ShareLinkOpenResult tampered = ShareLinkCodec.Open(
-            GoodPassword, Mutate(link, 40, 0x00), ShareLinkPurpose.SaveShare, "neko");
+            GoodPassword, MutateFlip(link, 40), ShareLinkPurpose.SaveShare, "neko");
         Check.False(tampered.Ok, "改了密文必须被拒。");
         Check.Equal(ShareLinkFailure.WrongPasswordOrTampered, tampered.Failure, "tag 失败就是这一个类别。");
     }
@@ -120,9 +121,9 @@ public static class ShareLinkTests
         Check.False(kindFlipped.Ok, "用途字节被改过：必须被 AAD 拦下，而不是被当成一枚令牌解开。");
         Check.Equal(ShareLinkFailure.WrongPasswordOrTampered, kindFlipped.Failure, "拦住它的必须是 tag。");
 
-        // ② 改一个盐的字节（盐参与 KDF，也参与 AAD）。
+        // ② 改一个盐的字节（盐参与 KDF，也参与 AAD）。盐是随机的，同样用 MutateFlip 保证真的改了。
         ShareLinkOpenResult saltFlipped = ShareLinkCodec.Open(
-            GoodPassword, Mutate(link, 9, 0x00), ShareLinkPurpose.SaveShare, "neko");
+            GoodPassword, MutateFlip(link, 9), ShareLinkPurpose.SaveShare, "neko");
         Check.False(saltFlipped.Ok, "盐被改过必须被拒。");
 
         // ③ 版本字节：在解密之前就该被点名。
@@ -691,6 +692,23 @@ public static class ShareLinkTests
         string padded = link.Replace('-', '+').Replace('_', '/');
         byte[] raw = Convert.FromBase64String(padded.PadRight((padded.Length + 3) / 4 * 4, '='));
         raw[index] = value;
+        return Convert.ToBase64String(raw).TrimEnd('=').Replace('+', '-').Replace('/', '_');
+    }
+
+    /// <summary>
+    /// 翻一个**随机区**的字节（密文 / 盐），保证与原来不同。<para>
+    /// 为什么不用 <see cref="Mutate"/> 设成定值：盐与密文是随机的，"把第 N 字节设成 0x00"
+    /// 在那个字节**本来就是 0x00** 时是一次空操作——链接没变、自然开得开，于是
+    /// "改了密文必须被拒"那条守卫约 1/256 的概率假红（实测在全量重编时撞上过）。
+    /// XOR 0xFF 保证每一位都翻，篡改一定发生，判别力不变。
+    /// 用途 / 版本那种"确定区改成特定值"的场景仍用 <see cref="Mutate"/>。
+    /// </para>
+    /// </summary>
+    private static string MutateFlip(string link, int index)
+    {
+        string padded = link.Replace('-', '+').Replace('_', '/');
+        byte[] raw = Convert.FromBase64String(padded.PadRight((padded.Length + 3) / 4 * 4, '='));
+        raw[index] ^= 0xFF;
         return Convert.ToBase64String(raw).TrimEnd('=').Replace('+', '-').Replace('/', '_');
     }
 

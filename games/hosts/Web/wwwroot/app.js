@@ -31,6 +31,19 @@ const packageId = params.get("package");
  */
 const incomingShare = params.get("share");
 
+/**
+ * URL 上带来的观战令牌（`?spectate=…`），没有时为 `null`。<para>
+ * 它与 `?share=` 是**同一种密文**（同一个 ShareLinkCodec、同一段加密存档）：
+ * `share` 打开是"导入成你的"（会写盘、能接着玩），`spectate` 打开是"只读明信片"
+ * ——不建会话、不写盘、不能操作（见 openSpectate / submitSpectate，D4）。
+ * 两扇门一次只开一扇：同时带 share 与 spectate 会在启动处被明确拒绝。
+ * </para>
+ */
+const incomingSpectate = params.get("spectate");
+
+/** 观战（只读）模式：整页冻结成一帧快照，send() 一律 no-op、不挂 SSE、数字不再累加。 */
+const spectateMode = Boolean(incomingSpectate);
+
 /** 本地状态：从全量帧开始，之后靠增量帧累积。 */
 let state = null;
 let seq = 0;
@@ -87,6 +100,8 @@ const streamUrl = `/api/stream${packageId ? `?package=${encodeURIComponent(packa
 const commandUrl = `/api/command${packageId ? `?package=${encodeURIComponent(packageId)}` : ""}`;
 
 function connect() {
+  // 观战是一帧冻结快照，没有"后续"可推：不挂 SSE（挂了反而会顺手开一个活会话，见 D15）。
+  if (spectateMode) return;
   const source = new EventSource(streamUrl);
 
   source.onopen = () => {
@@ -177,6 +192,12 @@ function recomputeAffordable() {
  * 提示条 2.6 秒就把它吞掉，而窗口里的那一行会留着（见 importSave / refreshExport）。
  */
 async function send(type, extra = {}, options = {}) {
+  // 观战（只读）模式：一切命令都不发。这是"不能操作"的硬保证——观战不建会话，
+  // 真发过去反而会顺手开一个会写盘的活会话（正是 D15 要消灭的形状），所以在这里就拦死。
+  // 观战自己的密码提交走独立的 /api/spectate（只读端点），不经过 send()。
+  if (spectateMode) {
+    return { ok: false, message: "观战模式：这一局是只读的，不能操作。" };
+  }
   try {
     const response = await fetch(commandUrl, {
       method: "POST",
@@ -334,8 +355,14 @@ function render() {
   setText($("#cps"), `${state.cpsText}/s`);
   setText($("#per-click"), `每次 +${state.clickPowerText}`);
   setText($("#achievements"), `${state.achievementCount} / ${state.achievementTotal}`);
-  $("#status-dot").className = connected ? "dot ok" : "dot bad";
-  setText($("#status-text"), connected ? "已连接" : "重连中…");
+  if (spectateMode) {
+    // 观战没有"连接"可言（不挂 SSE）：状态位如实说"只读"，而不是假装在重连。
+    $("#status-dot").className = "dot ok";
+    setText($("#status-text"), "观战 · 只读");
+  } else {
+    $("#status-dot").className = connected ? "dot ok" : "dot bad";
+    setText($("#status-text"), connected ? "已连接" : "重连中…");
+  }
 
   renderGoldenCookie();
   renderBuffs();
@@ -346,10 +373,14 @@ function render() {
   renderBatch();
   // 三张 sheet 的次序在这里定：离线收益先算、纸条再让位给场上的金猫，
   // 表态那张最后（判据是前两张此刻的 class，见 renderNoteSheet 与 renderChoicesSheet 的规则 3）。
-  renderOffline();
-  renderNoteSheet();
-  renderChoicesSheet();
-  reportChoicesShown();
+  // 观战（只读）不弹这三张"要你动手"的 sheet（离线收下 / 纸条收好 / 表态作答）：
+  // 明信片只给人看、不给人操作（D4）。
+  if (!spectateMode) {
+    renderOffline();
+    renderNoteSheet();
+    renderChoicesSheet();
+    reportChoicesShown();
+  }
   renderCodex();
   renderAchievements();
   renderNotifications();
@@ -1098,8 +1129,13 @@ async function makeShareLink() {
     return;
   }
 
-  const link = buildShareUrl(result.text ?? "");
+  const token = result.text ?? "";
+  const link = buildShareUrl(token);
   $("#share-link").value = link;
+  // 观战链接（D4）：**同一段令牌**，换成 ?spectate= 打开就是只读明信片——
+  // 不建会话、不写盘、不能操作。铸造端不需要第二套加密，复用 shareLink 的结果即可。
+  const spectateBox = $("#spectate-link");
+  if (spectateBox) spectateBox.value = buildSpectateUrl(token);
   setNote("share-note", `${result.message ?? ""}（整段 ${link.length} 个字符。宿主只监听本机，`
     + `所以把地址换成对方自己那台的宿主地址，或者让对方把 ?share=… 那一段贴上去。）`);
 }
@@ -1117,6 +1153,17 @@ function buildShareUrl(token) {
   // 任何写死的兜底（原先的 "neko"）都会把链接指到另一个包上。
   const packageQuery = packageId ? `package=${encodeURIComponent(packageId)}&` : "";
   return `${origin}/?${packageQuery}share=${token}`;
+}
+
+/**
+ * 观战链接（D4）：与 buildShareUrl **同一段令牌、同一套前缀规则**，只把 `share=` 换成 `spectate=`。
+ * 打开它走只读路径（不建会话、不写盘、不能操作），而 share 打开是导入。前缀仍由页面按当前地址拼
+ * （本机回环 / 换端口都可能），不写死任何代理或外部地址。
+ */
+function buildSpectateUrl(token) {
+  const origin = location.origin ?? "http://127.0.0.1:5273";
+  const packageQuery = packageId ? `package=${encodeURIComponent(packageId)}&` : "";
+  return `${origin}/?${packageQuery}spectate=${token}`;
 }
 
 /** 复制链接。与 `copyExport` 同一条规矩：剪贴板拿不到时**绝不假装成功**。 */
@@ -1141,6 +1188,31 @@ async function copyShareLink() {
   } catch (error) {
     box.select();
     setNote("share-note", `复制失败（${error.message}）。链接已经选中，按 Ctrl+C 复制。`, true);
+  }
+}
+
+/** 复制观战链接（D4）。与 copyShareLink 同一条规矩：剪贴板拿不到时**绝不假装成功**。 */
+async function copySpectateLink() {
+  const box = $("#spectate-link");
+  const text = box ? box.value : "";
+  if (!text) {
+    setNote("share-note", "还没有观战链接可复制——先在上面生成分享链接。", true);
+    return;
+  }
+
+  const clipboard = navigator.clipboard;
+  if (!clipboard || typeof clipboard.writeText !== "function") {
+    box.select();
+    setNote("share-note", "这个浏览器不允许脚本写剪贴板。观战链接已经选中，按 Ctrl+C 复制。", true);
+    return;
+  }
+
+  try {
+    await clipboard.writeText(text);
+    setNote("share-note", `已复制观战链接（${text.length} 个字符）到剪贴板。`);
+  } catch (error) {
+    box.select();
+    setNote("share-note", `复制失败（${error.message}）。观战链接已经选中，按 Ctrl+C 复制。`, true);
   }
 }
 
@@ -1199,6 +1271,85 @@ function stripShareFromUrl() {
   if (!query.has("share")) return;
 
   query.delete("share");
+  const rest = query.toString();
+  history.replaceState(null, "", `${location.pathname}${rest ? `?${rest}` : ""}${location.hash || ""}`);
+}
+
+/**
+ * URL 上带了 `?spectate=…`（D4）：把观战密码门摆出来等人输入。<para>
+ * 与 openIncomingShare 同一条约定：**不自动尝试任何密码**——那不是口令校验，那是解密。
+ * 区别在于观战打开后是**只读**的：不建会话、不写盘、send() 一律 no-op（见 submitSpectate）。
+ * </para>
+ */
+function openSpectate() {
+  const bar = $("#spectate-bar");
+  if (bar) bar.classList.remove("hidden");
+  setNote("spectate-note", "这是一张只读明信片：输入对方给的密码就能看这一局，"
+    + "但看的人不能操作、也不会动到自己或对方的存档。密码不对就什么都不会发生。");
+  $("#spectate-password")?.focus();
+}
+
+/**
+ * 用输入的密码打开观战（D4）。<para>
+ * 走**独立的只读端点** `/api/spectate`（不经过 send()——send 在观战模式是 no-op）。
+ * 成功后把宿主回的那帧冻结快照当成"全量帧"喂给渲染管线（与 connect 的 full 分支同形），
+ * 然后抹掉地址栏里的 spectate、收起密码门，留下"观战 · 只读"的状态位。
+ * </para><para>
+ * 失败时磁盘与内存一个字节都没动（解密在导入之前、导入的落盘又在内存里，见 Spectate.PeekShare），
+ * 原因原样显示宿主/编解码写好的那句话。
+ * </para>
+ */
+async function submitSpectate() {
+  if (!incomingSpectate) {
+    setNote("spectate-note", "这个页面的地址里没有 spectate 参数。", true);
+    return;
+  }
+
+  const input = $("#spectate-password");
+  const password = input ? input.value : "";
+  if (!password) {
+    setNote("spectate-note", "先输入对方给你的密码。", true);
+    return;
+  }
+
+  const url = `/api/spectate${packageId ? `?package=${encodeURIComponent(packageId)}` : ""}`;
+  let result;
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token: incomingSpectate, password }),
+    });
+    result = await response.json();
+  } catch (error) {
+    setNote("spectate-note", `连不上宿主：${error.message}`, true);
+    return;
+  }
+  if (input) input.value = "";
+
+  if (!result?.ok) {
+    setNote("spectate-note", result?.message ?? "打开失败：宿主没有回话。", true);
+    return;
+  }
+
+  // 成功：这一帧冻结快照就是观战的全部真相。喂给渲染管线（与 connect 收到 full 帧同形）。
+  state = result.snapshot;
+  seq = 0;
+  reconcileCookies();
+  recomputeAffordable();
+  render();
+  stripSpectateFromUrl();
+  $("#spectate-bar")?.classList.add("hidden");
+}
+
+/** 地址栏里的 `spectate` 用完就抹掉（其它参数原样留着，与 stripShareFromUrl 同一条）。 */
+function stripSpectateFromUrl() {
+  if (!location.pathname || !location.search) return;
+
+  const query = new URLSearchParams(location.search);
+  if (!query.has("spectate")) return;
+
+  query.delete("spectate");
   const rest = query.toString();
   history.replaceState(null, "", `${location.pathname}${rest ? `?${rest}` : ""}${location.hash || ""}`);
 }
@@ -1582,7 +1733,9 @@ function animate(now) {
     // 又不至于让数字长时间挂在明显高于真值的地方。
     const tolerance = Math.max(1e-6, rate * 0.5);
 
-    if (shownCookies < server) {
+    if (spectateMode) {
+      shownCookies = server; // 冻结：观战是一帧快照，数字不该自己往上爬
+    } else if (shownCookies < server) {
       shownCookies = server; // 服务端更靠前（点击、离线补发、重连）：直接跟上，不倒退
     } else if (rate > 0 && shownCookies < server + tolerance) {
       // 只往前爬，并且一步都不越过上限：越过上限的部分留给"下一拍停住"去消化。
@@ -2795,6 +2948,7 @@ function toast(message, bad = false) {
  * 否则键盘玩家的飘字会永远贴在视口左上角。
  */
 function floatClickGain(event) {
+  if (spectateMode) return; // 观战点击不生效，也就不该飘一个"+N"假装生效（D4）
   const layer = $("#click-float-layer");
   const cat = $("#big-cat");
   const hero = cat?.parentElement;
@@ -2876,6 +3030,15 @@ $("#share-open-go").addEventListener("click", importIncomingShare);
 $("#share-open-password").addEventListener("keydown", (event) => {
   if (event.key === "Enter") importIncomingShare();
 });
+
+// 观战（D4）：打开按钮 / 密码框回车 / 复制观战链接。与分享那几条同一套约定（回车=按钮）。
+// 用 ?. 兜底：spectate-bar 只在观战页有意义、spectate-link/copy 只在铸造侧有意义，
+// 另一侧的页面没有对应节点也不该抛。
+$("#spectate-go")?.addEventListener("click", submitSpectate);
+$("#spectate-password")?.addEventListener("keydown", (event) => {
+  if (event.key === "Enter") submitSpectate();
+});
+$("#spectate-copy")?.addEventListener("click", copySpectateLink);
 
 // 离线弹窗：按钮、点遮罩空白处、Esc、空格都能收下它。
 // 遮罩上的点击要认准"点在遮罩本身"——点在卡片里的任何地方都不该关掉。
@@ -3034,13 +3197,24 @@ if (initialTab) selectTab(initialTab);
 
 // URL 上带了分享链接就把"输入密码"那一行摆出来（见 openIncomingShare）：
 // 收件人打开链接之后该做的第一件事就是这个，不必先自己找到「存档」按钮。
-if (incomingShare) openIncomingShare();
+// 观战（?spectate=）同理，但它打开后是只读的（D4）。两扇门一次只开一扇：
+// 同时带 share 与 spectate 时明确拒绝、不挑一个执行（与后端 epoch/k 互斥同一条）。
+if (incomingShare && incomingSpectate) {
+  toast("这条链接同时带了 share 与 spectate：一次只能用一扇，请去掉其中一个。", true);
+} else if (incomingSpectate) {
+  openSpectate();
+} else if (incomingShare) {
+  openIncomingShare();
+}
+
+// 观战模式：给 body 打个标记，CSS 据此收起"存档 / 换包"这类只属于活会话的入口。
+if (spectateMode) document.body.classList.add("spectating");
 
 // 音效开关的形状由偏好决定（🔊/🔇 + aria-pressed）。写在这里而不是写进 HTML：
 // 图标和"实际状态"必须同源，写成两份的话总有一次会不一致。
 renderSoundButton();
 
-connect();
+connect(); // 观战模式里 connect() 自己会直接返回（不挂 SSE）
 requestAnimationFrame(animate);
 
 // ---------------------------------------------------------------- 换包（F2）
@@ -3102,4 +3276,5 @@ $("#pack-sheet").addEventListener("click", (event) => {
   if (event.target.id === "pack-sheet") closePackSheet();
 });
 
-await bootPackPicker();
+// 观战是别人那一局的只读明信片，没有"换包"可言（换包=整页跳去开新会话，正是只读要禁的）。
+if (!spectateMode) await bootPackPicker();

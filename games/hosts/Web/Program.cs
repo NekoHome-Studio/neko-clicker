@@ -169,12 +169,72 @@ public static class Program
             SnapshotProtocol.Options));
 
         // ---- 当前快照：一份全量。客户端接 SSE 之前先拿它当起点，或页面刷新时兜底。
-        app.MapGet("/api/snapshot", (string? package, HostOptions options) =>
+        // ?readonly=1 是 D15 要的那条"真正只读的路"：不建会话、不起线程、不写盘（见 Spectate）。
+        app.MapGet("/api/snapshot", (HttpContext context, HostOptions options) =>
         {
+            string? package = context.Request.Query["package"];
+
+            if (context.Request.Query.ContainsKey("readonly"))
+            {
+                WebPackage? peekPack = string.IsNullOrEmpty(package)
+                    ? PackageCatalog.All.FirstOrDefault()
+                    : PackageCatalog.Find(package);
+                return peekPack is null
+                    ? Results.Json(new { error = "unknown_package", package }, SnapshotProtocol.Options, statusCode: 404)
+                    : Results.Text(Spectate.PeekDisk(peekPack, options.SaveRoot), "application/json");
+            }
+
             GameHost? host = Sessions.TryGet(package, options);
             return host is null
                 ? Results.Json(new { error = "unknown_package", package }, SnapshotProtocol.Options, statusCode: 404)
                 : Results.Text(host.ViewJson, "application/json");
+        });
+
+        // ---- 观战（D4）：只读地打开一段分享令牌，回一份冻结快照。**不建会话、不写盘。**
+        // 与 ?share= 用的是同一种密文（同一个 ShareLinkCodec）：share 打开是"导入成你的"，
+        // spectate 打开是"只读明信片"。九道导入闸原样复用，落盘那步写进内存（见 Spectate.PeekShare）。
+        app.MapPost("/api/spectate", async (HttpContext context, string? package, HostOptions options) =>
+        {
+            WebPackage? pack = string.IsNullOrEmpty(package)
+                ? PackageCatalog.All.FirstOrDefault()
+                : PackageCatalog.Find(package);
+            if (pack is null)
+            {
+                return Results.Json(new { ok = false, message = $"没有内容包 <{package}>。" }, SnapshotProtocol.Options, statusCode: 404);
+            }
+
+            JsonNode? body;
+            try
+            {
+                body = await JsonNode.ParseAsync(context.Request.Body, cancellationToken: context.RequestAborted)
+                    .ConfigureAwait(false);
+            }
+            catch (JsonException)
+            {
+                return Results.Json(new { ok = false, message = "请求体不是合法 JSON。" }, SnapshotProtocol.Options, statusCode: 400);
+            }
+
+            string? token = ReadStringField(body, "token");
+            string? password = ReadStringField(body, "password");
+            if (token is null) return Results.Json(new { ok = false, message = "这条请求缺少参数 token。" }, SnapshotProtocol.Options);
+            if (password is null) return Results.Json(new { ok = false, message = "这条请求缺少参数 password。" }, SnapshotProtocol.Options);
+
+            (bool ok, string? snapshot, string message) = Spectate.PeekShare(pack, token, password, DateTimeOffset.UtcNow);
+            if (!ok)
+            {
+                return Results.Json(new { ok = false, message }, SnapshotProtocol.Options);
+            }
+
+            // 快照以**对象**而非字符串嵌进响应：前端拿到就能直接当一帧全量渲染。
+            JsonNode snapshotNode = JsonNode.Parse(snapshot!)!;
+            return Results.Json(new
+            {
+                ok = true,
+                readOnly = true,
+                package = pack.Id,
+                snapshot = snapshotNode,
+                message,
+            }, SnapshotProtocol.Options);
         });
 
         // ---- 推送流：SSE。第一帧一定是全量，之后是增量信封 + 每 30 秒一次全量对账。
@@ -434,13 +494,26 @@ public static class Program
 
         IQueryCollection query = context.Request.Query;
 
-        // 两扇门都不带参数就是普通请求：一字不改地走原来的路径（这是回归的底线，plan §7.5）
+        // 两扇门都不带参数就是普通请求：一字不改地走原来的路径（这是回归的底线，plan §7.5）。
+        // spectate 单独出现时也走这里放行——它是前端处理的门（同 ?share=），不是服务端改写响应的门。
         bool hasEpoch = query.ContainsKey("epoch");
         bool hasToken = query.ContainsKey("k");
+        bool hasSpectate = query.ContainsKey("spectate");
 
         if (!hasEpoch && !hasToken) return false;
 
         context.Response.Headers.CacheControl = "no-store";
+
+        // 观战与跳层互斥：能走到这里说明带了 epoch 或 k，若同时又带 spectate，明确拒绝、不挑一个执行。
+        if (hasSpectate)
+        {
+            await WriteJsonAsync(context, StatusCodes.Status400BadRequest, new
+            {
+                ok = false,
+                message = "这次请求同时带了 spectate 与 epoch/k：观战与跳层是两扇独立的门，一次只能用一扇。",
+            }).ConfigureAwait(false);
+            return true;
+        }
 
         // 两扇门同时带参数：**明确拒绝，不挑一个执行**。静默挑一个正是这个项目一路在消灭的
         // 失败形态——请求方会以为自己要的那扇门生效了，然后去查一个不存在的问题。
@@ -688,6 +761,13 @@ public static class Program
     /// <summary>按线上协议的序列化选项写一份 JSON 响应。</summary>
     private static Task WriteJsonAsync(HttpContext context, int statusCode, object body)
         => Results.Json(body, SnapshotProtocol.Options, statusCode: statusCode).ExecuteAsync(context);
+
+    /// <summary>
+    /// 读一个字符串字段；缺失**或类型不对**都返回 <c>null</c>（与 <c>DispatchAsync</c> 里那个同名
+    /// 局部函数同一条约定）：拼错一个字段不该得到一份堆栈，而是一句"缺少参数"。
+    /// </summary>
+    private static string? ReadStringField(JsonNode? node, string name)
+        => node?[name] is JsonValue value && value.TryGetValue(out string? text) ? text : null;
 
     /// <summary>
     /// 存档根目录：仓库根下的 <c>saves/</c>（仓库根由 <see cref="RepositoryPaths"/> 定位）。<para>

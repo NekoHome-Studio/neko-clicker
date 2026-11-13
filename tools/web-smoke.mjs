@@ -355,7 +355,7 @@ const copyAs = (name, source) => {
  * `packs`：`GET /api/packs` 的那份包清单（§35 换包下拉用）。不传时那个 fetch
  * 落到 `reply` 那条默认路上（多半不是数组），于是下拉走"藏起整个控件"的那半条路。
  */
-async function loadApp(moduleUrl, { hash = "", search = "", reply = null, clipboard = true, packs = null } = {}) {
+async function loadApp(moduleUrl, { hash = "", search = "", reply = null, clipboard = true, packs = null, requireStream = true } = {}) {
   const doc = makeDom();
   const location = { origin: "http://127.0.0.1:5273", pathname: "/", search, hash };
   const commands = [];
@@ -419,7 +419,9 @@ async function loadApp(moduleUrl, { hash = "", search = "", reply = null, clipbo
   await import(moduleUrl);
 
   const source = sources[0];
-  if (!source) throw new Error("app.js 没有连 EventSource");
+  // 观战（D4）刻意不挂 SSE（只读明信片，没有活会话）：那种场景传 requireStream=false，
+  // 这里就不强制"必须连上"。其余场景维持原样——"app.js 真的连了 EventSource"仍是底线。
+  if (!source && requireStream) throw new Error("app.js 没有连 EventSource");
 
   const push = async (frame) => {
     source.onmessage({ data: JSON.stringify(frame) });
@@ -2338,18 +2340,21 @@ section("24. 存档的导出 / 导入窗口（入口 / 复制 / 下载 / 导入�
       if (!new RegExp(`<textarea id="${id}"`).test(html)) throw new Error(`#${id} 不是 <textarea>`);
     }
   });
-  check("提示条与存档窗口的结果行是页面上**恰好四条**实时区域（一个不多、一个不少）", () => {
+  check("提示条与存档窗口的结果行是页面上**恰好五条**实时区域（一个不多、一个不少）", () => {
     // 先剥注释：注释里必须能提 `role="status"` 这类名字（那正是"为什么有这几条"要解释的东西），
     // 而注释在浏览器里不产生元素——这一条第一次跑就是这么红的（数出了三条，多出来那条是注释）。
     //
     // 从"恰好两个"改成"恰好四个"是**加分享链接那一节时的一次有意改动**（§28）：
     // 生成链接的失败原因、打开链接的失败原因都必须留在屏幕上并被读屏念出来，
     // 而那两句话与导入那句话不在同一个元素里（三件事、三处结果行）。
+    // 从"恰好四个"改成"恰好五个"是**加观战（D4）时的又一次有意改动**：观战密码门的
+    // 结果行 #spectate-note 与 share-open-note 同一用途——打开失败的原因（密码不对 /
+    // 链接被改过）要留在屏幕上并被读屏念出来，而不是被 2.6 秒的提示条吞掉。
     // 这条守卫的用处不变：它拦的是"顺手又加了一个提示"，而不是"这处失败需要被念出来"。
     const body = html.replace(/<!--[\s\S]*?-->/g, "");
     const live = [...body.matchAll(/<[^>]*\brole="status"[^>]*>/g)].map((m) => m[0]);
     const ids = live.map((tag) => /\bid="([^"]+)"/.exec(tag)?.[1] ?? "(无 id)").sort();
-    eq(ids.join(", "), "import-result, share-note, share-open-note, toast", "实时区域");
+    eq(ids.join(", "), "import-result, share-note, share-open-note, spectate-note, toast", "实时区域");
   });
 }
 
@@ -5246,6 +5251,131 @@ section("39. 成就解锁闪一下：只闪「刚翻过来的那一条」");
     if (!/if \(achievement\.unlocked\) unlockedOnce\.set\(achievement\.id, true\)/.test(fn)) {
       throw new Error("结构重建时没有登记已解锁的那批：重建的下一帧会把它们全闪一遍");
     }
+  });
+}
+
+// 40. 观战（D4）：只读明信片。
+//
+// 这里守的是"快照而不建会话"的**前端那一半**：不挂 SSE、send() 一律 no-op、数字冻结、
+// 不弹那三张"要你动手"的 sheet。后端那一半（不写盘 / 错密码 / 跨包）由 SpectateTests（C#）
+// 与 api-test 的观战一节钉着——两层分工与 WebBuyModeTests 同一条（见那里的注释）。
+{
+  const SPECTATE_TOKEN = "SpectateToken-abc123._-XYZ";
+  const SPECTATE_PASSWORD = "spectate-pass";
+  const frozen = snapshot();
+
+  // 宿主桩：观战 POST 带 token+password 但**没有 type**（importShare 有 type，分得开）。
+  const spectateReply = (ok) => (body) => {
+    if (body && body.token && body.password && !body.type) {
+      return ok
+        ? { ok: true, readOnly: true, package: "neko", snapshot: frozen, message: "已打开观战。" }
+        : { ok: false, message: "打不开：密码不对，或者这段链接被改过 / 被截断了。" };
+    }
+    return { ok: true };
+  };
+
+  // ---- A. 对密码：打开一张只读明信片 ----
+  const spec = await loadApp(copyAs("app-spectate.mjs", appSource), {
+    search: `?package=neko&spectate=${SPECTATE_TOKEN}`,
+    reply: spectateReply(true),
+    requireStream: false,
+  });
+
+  check("观战模式不挂 SSE（没有活会话——这是 D15 的前端那一半）", () => {
+    eq(spec.sources.length, 0, "EventSource 数量");
+  });
+
+  check("观战密码门显出来，而且不自动尝试密码（输入前一条请求都不发）", () => {
+    eq(shown(spec, "spectate-bar"), true, "#spectate-bar 应当显出来");
+    eq(spec.commands.length, 0, "输入密码之前不该发任何请求");
+  });
+
+  el(spec, "spectate-password").value = SPECTATE_PASSWORD;
+  fire(el(spec, "spectate-go"), "click");
+  await flush();
+
+  check("打开之后：画出冻结快照，而且一条游戏命令都不发", () => {
+    eq(el(spec, "title").textContent, frozen.title, "标题应当是快照里那个");
+    // 观战 POST 本身没有 type；这里守的是"没有 click/buy/… 这类游戏命令"。
+    const gameCommands = spec.commands.filter((c) => c.type);
+    eq(gameCommands.length, 0, "游戏命令条数");
+  });
+
+  check("打开之后：spectate 从地址栏抹掉、密码门收起、状态位说「观战 · 只读」", () => {
+    if (spec.location.search.includes("spectate")) throw new Error(`spectate 没被抹掉：<${spec.location.search}>`);
+    eq(hidden(spec, "spectate-bar"), true, "#spectate-bar 应当收起");
+    eq(el(spec, "status-text").textContent, "观战 · 只读", "状态位");
+  });
+
+  check("观战数字是冻结的：推进时钟好几拍，大数字也不自己往上爬", () => {
+    spec.step(100); // 先让 animate 把冻结值画出来一次
+    const before = el(spec, "cookies").textContent;
+    spec.step(1000); spec.step(1000); spec.step(1000);
+    eq(el(spec, "cookies").textContent, before, "只读明信片的数字不该累加");
+  });
+
+  check("观战里点大猫不发命令（send 是 no-op，也不飘「+N」假装生效）", () => {
+    const before = spec.commands.length;
+    fire(el(spec, "big-cat"), "click");
+    eq(spec.commands.length, before, "点一下不该发任何请求");
+  });
+
+  // ---- B. 错密码：明确拒绝，什么都不动 ----
+  const specBad = await loadApp(copyAs("app-spectate-bad.mjs", appSource), {
+    search: `?package=neko&spectate=${SPECTATE_TOKEN}`,
+    reply: spectateReply(false),
+    requireStream: false,
+  });
+  el(specBad, "spectate-password").value = "wrong-password";
+  fire(el(specBad, "spectate-go"), "click");
+  await flush();
+
+  check("错密码：原因留在结果行、不画快照、spectate 留在地址栏（再试一次的凭据）", () => {
+    const note = el(specBad, "spectate-note").textContent;
+    if (!note.includes("打不开")) throw new Error(`没有说出失败原因：<${note}>`);
+    eq(specBad.location.search.includes("spectate"), true, "失败时 spectate 应当保留");
+    // 判据是"没画快照"，不是"标题等于某个初始文案"：桩里的元素不带 index.html 的文本内容，
+    // 初始标题在桩里是空串——只要它没被画成快照里那个标题，就是没渲染。
+    if (el(specBad, "title").textContent === frozen.title) {
+      throw new Error("错密码竟然画出了快照标题：失败路径不该渲染任何东西");
+    }
+  });
+
+  // ---- C. 互斥：share 与 spectate 同时带，明确拒绝 ----
+  const both = await loadApp(copyAs("app-spectate-both.mjs", appSource), {
+    search: `?package=neko&share=${SPECTATE_TOKEN}&spectate=${SPECTATE_TOKEN}`,
+    reply: spectateReply(true),
+    requireStream: false,
+  });
+  check("share 与 spectate 同时带：明确拒绝，两扇门都不开", () => {
+    eq(hidden(both, "spectate-bar"), true, "观战门不该开");
+    eq(hidden(both, "share-open"), true, "分享门也不该开");
+    if (!el(both, "toast").textContent.includes("一次只能用一扇")) {
+      throw new Error(`没有明确拒绝：<${el(both, "toast").textContent}>`);
+    }
+  });
+
+  // ---- D. 铸造侧：同一段令牌也产出观战链接（?spectate=） ----
+  const mint = await loadApp(copyAs("app-spectate-mint.mjs", appSource), {
+    search: "?package=neko",
+    reply: (body) => {
+      if (body && body.type === "shareLink") return { ok: true, message: "已生成。", text: SPECTATE_TOKEN, seq: 1 };
+      if (body && body.type === "export") return { ok: true, message: "已导出。", text: "{}", seq: 2 };
+      return { ok: true };
+    },
+  });
+  await mint.push({ kind: "full", seq: 1, snapshot: snapshot() });
+  fire(el(mint, "save"), "click");
+  await flush();
+  el(mint, "share-password").value = SPECTATE_PASSWORD;
+  fire(el(mint, "share-make"), "click");
+  await flush();
+
+  check("生成分享链接时一并填好观战链接：同一段令牌、spectate= 参数、不含密码", () => {
+    const spectateLink = el(mint, "spectate-link").value;
+    if (!spectateLink.includes(`spectate=${SPECTATE_TOKEN}`)) throw new Error(`观战链接里没有令牌：<${spectateLink}>`);
+    if (spectateLink.includes("share=")) throw new Error(`观战链接不该带 share= 参数：<${spectateLink}>`);
+    if (spectateLink.includes(SPECTATE_PASSWORD)) throw new Error("观战链接里出现了密码");
   });
 }
 
